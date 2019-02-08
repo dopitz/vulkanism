@@ -1,0 +1,17 @@
+[package]
+name = "nobs-vulkanism-headless"
+version = "0.1.0"
+authors = ["Daniel Opitz <danielopitz91@gmail.com>"]
+description = "Compilation of vulkanism modules needed for rendering without window"
+license = "MIT"
+keywords = ["vulkan", "ffi", "graphics", "gpu", "rendering"]
+categories = ["rendering::graphics-api"]
+repository = "https://github.com/dopitz/vulkanism/nobs-vulkanism-headless"
+readme = "README.md"
+edition = "2018"
+
+[dependencies]
+nobs-vk = {version = "0.2.0", path = "../nobs-vk"}
+nobs-vkcmd = {version = "0.1.0", path = "../nobs-vkcmd"}
+nobs-vkmem = {version = "0.2.0", path = "../nobs-vkmem"}
+nobs-vkpipes = {version = "0.1.0", path = "../nobs-vkpipes"}

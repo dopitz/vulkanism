@@ -1,0 +1,20 @@
+[package]
+name = "nobs-vkpipes-macro"
+version = "0.1.0"
+authors = ["Daniel Opitz <danieloptiz91@gmail.com>"]
+description = "codegeneration macros for nobs-vkpipes"
+license = "MIT"
+keywords = ["vulkan", "memory", "graphics", "gpu", "rendering"]
+categories = ["rendering::graphics-api"]
+repository = "https://github.com/dopitz/nobs-vkmem"
+readme = "README.md"
+
+[lib]
+proc_macro = true
+
+[dependencies]
+shaderc = "0.3"
+nobs-vk = {version = "0.2.0", path = "../../nobs-vk"}
+
+[dev-dependencies]
+nobs-vulkanism = {version = "0.1.0", path = "../../nobs-vulkanism"}

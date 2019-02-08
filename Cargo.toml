@@ -1,0 +1,9 @@
+[workspace]
+members = [
+  "nobs-vk",
+  "nobs-vkcmd",
+  "nobs-vkmem",
+  "nobs-vkpipes",
+  "nobs-vulkanism",
+  "nobs-vulkanism-headless",
+]

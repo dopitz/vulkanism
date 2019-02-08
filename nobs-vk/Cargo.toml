@@ -1,0 +1,22 @@
+[package]
+name = "nobs-vk"
+version = "0.2.0"
+authors = ["Daniel Opitz <danielopitz91@gmail.com>"]
+description = "A very basic, non rich wrapper for binding vulkan commands and extension loading"
+license = "MIT"
+keywords = ["vulkan", "ffi", "graphics", "gpu", "rendering"]
+categories = ["rendering::graphics-api"]
+repository = "https://github.com/dopitz/vulkanism/vulkanism/nobs-vk"
+readme = "README.md"
+edition = "2018"
+
+[dependencies]
+shared_library = "0.1.7"
+
+[[example]]
+name = "info"
+path = "examples/info.rs"
+
+[[example]]
+name = "infofancy"
+path = "examples/fancy.rs"

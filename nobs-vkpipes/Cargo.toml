@@ -1,0 +1,18 @@
+[package]
+name = "nobs-vkpipes"
+version = "0.1.0"
+authors = ["Daniel Opitz <danielopitz91@gmail.com>"]
+description = "shader compilation, vulkan pipeline composition and descriptor set updating as extension to nobs-vk"
+license = "MIT"
+keywords = ["vulkan", "ffi", "graphics", "gpu", "rendering"]
+categories = ["rendering::graphics-api"]
+repository = "https://github.com/dopitz/vulkanism/nobs-vkpipes"
+readme = "README.md"
+edition = "2018"
+
+[dependencies]
+nobs-vk = {version = "0.2.0", path = "../nobs-vk"}
+nobs-vkpipes-macro = {path = "nobs-vkpipes-macro"}
+
+[dev-dependencies]
+nobs-vulkanism = {version = "0.1.0", path = "../nobs-vulkanism"}
