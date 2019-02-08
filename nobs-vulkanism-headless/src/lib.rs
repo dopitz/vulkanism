@@ -10,7 +10,7 @@
 //!
 //! ## Example
 //! ```rust
-//! extern crate nobs_vulkanism as vk;
+//! extern crate nobs_vulkanism_headless as vk;
 //!
 //! fn main() {
 //!   // nobs-vk Symbols remain in vk::*

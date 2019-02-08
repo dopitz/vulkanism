@@ -1,0 +1,20 @@
+[package]
+name = "demos"
+version = "0.1.0"
+authors = ["dopitz <daniel.opitz@kit.edu>"]
+edition = "2018"
+publish = false
+
+[dependencies]
+nobs-vulkanism = {version = "0.1.0", path = "../nobs-vulkanism"}
+
+[build-dependencies]
+nobs-vulkanism = {version = "0.1.0", path = "../nobs-vulkanism"}
+
+[[bin]]
+name = "headless"
+path = "src/headless.rs"
+
+[[bin]]
+name = "triangle"
+path = "src/triangle.rs"

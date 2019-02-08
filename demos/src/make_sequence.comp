@@ -1,0 +1,24 @@
+#version 450
+#extension GL_ARB_separate_shader_objects : enable
+
+const uint GROUP_SIZE = 512;
+
+layout(binding = 0) uniform ub {
+  uint num_elems;
+  uint i_first;
+  uint i_step;
+};
+
+layout(binding = 1) buffer b_out {
+  uint bout[];
+};
+
+layout(local_size_x = GROUP_SIZE) in;
+void main() {
+  // copy input values for group in shared memory
+  uint gid = gl_GlobalInvocationID.x;
+
+  if (gid < num_elems) {
+    bout[gid] = i_first + gid * i_step;
+  }
+}

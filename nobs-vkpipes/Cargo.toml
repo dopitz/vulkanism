@@ -15,4 +15,4 @@ nobs-vk = {version = "0.2.0", path = "../nobs-vk"}
 nobs-vkpipes-macro = {path = "nobs-vkpipes-macro"}
 
 [dev-dependencies]
-nobs-vulkanism = {version = "0.1.0", path = "../nobs-vulkanism"}
+nobs-vulkanism = {path = "../nobs-vulkanism"}

@@ -8,3 +8,8 @@ members = [
   "nobs-vulkanism",
   "nobs-vulkanism-headless",
 ]
+
+exclude = [
+  "demos"
+]
+
