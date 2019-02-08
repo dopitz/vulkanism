@@ -1,12 +1,10 @@
 [workspace]
 members = [
   "nobs-vk",
-  "nobs-vkcmd",
-  "nobs-vkfb",
   "nobs-vkmem",
   "nobs-vkpipes",
-  "nobs-vulkanism",
   "nobs-vulkanism-headless",
+  "nobs-vulkanism",
 ]
 
 exclude = [

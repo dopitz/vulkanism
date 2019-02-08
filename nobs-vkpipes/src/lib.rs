@@ -1,26 +1,15 @@
 //! # nobs-vkpipes
-//! shader compilation and pipeline composing on top of nobs-vk.
+//! Compiles shaders from glsl and generates rust code from spv.
 //!
 //! This crate provides builder pattern implementations for vulkan pipeline creation and descriptor set updating.
 //!
 //! ## Example
 //! This is a simple example that sets up a compute pipeline.
 //!
-//! The main part happens in the `nobs_vkpipes::pipeline!` macro. We define the pipeline with several comma separated fields, paths are always specified relative to the compilied crate's cargo.toml:
-//!  - `include = [str]`: [OPTIONAL] list of strings specifying include directories for the compilation of glsl shader files (for all specified stages).
-//!    - Example: `include = ["src/global_shader_includes", "src/util"]`
-//!  - `dump = str`: [OPTIONAL] filename to which the output of the codegeneration will be written.
-//!    - Example: `dump = "dump/my_pipeline.rs"`
-//!  - `dset_name[i32] = str`: [OPTIONAL] rename descriptor set with index 0. Since we can not specify descriptor set names in glsl, they are enumerated with Dset0, Dset1, Dset2.. if no name is specified for a descriptor set index.
-//!    - Example: `dset_name[0] = "per_frame"`
-//!  - `stage = {...}`: [MANDATORY] specifies a shader stage with parameters
-//!    - Example: `ty = str`: [MANDATORY] type of the shader, must be one of ["comp", "vert", "tesc", "tese", "geom", "frag"]. The pipeline type (compute or graphics) is inferred from the specified stages.
-//!    This means "comp" must NOT be mixed with any other stage type. Graphics pipelines need at least two stages specified ("vert" and "frag")
-//!      - Example: `ty = "comp"`
-//!    - `glsl = str` [MANDATORY] specifies either a shader file, or actual glsl shader code. If glsl is specified spv must not be specified.
-//!    - `spv = str` [MANDATORY] specifies a compiled shader file. If spv is specified glsl must not be specified.
-//!      - Example: `glsl = "src/my_shader.comp"`
+//! All the magic happens in `vk::pipes::pipeline!` macro!
+//! We define the pipeline with several comma separated fields, paths are always specified relative to the compilied crate's cargo.toml:
 //!
+//! See the reexported macros [pipeline](../nobs_vkpipes_macro/macro.pipeline.html) and [shader](../nobs_vkpipes_macro/macro.shader.html) for a list of configurable options.
 //! ```rust
 //! extern crate nobs_vulkanism as vk;
 //! // IMPORTANT import these two crates with their original name
@@ -96,8 +85,6 @@ pub mod descriptor;
 pub mod pipeline;
 
 pub use descriptor::pool::Pool as DescriptorPool;
-pub use descriptor::DsetLayout;
-pub use pipeline::Pipeline;
 
 /// For usage in build.rs to automatically detect changes in glsl/spv files and force the recompilation of the rust source that references the shader.
 ///

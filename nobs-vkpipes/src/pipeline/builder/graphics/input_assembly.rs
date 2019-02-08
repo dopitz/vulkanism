@@ -4,7 +4,7 @@ use vk;
 ///
 /// Default initialized with
 ///
-/// - primitive topology: vk::PRIMITIVE_TOPOLOGY_TRIANGLE_LIST
+/// - primitive topology: `vk::PRIMITIVE_TOPOLOGY_TRIANGLE_LIST`
 /// - primiteve restart: disabled
 pub struct Builder {
   info: vk::PipelineInputAssemblyStateCreateInfo,

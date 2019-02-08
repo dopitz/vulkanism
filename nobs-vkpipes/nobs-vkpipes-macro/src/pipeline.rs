@@ -212,17 +212,17 @@ impl Pipeline {
 
           {sizes}
 
-          pub fn write<'a>(device: &'a vk::DeviceExtensions, dset: vk::DescriptorSet) -> Write<'a> {{
+          pub fn write(device: vk::Device, dset: vk::DescriptorSet) -> Write {{
             Write::new(device, dset)
           }}
 
-          pub struct Write<'a> {{
-            inner: Writes<'a>,
+          pub struct Write {{
+            inner: Writes,
           }}
 
-          impl<'a> Write<'a> {{
-            pub fn new(device: &'a vk::DeviceExtensions, dset: vk::DescriptorSet) -> Write<'a> {{
-              Write::<'a> {{
+          impl Write {{
+            pub fn new(device: vk::Device, dset: vk::DescriptorSet) -> Write {{
+              Write {{
                 inner: Writes::new(device, dset),
               }}
             }}

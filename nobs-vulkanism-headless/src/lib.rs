@@ -1,12 +1,12 @@
-//! Compilation of vulkanism modules to render offstreen / compute
+//! vulkan for offscreen rendering and compute
 //!
-//! This library is a curation of the all vulkanism modules. Including:
-//!  - [nobs-vk](https://docs.rs/nobs-vk)
-//!  - [nobs-vkcmd](https://docs.rs/nobs-vkcmd)
-//!  - [nobs-vkmem](https://docs.rs/nobs-vkmem)
-//!  - [nobs-vkpipes](https://docs.rs/nobs-vkpipes)
+//! This library compiles the nobs-vk base crates into a single depencency and introduces two more moduls:
+//!  - [cmd](mod.cmd.html) - Handles command buffers and syrchronization
+//!  - [fm](mod.fb.html) - Handles renderpass and framebuffer management
 //!
-//! Rearranges module namespaces, so that we only have to use a single `external crate nobs_vulkanism` instruction.
+//! Rearranges module namespaces, so that we only have to use a single `external crate nobs_vulkanism` instruction instead of
+//! the all three depencencies (nobs-vk, nobs-vkmem, nobs-vkpipes). Inlines the nobs-vk Symbols into thes crates root namespace.
+//! for nobs-vkmem and nobs-vkpipes the modules `mem` and `pipes` are created respectively.
 //!
 //! ## Example
 //! ```rust
@@ -39,18 +39,18 @@
 //!   //...
 //! }
 //! ```
-extern crate nobs_vk;
-extern crate nobs_vkcmd;
+#[macro_use]
+extern crate nobs_vk as vk;
 extern crate nobs_vkmem;
 extern crate nobs_vkpipes;
 
-pub use nobs_vk::*;
-pub mod cmd {
-  pub use nobs_vkcmd::*;
-}
+pub use vk::*;
 pub mod mem {
   pub use nobs_vkmem::*;
 }
 pub mod pipes {
   pub use nobs_vkpipes::*;
 }
+
+pub mod cmd;
+pub mod fb;

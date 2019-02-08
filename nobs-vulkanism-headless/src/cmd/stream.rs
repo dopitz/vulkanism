@@ -1,10 +1,12 @@
 use std::sync::Arc;
 use std::sync::Mutex;
 use std::sync::Weak;
+
 use vk;
-use crate::pool;
-use crate::Error;
-use crate::StreamPush;
+
+use crate::cmd::pool;
+use crate::cmd::Error;
+use crate::cmd::StreamPush;
 
 pub struct Pool {
   device: vk::Device,

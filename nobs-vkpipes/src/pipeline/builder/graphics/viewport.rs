@@ -3,9 +3,8 @@ use vk;
 /// Builder for a viewport state
 ///
 /// Default initialized with
-///
-/// - primitive topology: vk::PRIMITIVE_TOPOLOGY_TRIANGLE_LIST
-/// - primiteve restart: disabled
+///  - viewports: none
+///  - scissor_rects: none
 pub struct Builder {
   viewports: Vec<vk::Viewport>,
   scissor_rects: Vec<vk::Rect2D>,

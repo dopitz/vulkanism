@@ -28,7 +28,7 @@ impl Binding {
       | vk::DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC
       | vk::DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC => format!(
         "
-        pub fn {name}<F: Fn(DescriptorBufferInfoBuilder) -> DescriptorBufferInfoBuilder>(&'a mut self, f: F) -> &'a mut {dset_name} {{
+        pub fn {name}<F: Fn(DescriptorBufferInfoBuilder) -> DescriptorBufferInfoBuilder>(&mut self, f: F) -> &mut {dset_name} {{
           self.inner.push_buffer({binding}, 0, {ty}, f(DescriptorBufferInfoBuilder::default()).get());
           self
         }}
@@ -44,7 +44,7 @@ impl Binding {
       | vk::DESCRIPTOR_TYPE_SAMPLED_IMAGE
       | vk::DESCRIPTOR_TYPE_STORAGE_IMAGE => format!(
         "
-        pub fn {name}<F: Fn(DescriptorImageInfoBuilder) -> DescriptorImageInfoBuilder>(&'a mut self, f: F) -> &'a mut {dset_name} {{
+        pub fn {name}<F: Fn(DescriptorImageInfoBuilder) -> DescriptorImageInfoBuilder>(&mut self, f: F) -> &mut {dset_name} {{
           self.inner.push_buffer({binding}, 0, {ty}, f(DescriptorImageInfoBuilder::default()).get());
           self
         }}
@@ -57,7 +57,7 @@ impl Binding {
 
       vk::DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER | vk::DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER => format!(
         "
-        pub fn {name}(&'a mut self, view: BufferView) -> &'a mut {dset_name} {{
+        pub fn {name}(&mut self, view: BufferView) -> &mut {dset_name} {{
           self.inner.push_buffer({binding}, 0, {ty}, view);
           self
         }}

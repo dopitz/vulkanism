@@ -1,8 +1,10 @@
-use crate::stream;
-use crate::Error;
 use std::sync::Arc;
 use std::sync::Mutex;
+
 use vk;
+
+use crate::cmd::stream;
+use crate::cmd::Error;
 
 pub struct Pool {
   pub device: vk::Device,

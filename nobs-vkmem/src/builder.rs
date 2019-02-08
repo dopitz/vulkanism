@@ -114,7 +114,7 @@ struct BufferCreate {
 /// One can create multiple buffers/images in bulk by calling [next_buffer](struct.Buffer.html#method.next_buffer) or [next_image](struct.Buffer.html#method.next_image).
 /// This has the benefit, that then they are more likely to share a commen momory block.
 ///
-/// see [Allocator](../struct.Allocator.html) for more details on creating and binding buffers.
+/// see [Allocator](struct.Allocator.html) for more details on creating and binding buffers.
 pub struct Buffer<'a> {
   builder: ResourceBuilder<'a>,
   handle: &'a mut u64,
@@ -241,7 +241,7 @@ struct ImageCreate {
 /// One can create multiple buffers/images in bulk by calling [next_buffer](struct.Image.html#method.next_buffer) or [next_image](struct.Image.html#method.next_image).
 /// This has the benefit, that then they are more likely to share a commen momory block.
 ///
-/// see [Allocator](../struct.Allocator.html) for more details on creating and binding images.
+/// see [Allocator](struct.Allocator.html) for more details on creating and binding images.
 pub struct Image<'a> {
   builder: ResourceBuilder<'a>,
   handle: &'a mut u64,

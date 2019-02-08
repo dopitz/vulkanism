@@ -6,14 +6,14 @@ use vk;
 ///
 /// - depth clamp: dispabled
 /// - rasterizer discard: disabled
-/// - polygon mode: vk::POLYGON_MODE_FILL
-/// - line width: 1
-/// - cull mode: vk::CULL_MODE_BACK_BIT
-/// - front face: vk::FRONT_FACE_COUNTER_CLOCKWISE
+/// - polygon mode: `vk::POLYGON_MODE_FILL`
+/// - line width: `1`
+/// - cull mode: `vk::CULL_MODE_BACK_BIT`
+/// - front face: `vk::FRONT_FACE_COUNTER_CLOCKWISE`
 /// - depth bias: disabled
-/// - depth bias const factor: 0
-/// - depth bias clamp: 0
-/// - depth bias solpe factor: 0
+/// - depth bias const factor: `0`
+/// - depth bias clamp: `0`
+/// - depth bias solpe factor: `0`
 pub struct Builder {
   info: vk::PipelineRasterizationStateCreateInfo,
 }

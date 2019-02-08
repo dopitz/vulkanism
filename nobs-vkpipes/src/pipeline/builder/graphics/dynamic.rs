@@ -4,7 +4,7 @@ use vk;
 ///
 /// Default initialized with
 ///
-/// - count: 0
+/// - count: `0`
 /// - states: none
 pub struct Builder {
   states: Vec<vk::DynamicState>,

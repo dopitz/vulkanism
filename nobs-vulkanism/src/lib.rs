@@ -1,13 +1,9 @@
-//! Compilation of vulkanism modules to render to a window
+//! vulkan for rendering to a window
 //!
-//! This library is a curation of the all vulkanism modules. Including:
-//!  - [nobs-vk](https://docs.rs/nobs-vk)
-//!  - [nobs-vkcmd](https://docs.rs/nobs-vkcmd)
-//!  - [nobs-vkmem](https://docs.rs/nobs-vkmem)
-//!  - [nobs-vkpipes](https://docs.rs/nobs-vkpipes)
-//!  - [nobs-vkwnd](https://docs.rs/nobs-wnd)
+//! This library is an extension to nobs-vulkanism-headless that adds the module wnd
+//!  - [wnd](mod.wnd.html) - Handles window and swapchain creation
 //!
-//! Rearranges module namespaces, so that we only have to use a single `external crate nobs_vulkanism` instruction.
+//! Inludes the symbols from nobs-vulkanism-headless into che crate's root namespace and defines the wnd module.
 //!
 //! ## Example
 //! ```rust
@@ -19,15 +15,12 @@
 //!   let inst = vk::instance::new()
 //!     .validate(vk::DEBUG_REPORT_ERROR_BIT_EXT | vk::DEBUG_REPORT_WARNING_BIT_EXT)
 //!     .application("awesome app", 0)
-//!     .add_extension(vk::KHR_SURFACE_EXTENSION_NAME)
-//!     .add_extension(vk::KHR_XLIB_SURFACE_EXTENSION_NAME)
 //!     .create(lib)
 //!     .unwrap();
 //!
 //!   let (pdevice, device) = vk::device::PhysicalDevice::enumerate_all(inst.handle)
 //!     .remove(0)
 //!     .into_device()
-//!     .add_extension(vk::KHR_SWAPCHAIN_EXTENSION_NAME)
 //!     .add_queue(vk::device::QueueProperties {
 //!       present: false,
 //!       graphics: true,
@@ -43,23 +36,10 @@
 //!   //...
 //! }
 //! ```
-extern crate nobs_vk;
-extern crate nobs_vkcmd;
-extern crate nobs_vkmem;
-extern crate nobs_vkpipes;
-extern crate nobs_vkwnd;
+#[macro_use]
+extern crate nobs_vulkanism_headless as vk;
+pub extern crate winit;
 
-pub use nobs_vk::*;
-pub mod cmd {
-  pub use nobs_vkcmd::*;
-}
-pub mod mem {
-  pub use nobs_vkmem::*;
-}
-pub mod pipes {
-  pub use nobs_vkpipes::*;
-}
-pub mod wnd {
-  pub use nobs_vkwnd::winit;
-  pub use nobs_vkwnd::*;
-}
+pub mod wnd;
+
+pub use vk::*;

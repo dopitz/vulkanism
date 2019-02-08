@@ -6,10 +6,10 @@ use vk;
 ///
 /// - depth test: enabled
 /// - depth write: enabled
-/// - depth compare: vk::COMPARE_OP_LESS
+/// - depth compare: `vk::COMPARE_OP_LESS`
 /// - depth bounds test: disabled
-/// - min depth bounds: 0
-/// - max depth bounds: 1
+/// - min depth bounds: `0`
+/// - max depth bounds: `1`
 /// - stencil test: disabled
 /// - front: uninitialized
 /// - back: uninitialized

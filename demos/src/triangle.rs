@@ -1,6 +1,6 @@
 extern crate nobs_vulkanism as vk;
 
-use vk::wnd::winit;
+use vk::winit;
 
 pub fn main() {
   let lib = vk::Core::new();

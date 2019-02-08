@@ -4,7 +4,7 @@ use vk;
 ///
 /// Default initialized with
 ///
-/// - path control points: 0
+/// - path control points: `0`
 pub struct Builder {
   pub info: vk::PipelineTessellationStateCreateInfo,
 }

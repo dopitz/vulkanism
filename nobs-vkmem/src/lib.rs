@@ -1,6 +1,19 @@
-//! This crate provides memory management for vulkan and is built as an extension to nobs-vk
+//! Vulkan memory management as extension to [nobs-vk](https://docs.rs/nobs-vk).
 //!
-//! Interfacing with this library is mainly handled in [Allocator](struct.Allocator.html), with which buffers or images are bound to memory.
+//! Buffer and image creation in vulkan is tricky in comparison to e.g. OpenGL, because
+//! 1. We have to create the buffer/image and then later bind it to a`vkDeviceMemory` that has to be created separately.
+//! 2. Creating a single `vkDeviceMemory` allocation for every buffer/image is bad practice,
+//!     in fact it is [encouraged](https://developer.nvidia.com/vulkan-memory-management) to bind esources that are used together on the same allocation.
+//! 3. Another layer of difficulty is introduced with memory types, since not all resources (should) share the same memory properties - which is different for each Driver/Vendor
+//!
+//! nobs-vkmem provides convenient and accessible methods for creating buffers and images and binding them to physical memory.
+//! This dramatically reduces boiler plate code, while still offers the user considerable control over how resources are bound to memory.
+//! 1. Easy buffer and image creation with builder patterns.
+//! 2. Device memory is allocated in larger pages. The library keeps track of free and used regions in a page.
+//! 3. Offers different allocation strategies for different purposes, including forcing the binding of several resources to a continuous block, or binding resources on private pages.
+//! 4. Easy mapping of host accessible buffers
+//!
+//! Interfacing with this library is mainly handled in [Allocator](struct.Allocator.html), with which buffers and images are bound to device memory.
 //!
 //! [Buffer](builder/struct.Buffer.html) and [Image](builder/struct.Image.html) provide a convenient way to configure buffers/images and bind them to the allocator in bulk.
 //!
@@ -8,17 +21,18 @@
 #[macro_use]
 extern crate nobs_vk as vk;
 
-use std::collections::HashMap;
-use std::fmt::Write;
-
 mod block;
 mod builder;
 mod mapped;
 mod page;
 
 pub use builder::Buffer;
+pub use builder::Image;
 pub use mapped::Mapped;
 pub use page::BindType;
+
+use std::collections::HashMap;
+use std::fmt::Write;
 
 use block::Block;
 use page::PageTable;
@@ -324,8 +338,8 @@ impl AllocatorSizes {
 ///
 /// # Example
 /// The Allocator is created from a device handle and it's associated physical device.
-/// Buffers and images can be easyly created with the [Buffer](builder/struct.Builder.html) and [Image](builder/struct.Image.html) builder.
-/// Host accessible buffers can be conveniently accessed with [get_mapped / get_mapped_region](struct.Allocator.html#method.get_mapped) and [Mapped](mapped/struct.Mapper.html).
+/// Buffers and images can be easyly created with the [Buffer](builder/struct.Buffer.html) and [Image](builder/struct.Image.html) builder.
+/// Host accessible buffers can be conveniently accessed with [get_mapped / get_mapped_region](struct.Allocator.html#method.get_mapped) and [Mapped](mapped/struct.Mapped.html).
 /// Allocated resources may be freed with [destroy(_many)](struct.Allocator.html#method.destroy).
 /// Memory of pages that have no bore resource binding can be freed with [free_unused](struct.Allocator.html#method.free_unused) again.
 ///
@@ -581,7 +595,7 @@ impl Allocator {
   /// Shows how buffers and images can be bound to the allocator. Prior to bind the resources have to be created with either `vk::CreateBuffer` or `vk::CreateImage`.
   ///
   /// The BindInfo can be generated manually (as in the example),
-  /// see [Buffer](builder/struct.Builder.html) and [Image](builder/struct.Image.html) for convenient configuration and binding of buffers and images
+  /// see [Buffer](builder/struct.Buffer.html) and [Image](builder/struct.Image.html) for convenient configuration and binding of buffers and images
   ///
   /// ```rust,no_run
   /// # extern crate nobs_vk as vk;

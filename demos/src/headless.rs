@@ -49,8 +49,6 @@ pub fn main() {
   let mut pool = vk::pipes::DescriptorPool::with_capacity(device.handle, &make_sequence::SIZES, make_sequence::NUM_SETS).unwrap();
   let ds = pool.new_dset(p.dsets[&0].layout, &p.dsets[&0].sizes).unwrap();
 
-  let sizes = vk::mem::AllocatorSizes::new(pdevice.handle, device.handle);
-
   let mut allocator = vk::mem::Allocator::new(pdevice.handle, device.handle);
 
   let mut buf_ub = vk::NULL_HANDLE;
@@ -66,7 +64,7 @@ pub fn main() {
     .bind(&mut allocator, vk::mem::BindType::Scatter)
     .unwrap();
 
-  make_sequence::dset::write(&device.ext, ds)
+  make_sequence::dset::write(device.handle, ds)
     .ub(|b| b.buffer(buf_ub))
     .b_out(|b| b.buffer(buf_out))
     .update();
@@ -88,7 +86,7 @@ pub fn main() {
     mapped.device_to_host(&mut ubb);
   }
 
-  let mut cs = cpool
+  cpool
     .begin(device.queues[0])
     .unwrap()
     .push(&vk::cmd::BindPipeline::compute(p.handle))

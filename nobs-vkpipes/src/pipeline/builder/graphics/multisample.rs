@@ -5,9 +5,9 @@ use vk;
 /// Default initialized with
 ///
 /// - sample shading: disabled
-/// - rasterization samples: vk::SAMPLE_COUNT_1_BIT
-/// - min sample shading: 1
-/// - sample mask: null
+/// - rasterization samples: `vk::SAMPLE_COUNT_1_BIT`
+/// - min sample shading: `1
+/// - sample mask: `null`
 /// - alpha to coverage: disabled
 /// - alpha to one: disabled
 pub struct Builder {

@@ -5,13 +5,13 @@ use vk;
 /// Default initialized with
 ///
 /// - blend: disabled
-/// - color write mask: vk::COLOR_COMPONENT_R_BIT | vk::COLOR_COMPONENT_G_BIT | vk::COLOR_COMPONENT_B_BIT | vk::COLOR_COMPONENT_A_BIT,
-/// - src color blend factor: vk::BLEND_FACTER_ONE
-/// - dst color blend factor: vk::BLEND_FACTER_ZERO
-/// - color blend op: vk::BLEND_OP_ADD
-/// - src alpha blend factor: vk::BLEND_FACTER_ONE
-/// - dst alpha blend factor: vk::BLEND_FACTER_ZERO
-/// - alpha blend op: vk::BLEND_OP_ADD
+/// - color write mask: `vk::COLOR_COMPONENT_R_BIT | vk::COLOR_COMPONENT_G_BIT | vk::COLOR_COMPONENT_B_BIT | vk::COLOR_COMPONENT_A_BIT`,
+/// - src color blend factor: `vk::BLEND_FACTER_ONE`
+/// - dst color blend factor: `vk::BLEND_FACTER_ZERO`
+/// - color blend op: `vk::BLEND_OP_ADD`
+/// - src alpha blend factor: `vk::BLEND_FACTER_ONE`
+/// - dst alpha blend factor: `vk::BLEND_FACTER_ZERO`
+/// - alpha blend op: `vk::BLEND_OP_ADD`
 pub struct Builder {
   attachments: Vec<vk::PipelineColorBlendAttachmentState>,
   info: vk::PipelineColorBlendStateCreateInfo,
