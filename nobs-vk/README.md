@@ -26,7 +26,7 @@ Why does nobs-vk exists? nobs-vk...
 
 While more involved wrappers for vulkan do exist they also strife to completely hide the vulkan api behind another layer of rust code and might force you into design decisions you would normally avoid. This library tries to be as simple as possible by just exposing callable functions to vulkan.
 
-## Documentation - Vulkan API
+## Documentation
 Find a complete documentation of this library at [docs.rs](https://docs.rs/nobs-vk).
 
 ## Setup

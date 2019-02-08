@@ -5,7 +5,6 @@
 //! [Buffer](builder/struct.Buffer.html) and [Image](builder/struct.Image.html) provide a convenient way to configure buffers/images and bind them to the allocator in bulk.
 //!
 //! See [Allocator](struct.Allocator.html) to get a quick overview on how to use this library.
-
 #[macro_use]
 extern crate nobs_vk as vk;
 
@@ -24,7 +23,7 @@ pub use page::BindType;
 use block::Block;
 use page::PageTable;
 
-/// Error caused by the memory management
+/// Errors that can be occure when using this crate
 #[derive(Debug)]
 pub enum Error {
   /// Indicates, that the desired pagesize is too small.
@@ -54,13 +53,21 @@ pub enum Error {
 }
 
 /// Enum defining resource types that can be bound
+///
+/// Handles that can be bound to memory are either of type vk::Buffer or vk::Image.
+/// In both cases the handles are u64 typedefs.
+/// The enum in used, so that we can submit buffer and image handles for binding to the Allocator in a uniform fashion,
+/// whlile still being able to distinguish between them.
+///
+/// Submitting buffers along with images to the [Allocator](struct.Allocator.html) makes sence, when they use the same memory type
+/// (which is the case for device local buffers and images)
 #[derive(Debug, Clone, Copy)]
 pub enum Handle<T>
 where
   T: Clone + Copy,
 {
-  Image(T),
   Buffer(T),
+  Image(T),
 }
 
 impl<T> Handle<T>
@@ -76,7 +83,7 @@ where
   }
 
   /// Convert the value of the handle without changing it's enum type
-  pub fn map<U: Clone + Copy>(self, u: U) -> Handle<U> {
+  fn map<U: Clone + Copy>(self, u: U) -> Handle<U> {
     match self {
       Handle::Image(_) => Handle::Image(u),
       Handle::Buffer(_) => Handle::Buffer(u),
@@ -84,13 +91,15 @@ where
   }
 }
 
-/// Bundles all information for the allocator to perform a resource memory binding.
+/// Bundles all information for the [Allocator](struct.Allocator.html) to perform a resource memory binding.
 ///
 /// It is possible to additionally specify the size of the resource in bytes ([with_size](struct.BindInfo.html#method.with_size)).
 /// This size only matters, if the resource is a buffer that will be mapped into host accessible memory.
 /// If no size is specified with the constructor the size for the memory binding will be retrieved from the buffer's `vk::MemoryRequirements`,
 /// which might include a padding at the end. If the buffer is then mapped with [get_mapped](struct.Allocator.html#method.get_mapped) the retured
-/// [Mapped](mapped/struct.Mapped.html) will contain the buffer plus padding. By specifying an explicit size this can be circumvented.
+/// [Mapped](mapped/struct.Mapped.html) will contain the buffer including padding. By specifying an explicit size this can be circumvented.
+///
+/// When the builders [Buffer](builder/struct.Buffer.html) and [Image](builder/struct.Image.html) are used resources will allways be submitted with their actual size.
 #[derive(Debug, Clone, Copy)]
 pub struct BindInfo {
   handle: Handle<u64>,
@@ -99,7 +108,11 @@ pub struct BindInfo {
 }
 
 impl BindInfo {
-  /// Create BindInfo with the specified memory properties
+  /// Create BindInfo from the specified memory properties
+  ///
+  /// ## Arguments
+  /// *`handle` - the handle that needs a memory binding
+  /// *`properties` - the memory properties indicating if the resource is device local or host accessible
   pub fn new(handle: Handle<u64>, properties: vk::MemoryPropertyFlags) -> Self {
     Self {
       handle,
@@ -109,6 +122,11 @@ impl BindInfo {
   }
 
   /// Create BindInfo with the specified memory properties and explicit size in bytes
+  ///
+  /// ## Arguments
+  /// *`handle` - the handle that needs a memory binding
+  /// *`size` - the actual size of the resource (in bytes)
+  /// *`properties` - the memory properties indicating if the resource is device local or host accessible
   pub fn with_size(handle: Handle<u64>, size: vk::DeviceSize, properties: vk::MemoryPropertyFlags) -> Self {
     Self {
       handle,
@@ -121,14 +139,30 @@ impl BindInfo {
 /// Defines meta information for the [Allocator](struct.Allocator.html)
 ///
 /// Caches `vk::MemoryRequirements` for buffers and images.
-/// Defines a pagesize for memory types of all combinations of [buffer, image] and [device local, and host accessible].
+/// Defines a pagesize for memory types of all common combinations of resource types [buffer, image] and memory properties [device local, host accessible].
 #[derive(Debug)]
 pub struct AllocatorSizes {
+  /// Handle to the physical device
+  ///
+  /// Used to retrieve and check against device limits
   pub pdevice: vk::PhysicalDevice,
+  /// Cached memory requirements for image resourcses
+  ///
+  /// Used to get the memory type index without having to create an image.
   pub image_requirements: vk::MemoryRequirements,
+  /// Cached memory requirements for image resourcses
+  ///
+  /// Used to get the memory type index without having to create a buffer.
   pub buffer_requirements: vk::MemoryRequirements,
 
+  /// Default page size in bytes
+  ///
+  /// This is the fallback page size, that is returned in [get_pagesize](struct.AllocatorSizes.html#method.get_pagesize), if no
+  /// mapping for the requested memory type index exists.
+  ///
+  /// The default page size is initialized with 64MiB.
   pub pagesize_default: vk::DeviceSize,
+  /// Page size mapped by memory type index
   pub pagesizes: HashMap<u32, vk::DeviceSize>,
 }
 
@@ -224,7 +258,8 @@ impl AllocatorSizes {
         pdevice,
         &buffer_requirements,
         vk::MEMORY_PROPERTY_HOST_VISIBLE_BIT | vk::MEMORY_PROPERTY_HOST_COHERENT_BIT,
-      ).unwrap(),
+      )
+      .unwrap(),
       vk::DeviceSize::max(minsize, 1 << 18),
     );
 
@@ -239,11 +274,19 @@ impl AllocatorSizes {
   }
 
   /// Get the memtype of an image with the specified memory properties
+  ///
+  /// ## Returns
+  ///  - An option with the memory type index.
+  ///  - None, if there is no memory type that supports images with the specified properties
   pub fn get_image_memtype(&self, properties: vk::MemoryPropertyFlags) -> Option<u32> {
     Allocator::get_memtype(self.pdevice, &self.image_requirements, properties)
   }
 
   /// Get the memtype of a buffer with the specified memory properties
+  ///
+  /// ## Returns
+  ///  - An option with the memory type index.
+  ///  - None, if there is no memory type that supports buffers with the specified properties
   pub fn get_buffer_memtype(&self, properties: vk::MemoryPropertyFlags) -> Option<u32> {
     Allocator::get_memtype(self.pdevice, &self.buffer_requirements, properties)
   }
@@ -251,8 +294,8 @@ impl AllocatorSizes {
   /// Get the pagesize for the memory type
   ///
   /// # Returns
-  /// The pagesize of the memory type, if one has been set in the AllocatorSizes.
-  /// Otherwise the default pagesize is returned.
+  ///  - The pagesize of the memory type, if one has been set in the AllocatorSizes.
+  ///  - Otherwise the default pagesize is returned.
   pub fn get_pagesize(&self, memtype: u32) -> vk::DeviceSize {
     match self.pagesizes.get(&memtype) {
       Some(size) => *size,
@@ -262,7 +305,7 @@ impl AllocatorSizes {
 
   /// Set the pagesize for the specifid memory type
   ///
-  /// The page size must be at least of size `bufferImageGranularity`.
+  /// The page size must be at least of size `bufferImageGranularity`. If not the result returns [InvalidPageSize](enum.Error.html#field.InvalidPageSize).
   pub fn set_pagesize(&mut self, memtype: u32, size: vk::DeviceSize) -> Result<(), Error> {
     if size < Allocator::get_min_pagesize(self.pdevice) {
       Err(Error::InvalidPageSize)?
@@ -441,7 +484,8 @@ impl Allocator {
       .position(|i| {
         (requirements.memoryTypeBits & (1 << i)) != 0
           && (device_properties.memoryTypes[i as usize].propertyFlags & properties) == properties
-      }).map(|i| i as u32)
+      })
+      .map(|i| i as u32)
   }
 
   /// Creates an Allocator

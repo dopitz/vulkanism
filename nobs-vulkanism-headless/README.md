@@ -1,17 +1,45 @@
-# nobs-vkpipes
-shader compilation and pipeline composing on top of nobs-vk.
+# nobs-vulkanism-headless
+Compilation of vulkanism modules to render to a window
 
-This librarary provides codegeneration from glsl and spv sources at compiletime. Creates a rust module for a single shader or whole pipeline. The generated modules contain information about shader uniform bindings, names and descriptor sets. With this easy to access descriptor updates can be performed without any additional information from the shoder sources at runtime.
+This library is a curation of the all vulkanism modules. Including:
+ - [nobs-vk](https://docs.rs/nobs-vk)
+ - [nobs-vkcmd](https://docs.rs/nobs-vkcmd)
+ - [nobs-vkmem](https://docs.rs/nobs-vkmem)
+ - [nobs-vkpipes](https://docs.rs/nobs-vkpipes)
 
-## Documentation
-Find a complete documentation of this library at [docs.rs](https://docs.rs/nobs-vkpipes).
+Rearranges module namespaces, so that we only have to use a single `external crate nobs_vulkanism` instruction.
 
-## Setup
-Follow the setup instructions for [shaderc-rs](https://github.com/google/shaderc-rs).
+## Example
+```rust
+extern crate nobs_vulkanism as vk;
 
-Nothing more is to be done, you are ready to use nobs-vkpipes.
+fn main() {
+  // nobs-vk Symbols remain in vk::*
+  let lib = vk::Core::new();
+  let inst = vk::instance::new()
+    .validate(vk::DEBUG_REPORT_ERROR_BIT_EXT | vk::DEBUG_REPORT_WARNING_BIT_EXT)
+    .application("awesome app", 0)
+    .add_extension(vk::KHR_SURFACE_EXTENSION_NAME)
+    .add_extension(vk::KHR_XLIB_SURFACE_EXTENSION_NAME)
+    .create(lib)
+    .unwrap();
 
-## Contributing
-Feel encouraged to contribute!
+  let (pdevice, device) = vk::device::PhysicalDevice::enumerate_all(inst.handle)
+    .remove(0)
+    .into_device()
+    .add_extension(vk::KHR_SWAPCHAIN_EXTENSION_NAME)
+    .add_queue(vk::device::QueueProperties {
+      present: false,
+      graphics: true,
+      compute: true,
+      transfer: true,
+    })
+    .create()
+    .unwrap();
 
-
+  // Symbols of dependent moduls are put in their own namespace within vk::
+  // e.g.:
+  let mut allocator = vk::mem::Allocator::new(pdevice.handle, device.handle);
+  //...
+}
+```
