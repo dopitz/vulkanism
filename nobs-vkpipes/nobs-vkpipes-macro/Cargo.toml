@@ -15,3 +15,6 @@ proc_macro = true
 [dependencies]
 shaderc = "0.3"
 nobs-vk = {version = "0.2.0", path = "../../nobs-vk"}
+
+[dev-dependencies]
+nobs-vulkanism = {path = "../../nobs-vulkanism"}

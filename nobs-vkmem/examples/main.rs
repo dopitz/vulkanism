@@ -26,7 +26,8 @@ fn main() {
       graphics: true,
       compute: true,
       transfer: true,
-    }).create()
+    })
+    .create()
     .expect("device creation failed");
 
   // create an allocator with default page size (128MiB for device local / 8MB for host visible memory)
@@ -61,20 +62,22 @@ fn main() {
   //
   // it is also possible to allocate resources on a dedicated page with bind_minipage
   // this will always allocate a new page with the exact size that all specified BindInfos need
-  vkmem::Buffer::new(&mut buf_ub)
+  //vkmem::Buffer::new(&mut buf_ub)
+  vkmem::Resource::new()
+    .new_buffer(&mut buf_ub)
     .size(std::mem::size_of::<Ub>() as vk::DeviceSize)
     .usage(vk::BUFFER_USAGE_TRANSFER_DST_BIT | vk::BUFFER_USAGE_UNIFORM_BUFFER_BIT)
     .devicelocal(false)
-    .next_buffer(&mut buf_out)
+    .new_buffer(&mut buf_out)
     .size(123 * std::mem::size_of::<u32>() as vk::DeviceSize)
     .usage(vk::BUFFER_USAGE_TRANSFER_DST_BIT | vk::BUFFER_USAGE_STORAGE_BUFFER_BIT)
     .devicelocal(false)
-    .next_image(&mut img)
+    .new_image(&mut img)
     .image_type(vk::IMAGE_TYPE_2D)
     .size(123, 123, 1)
     .usage(vk::IMAGE_USAGE_SAMPLED_BIT)
     .devicelocal(true)
-    .next_buffer(&mut bb)
+    .new_buffer(&mut bb)
     .size(123 * std::mem::size_of::<u32>() as vk::DeviceSize)
     .usage(vk::BUFFER_USAGE_TRANSFER_DST_BIT | vk::BUFFER_USAGE_STORAGE_BUFFER_BIT)
     .devicelocal(true)

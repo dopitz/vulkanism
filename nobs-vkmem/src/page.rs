@@ -403,7 +403,7 @@ impl PageTable {
     if bindinfos.iter().any(|i| self.allocations.contains_key(&i.handle.get())) {
       Err(Error::AlreadyBound)?;
     }
-    if bindinfos.iter().any(|i| i.requirements.memoryTypeBits & self.memtype == 0) {
+    if bindinfos.iter().any(|i| i.requirements.memoryTypeBits & (1 << self.memtype) == 0) {
       Err(Error::InvalidMemoryType)?;
     }
 

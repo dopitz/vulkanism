@@ -57,7 +57,7 @@ pub fn main() {
     .size(std::mem::size_of::<make_sequence::ub>() as vk::DeviceSize)
     .usage(vk::BUFFER_USAGE_TRANSFER_DST_BIT | vk::BUFFER_USAGE_UNIFORM_BUFFER_BIT)
     .devicelocal(false)
-    .next_buffer(&mut buf_out)
+    .new_buffer(&mut buf_out)
     .size(123 * std::mem::size_of::<u32>() as vk::DeviceSize)
     .usage(vk::BUFFER_USAGE_TRANSFER_DST_BIT | vk::BUFFER_USAGE_STORAGE_BUFFER_BIT)
     .devicelocal(false)

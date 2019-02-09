@@ -1,9 +1,9 @@
-use vk;
 use crate::Allocator;
 use crate::BindInfo;
 use crate::BindType;
 use crate::Error;
 use crate::Handle;
+use vk;
 
 /// Accumulator for buffer and image create infos
 ///
@@ -95,6 +95,81 @@ impl<'a> ResourceBuilder<'a> {
     self.handles.push(handle);
     self.infos.push(Handle::Image(self.images.len()));
     self.images.push(image);
+  }
+}
+
+/// Generic builder for buffers and images
+///
+/// This builder can neither configure a buffer nor an image, but is useful to have when resources are created in a loop.
+///
+/// ## Exapmle
+/// ```rust
+/// # extern crate nobs_vk as vk;
+/// # extern crate nobs_vkmem as vkmem;
+/// # fn main() {
+/// #  let lib = vk::Core::new();
+/// #  let inst = vk::instance::new()
+/// #    .validate(vk::DEBUG_REPORT_ERROR_BIT_EXT | vk::DEBUG_REPORT_WARNING_BIT_EXT)
+/// #    .application("awesome app", 0)
+/// #    .create(lib)
+/// #    .unwrap();
+/// #  let (pdevice, device) = vk::device::PhysicalDevice::enumerate_all(inst.handle)
+/// #    .remove(0)
+/// #    .into_device()
+/// #    .add_queue(vk::device::QueueProperties {
+/// #      present: false,
+/// #      graphics: true,
+/// #      compute: true,
+/// #      transfer: true,
+/// #    }).create()
+/// #    .unwrap();
+/// let mut allocator = vkmem::Allocator::new(pdevice.handle, device.handle);
+///
+/// let mut handles = vec![vk::NULL_HANDLE, vk::NULL_HANDLE, vk::NULL_HANDLE];
+/// let mut builder = vkmem::Resource::new();
+/// for h in handles.iter_mut() {
+///   builder = builder
+///     .new_buffer(h)
+///     .size(123)
+///     .devicelocal(true)
+///     .usage(vk::BUFFER_USAGE_TRANSFER_DST_BIT | vk::BUFFER_USAGE_STORAGE_BUFFER_BIT)
+///     .submit()
+/// }
+/// builder.bind(&mut allocator, vkmem::BindType::Scatter);
+/// # }
+/// ```
+pub struct Resource<'a> {
+  builder: ResourceBuilder<'a>,
+}
+
+impl<'a> Resource<'a> {
+  pub fn new() -> Self {
+    Self {
+      builder: Default::default(),
+    }
+  }
+
+  fn with_builder(builder: ResourceBuilder<'a>) -> Self {
+    Self { builder }
+  }
+
+  /// Starts configuration of a new buffer resource
+  ///
+  /// The new builder will be initialized as in [new](struct.Buffer.html#method.new)
+  pub fn new_buffer(self, handle: &'a mut u64) -> Buffer {
+    Buffer::with_builder(handle, self.builder)
+  }
+
+  /// Starts configuration of a new image resource
+  ///
+  /// The new builder will be initialized as in [new](struct.Image.html#method.new)
+  pub fn new_image(self, handle: &'a mut u64) -> Image {
+    Image::with_builder(handle, self.builder)
+  }
+
+  /// Creates resources and binds them to the specified allocator
+  pub fn bind(mut self, alloc: &mut Allocator, ty: BindType) -> Result<(), Error> {
+    self.builder.bind(alloc, ty)
   }
 }
 
@@ -202,26 +277,28 @@ impl<'a> Buffer<'a> {
     }
   }
 
-  /// Finishes configuring this buffer and start configuring another buffer.
+  /// Finishes configuration of this buffer
   ///
-  /// The new builder will be initialized as in [new](struct.Buffer.html#method.new)
-  pub fn next_buffer(mut self, handle: &'a mut u64) -> Self {
+  /// ## Returns
+  /// A [Resource](struct.Resource.html) so that we can continue configuring new buffers/images.
+  pub fn submit(mut self) -> Resource<'a> {
     self.builder.add_buffer(self.handle, self.buffer);
-    Self::with_builder(handle, self.builder)
+    Resource::with_builder(self.builder)
   }
 
-  /// Finishes configuring this buffer and start configuring another image.
-  ///
-  /// The new builder will be initialized as in [new](struct.Image.html#method.new)
-  pub fn next_image(mut self, handle: &'a mut u64) -> Image {
-    self.builder.add_buffer(self.handle, self.buffer);
-    Image::with_builder(handle, self.builder)
+  /// Short hand for [`submit()`](struct.Image.html#method.submit).[`new_buffer(handle)`](struct.Resource.html#method.new_buffer)
+  pub fn new_buffer(self, handle: &'a mut u64) -> Self {
+    self.submit().new_buffer(handle)
   }
 
-  /// Finishes configuring the buffer and binds all previously configured resources to the `allocator`
-  pub fn bind(mut self, allocator: &mut Allocator, bindtype: BindType) -> Result<(), Error> {
-    self.builder.add_buffer(self.handle, self.buffer);
-    self.builder.bind(allocator, bindtype)
+  /// Short hand for [`submit()`](struct.Image.html#method.submit).[`new_image(handle)`](struct.Resource.html#method.new_image)
+  pub fn new_image(self, handle: &'a mut u64) -> Image {
+    self.submit().new_image(handle)
+  }
+
+  /// Short hand for [`submit()`](struct.Image.html#method.submit).[`bind(handle)`](struct.Resource.html#method.bind)
+  pub fn bind(self, allocator: &mut Allocator, bindtype: BindType) -> Result<(), Error> {
+    self.submit().bind(allocator, bindtype)
   }
 }
 
@@ -251,18 +328,7 @@ pub struct Image<'a> {
 impl<'a> Image<'a> {
   /// Creates a new builder.
   ///
-  /// By default the builder will be initialized with
-  ///  - memory properties: `vk::MEMORY_PROPERTY_DEVICE_LOCAL_BIT`
-  ///  - imageType: `vk::IMAGE_TYPE_2D`
-  ///  - format: `vk::FORMAT_R8G8B8A8_UNORM`
-  ///  - extent: width = height = depth = 0
-  ///  - mipLevels: 1
-  ///  - arrayLayers: 1
-  ///  - samples: `vk::SAMPLE_COUNT_1_BIT`
-  ///  - tiling: `vk::IMAGE_TILING_OPTIMAL`
-  ///  - usage: 0,
-  ///  - initialLayout: `vk::IMAGE_LAYOUT_UNDEFINED`
-  ///  - sharingMode: `vk::SHARING_MODE_EXCLUSIVE (no queue indices)
+  /// Initializes with [defaults](struct.Image.html#method.defaults)
   ///
   /// After [bind](struct.Image.html#method.bind) is called, the created image will be copied into the specified `handle`
   pub fn new(handle: &'a mut u64) -> Self {
@@ -275,35 +341,90 @@ impl<'a> Image<'a> {
       handle,
       image: ImageCreate {
         family_indices: Default::default(),
-        info: vk::ImageCreateInfo {
-          sType: vk::STRUCTURE_TYPE_IMAGE_CREATE_INFO,
-          pNext: std::ptr::null(),
-          flags: 0,
-          imageType: vk::IMAGE_TYPE_2D,
-          format: vk::FORMAT_R8G8B8A8_UNORM,
-          extent: vk::Extent3D {
-            width: 0,
-            height: 0,
-            depth: 0,
-          },
-          mipLevels: 1,
-          arrayLayers: 1,
-          samples: vk::SAMPLE_COUNT_1_BIT,
-          tiling: vk::IMAGE_TILING_OPTIMAL,
-          usage: 0,
-          sharingMode: vk::SHARING_MODE_EXCLUSIVE,
-          queueFamilyIndexCount: 0,
-          pQueueFamilyIndices: std::ptr::null(),
-          initialLayout: vk::IMAGE_LAYOUT_UNDEFINED,
-        },
-        properties: vk::MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+        info: unsafe { std::mem::uninitialized() },
+        properties: 0,
       },
     }
+    .defaults()
+  }
+
+  /// Sets the default image configuration
+  ///
+  /// By default the builder will be initialized with
+  ///  - memory properties: `vk::MEMORY_PROPERTY_DEVICE_LOCAL_BIT`
+  ///  - imageType: `vk::IMAGE_TYPE_2D`
+  ///  - format: `vk::FORMAT_R8G8B8A8_UNORM`
+  ///  - extent: width = height = depth = 0
+  ///  - mipLevels: 1
+  ///  - arrayLayers: 1
+  ///  - samples: `vk::SAMPLE_COUNT_1_BIT`
+  ///  - tiling: `vk::IMAGE_TILING_OPTIMAL`
+  ///  - usage: 0,
+  ///  - initialLayout: `vk::IMAGE_LAYOUT_UNDEFINED`
+  ///  - sharingMode: `vk::SHARING_MODE_EXCLUSIVE (no queue indices)
+  pub fn defaults(mut self) -> Self {
+    self.image.info.sType = vk::STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+    self.image.info.pNext = std::ptr::null();
+    self.image.info.flags = 0;
+    self
+      .image_type(vk::IMAGE_TYPE_2D)
+      .format(vk::FORMAT_B8G8R8A8_UNORM)
+      .size(1, 1, 1)
+      .mip_levels(1)
+      .array_layers(1)
+      .samples(vk::SAMPLE_COUNT_1_BIT)
+      .tiling(vk::IMAGE_TILING_OPTIMAL)
+      .usage(0)
+      .sharing(vk::SHARING_MODE_EXCLUSIVE)
+      .queues(&[])
+      .layout(vk::IMAGE_LAYOUT_UNDEFINED)
+      .devicelocal(true)
+  }
+
+  /// Sets the configuration to be used as a sampled 2D texture
+  ///
+  /// Basically sets the defaults with:
+  ///  - width: `w`
+  ///  - height: `h`
+  ///  - format: `format`.
+  ///  - usage: `vk::IMAGE_USAGE_TRANSFER_SRC_BIT | vk::IMAGE_USAGE_TRANSFER_DST_BIT | vk::IMAGE_USAGE_SAMPLED_BIT`
+  pub fn texture2d(self, w: u32, h: u32, format: vk::Format) -> Self {
+    self
+      .defaults()
+      .format(format)
+      .width(w)
+      .height(h)
+      .usage(vk::IMAGE_USAGE_TRANSFER_SRC_BIT | vk::IMAGE_USAGE_TRANSFER_DST_BIT | vk::IMAGE_USAGE_SAMPLED_BIT)
+  }
+
+  /// Sets the configuration to be used as a color attachment
+  ///
+  /// This is basically a [texture2D](struct.Image.html#method.texture2D) with additional usage `vk::IMAGE_USAGE_COLOR_ATTACHMENT_BIT`
+  pub fn color_attachment(self, w: u32, h: u32, format: vk::Format) -> Self {
+    self.texture2d(w, h, format).usage(
+      vk::IMAGE_USAGE_TRANSFER_SRC_BIT
+        | vk::IMAGE_USAGE_TRANSFER_DST_BIT
+        | vk::IMAGE_USAGE_SAMPLED_BIT
+        | vk::IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+    )
+  }
+
+  /// Sets the configuration to be used as a depth attachment
+  ///
+  /// This is basically a [texture2D](struct.Image.html#method.texture2D) with usage `vk::IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT`
+  pub fn depth_attachment(self, w: u32, h: u32, format: vk::Format) -> Self {
+    self.texture2d(w, h, format).usage(vk::IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT)
   }
 
   /// Set the image type
   pub fn image_type(mut self, ty: vk::ImageType) -> Self {
     self.image.info.imageType = ty;
+    self
+  }
+
+  /// Set the image format
+  pub fn format(mut self, format: vk::Format) -> Self {
+    self.image.info.format = format;
     self
   }
 
@@ -365,7 +486,7 @@ impl<'a> Image<'a> {
     self
   }
 
-  /// Sets the buffer sharing mode
+  /// Sets the image's sharing mode
   pub fn sharing(mut self, sharing: vk::SharingMode) -> Self {
     self.image.info.sharingMode = sharing;
     self
@@ -378,6 +499,12 @@ impl<'a> Image<'a> {
     self.image.family_indices = queue_family_indices.to_vec();
     self.image.info.queueFamilyIndexCount = self.image.family_indices.len() as u32;
     self.image.info.pQueueFamilyIndices = self.image.family_indices.as_ptr();
+    self
+  }
+
+  /// Sets the initial layout of the image
+  pub fn layout(mut self, layout: vk::ImageLayout) -> Self {
+    self.image.info.initialLayout = layout;
     self
   }
 
@@ -399,25 +526,91 @@ impl<'a> Image<'a> {
     }
   }
 
-  /// Finishes configuring this image and start configuring another buffer.
+  /// Finishes configuration of this image
   ///
-  /// The new builder will be initialized as in [new](struct.Buffer.html#method.new)
-  pub fn next_buffer(mut self, handle: &'a mut u64) -> Buffer {
+  /// ## Returns
+  /// A [Resource](struct.Resource.html) so that we can continue configuring new buffers/images.
+  pub fn submit(mut self) -> Resource<'a> {
     self.builder.add_image(self.handle, self.image);
-    Buffer::with_builder(handle, self.builder)
+    Resource::with_builder(self.builder)
   }
 
-  /// Finishes configuring this image and start configuring another image.
-  ///
-  /// The new builder will be initialized as in [new](struct.Image.html#method.new)
-  pub fn next_image(mut self, handle: &'a mut u64) -> Self {
-    self.builder.add_image(self.handle, self.image);
-    Self::with_builder(handle, self.builder)
+  /// Short hand for [`submit()`](struct.Image.html#method.submit).[`new_buffer(handle)`](struct.Resource.html#method.new_buffer)
+  pub fn new_buffer(self, handle: &'a mut u64) -> Buffer {
+    self.submit().new_buffer(handle)
   }
 
-  /// Finishes configuring the image and binds all previously configured resources to the `allocator`
-  pub fn bind(mut self, allocator: &mut Allocator, bindtype: BindType) -> Result<(), Error> {
-    self.builder.add_image(self.handle, self.image);
-    self.builder.bind(allocator, bindtype)
+  /// Short hand for [`submit()`](struct.Image.html#method.submit).[`new_image(handle)`](struct.Resource.html#method.new_image)
+  pub fn new_image(self, handle: &'a mut u64) -> Self {
+    self.submit().new_image(handle)
+  }
+
+  /// Short hand for [`submit()`](struct.Image.html#method.submit).[`bind(handle)`](struct.Resource.html#method.bind)
+  pub fn bind(self, allocator: &mut Allocator, bindtype: BindType) -> Result<(), Error> {
+    self.submit().bind(allocator, bindtype)
+  }
+}
+
+pub struct ImageView {
+  device: vk::Device,
+  info: vk::ImageViewCreateInfo,
+}
+
+impl ImageView {
+  pub fn new(device: vk::Device, image: vk::Image) -> Self {
+    Self {
+      device,
+      info: vk::ImageViewCreateInfo {
+        sType: vk::STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+        pNext: std::ptr::null(),
+        flags: 0,
+        image: image,
+        viewType: vk::IMAGE_VIEW_TYPE_2D,
+        format: vk::FORMAT_UNDEFINED,
+        components: vk::ComponentMapping {
+          r: vk::COMPONENT_SWIZZLE_IDENTITY,
+          g: vk::COMPONENT_SWIZZLE_IDENTITY,
+          b: vk::COMPONENT_SWIZZLE_IDENTITY,
+          a: vk::COMPONENT_SWIZZLE_IDENTITY,
+        },
+        subresourceRange: vk::ImageSubresourceRange {
+          aspectMask: 0,
+          baseMipLevel: 0,
+          levelCount: 1,
+          baseArrayLayer: 0,
+          layerCount: 1,
+        },
+      },
+    }
+  }
+
+  pub fn view_type(mut self, ty: vk::ImageViewType) -> Self {
+    self.info.viewType = ty;
+    self
+  }
+
+  pub fn format(mut self, format: vk::Format) -> Self {
+    self.info.format = format;
+    self
+  }
+
+  pub fn compontents(mut self, components: vk::ComponentMapping) -> Self {
+    self.info.components = components;
+    self
+  }
+
+  pub fn subresource(mut self, subresource: vk::ImageSubresourceRange) -> Self {
+    self.info.subresourceRange = subresource;
+    self
+  }
+  pub fn aspect(mut self, aspect: vk::ImageAspectFlags) -> Self {
+    self.info.subresourceRange.aspectMask = aspect;
+    self
+  }
+
+  pub fn create(&self) -> Result<vk::ImageView, vk::Error> {
+    let mut view = vk::NULL_HANDLE;
+    vk_check!(vk::CreateImageView(self.device, &self.info, std::ptr::null(), &mut view))?;
+    Ok(view)
   }
 }

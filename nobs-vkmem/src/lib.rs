@@ -28,6 +28,8 @@ mod page;
 
 pub use builder::Buffer;
 pub use builder::Image;
+pub use builder::ImageView;
+pub use builder::Resource;
 pub use mapped::Mapped;
 pub use page::BindType;
 
@@ -388,16 +390,16 @@ impl AllocatorSizes {
 ///   .size(std::mem::size_of::<Ub>() as vk::DeviceSize)
 ///   .usage(vk::BUFFER_USAGE_TRANSFER_DST_BIT | vk::BUFFER_USAGE_UNIFORM_BUFFER_BIT)
 ///   .devicelocal(false)
-///   .next_buffer(&mut buf_out)
+///   .new_buffer(&mut buf_out)
 ///   .size(123 * std::mem::size_of::<u32>() as vk::DeviceSize)
 ///   .usage(vk::BUFFER_USAGE_TRANSFER_DST_BIT | vk::BUFFER_USAGE_STORAGE_BUFFER_BIT)
 ///   .devicelocal(false)
-///   .next_image(&mut img)
+///   .new_image(&mut img)
 ///   .image_type(vk::IMAGE_TYPE_2D)
 ///   .size(123, 123, 1)
 ///   .usage(vk::IMAGE_USAGE_SAMPLED_BIT)
 ///   .devicelocal(true)
-///   .next_buffer(&mut bb)
+///   .new_buffer(&mut bb)
 ///   .size(123 * std::mem::size_of::<u32>() as vk::DeviceSize)
 ///   .usage(vk::BUFFER_USAGE_TRANSFER_DST_BIT | vk::BUFFER_USAGE_STORAGE_BUFFER_BIT)
 ///   .devicelocal(true)
@@ -687,7 +689,7 @@ impl Allocator {
   /// Note that memory bindings of not destroyed resources can not be rearranged, since vulkan does not allow rebinding a buffer/image to a different location.
   ///
   /// # Example
-  /// ```rust,no_run
+  /// ```rust
   /// # extern crate nobs_vk as vk;
   /// # extern crate nobs_vkmem as vkmem;
   /// # fn main() {
@@ -715,7 +717,7 @@ impl Allocator {
   /// #   .size(12)
   /// #   .usage(vk::BUFFER_USAGE_TRANSFER_DST_BIT | vk::BUFFER_USAGE_UNIFORM_BUFFER_BIT)
   /// #   .devicelocal(false)
-  /// #   .next_image(&mut img)
+  /// #   .new_image(&mut img)
   /// #   .image_type(vk::IMAGE_TYPE_2D)
   /// #   .size(123, 123, 1)
   /// #   .usage(vk::IMAGE_USAGE_SAMPLED_BIT)
