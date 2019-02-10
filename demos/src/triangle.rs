@@ -71,9 +71,11 @@ pub fn main() {
     .create()
     .unwrap();
 
-  let fb = vk::fb::new_framebuffer(device.handle, pass)
-    .target(im_depth, view_depth, vk::fb::clear_colorf32([0.0, 0.0, 0.0, 0.0]))
-    .target(im_color, view_color, vk::fb::clear_depth(0.0));
+  let fb = vk::fb::new_framebuffer(device.handle, pass.pass)
+    .extent(vk::Extent2D { width: 512, height: 512 })
+    .target(im_depth, view_depth, vk::fb::clear_depth(0.0))
+    .target(im_color, view_color, vk::fb::clear_colorf32([0.0, 0.0, 0.0, 0.0]))
+    .create();
 
   events_loop.run_forever(|event| {
     println!("{:?}", event);

@@ -3,7 +3,24 @@ use std::collections::HashMap;
 use vk;
 
 use crate::fb::Error;
-use crate::mem;
+
+pub struct Renderpass {
+  pub device: vk::Device,
+  pub pass: vk::RenderPass,
+  pub attachments: Vec<vk::AttachmentDescription>,
+}
+
+impl Drop for Renderpass {
+  fn drop(&mut self) {
+    vk::DestroyRenderPass(self.device, self.pass, std::ptr::null());
+  }
+}
+
+impl Renderpass {
+  pub fn get_pass(&self) -> vk::RenderPass {
+    self.pass
+  }
+}
 
 #[derive(Clone, Copy)]
 pub struct AttachmentBuilder {
@@ -216,13 +233,13 @@ impl DependencyBuilder {
 }
 
 pub struct Builder {
-  device: vk::Device,
+  pub device: vk::Device,
 
-  attachments: HashMap<u32, vk::AttachmentDescription>,
-  depth: Option<u32>,
+  pub attachments: HashMap<u32, vk::AttachmentDescription>,
+  pub depth: Option<u32>,
 
-  subpasses: HashMap<u32, SubpassBuilder>,
-  dependencies: Vec<vk::SubpassDependency>,
+  pub subpasses: HashMap<u32, SubpassBuilder>,
+  pub dependencies: Vec<vk::SubpassDependency>,
 }
 
 impl Builder {
@@ -254,7 +271,7 @@ impl Builder {
     self
   }
 
-  pub fn create(&self) -> Result<vk::RenderPass, Error> {
+  pub fn create(&self) -> Result<Renderpass, Error> {
     for i in 0..self.subpasses.len() {
       match self.subpasses.get(&(i as u32)) {
         None => Err(Error::MissingSubpass(i))?,
@@ -266,8 +283,14 @@ impl Builder {
       }
     }
 
-    let subpasses: Vec<_> = self.subpasses.iter().map(|(_, b)| b.get_desc()).collect();
-    let attachments: Vec<_> = self.attachments.iter().map(|(_, a)| a).cloned().collect();
+    let mut subpasses = Vec::with_capacity(self.subpasses.len());
+    for i in 0..self.subpasses.len() {
+      subpasses.push(self.subpasses[&(i as u32)].get_desc());
+    }
+    let mut attachments = Vec::with_capacity(self.attachments.len());
+    for i in 0..self.attachments.len() {
+      attachments.push(self.attachments[&(i as u32)]);
+    }
 
     let info = vk::RenderPassCreateInfo {
       sType: vk::STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
@@ -283,57 +306,10 @@ impl Builder {
 
     let mut pass = vk::NULL_HANDLE;
     vk_check!(vk::CreateRenderPass(self.device, &info, std::ptr::null(), &mut pass)).map_err(|e| Error::CreateRenderPass(e))?;
-    Ok(pass)
+    Ok(Renderpass {
+      device: self.device,
+      pass,
+      attachments: attachments.clone(),
+    })
   }
-}
-
-pub struct Renderpass {
-  device: vk::Device,
-  pass: vk::RenderPass,
-
-  attachments: Vec<vk::AttachmentDescription>,
-}
-
-impl Drop for Renderpass {
-  fn drop(&mut self) {
-    vk::DestroyRenderPass(self.device, self.pass, std::ptr::null());
-  }
-}
-
-impl Renderpass {
-  pub fn get_pass(&self) -> vk::RenderPass {
-    self.pass
-  }
-}
-
-struct RenderpassFramebufferBuilder<'a, 'b> {
-  alloc: &'a mem::Allocator,
-  pass: &'b Renderpass,
-  images: Vec<vk::Image>,
-}
-
-impl<'a, 'b> RenderpassFramebufferBuilder<'a, 'b> {
-  pub fn new(pass: &'b Renderpass, alloc: &'a mem::Allocator) -> Self {
-    let mut images = Vec::new();
-    images.resize(pass.attachments.len(), vk::NULL_HANDLE);
-    Self { alloc, pass, images }
-  }
-  pub fn target(mut self, index: usize, image: vk::Image) -> Self {
-    debug_assert!(index < self.images.len());
-    self.images[index] = image;
-    self
-  }
-
-  // TODO: create images for every null handle
-  // TODO: create image views
-  //pub fn create(mut self) -> crate::fb::Framebuffer {
-
-  //  //for i in images {
-  //  //  if i == vk::NULL_HANDLE {
-  //  //    let
-  //  //  }
-  //  //}
-
-  //  //crate::fb::new_framebuffer()
-  //}
 }

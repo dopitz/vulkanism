@@ -2,6 +2,7 @@ mod framebuffer;
 mod renderpass;
 
 pub use framebuffer::Framebuffer;
+pub use renderpass::Renderpass;
 pub use renderpass::AttachmentBuilder;
 pub use renderpass::Builder as RenderpassBuilder;
 pub use renderpass::DependencyBuilder;

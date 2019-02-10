@@ -136,6 +136,10 @@ impl<'a> ResourceBuilder<'a> {
 ///     .submit()
 /// }
 /// builder.bind(&mut allocator, vkmem::BindType::Scatter);
+///
+/// assert!(handles[0] != vk::NULL_HANDLE);
+/// assert!(handles[1] != vk::NULL_HANDLE);
+/// assert!(handles[2] != vk::NULL_HANDLE);
 /// # }
 /// ```
 pub struct Resource<'a> {
