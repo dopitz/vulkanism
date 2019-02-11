@@ -50,42 +50,28 @@ pub fn main() {
     .create()
     .unwrap();
 
-  let mut im_color = vk::NULL_HANDLE;
-  let mut im_depth = vk::NULL_HANDLE;
-  vk::mem::Image::new(&mut im_color)
-    .color_attachment(512, 512, vk::FORMAT_B8G8R8A8_SRGB)
-    .new_image(&mut im_depth)
-    .depth_attachment(512, 512, depth_format)
-    .bind(&mut alloc, vk::mem::BindType::Block)
-    .unwrap();
-
-  // TODO aspect
-  let view_color = vk::mem::ImageView::new(device.handle, im_color)
-    .format(vk::FORMAT_B8G8R8A8_SRGB)
-    .aspect(vk::IMAGE_ASPECT_COLOR_BIT)
-    .create()
-    .unwrap();
-  let view_depth = vk::mem::ImageView::new(device.handle, im_depth)
-    .format(depth_format)
-    .aspect(vk::IMAGE_ASPECT_DEPTH_BIT)
-    .create()
-    .unwrap();
-
-  let fb = vk::fb::new_framebuffer(device.handle, pass.pass)
+  let fb = vk::fb::new_framebuffer_from_pass(&pass, &mut alloc)
     .extent(vk::Extent2D { width: 512, height: 512 })
-    .target(im_depth, view_depth, vk::fb::clear_depth(0.0))
-    .target(im_color, view_color, vk::fb::clear_colorf32([0.0, 0.0, 0.0, 0.0]))
     .create();
 
-  events_loop.run_forever(|event| {
-    println!("{:?}", event);
 
-    match event {
-      winit::Event::WindowEvent {
-        event: winit::WindowEvent::CloseRequested,
-        ..
-      } => winit::ControlFlow::Break,
-      _ => winit::ControlFlow::Continue,
+  println!("{:?}", sc.images);
+
+  println!("{:?}", fb.images);
+  println!("{:?}", fb.views);
+
+  events_loop.run_forever(|event| match event {
+    winit::Event::WindowEvent {
+      event: winit::WindowEvent::CloseRequested,
+      ..
+    } => winit::ControlFlow::Break,
+    winit::Event::WindowEvent {
+      event: winit::WindowEvent::ReceivedCharacter(c),
+      ..
+    } => {
+      println!("{}", c);
+      winit::ControlFlow::Continue
     }
+    _ => winit::ControlFlow::Continue,
   });
 }

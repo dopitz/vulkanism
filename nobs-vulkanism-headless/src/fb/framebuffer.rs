@@ -7,13 +7,13 @@ use crate::fb::Renderpass;
 
 pub struct Framebuffer {
   device: vk::Device,
-  pass: vk::RenderPass,
-  fb: vk::Framebuffer,
+  pub pass: vk::RenderPass,
+  pub handle: vk::Framebuffer,
 
-  extent: vk::Extent2D,
-  images: Vec<vk::Image>,
-  views: Vec<vk::ImageView>,
-  clear: Vec<vk::ClearValue>,
+  pub extent: vk::Extent2D,
+  pub images: Vec<vk::Image>,
+  pub views: Vec<vk::ImageView>,
+  pub clear: Vec<vk::ClearValue>,
 }
 
 impl Framebuffer {
@@ -25,33 +25,19 @@ impl Framebuffer {
   }
 
   pub fn begin_area(&self, area: vk::Rect2D) -> cmd::RenderpassBegin {
-    *cmd::RenderpassBegin::new(self.pass, self.fb).clear(&self.clear).area(area)
+    *cmd::RenderpassBegin::new(self.pass, self.handle).clear(&self.clear).area(area)
   }
   pub fn begin(&self) -> cmd::RenderpassBegin {
-    *cmd::RenderpassBegin::new(self.pass, self.fb).clear(&self.clear).extent(self.extent)
+    *cmd::RenderpassBegin::new(self.pass, self.handle).clear(&self.clear).extent(self.extent)
   }
   pub fn end(&self) -> cmd::RenderpassEnd {
     cmd::RenderpassEnd {}
-  }
-
-  pub fn get_pass(&self) -> vk::RenderPass {
-    self.pass
-  }
-  pub fn get_fb(&self) -> vk::Framebuffer {
-    self.fb
-  }
-
-  pub fn get_images(&self) -> &[vk::Image] {
-    &self.images
-  }
-  pub fn get_views(&self) -> &[vk::ImageView] {
-    &self.views
   }
 }
 
 impl Drop for Framebuffer {
   fn drop(&mut self) {
-    vk::DestroyFramebuffer(self.device, self.fb, std::ptr::null());
+    vk::DestroyFramebuffer(self.device, self.handle, std::ptr::null());
 
     for v in self.views.iter() {
       vk::DestroyImageView(self.device, *v, std::ptr::null())
@@ -105,12 +91,12 @@ impl Builder {
       layers: 1,
     };
 
-    let mut fb = vk::NULL_HANDLE;
-    vk::CreateFramebuffer(self.device, &info, std::ptr::null(), &mut fb);
+    let mut handle = vk::NULL_HANDLE;
+    vk::CreateFramebuffer(self.device, &info, std::ptr::null(), &mut handle);
     Framebuffer {
       device: self.device,
       pass: self.pass,
-      fb: fb,
+      handle,
       extent: self.extent,
       images: self.images.clone(),
       views: self.views.clone(),
@@ -119,7 +105,7 @@ impl Builder {
   }
 }
 
-struct RenderpassFramebufferBuilder<'a, 'b> {
+pub struct RenderpassFramebufferBuilder<'a, 'b> {
   alloc: &'a mut mem::Allocator,
   pass: &'b Renderpass,
   images: Vec<vk::Image>,
@@ -149,7 +135,7 @@ impl<'a, 'b> RenderpassFramebufferBuilder<'a, 'b> {
     self
   }
 
-  pub fn create(mut self) -> crate::fb::Framebuffer {
+  pub fn create(mut self) -> Framebuffer {
     fn is_depth(format: vk::Format) -> bool {
       crate::fb::DEPTH_FORMATS.iter().find(|f| **f == format).is_some()
     }

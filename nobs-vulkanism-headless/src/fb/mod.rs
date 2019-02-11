@@ -2,10 +2,10 @@ mod framebuffer;
 mod renderpass;
 
 pub use framebuffer::Framebuffer;
-pub use renderpass::Renderpass;
 pub use renderpass::AttachmentBuilder;
 pub use renderpass::Builder as RenderpassBuilder;
 pub use renderpass::DependencyBuilder;
+pub use renderpass::Renderpass;
 pub use renderpass::SubpassBuilder;
 
 #[derive(Debug)]
@@ -33,6 +33,13 @@ pub fn new_pass(device: vk::Device) -> renderpass::Builder {
 
 pub fn new_framebuffer(device: vk::Device, pass: vk::RenderPass) -> framebuffer::Builder {
   framebuffer::Builder::new(device, pass)
+}
+
+pub fn new_framebuffer_from_pass<'a, 'b>(
+  pass: &'b Renderpass,
+  alloc: &'a mut crate::mem::Allocator,
+) -> framebuffer::RenderpassFramebufferBuilder<'a, 'b> {
+  framebuffer::RenderpassFramebufferBuilder::new(pass, alloc)
 }
 
 pub fn clear_colorf32(c: [f32; 4]) -> vk::ClearValue {
