@@ -429,3 +429,107 @@ impl StreamPush for RenderpassEnd {
     vk::CmdEndRenderPass(cb);
   }
 }
+
+/// Blits src to dst
+#[derive(Clone, Copy)]
+pub struct Blit {
+  region: vk::ImageBlit,
+  src: vk::Image,
+  dst: vk::Image,
+  filter: vk::Filter,
+}
+
+impl Blit {
+  pub fn new() -> Blit {
+    Self {
+      region: vk::ImageBlit {
+        srcSubresource: vk::ImageSubresourceLayers {
+          aspectMask: vk::IMAGE_ASPECT_COLOR_BIT,
+          mipLevel: 0,
+          baseArrayLayer: 0,
+          layerCount: 1,
+        },
+        srcOffsets: [vk::Offset3D { x: 0, y: 0, z: 0 }, vk::Offset3D { x: 0, y: 0, z: 0 }],
+        dstSubresource: vk::ImageSubresourceLayers {
+          aspectMask: vk::IMAGE_ASPECT_COLOR_BIT,
+          mipLevel: 0,
+          baseArrayLayer: 0,
+          layerCount: 1,
+        },
+        dstOffsets: [vk::Offset3D { x: 0, y: 0, z: 0 }, vk::Offset3D { x: 0, y: 0, z: 0 }],
+      },
+      src: vk::NULL_HANDLE,
+      dst: vk::NULL_HANDLE,
+      filter: vk::FILTER_LINEAR,
+    }
+  }
+
+  pub fn src(&mut self, img: vk::Image) -> &mut Self {
+    self.src = img;
+    self
+  }
+
+  pub fn src_subresource(&mut self, subresource: vk::ImageSubresourceLayers) -> &mut Self {
+    self.region.srcSubresource = subresource;
+    self
+  }
+
+  pub fn src_offset_begin(&mut self, x: i32, y: i32, z: i32) -> &mut Self {
+    self.region.srcOffsets[0] = vk::Offset3D { x, y, z };
+    self
+  }
+
+  pub fn src_offset_end(&mut self, x: i32, y: i32, z: i32) -> &mut Self {
+    self.region.srcOffsets[1] = vk::Offset3D { x, y, z };
+    self
+  }
+
+  pub fn dst(&mut self, img: vk::Image) -> &mut Self {
+    self.dst = img;
+    self
+  }
+
+  pub fn dst_subresource(&mut self, subresource: vk::ImageSubresourceLayers) -> &mut Self {
+    self.region.dstSubresource = subresource;
+    self
+  }
+
+  pub fn dst_offset_begin(&mut self, x: i32, y: i32, z: i32) -> &mut Self {
+    self.region.dstOffsets[0] = vk::Offset3D { x, y, z };
+    self
+  }
+
+  pub fn dst_offset_end(&mut self, x: i32, y: i32, z: i32) -> &mut Self {
+    self.region.dstOffsets[1] = vk::Offset3D { x, y, z };
+    self
+  }
+
+  pub fn filter(&mut self, filter: vk::Filter) -> &mut Self {
+    self.filter = filter;
+    self
+  }
+}
+
+impl StreamPush for Blit {
+  fn enqueue(&self, cb: vk::CommandBuffer) {
+    ImageBarrier::new(self.src)
+      .to(vk::IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, vk::ACCESS_COLOR_ATTACHMENT_WRITE_BIT)
+      .enqueue(cb);
+    ImageBarrier::new(self.dst)
+      .to(vk::IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, vk::ACCESS_TRANSFER_WRITE_BIT)
+      .enqueue(cb);
+    vk::CmdBlitImage(
+      cb,
+      self.src,
+      vk::IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+      self.dst,
+      vk::IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+      1,
+      &self.region,
+      self.filter,
+    );
+    ImageBarrier::new(self.dst)
+      .to(vk::IMAGE_LAYOUT_PRESENT_SRC_KHR, vk::ACCESS_COLOR_ATTACHMENT_READ_BIT)
+      .enqueue(cb);
+  }
+}

@@ -1,9 +1,8 @@
 use crate::cmd;
 use vk;
 
-use crate::mem;
 use crate::fb::Renderpass;
-
+use crate::mem;
 
 pub struct Framebuffer {
   device: vk::Device,
@@ -28,7 +27,9 @@ impl Framebuffer {
     *cmd::RenderpassBegin::new(self.pass, self.handle).clear(&self.clear).area(area)
   }
   pub fn begin(&self) -> cmd::RenderpassBegin {
-    *cmd::RenderpassBegin::new(self.pass, self.handle).clear(&self.clear).extent(self.extent)
+    *cmd::RenderpassBegin::new(self.pass, self.handle)
+      .clear(&self.clear)
+      .extent(self.extent)
   }
   pub fn end(&self) -> cmd::RenderpassEnd {
     cmd::RenderpassEnd {}
@@ -190,6 +191,6 @@ impl<'a, 'b> RenderpassFramebufferBuilder<'a, 'b> {
         },
       );
     }
-    builder.create()
+    builder.extent(self.extent).create()
   }
 }

@@ -2,7 +2,13 @@ extern crate nobs_vulkanism as vk;
 
 use vk::winit;
 
-pub fn main() {
+pub fn setup_vulkan_window() -> (
+  vk::instance::Instance,
+  vk::device::PhysicalDevice,
+  vk::device::Device,
+  winit::EventsLoop,
+  vk::wnd::Window,
+) {
   let lib = vk::Core::new();
   let inst = vk::instance::new()
     .validate(vk::DEBUG_REPORT_ERROR_BIT_EXT | vk::DEBUG_REPORT_WARNING_BIT_EXT)
@@ -37,8 +43,17 @@ pub fn main() {
     .create()
     .unwrap();
 
-  let sc = vk::wnd::Swapchain::build(inst.handle, pdevice.handle, device.handle, window.surface).new();
-  let mut alloc = vk::mem::Allocator::new(pdevice.handle, device.handle);
+  (inst, pdevice, device, events_loop, window)
+}
+
+pub fn setup_rendertargets(
+  inst: &vk::instance::Instance,
+  pdevice: &vk::device::PhysicalDevice,
+  device: &vk::device::Device,
+  window: &vk::wnd::Window,
+  alloc: &mut vk::mem::Allocator,
+) -> (vk::wnd::Swapchain, vk::fb::Renderpass, Vec<vk::fb::Framebuffer>) {
+  let sc = vk::wnd::Swapchain::build(inst.handle, pdevice.handle, device.handle, window.surface).create();
 
   let depth_format = vk::fb::select_depth_format(pdevice.handle, vk::fb::DEPTH_FORMATS).unwrap();
 
@@ -50,28 +65,64 @@ pub fn main() {
     .create()
     .unwrap();
 
-  let fb = vk::fb::new_framebuffer_from_pass(&pass, &mut alloc)
-    .extent(vk::Extent2D { width: 512, height: 512 })
-    .create();
+  let fbs = vec![
+    vk::fb::new_framebuffer_from_pass(&pass, alloc).extent(sc.extent).create(),
+    vk::fb::new_framebuffer_from_pass(&pass, alloc).extent(sc.extent).create(),
+    vk::fb::new_framebuffer_from_pass(&pass, alloc).extent(sc.extent).create(),
+  ];
+  (sc, pass, fbs)
+}
 
+pub fn main() {
+  let (inst, pdevice, device, mut events_loop, window) = setup_vulkan_window();
 
-  println!("{:?}", sc.images);
+  let mut alloc = vk::mem::Allocator::new(pdevice.handle, device.handle);
+  let mut cmds = vk::cmd::Pool::new(device.handle, device.queues[0].family, 3).unwrap();
 
-  println!("{:?}", fb.images);
-  println!("{:?}", fb.views);
+  let (mut sc, rp, fbs) = setup_rendertargets(&inst, &pdevice, &device, &window, &mut alloc);
 
-  events_loop.run_forever(|event| match event {
-    winit::Event::WindowEvent {
-      event: winit::WindowEvent::CloseRequested,
-      ..
-    } => winit::ControlFlow::Break,
-    winit::Event::WindowEvent {
-      event: winit::WindowEvent::ReceivedCharacter(c),
-      ..
-    } => {
-      println!("{}", c);
-      winit::ControlFlow::Continue
+  let t = std::time::SystemTime::now();
+  let mut n = 0;
+
+  let mut close = false;
+  let mut x = 'x';
+  loop {
+    events_loop.poll_events(|event| match event {
+      winit::Event::WindowEvent {
+        event: winit::WindowEvent::CloseRequested,
+        ..
+      } => close = true,
+      winit::Event::WindowEvent {
+        event: winit::WindowEvent::ReceivedCharacter(c),
+        ..
+      } => x = c,
+      _ => (),
+    });
+
+    let i = cmds.next_frame();
+    let next = sc.next_image();
+    let fb = &fbs[i];
+
+    let wait = cmds
+      .begin(device.queues[0])
+      .unwrap()
+      .wait_for(next.signal, vk::PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT)
+      .push(vk::cmd::ImageBarrier::new(fb.images[1]).to(vk::IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, vk::ACCESS_COLOR_ATTACHMENT_WRITE_BIT))
+      //.push(&vk::cmd::BindPipeline::compute(p.handle))
+      //.push(&vk::cmd::BindDset::new(vk::PIPELINE_BIND_POINT_COMPUTE, p.layout, 0, ds))
+      //.push(&vk::cmd::Dispatch::xyz(1, 1, 1))
+      .push(&sc.blit(next.index, fb.images[1]))
+      .submit_signals();
+
+    sc.present(device.queues[0].handle, next.index, &[wait]);
+    n += 1;
+
+    if close {
+      break;
     }
-    _ => winit::ControlFlow::Continue,
-  });
+  }
+
+  let t = t.elapsed().unwrap();
+  let t = t.as_secs() as f32 + t.subsec_millis() as f32 / 1000.0;
+  println!("{}, {}   {}", n, t, n as f32 / t);
 }

@@ -1,11 +1,20 @@
 use vk;
 
+#[derive(Debug)]
+pub struct NextImage {
+  pub signal: vk::Semaphore,
+  pub index: u32,
+}
+
 pub struct Swapchain {
   device: vk::Device,
   ext: vk::DeviceExtensions,
+  sig_index: usize,
+  pub extent: vk::Extent2D,
   pub handle: vk::SwapchainKHR,
   pub images: Vec<vk::Image>,
   pub views: Vec<vk::ImageView>,
+  pub signals: Vec<vk::Semaphore>,
 }
 
 impl Drop for Swapchain {
@@ -13,89 +22,35 @@ impl Drop for Swapchain {
     for v in self.views.iter() {
       vk::DestroyImageView(self.device, *v, std::ptr::null());
     }
+    for s in self.signals.iter() {
+      vk::DestroySemaphore(self.device, *s, std::ptr::null());
+    }
     self.ext.DestroySwapchainKHR(self.device, self.handle, std::ptr::null());
   }
 }
 
 impl Swapchain {
   pub fn build(inst: vk::Instance, pdevice: vk::PhysicalDevice, device: vk::Device, surface: vk::SurfaceKHR) -> Builder {
-    Builder::init(inst, pdevice, device, surface)
+    Builder::new(inst, pdevice, device, surface)
   }
 
-  //swapchain::next_img swapchain::acquire_next_image() {
-  //  uint32_t index;
-  //  LOGVK(vkAcquireNextImageKHR(_device->get_device_handle(), _handle, std::numeric_limits<uint64_t>::max(), _signal_next_image, VK_NULL_HANDLE, &index));
-  //  return {_signal_next_image, index};
-  //}
-  //swapchain::command_blit swapchain::blit(h_image im, uint32_t sc_image_index, VkImageLayout final_layout, VkAccessFlags access) {
-  //  auto& img = *im;
-  //  command_blit blit;
-  //  blit.region.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-  //  blit.region.srcSubresource.mipLevel = 0;
-  //  blit.region.srcSubresource.baseArrayLayer = 0;
-  //  blit.region.srcSubresource.layerCount = 1;
-  //  blit.region.srcOffsets[0] = {0, 0, 0};
-  //  blit.region.srcOffsets[1] = {static_cast<int32_t>(img.get_dim().x), static_cast<int32_t>(img.get_dim().y), 1};
-  //  blit.region.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-  //  blit.region.dstSubresource.mipLevel = 0;
-  //  blit.region.dstSubresource.baseArrayLayer = 0;
-  //  blit.region.dstSubresource.layerCount = 1;
-  //  blit.region.dstOffsets[0] = {0, 0, 0};
-  //  blit.region.dstOffsets[1] = {_image_size.x, _image_size.y, 1};
+  pub fn next_image(&mut self) -> NextImage {
+    let signal = self.signals[self.sig_index];
+    let mut index = 0;
+    self.sig_index = (self.sig_index + 1) % self.signals.len();
+    self
+      .ext
+      .AcquireNextImageKHR(self.device, self.handle, u64::max_value(), signal, vk::NULL_HANDLE, &mut index);
+    NextImage { signal, index }
+  }
 
-  //  blit.src = img.get_handle();
-  //  blit.src_final_layout = final_layout;
-  //  blit.src_access = access;
-  //  blit.dst = _images[sc_image_index];
-  //  blit.filter = VK_FILTER_LINEAR;
-
-  //  return blit;
-  //}
-  //swapchain::command_blit swapchain::blit(next_img& next, h_image im, VkImageLayout final_layout, VkPipelineStageFlags stage) {
-  //  next = acquire_next_image();
-  //  return blit(im, next.index, final_layout, stage);
-  //}
-  //swapchain::command_resolve swapchain::resolve(h_image im, uint32_t sc_image_index, VkImageLayout final_layout, VkAccessFlags access) {
-  //  auto& img = *im;
-  //  command_resolve resolve;
-  //  resolve.region.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-  //  resolve.region.srcSubresource.mipLevel = 0;
-  //  resolve.region.srcSubresource.baseArrayLayer = 0;
-  //  resolve.region.srcSubresource.layerCount = 1;
-  //  resolve.region.srcOffset = {0, 0, 0};
-  //  resolve.region.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-  //  resolve.region.dstSubresource.mipLevel = 0;
-  //  resolve.region.dstSubresource.baseArrayLayer = 0;
-  //  resolve.region.dstSubresource.layerCount = 1;
-  //  resolve.region.dstOffset = {0, 0, 0};
-  //  resolve.region.extent = {img.get_dim().x, img.get_dim().y, 1};
-
-  //  resolve.src = img.get_handle();
-  //  resolve.src_final_layout = final_layout;
-  //  resolve.src_access = access;
-  //  resolve.dst = _images[sc_image_index];
-
-  //  return resolve;
-  //}
-  //swapchain::command_resolve swapchain::resolve(next_img& next, h_image im, VkImageLayout final_layout, VkPipelineStageFlags stage) {
-  //  next = acquire_next_image();
-  //  return resolve(im, next.index, final_layout, stage);
-  //}
-  //swapchain::command_blit_resolve swapchain::blit(
-  //    VkSampleCountFlagBits sample_count, h_image im, uint32_t sc_image_index, VkImageLayout final_layout, VkAccessFlags access) {
-  //  command_blit_resolve br;
-  //  if (sample_count == VK_SAMPLE_COUNT_1_BIT)
-  //    br.cmd.blit = blit(im, sc_image_index, final_layout, access);
-  //  else
-  //    br.cmd.resolve = resolve(im, sc_image_index, final_layout, access);
-  //  br.sample_count = sample_count;
-  //  return br;
-  //}
-  //swapchain::command_blit_resolve swapchain::blit(
-  //    VkSampleCountFlagBits sample_count, next_img& next, h_image im, VkImageLayout final_layout, VkAccessFlags access) {
-  //  next = acquire_next_image();
-  //  return blit(sample_count, im, next.index, final_layout, access);
-  //}
+  pub fn blit(&self, index: u32, src: vk::Image) -> vk::cmd::Blit {
+    *vk::cmd::Blit::new()
+      .src(src)
+      .src_offset_end(self.extent.width as i32, self.extent.height as i32, 1)
+      .dst(self.images[index as usize])
+      .dst_offset_end(self.extent.width as i32, self.extent.height as i32, 1)
+  }
 
   pub fn present(&self, q: vk::Queue, sc_image_index: u32, wait_for: &[vk::Semaphore]) {
     let present_info = vk::PresentInfoKHR {
@@ -111,29 +66,6 @@ impl Swapchain {
 
     self.ext.QueuePresentKHR(q, &present_info);
   }
-
-  //VkSemaphore swapchain::get_signal_next_image() {
-  //  return _signal_next_image;
-  //}
-
-  //float swapchain::get_aspect() const {
-  //  return _image_size.x / (float)_image_size.y;
-  //}
-  //math::vec2i swapchain::get_size() const {
-  //  return _image_size;
-  //}
-  //VkExtent2D swapchain::get_extent() const {
-  //  return {uint32_t(_image_size.x), uint32_t(_image_size.y)};
-  //}
-  //VkFormat swapchain::get_format() const {
-  //  return _image_format;
-  //}
-  //VkColorSpaceKHR swapchain::get_colorspace() const {
-  //  return _image_colorspace;
-  //}
-  //VkPresentModeKHR swapchain::get_presentmode() const {
-  //  return _presentmode;
-  //}
 }
 
 pub struct Builder {
@@ -188,7 +120,7 @@ impl Builder {
     }
   }
 
-  fn init(inst: vk::Instance, pdevice: vk::PhysicalDevice, device: vk::Device, surface: vk::SurfaceKHR) -> Self {
+  fn new(inst: vk::Instance, pdevice: vk::PhysicalDevice, device: vk::Device, surface: vk::SurfaceKHR) -> Self {
     // surface capabilities
     let mut capabilities = unsafe { std::mem::uninitialized() };
     let ext = vk::InstanceExtensions::new(inst);
@@ -253,7 +185,7 @@ impl Builder {
     self
   }
 
-  pub fn new(self) -> Swapchain {
+  pub fn create(self) -> Swapchain {
     let device = self.device;
     let ext = vk::DeviceExtensions::new(device);
 
@@ -298,17 +230,27 @@ impl Builder {
       views.push(view);
     }
 
-    //VkSemaphoreCreateInfo semaphore_info = {};
-    //semaphore_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-    //VkSemaphore signal_next_image;
-    //CREATE_FAIL(vkCreateSemaphore(dh, &semaphore_info, nullptr, &signal_next_image), "semaphor create failed");
+    let mut signals = Vec::with_capacity(image_count as usize);
+    for _i in 0..image_count as usize {
+      let mut sig = vk::NULL_HANDLE;
+      let info = vk::SemaphoreCreateInfo {
+        sType: vk::STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
+        pNext: std::ptr::null(),
+        flags: 0,
+      };
+      vk::CreateSemaphore(device, &info, std::ptr::null(), &mut sig);
+      signals.push(sig);
+    }
 
     Swapchain {
       device,
       ext,
+      sig_index: 0,
+      extent: self.info.imageExtent,
       handle,
       images,
       views,
+      signals,
     }
   }
 }

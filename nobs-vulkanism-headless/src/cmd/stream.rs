@@ -121,19 +121,19 @@ impl Pool {
     g.streams.push(stream);
   }
 
-  pub fn swap(&mut self) -> Result<(), vk::Error> {
+  pub fn next_frame(&mut self) -> usize {
     self.group_index = (self.group_index + 1) % self.groups.len();
     let g = &mut self.groups[self.group_index];
 
     // wait until the group is finished
     if !g.fences.is_empty() {
-      vk_check!(vk::WaitForFences(
+      vk_uncheck!(vk::WaitForFences(
         self.device,
         g.fences.len() as u32,
         g.fences.as_ptr(),
         vk::TRUE,
         u64::max_value()
-      ))?;
+      ));
     }
 
     // put streams back into unused buffer
@@ -143,7 +143,13 @@ impl Pool {
 
     g.fences.clear();
     g.streams.clear();
-    Ok(())
+    self.group_index as usize
+  }
+
+  pub fn wait_all(&mut self) {
+    for _i in 0..self.groups.len() {
+      self.next_frame();
+    }
   }
 }
 
