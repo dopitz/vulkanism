@@ -18,7 +18,7 @@ pub fn setup_vulkan_window() -> (
     .create(lib)
     .unwrap();
 
-  let mut events_loop = winit::EventsLoop::new();
+  let events_loop = winit::EventsLoop::new();
 
   let window = {
     let window = winit::WindowBuilder::new()
@@ -79,7 +79,7 @@ pub fn main() {
   let mut alloc = vk::mem::Allocator::new(pdevice.handle, device.handle);
   let mut cmds = vk::cmd::Pool::new(device.handle, device.queues[0].family, 3).unwrap();
 
-  let (mut sc, rp, fbs) = setup_rendertargets(&inst, &pdevice, &device, &window, &mut alloc);
+  let (mut sc, _rp, fbs) = setup_rendertargets(&inst, &pdevice, &device, &window, &mut alloc);
 
   let t = std::time::SystemTime::now();
   let mut n = 0;
