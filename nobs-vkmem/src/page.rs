@@ -181,7 +181,7 @@ impl PageTable {
       return dst;
     }
 
-    let offset = dst.begin + dst.end - dst.size_aligned(alignment);
+    let offset = dst.begin + dst.size_aligned(alignment) - dst.size();
     let mem = dst.mem;
 
     for b in blocks.iter_mut() {
@@ -539,13 +539,40 @@ impl PageTable {
   /// Print stats abount all pages in yaml format
   pub fn print_stats(&self) -> String {
     let mut s = String::new();
-    for (i, (_, blocks)) in self.collect_pages().iter_mut().enumerate() {
+    for (i, (mem, blocks)) in self.collect_pages().iter_mut().enumerate() {
       write!(s, "MemType: {}\n", self.memtype).unwrap();
       blocks.sort_by_key(|b| b.1.begin);
-      write!(s, "  - Page{}:\n", i).unwrap();
+
+      let mut sum_alloc = 0;
+      let mut sum_free = 0;
+      let mut sum_paddings = 0;
+      let mut n_alloc = 0;
+      let mut n_free = 0;
+
+      write!(s, "  - Page{} ({:x}):\n", i, mem).unwrap();
       for (t, b) in blocks.iter() {
         write!(s, "    - {:?}{{begin: {}, end: {}}}\n", t, b.begin, b.end).unwrap();
+
+        match t {
+          BlockType::Alloc => {
+            sum_alloc += b.size();
+            n_alloc += 1;
+          }
+          BlockType::Free => {
+            sum_free += b.size();
+            n_free += 1;
+          }
+          BlockType::Padded => {
+            sum_paddings += b.size();
+          }
+        }
       }
+
+      write!(s, "    - SumAlloc   = {}\n", sum_alloc);
+      write!(s, "    - SumFree    = {}\n", sum_free);
+      write!(s, "    - SumPadding = {}\n", sum_paddings);
+      write!(s, "    - NAlloc = {}\n", n_alloc);
+      write!(s, "    - NFree  = {}\n", n_free);
     }
     s
   }

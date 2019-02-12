@@ -16,6 +16,7 @@ pub struct Pool {
 
 impl Drop for Pool {
   fn drop(&mut self) {
+    self.wait_all();
     vk::DestroyCommandPool(self.device, self.handle, std::ptr::null());
   }
 }
@@ -46,10 +47,11 @@ impl Pool {
     stream::Pool::stream_begin(&mut self.streams, queue)
   }
 
-  pub fn swap(&mut self) -> Result<(), vk::Error> {
-    if let Ok(mut streams) = self.streams.lock() {
-      streams.swap()?;
-    }
-    Ok(())
+  pub fn next_frame(&mut self) -> usize {
+    self.streams.lock().unwrap().next_frame()
+  }
+
+  pub fn wait_all(&mut self) {
+    self.streams.lock().unwrap().wait_all()
   }
 }
