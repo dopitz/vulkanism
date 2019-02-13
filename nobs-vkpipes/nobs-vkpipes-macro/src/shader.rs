@@ -247,7 +247,7 @@ impl Shader {
   fn write_bindings(&self) -> String {
     format!(
       "
-      pub const bindings: [Binding; {}] = [
+      pub const BINDINGS: [Binding; {}] = [
         {}
       ];
       ",
@@ -265,7 +265,7 @@ impl Shader {
       use {vk_alias};
       use {vkpipes_alias}::pipeline::Binding;
 
-      const spirv: &[u32] = &[
+      const SPIRV: &[u32] = &[
         {spirv}
       ];
 
@@ -274,8 +274,8 @@ impl Shader {
           sType: vk::STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
           pNext: std::ptr::null(),
           flags: 0,
-          codeSize: spirv.len() * std::mem::size_of::<u32>(),
-          pCode: spirv.as_ptr(),
+          codeSize: SPIRV.len() * std::mem::size_of::<u32>(),
+          pCode: SPIRV.as_ptr(),
         }};
   
         let mut module = vk::NULL_HANDLE;

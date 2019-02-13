@@ -13,39 +13,40 @@ use vk;
 /// - dst alpha blend factor: `vk::BLEND_FACTER_ZERO`
 /// - alpha blend op: `vk::BLEND_OP_ADD`
 pub struct Builder {
-  attachments: Vec<vk::PipelineColorBlendAttachmentState>,
-  info: vk::PipelineColorBlendStateCreateInfo,
+  pub attachments: Vec<vk::PipelineColorBlendAttachmentState>,
+  pub info: vk::PipelineColorBlendStateCreateInfo,
 }
 
 impl Builder {
-  pub fn push_attachment<F: Fn(&mut AttachmentBuilder)>(&mut self, f: F) -> &mut Self {
-    let mut builder = Default::default();
-    f(&mut builder);
-    self.attachments.push(*builder.get());
+  pub fn raw(info: vk::PipelineColorBlendStateCreateInfo) -> Self {
+    Self {
+      attachments: Default::default(),
+      info,
+    }
+  }
+
+  pub fn push_attachment(mut self, b: AttachmentBuilder) -> Self {
+    self.attachments.push(b.info);
     self.update()
   }
 
-  pub fn logic_op_enable(&mut self, enable: vk::Bool32) -> &mut Self {
+  pub fn logic_op_enable(mut self, enable: vk::Bool32) -> Self {
     self.info.logicOpEnable = enable;
     self
   }
-  pub fn logic_op(&mut self, op: vk::LogicOp) -> &mut Self {
+  pub fn logic_op(mut self, op: vk::LogicOp) -> Self {
     self.info.logicOp = op;
     self
   }
-  pub fn blend_constants(&mut self, consts: [f32; 4]) -> &mut Self {
+  pub fn blend_constants(mut self, consts: [f32; 4]) -> Self {
     self.info.blendConstants = consts;
     self
   }
 
-  fn update(&mut self) -> &mut Self {
+  fn update(mut self) -> Self {
     self.info.attachmentCount = self.attachments.len() as u32;
     self.info.pAttachments = self.attachments.as_ptr();
     self
-  }
-
-  pub fn get(&self) -> &vk::PipelineColorBlendStateCreateInfo {
-    &self.info
   }
 }
 
@@ -68,36 +69,36 @@ impl Default for Builder {
 }
 
 pub struct AttachmentBuilder {
-  info: vk::PipelineColorBlendAttachmentState,
+  pub info: vk::PipelineColorBlendAttachmentState,
 }
 
 impl AttachmentBuilder {
-  pub fn enable(&mut self, enable: vk::Bool32) -> &mut Self {
+  pub fn raw(info: vk::PipelineColorBlendAttachmentState) -> Self {
+    Self { info }
+  }
+
+  pub fn enable(mut self, enable: vk::Bool32) -> Self {
     self.info.blendEnable = enable;
     self
   }
-  pub fn coloc_write_mask(&mut self, mask: vk::ColorComponentFlags) -> &mut Self {
+  pub fn coloc_write_mask(mut self, mask: vk::ColorComponentFlags) -> Self {
     self.info.colorWriteMask = mask;
     self
   }
-  pub fn color(&mut self, src: vk::BlendFactor, dst: vk::BlendFactor, op: vk::BlendOp) -> &mut Self {
+  pub fn color(mut self, src: vk::BlendFactor, dst: vk::BlendFactor, op: vk::BlendOp) -> Self {
     self.info.srcColorBlendFactor = src;
     self.info.dstColorBlendFactor = dst;
     self.info.colorBlendOp = op;
     self
   }
-  pub fn alpha(&mut self, src: vk::BlendFactor, dst: vk::BlendFactor, op: vk::BlendOp) -> &mut Self {
+  pub fn alpha(mut self, src: vk::BlendFactor, dst: vk::BlendFactor, op: vk::BlendOp) -> Self {
     self.info.srcAlphaBlendFactor = src;
     self.info.dstAlphaBlendFactor = dst;
     self.info.alphaBlendOp = op;
     self
   }
-  pub fn color_and_alpha(&mut self, src: vk::BlendFactor, dst: vk::BlendFactor, op: vk::BlendOp) -> &mut Self {
+  pub fn color_and_alpha(mut self, src: vk::BlendFactor, dst: vk::BlendFactor, op: vk::BlendOp) -> Self {
     self.color(src, dst, op).alpha(src, dst, op)
-  }
-
-  pub fn get(&self) -> &vk::PipelineColorBlendAttachmentState {
-    &self.info
   }
 }
 

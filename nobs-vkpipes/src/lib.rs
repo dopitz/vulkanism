@@ -81,9 +81,21 @@ extern crate nobs_vkpipes_macro;
 pub use nobs_vkpipes_macro::pipeline;
 pub use nobs_vkpipes_macro::shader;
 
-pub mod descriptor;
 pub mod pipeline;
+pub use pipeline::builder::compute::Compute as ComputeBuilder;
+pub use pipeline::builder::graphics::blend::AttachmentBuilder as BlendAttachment;
+pub use pipeline::builder::graphics::blend::Builder as Blend;
+pub use pipeline::builder::graphics::depth_stencil::Builder as DepthStencil;
+pub use pipeline::builder::graphics::dynamic::Builder as Dynamic;
+pub use pipeline::builder::graphics::input_assembly::Builder as InputAssembly;
+pub use pipeline::builder::graphics::multisample::Builder as Multisample;
+pub use pipeline::builder::graphics::raster::Builder as Raster;
+pub use pipeline::builder::graphics::tesselation::Builder as Tesselation;
+pub use pipeline::builder::graphics::vertex_input::Builder as VertexInput;
+pub use pipeline::builder::graphics::viewport::Builder as Viewport;
+pub use pipeline::builder::graphics::Graphics as GraphicsBuilder;
 
+pub mod descriptor;
 pub use descriptor::pool::Pool as DescriptorPool;
 
 /// For usage in build.rs to automatically detect changes in glsl/spv files and force the recompilation of the rust source that references the shader.

@@ -15,53 +15,53 @@ use vk;
 /// - depth bias clamp: `0`
 /// - depth bias solpe factor: `0`
 pub struct Builder {
-  info: vk::PipelineRasterizationStateCreateInfo,
+  pub info: vk::PipelineRasterizationStateCreateInfo,
 }
 
 impl Builder {
-  pub fn depth_clamp_enable(&mut self, enable: vk::Bool32) -> &mut Self {
+  pub fn raw(info: vk::PipelineRasterizationStateCreateInfo) -> Self {
+    Self { info }
+  }
+
+  pub fn depth_clamp_enable(mut self, enable: vk::Bool32) -> Self {
     self.info.depthClampEnable = enable;
     self
   }
-  pub fn discard_enable(&mut self, enable: vk::Bool32) -> &mut Self {
+  pub fn discard_enable(mut self, enable: vk::Bool32) -> Self {
     self.info.rasterizerDiscardEnable = enable;
     self
   }
-  pub fn polygon_mode(&mut self, mode: vk::PolygonMode) -> &mut Self {
+  pub fn polygon_mode(mut self, mode: vk::PolygonMode) -> Self {
     self.info.polygonMode = mode;
     self
   }
-  pub fn line_width(&mut self, width: f32) -> &mut Self {
+  pub fn line_width(mut self, width: f32) -> Self {
     self.info.lineWidth = width;
     self
   }
-  pub fn cull_mode(&mut self, mode: vk::CullModeFlags) -> &mut Self {
+  pub fn cull_mode(mut self, mode: vk::CullModeFlags) -> Self {
     self.info.cullMode = mode;
     self
   }
-  pub fn front_face(&mut self, front_face: vk::FrontFace) -> &mut Self {
+  pub fn front_face(mut self, front_face: vk::FrontFace) -> Self {
     self.info.frontFace = front_face;
     self
   }
-  pub fn depth_bias_enable(&mut self, enable: vk::Bool32) -> &mut Self {
+  pub fn depth_bias_enable(mut self, enable: vk::Bool32) -> Self {
     self.info.depthBiasEnable = enable;
     self
   }
-  pub fn depth_bias_constantfactor(&mut self, f: f32) -> &mut Self {
+  pub fn depth_bias_constantfactor(mut self, f: f32) -> Self {
     self.info.depthBiasConstantFactor = f;
     self
   }
-  pub fn depth_bias_clamp(&mut self, c: f32) -> &mut Self {
+  pub fn depth_bias_clamp(mut self, c: f32) -> Self {
     self.info.depthBiasClamp = c;
     self
   }
-  pub fn depth_bias_slopefactor(&mut self, f: f32) -> &mut Self {
+  pub fn depth_bias_slopefactor(mut self, f: f32) -> Self {
     self.info.depthBiasSlopeFactor = f;
     self
-  }
-
-  pub fn get(&self) -> &vk::PipelineRasterizationStateCreateInfo {
-    &self.info
   }
 }
 

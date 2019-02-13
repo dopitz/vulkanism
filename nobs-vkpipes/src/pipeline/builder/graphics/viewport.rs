@@ -6,32 +6,36 @@ use vk;
 ///  - viewports: none
 ///  - scissor_rects: none
 pub struct Builder {
-  viewports: Vec<vk::Viewport>,
-  scissor_rects: Vec<vk::Rect2D>,
-  info: vk::PipelineViewportStateCreateInfo,
+  pub viewports: Vec<vk::Viewport>,
+  pub scissor_rects: Vec<vk::Rect2D>,
+  pub info: vk::PipelineViewportStateCreateInfo,
 }
 
 impl Builder {
-  pub fn push_viewport(&mut self, vp: vk::Viewport) -> &mut Self {
+  pub fn raw(info: vk::PipelineViewportStateCreateInfo) -> Self {
+    Self {
+      viewports: Default::default(),
+      scissor_rects: Default::default(),
+      info,
+    }
+  }
+
+  pub fn push_viewport(mut self, vp: vk::Viewport) -> Self {
     self.viewports.push(vp);
     self.update()
   }
 
-  pub fn push_scissors_rect(&mut self, rect: vk::Rect2D) -> &mut Self {
+  pub fn push_scissors_rect(mut self, rect: vk::Rect2D) -> Self {
     self.scissor_rects.push(rect);
     self.update()
   }
 
-  fn update(&mut self) -> &mut Self {
+  fn update(mut self) -> Self {
     self.info.viewportCount = self.viewports.len() as u32;
     self.info.pViewports = self.viewports.as_ptr();
     self.info.scissorCount = self.scissor_rects.len() as u32;
     self.info.pScissors = self.scissor_rects.as_ptr();
     self
-  }
-
-  pub fn get(&self) -> &vk::PipelineViewportStateCreateInfo {
-    &self.info
   }
 }
 

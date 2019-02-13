@@ -7,21 +7,21 @@ use vk;
 /// - primitive topology: `vk::PRIMITIVE_TOPOLOGY_TRIANGLE_LIST`
 /// - primiteve restart: disabled
 pub struct Builder {
-  info: vk::PipelineInputAssemblyStateCreateInfo,
+  pub info: vk::PipelineInputAssemblyStateCreateInfo,
 }
 
 impl Builder {
-  pub fn topology(&mut self, topology: vk::PrimitiveTopology) -> &mut Self {
+  pub fn raw(info: vk::PipelineInputAssemblyStateCreateInfo) -> Self {
+    Self { info }
+  }
+
+  pub fn topology(mut self, topology: vk::PrimitiveTopology) -> Self {
     self.info.topology = topology;
     self
   }
-  pub fn primitive_restart_enable(&mut self, enable: vk::Bool32) -> &mut Self {
+  pub fn primitive_restart_enable(mut self, enable: vk::Bool32) -> Self {
     self.info.primitiveRestartEnable = enable;
     self
-  }
-
-  pub fn get(&self) -> &vk::PipelineInputAssemblyStateCreateInfo {
-    &self.info
   }
 }
 

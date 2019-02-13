@@ -44,7 +44,7 @@ pub fn main() {
     .create()
     .unwrap();
 
-  let p = make_sequence::build(&device.ext).new().unwrap();
+  let p = make_sequence::new(&device.ext).create().unwrap();
 
   let mut pool = vk::pipes::DescriptorPool::with_capacity(device.handle, &make_sequence::SIZES, make_sequence::NUM_SETS).unwrap();
   let ds = pool.new_dset(p.dsets[&0].layout, &p.dsets[&0].sizes).unwrap();

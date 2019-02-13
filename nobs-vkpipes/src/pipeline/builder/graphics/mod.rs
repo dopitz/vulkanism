@@ -75,8 +75,8 @@ impl<'a> Graphics<'a> {
   /// Configures the bindings for the pieline.
   ///
   /// From the configured bindings the builder is able to create the descriptor set layouts and pipeline layout.
-  pub fn bindings(&mut self, bindings: Vec<Binding>) -> &mut Self {
-    self.bindings = bindings;
+  pub fn bindings(&mut self, bindings: &[Binding]) -> &mut Self {
+    self.bindings = bindings.to_vec();
     self
   }
   /// Configures the vertex shader stage for the pipeline.
@@ -106,48 +106,53 @@ impl<'a> Graphics<'a> {
   }
 
   /// Configures the vertex input state for the pipeline.
-  pub fn vertex_input<F: Fn(&mut vertex_input::Builder)>(&mut self, f: F) -> &mut Self {
-    f(&mut self.vertex_input);
+  pub fn vertex_input(&mut self, b: vertex_input::Builder) -> &mut Self {
+    self.vertex_input = b;
     self
   }
   /// Configures the input assembly state for the pipeline.
-  pub fn input_assembly<F: Fn(&mut input_assembly::Builder)>(&mut self, f: F) -> &mut Self {
-    f(&mut self.input_assembly);
+  pub fn input_assembly(&mut self, b: input_assembly::Builder) -> &mut Self {
+    self.input_assembly = b;
     self
   }
   /// Configures the tesselation state for the pipeline.
-  pub fn tesselation<F: Fn(&mut tesselation::Builder)>(&mut self, f: F) -> &mut Self {
-    f(&mut self.tesselation);
+  pub fn tesselation(&mut self, b: tesselation::Builder) -> &mut Self {
+    self.tesselation = b;
     self
   }
   /// Configures the viewport for the pipeline.
-  pub fn viewport<F: Fn(&mut viewport::Builder)>(&mut self, f: F) -> &mut Self {
-    f(&mut self.viewport);
+  pub fn viewport(&mut self, b: viewport::Builder) -> &mut Self {
+    self.viewport = b;
     self
   }
   /// Configures the raster state for the pipeline.
-  pub fn raster<F: Fn(&mut raster::Builder)>(&mut self, f: F) -> &mut Self {
-    f(&mut self.raster);
+  pub fn raster(&mut self, b: raster::Builder) -> &mut Self {
+    self.raster = b;
+    self
+  }
+  /// Configures the depth and stencil state for the pipeline.
+  pub fn depth_stencil(&mut self, b: depth_stencil::Builder) -> &mut Self {
+    self.depth_stencil = b;
     self
   }
   /// Configures the multisample state for the pipeline.
-  pub fn multisample<F: Fn(&mut multisample::Builder)>(&mut self, f: F) -> &mut Self {
-    f(&mut self.multisample);
+  pub fn multisample(&mut self, b: multisample::Builder) -> &mut Self {
+    self.multisample = b;
     self
   }
   /// Configures the blend state for the pipeline.
-  pub fn blend<F: Fn(&mut blend::Builder)>(&mut self, f: F) -> &mut Self {
-    f(&mut self.blend);
+  pub fn blend(&mut self, b: blend::Builder) -> &mut Self {
+    self.blend = b;
     self
   }
   /// Configures the dynamic state for the pipeline.
-  pub fn dynamic<F: Fn(&mut dynamic::Builder)>(&mut self, f: F) -> &mut Self {
-    f(&mut self.dynamic);
+  pub fn dynamic(&mut self, b: dynamic::Builder) -> &mut Self {
+    self.dynamic = b;
     self
   }
 
   /// Create the pipeline from the current configuration
-  pub fn new(self) -> Result<Pipeline, String> {
+  pub fn create(&self) -> Result<Pipeline, String> {
     let stages = [self.vert, self.tesc, self.tesc, self.geom, self.frag]
       .iter()
       .filter(|s| s.is_some())
@@ -165,18 +170,18 @@ impl<'a> Graphics<'a> {
       flags: 0,
       stageCount: stages.len() as u32,
       pStages: stages.as_ptr(),
-      pVertexInputState: self.vertex_input.get(),
-      pInputAssemblyState: self.input_assembly.get(),
-      pTessellationState: self.tesselation.get(),
-      pViewportState: self.viewport.get(),
-      pRasterizationState: self.raster.get(),
-      pDepthStencilState: self.depth_stencil.get(),
-      pMultisampleState: self.multisample.get(),
-      pColorBlendState: self.blend.get(),
-      pDynamicState: if self.dynamic.is_empty() {
+      pVertexInputState: &self.vertex_input.info,
+      pInputAssemblyState: &self.input_assembly.info,
+      pTessellationState: &self.tesselation.info,
+      pViewportState: &self.viewport.info,
+      pRasterizationState: &self.raster.info,
+      pDepthStencilState: &self.depth_stencil.info,
+      pMultisampleState: &self.multisample.info,
+      pColorBlendState: &self.blend.info,
+      pDynamicState: if self.dynamic.states.is_empty() {
         std::ptr::null()
       } else {
-        self.dynamic.get()
+        &self.dynamic.info
       },
       layout: layout,
       renderPass: self.pass,

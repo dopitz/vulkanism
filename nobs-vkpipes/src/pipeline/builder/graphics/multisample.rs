@@ -11,37 +11,37 @@ use vk;
 /// - alpha to coverage: disabled
 /// - alpha to one: disabled
 pub struct Builder {
-  info: vk::PipelineMultisampleStateCreateInfo,
+  pub info: vk::PipelineMultisampleStateCreateInfo,
 }
 
 impl Builder {
-  pub fn sample_shading_enable(&mut self, enable: vk::Bool32) -> &mut Self {
+  pub fn raw(info: vk::PipelineMultisampleStateCreateInfo) -> Self {
+    Self { info }
+  }
+
+  pub fn sample_shading_enable(mut self, enable: vk::Bool32) -> Self {
     self.info.sampleShadingEnable = enable;
     self
   }
-  pub fn rasterization_samples(&mut self, samples: vk::SampleCountFlagBits) -> &mut Self {
+  pub fn rasterization_samples(mut self, samples: vk::SampleCountFlagBits) -> Self {
     self.info.rasterizationSamples = samples;
     self
   }
-  pub fn min_sample_shading(&mut self, samples: f32) -> &mut Self {
+  pub fn min_sample_shading(mut self, samples: f32) -> Self {
     self.info.minSampleShading = samples;
     self
   }
-  pub fn sample_mask(&mut self, mask: *const vk::SampleMask) -> &mut Self {
+  pub fn sample_mask(mut self, mask: *const vk::SampleMask) -> Self {
     self.info.pSampleMask = mask;
     self
   }
-  pub fn alpha_to_coverage_enable(&mut self, enable: vk::Bool32) -> &mut Self {
+  pub fn alpha_to_coverage_enable(mut self, enable: vk::Bool32) -> Self {
     self.info.alphaToCoverageEnable = enable;
     self
   }
-  pub fn alpha_to_one_enable(&mut self, enable: vk::Bool32) -> &mut Self {
+  pub fn alpha_to_one_enable(mut self, enable: vk::Bool32) -> Self {
     self.info.alphaToOneEnable = enable;
     self
-  }
-
-  pub fn get(&self) -> &vk::PipelineMultisampleStateCreateInfo {
-    &self.info
   }
 }
 

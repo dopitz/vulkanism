@@ -246,7 +246,7 @@ impl Stream {
     self.submit_inner(false, true);
   }
 
-  pub fn get_buffer(&self) -> vk::CommandBuffer {
+  pub fn get_commandbuffer(&self) -> vk::CommandBuffer {
     self.buffer
   }
 }

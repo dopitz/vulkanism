@@ -249,7 +249,7 @@ impl Pipeline {
   }
 
   fn write_compute(&self) -> String {
-    "pub fn build(device: &vk::DeviceExtensions) -> BuilderComp {{
+    "pub fn new(device: &vk::DeviceExtensions) -> BuilderComp {{
         let mut b = BuilderComp::from_device(device);
         b.bindings(&BINDINGS).comp(&comp::create_module(device));
         b
@@ -259,8 +259,8 @@ impl Pipeline {
 
   fn write_graphics(&self) -> String {
     format!(
-      "pub fn build(device: &vk::DeviceExtensions, pass: vk::RenderPass) -> BuilderGraphics {{
-        let mut b = BuilderGraphics::from_device(device, pass);
+      "pub fn new(device: &vk::DeviceExtensions, pass: vk::RenderPass) -> BuilderGraphics {{
+        let mut b = BuilderGraphics::from_pass(device, pass);
         b.bindings(&BINDINGS)
         {stages};
         b
@@ -299,7 +299,6 @@ impl Pipeline {
     format!(
       "
       use {vk_alias};
-      use {vkpipes_alias};
 
       use {vkpipes_alias}::pipeline::Binding;
       use {vkpipes_alias}::descriptor::writes::*;

@@ -7,28 +7,27 @@ use vk;
 /// - count: `0`
 /// - states: none
 pub struct Builder {
-  states: Vec<vk::DynamicState>,
-  info: vk::PipelineDynamicStateCreateInfo,
+  pub states: Vec<vk::DynamicState>,
+  pub info: vk::PipelineDynamicStateCreateInfo,
 }
 
 impl Builder {
-  pub fn push_state(&mut self, state: vk::DynamicState) -> &mut Self {
+  pub fn raw(info: vk::PipelineDynamicStateCreateInfo) -> Self {
+    Self {
+      states: Default::default(),
+      info,
+    }
+  }
+
+  pub fn push_state(mut self, state: vk::DynamicState) -> Self {
     self.states.push(state);
     self.update()
   }
 
-  fn update(&mut self) -> &mut Self {
+  fn update(mut self) -> Self {
     self.info.dynamicStateCount = self.states.len() as u32;
     self.info.pDynamicStates = self.states.as_ptr();
     self
-  }
-
-  pub fn is_empty(&self) -> bool {
-    self.states.is_empty()
-  }
-
-  pub fn get(&self) -> &vk::PipelineDynamicStateCreateInfo {
-    &self.info
   }
 }
 

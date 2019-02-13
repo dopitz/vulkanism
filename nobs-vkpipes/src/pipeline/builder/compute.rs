@@ -42,7 +42,7 @@ impl<'a> Compute<'a> {
   }
 
   /// Create the pipeline from the current configuration
-  pub fn new(self) -> Result<Pipeline, String> {
+  pub fn create(&self) -> Result<Pipeline, String> {
     let stage = self.comp.ok_or("No compute shader stage set")?;
     if stage.module == vk::NULL_HANDLE {
       Err("invalid module handle for compute stage")?

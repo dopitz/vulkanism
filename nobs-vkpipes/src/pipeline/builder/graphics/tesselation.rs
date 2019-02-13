@@ -10,13 +10,13 @@ pub struct Builder {
 }
 
 impl Builder {
-  pub fn patch_control_points(&mut self, points: u32) -> &mut Self {
-    self.info.patchControlPoints = points;
-    self
+  pub fn raw(info: vk::PipelineTessellationStateCreateInfo) -> Self {
+    Self { info }
   }
 
-  pub fn get(&self) -> &vk::PipelineTessellationStateCreateInfo {
-    &self.info
+  pub fn patch_control_points(mut self, points: u32) -> Self {
+    self.info.patchControlPoints = points;
+    self
   }
 }
 

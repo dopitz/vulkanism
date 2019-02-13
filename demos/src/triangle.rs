@@ -2,6 +2,25 @@ extern crate nobs_vulkanism as vk;
 
 use vk::winit;
 
+mod fstri {
+  vk::pipes::pipeline! {
+    dump = "src/fstri.rs",
+
+    stage = {
+      ty = "vert",
+      glsl = "src/fs_tri.vert",
+    }
+
+    stage = {
+      ty = "frag",
+      glsl = "src/fs_tri.frag",
+    }
+  }
+}
+
+//mod fstri {
+//}
+
 pub fn setup_vulkan_window() -> (
   vk::instance::Instance,
   vk::device::PhysicalDevice,
@@ -79,7 +98,16 @@ pub fn main() {
   let mut alloc = vk::mem::Allocator::new(pdevice.handle, device.handle);
   let mut cmds = vk::cmd::Pool::new(device.handle, device.queues[0].family, 3).unwrap();
 
-  let (mut sc, _rp, fbs) = setup_rendertargets(&inst, &pdevice, &device, &window, &mut alloc);
+  let (mut sc, rp, fbs) = setup_rendertargets(&inst, &pdevice, &device, &window, &mut alloc);
+
+  let pipe = fstri::new(&device.ext, rp.pass)
+    .dynamic(
+      vk::pipes::Dynamic::default()
+        .push_state(vk::DYNAMIC_STATE_VIEWPORT)
+        .push_state(vk::DYNAMIC_STATE_SCISSOR),
+    )
+    .create()
+    .unwrap();
 
   let t = std::time::SystemTime::now();
   let mut n = 0;
@@ -107,10 +135,14 @@ pub fn main() {
       .begin(device.queues[0])
       .unwrap()
       .wait_for(next.signal, vk::PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT)
+      //.push(vk::cmd::ImageBarrier::new(fb.images[1]).to(vk::IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, vk::ACCESS_COLOR_ATTACHMENT_WRITE_BIT))
+      //.push(vk::cmd::ClearColorImage::new(fb.images[1]).clear(unsafe { vk::fb::clear_colorf32([1.0, 0.0, 0.0, 1.0]).color }))
       .push(vk::cmd::ImageBarrier::new(fb.images[1]).to(vk::IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, vk::ACCESS_COLOR_ATTACHMENT_WRITE_BIT))
+      .push(&fb.begin())
       //.push(&vk::cmd::BindPipeline::compute(p.handle))
       //.push(&vk::cmd::BindDset::new(vk::PIPELINE_BIND_POINT_COMPUTE, p.layout, 0, ds))
       //.push(&vk::cmd::Dispatch::xyz(1, 1, 1))
+      .push(&fb.end())
       .push(&sc.blit(next.index, fb.images[1]))
       .submit_signals();
 
@@ -125,4 +157,6 @@ pub fn main() {
   let t = t.elapsed().unwrap();
   let t = t.as_secs() as f32 + t.subsec_millis() as f32 / 1000.0;
   println!("{}, {}   {}", n, t, n as f32 / t);
+
+  cmds.wait_all();
 }

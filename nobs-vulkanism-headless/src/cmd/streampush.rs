@@ -364,6 +364,53 @@ impl StreamPush for BufferBarrier {
   }
 }
 
+/// Clear Color render target
+#[derive(Clone, Copy)]
+pub struct ClearColorImage {
+  pub image: vk::Image,
+  pub layout: vk::ImageLayout,
+  pub clear: vk::ClearColorValue,
+  pub subresource: vk::ImageSubresourceRange,
+}
+
+impl ClearColorImage {
+  pub fn new(image: vk::Image) -> Self {
+    Self {
+      image,
+      layout: vk::IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+      clear: vk::ClearColorValue { int32: [0, 0, 0, 0] },
+      subresource: vk::ImageSubresourceRange {
+        aspectMask: vk::IMAGE_ASPECT_COLOR_BIT,
+        baseMipLevel: 0,
+        levelCount: 1,
+        baseArrayLayer: 0,
+        layerCount: 1,
+      },
+    }
+  }
+
+  pub fn layout(&mut self, layout: vk::ImageLayout) -> &mut Self {
+    self.layout = layout;
+    self
+  }
+
+  pub fn clear(&mut self, clear: vk::ClearColorValue) -> &mut Self {
+    self.clear = clear;
+    self
+  }
+
+  pub fn subresource(&mut self, subresource: vk::ImageSubresourceRange) -> &mut Self {
+    self.subresource = subresource;
+    self
+  }
+}
+
+impl StreamPush for ClearColorImage {
+  fn enqueue(&self, cb: vk::CommandBuffer) {
+    vk::CmdClearColorImage(cb, self.image, self.layout, &self.clear, 1, &self.subresource);
+  }
+}
+
 /// Begins a render pass
 #[derive(Clone, Copy)]
 pub struct RenderpassBegin {
