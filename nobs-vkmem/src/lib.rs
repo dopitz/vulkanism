@@ -261,23 +261,20 @@ impl AllocatorSizes {
     let pagesize_default = vk::DeviceSize::max(minsize * 4, 1 << 26);
     let mut pagesizes = HashMap::new();
 
-    pagesizes.insert(
-      Allocator::get_memtype(pdevice, &image_requirements, vk::MEMORY_PROPERTY_DEVICE_LOCAL_BIT).unwrap(),
-      vk::DeviceSize::max(minsize, 1 << 27),
-    );
-    pagesizes.insert(
-      Allocator::get_memtype(pdevice, &buffer_requirements, vk::MEMORY_PROPERTY_DEVICE_LOCAL_BIT).unwrap(),
-      vk::DeviceSize::max(minsize, 1 << 27),
-    );
-    pagesizes.insert(
-      Allocator::get_memtype(
-        pdevice,
-        &buffer_requirements,
-        vk::MEMORY_PROPERTY_HOST_VISIBLE_BIT | vk::MEMORY_PROPERTY_HOST_COHERENT_BIT,
-      )
-      .unwrap(),
-      vk::DeviceSize::max(minsize, 1 << 18),
-    );
+    let memtype_local_image = Allocator::get_memtype(pdevice, &image_requirements, vk::MEMORY_PROPERTY_DEVICE_LOCAL_BIT).unwrap();
+    let memtype_local_buffer = Allocator::get_memtype(pdevice, &buffer_requirements, vk::MEMORY_PROPERTY_DEVICE_LOCAL_BIT).unwrap();
+    let memtype_hostaccess = Allocator::get_memtype(
+      pdevice,
+      &buffer_requirements,
+      vk::MEMORY_PROPERTY_HOST_VISIBLE_BIT | vk::MEMORY_PROPERTY_HOST_COHERENT_BIT,
+    )
+    .unwrap();
+
+    pagesizes.insert(memtype_local_image, vk::DeviceSize::max(minsize, 1 << 27));
+    pagesizes.insert(memtype_local_buffer, vk::DeviceSize::max(minsize, 1 << 27));
+    if memtype_local_buffer != memtype_hostaccess {
+      pagesizes.insert(memtype_hostaccess, vk::DeviceSize::max(minsize, 1 << 18));
+    }
 
     Self {
       pagesize_default,
