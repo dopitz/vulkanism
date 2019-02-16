@@ -135,8 +135,8 @@ impl SubpassBuilder {
 
   pub fn color_layout(&mut self, attachment: u32, layout: vk::ImageLayout) -> &mut Self {
     self.color.push(vk::AttachmentReference { attachment, layout });
-    self.desc.inputAttachmentCount = self.input.len() as u32;
-    self.desc.pInputAttachments = self.input.as_ptr();
+    self.desc.colorAttachmentCount = self.color.len() as u32;
+    self.desc.pColorAttachments = self.color.as_ptr();
     self
   }
   pub fn color(&mut self, attachment: u32) -> &mut Self {

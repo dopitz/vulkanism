@@ -77,9 +77,9 @@ pub fn setup_rendertargets(
   let depth_format = vk::fb::select_depth_format(pdevice.handle, vk::fb::DEPTH_FORMATS).unwrap();
 
   let pass = vk::fb::new_pass(device.handle)
-    .attachment(0, vk::fb::new_attachment(depth_format))
-    .attachment(1, vk::fb::new_attachment(vk::FORMAT_B8G8R8A8_SRGB))
-    .subpass(0, vk::fb::new_subpass(vk::PIPELINE_BIND_POINT_GRAPHICS).depth(0).color(1).clone())
+    .attachment(0, vk::fb::new_attachment(vk::FORMAT_B8G8R8A8_UNORM))
+    .attachment(1, vk::fb::new_attachment(depth_format))
+    .subpass(0, vk::fb::new_subpass(vk::PIPELINE_BIND_POINT_GRAPHICS).color(0).depth(1).clone())
     .dependency(vk::fb::new_dependency().external(0).clone())
     .create()
     .unwrap();
@@ -106,6 +106,22 @@ pub fn main() {
         .push_state(vk::DYNAMIC_STATE_VIEWPORT)
         .push_state(vk::DYNAMIC_STATE_SCISSOR),
     )
+    .viewport(
+      vk::pipes::Viewport::default()
+        .push_viewport(vk::Viewport {
+          x: 0.0,
+          y: 0.0,
+          width: sc.extent.width as f32,
+          height: sc.extent.height as f32,
+          minDepth: 0.0,
+          maxDepth: 1.0,
+        })
+        .push_scissors_rect(vk::Rect2D {
+          offset: vk::Offset2D { x: 0, y: 0 },
+          extent: sc.extent,
+        }),
+    )
+    .blend(vk::pipes::Blend::default().push_attachment(vk::pipes::BlendAttachment::default()))
     .create()
     .unwrap();
 
@@ -135,15 +151,13 @@ pub fn main() {
       .begin(device.queues[0])
       .unwrap()
       .wait_for(next.signal, vk::PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT)
-      //.push(vk::cmd::ImageBarrier::new(fb.images[1]).to(vk::IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, vk::ACCESS_COLOR_ATTACHMENT_WRITE_BIT))
-      //.push(vk::cmd::ClearColorImage::new(fb.images[1]).clear(unsafe { vk::fb::clear_colorf32([1.0, 0.0, 0.0, 1.0]).color }))
-      .push(vk::cmd::ImageBarrier::new(fb.images[1]).to(vk::IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, vk::ACCESS_COLOR_ATTACHMENT_WRITE_BIT))
+      .push(vk::cmd::ImageBarrier::new(fb.images[0]).to(vk::IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, vk::ACCESS_COLOR_ATTACHMENT_WRITE_BIT))
       .push(&fb.begin())
       //.push(&vk::cmd::BindPipeline::compute(p.handle))
       //.push(&vk::cmd::BindDset::new(vk::PIPELINE_BIND_POINT_COMPUTE, p.layout, 0, ds))
       //.push(&vk::cmd::Dispatch::xyz(1, 1, 1))
       .push(&fb.end())
-      .push(&sc.blit(next.index, fb.images[1]))
+      .push(&sc.blit(next.index, fb.images[0]))
       .submit_signals();
 
     sc.present(device.queues[0].handle, next.index, &[wait]);
