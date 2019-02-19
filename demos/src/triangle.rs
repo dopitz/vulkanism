@@ -153,6 +153,8 @@ pub fn main() {
       .wait_for(next.signal, vk::PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT)
       .push(vk::cmd::ImageBarrier::new(fb.images[0]).to(vk::IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, vk::ACCESS_COLOR_ATTACHMENT_WRITE_BIT))
       .push(&fb.begin())
+      .push(&vk::cmd::BindPipeline::graphics(pipe.handle))
+      .push(&vk::cmd::Draw::default().vertices().num_vertices(3).num_instances(1))
       //.push(&vk::cmd::BindPipeline::compute(p.handle))
       //.push(&vk::cmd::BindDset::new(vk::PIPELINE_BIND_POINT_COMPUTE, p.layout, 0, ds))
       //.push(&vk::cmd::Dispatch::xyz(1, 1, 1))

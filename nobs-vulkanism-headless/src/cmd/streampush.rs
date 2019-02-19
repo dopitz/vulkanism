@@ -103,6 +103,105 @@ impl StreamPush for Dispatch {
   }
 }
 
+/// Issues a draw call for graphics pipelines into a command stream
+#[derive(Default, Clone)]
+pub struct Draw {
+  pub buffers: Vec<vk::Buffer>,
+  pub offsets: Vec<vk::DeviceSize>,
+}
+#[derive(Default)]
+pub struct DrawVertices {
+  pub draw: Draw,
+  pub n_vertices: u32,
+  pub n_instances: u32,
+  pub first_vertex: u32,
+  pub first_instance: u32,
+}
+//#[derive(Default)]
+//pub struct DrawTypeIndices {
+//  n_indices: u32,
+//  first_index: u32,
+//  vertex_offset: u32,
+//  buffer: vk::Buffer,
+//  buffer_offset: vk::DeviceSize,
+//  index_type: vk::IndexType,
+//}
+//#[derive(Default)]
+//pub struct DrawTypeIndirect {
+//  n_commands: u32,
+//  offset: u32,
+//  stride: u32,
+//  buffer: vk::Buffer,
+//}
+
+impl Draw {
+  pub fn push(mut self, buffer: vk::Buffer, offset: vk::DeviceSize) -> Self {
+    self.buffers.push(buffer);
+    self.offsets.push(offset);
+    self
+  }
+
+  pub fn vertices(self) -> DrawVertices {
+    DrawVertices::new(self)
+  }
+}
+
+impl DrawVertices {
+  pub fn new(draw: Draw) -> Self {
+    Self {
+      draw,
+      n_vertices: 0,
+      n_instances: 0,
+      first_vertex: 0,
+      first_instance: 0,
+    }
+  }
+
+  pub fn first_vertex(mut self, first: u32) -> Self {
+    self.first_vertex = first;
+    self
+  }
+  pub fn num_vertices(mut self, n: u32) -> Self {
+    self.n_vertices = n;
+    self
+  }
+  pub fn vertices(mut self, first: u32, n: u32) -> Self {
+    self.first_vertex = first;
+    self.n_vertices = n;
+    self
+  }
+
+  pub fn first_instance(mut self, first: u32) -> Self {
+    self.first_instance = first;
+    self
+  }
+  pub fn num_instances(mut self, n: u32) -> Self {
+    self.n_instances = n;
+    self
+  }
+  pub fn instances(mut self, first: u32, n: u32) -> Self {
+    self.first_instance = first;
+    self.n_instances = n;
+    self
+  }
+}
+
+impl StreamPush for DrawVertices {
+  fn enqueue(&self, cb: vk::CommandBuffer) {
+    if !self.draw.buffers.is_empty() {
+      vk::CmdBindVertexBuffers(
+        cb,
+        0,
+        self.draw.buffers.len() as u32,
+        self.draw.buffers.as_ptr(),
+        self.draw.offsets.as_ptr(),
+      );
+    }
+
+    vk::CmdDraw(cb, self.n_vertices, self.n_instances, self.first_vertex, self.first_instance);
+  }
+}
+
 /// Copies memory from one buffer to another
 pub struct BufferCopy {
   pub src: vk::Buffer,
