@@ -111,21 +111,6 @@ pub fn main() {
         .push_state(vk::DYNAMIC_STATE_VIEWPORT)
         .push_state(vk::DYNAMIC_STATE_SCISSOR),
     )
-    .viewport(
-      vk::pipes::Viewport::default()
-        .push_viewport(vk::Viewport {
-          x: 0.0,
-          y: 0.0,
-          width: sc.extent.width as f32,
-          height: sc.extent.height as f32,
-          minDepth: 0.0,
-          maxDepth: 1.0,
-        })
-        .push_scissors_rect(vk::Rect2D {
-          offset: vk::Offset2D { x: 0, y: 0 },
-          extent: sc.extent,
-        }),
-    )
     .blend(vk::pipes::Blend::default().push_attachment(vk::pipes::BlendAttachment::default()))
     .create()
     .unwrap();
@@ -135,6 +120,9 @@ pub fn main() {
 
   let mut close = false;
   let mut x = 'x';
+
+  let draw = vk::cmd::Draw::default().vertices().vertex_count(3);
+
   loop {
     events_loop.poll_events(|event| match event {
       winit::Event::WindowEvent {
@@ -152,11 +140,26 @@ pub fn main() {
     let next = sc.next_image();
     let fb = &fbs[i];
 
+    //let cc = cmds
+    //  .begin(device.queues[0])
+    //  .unwrap()
+    //  .wait_for(next.signal, vk::PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+    //let cc  = cc << vk::cmd::ImageBarrier::new(fb.images[0]).to(vk::IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, vk::ACCESS_COLOR_ATTACHMENT_WRITE_BIT)
+    //  << fb.begin()
+    //  << vk::cmd::Viewport::with_extent(sc.extent)
+    //  << vk::cmd::Scissor::with_extent(sc.extent)
+    //  << vk::cmd::BindPipeline::graphics(pipe.handle)
+    //  << draw
+    //  << fb.end()
+    //  << sc.blit(next.index, fb.images[0]);
+
+    //let wait = cc.submit_signals();
+
     let wait = cmds
       .begin(device.queues[0])
       .unwrap()
       .wait_for(next.signal, vk::PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT)
-      .push(vk::cmd::ImageBarrier::new(fb.images[0]).to(vk::IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, vk::ACCESS_COLOR_ATTACHMENT_WRITE_BIT))
+      .push(&vk::cmd::ImageBarrier::new(fb.images[0]).to(vk::IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, vk::ACCESS_COLOR_ATTACHMENT_WRITE_BIT))
       .push(&fb.begin())
       .push(&vk::cmd::Viewport::with_extent(sc.extent))
       .push(&vk::cmd::Scissor::with_extent(sc.extent))

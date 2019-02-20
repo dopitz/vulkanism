@@ -16,12 +16,6 @@ impl Drop for Renderpass {
   }
 }
 
-impl Renderpass {
-  pub fn get_pass(&self) -> vk::RenderPass {
-    self.pass
-  }
-}
-
 #[derive(Clone, Copy)]
 pub struct AttachmentBuilder {
   pub desc: vk::AttachmentDescription,

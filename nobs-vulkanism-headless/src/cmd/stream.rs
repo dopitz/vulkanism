@@ -250,3 +250,15 @@ impl Stream {
     self.buffer
   }
 }
+
+pub struct Sp<'a, T: StreamPush> {
+  pub p: &'a T,
+}
+
+impl<'a, T: StreamPush> std::ops::Shl<Sp<'a, T>> for Stream {
+  type Output = Self;
+
+  fn shl(mut self, push: Sp<'a, T>) -> Stream {
+    self.push(push.p)
+  }
+}

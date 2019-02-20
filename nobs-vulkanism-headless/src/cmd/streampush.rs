@@ -395,27 +395,27 @@ impl BufferCopy {
     BufferCopy { src, dst, region }
   }
 
-  pub fn from(&mut self, src: vk::Buffer) -> &mut Self {
+  pub fn from(mut self, src: vk::Buffer) -> Self {
     self.src = src;
     self
   }
-  pub fn from_offset(&mut self, src: vk::Buffer, offset: vk::DeviceSize) -> &mut Self {
+  pub fn from_offset(mut self, src: vk::Buffer, offset: vk::DeviceSize) -> Self {
     self.src = src;
     self.region.srcOffset = offset;
     self
   }
 
-  pub fn to(&mut self, src: vk::Buffer) -> &mut Self {
+  pub fn to(mut self, src: vk::Buffer) -> Self {
     self.src = src;
     self
   }
-  pub fn to_offset(&mut self, dst: vk::Buffer, offset: vk::DeviceSize) -> &mut Self {
+  pub fn to_offset(mut self, dst: vk::Buffer, offset: vk::DeviceSize) -> Self {
     self.dst = dst;
     self.region.dstOffset = offset;
     self
   }
 
-  pub fn size(&mut self, size: vk::DeviceSize) -> &mut Self {
+  pub fn size(mut self, size: vk::DeviceSize) -> Self {
     self.region.size = size;
     self
   }
@@ -508,41 +508,41 @@ impl ImageBarrier {
     }
   }
 
-  pub fn from(&mut self, layout: vk::ImageLayout, access: vk::AccessFlags) -> &mut Self {
+  pub fn from(mut self, layout: vk::ImageLayout, access: vk::AccessFlags) -> Self {
     self.from_stages(layout, access, get_stages_from_access(access))
   }
-  pub fn from_stages(&mut self, layout: vk::ImageLayout, access: vk::AccessFlags, stages: vk::PipelineStageFlags) -> &mut Self {
+  pub fn from_stages(mut self, layout: vk::ImageLayout, access: vk::AccessFlags, stages: vk::PipelineStageFlags) -> Self {
     self.src_stages = stages;
     self.barrier.oldLayout = layout;
     self.barrier.srcAccessMask = access;
     self
   }
 
-  pub fn to(&mut self, layout: vk::ImageLayout, access: vk::AccessFlags) -> &mut Self {
+  pub fn to(mut self, layout: vk::ImageLayout, access: vk::AccessFlags) -> Self {
     self.to_stages(layout, access, get_stages_from_access(access))
   }
-  pub fn to_stages(&mut self, layout: vk::ImageLayout, access: vk::AccessFlags, stages: vk::PipelineStageFlags) -> &mut Self {
+  pub fn to_stages(mut self, layout: vk::ImageLayout, access: vk::AccessFlags, stages: vk::PipelineStageFlags) -> Self {
     self.dst_stages = stages;
     self.barrier.newLayout = layout;
     self.barrier.dstAccessMask = access;
     self
   }
 
-  pub fn aspect_mask(&mut self, aspect: vk::ImageAspectFlags) -> &mut Self {
+  pub fn aspect_mask(mut self, aspect: vk::ImageAspectFlags) -> Self {
     self.barrier.subresourceRange.aspectMask = aspect;
     self
   }
-  pub fn mip_level(&mut self, base_level: u32, count: u32) -> &mut Self {
+  pub fn mip_level(mut self, base_level: u32, count: u32) -> Self {
     self.barrier.subresourceRange.baseMipLevel = base_level;
     self.barrier.subresourceRange.levelCount = count;
     self
   }
-  pub fn array_layer(&mut self, base_layer: u32, count: u32) -> &mut Self {
+  pub fn array_layer(mut self, base_layer: u32, count: u32) -> Self {
     self.barrier.subresourceRange.baseArrayLayer = base_layer;
     self.barrier.subresourceRange.layerCount = count;
     self
   }
-  pub fn subresource(&mut self, subresource: vk::ImageSubresourceRange) -> &mut Self {
+  pub fn subresource(mut self, subresource: vk::ImageSubresourceRange) -> Self {
     self.barrier.subresourceRange = subresource;
     self
   }
@@ -594,19 +594,19 @@ impl BufferBarrier {
     }
   }
 
-  pub fn from(&mut self, access: vk::AccessFlags) -> &mut Self {
+  pub fn from(mut self, access: vk::AccessFlags) -> Self {
     self.from_stages(access, get_stages_from_access(access))
   }
-  pub fn from_stages(&mut self, access: vk::AccessFlags, stages: vk::PipelineStageFlags) -> &mut Self {
+  pub fn from_stages(mut self, access: vk::AccessFlags, stages: vk::PipelineStageFlags) -> Self {
     self.src_stages = stages;
     self.barrier.srcAccessMask = access;
     self
   }
 
-  pub fn to(&mut self, access: vk::AccessFlags) -> &mut Self {
+  pub fn to(mut self, access: vk::AccessFlags) -> Self {
     self.to_stages(access, get_stages_from_access(access))
   }
-  pub fn to_stages(&mut self, access: vk::AccessFlags, stages: vk::PipelineStageFlags) -> &mut Self {
+  pub fn to_stages(mut self, access: vk::AccessFlags, stages: vk::PipelineStageFlags) -> Self {
     self.dst_stages = stages;
     self.barrier.dstAccessMask = access;
     self
@@ -655,17 +655,17 @@ impl ClearColorImage {
     }
   }
 
-  pub fn layout(&mut self, layout: vk::ImageLayout) -> &mut Self {
+  pub fn layout(mut self, layout: vk::ImageLayout) -> Self {
     self.layout = layout;
     self
   }
 
-  pub fn clear(&mut self, clear: vk::ClearColorValue) -> &mut Self {
+  pub fn clear(mut self, clear: vk::ClearColorValue) -> Self {
     self.clear = clear;
     self
   }
 
-  pub fn subresource(&mut self, subresource: vk::ImageSubresourceRange) -> &mut Self {
+  pub fn subresource(mut self, subresource: vk::ImageSubresourceRange) -> Self {
     self.subresource = subresource;
     self
   }
@@ -703,25 +703,25 @@ impl RenderpassBegin {
     }
   }
 
-  pub fn contents(&mut self, contents: vk::SubpassContents) -> &mut Self {
+  pub fn contents(mut self, contents: vk::SubpassContents) -> Self {
     self.contents = contents;
     self
   }
 
-  pub fn offset(&mut self, offset: vk::Offset2D) -> &mut Self {
+  pub fn offset(mut self, offset: vk::Offset2D) -> Self {
     self.info.renderArea.offset = offset;
     self
   }
-  pub fn extent(&mut self, extent: vk::Extent2D) -> &mut Self {
+  pub fn extent(mut self, extent: vk::Extent2D) -> Self {
     self.info.renderArea.extent = extent;
     self
   }
-  pub fn area(&mut self, area: vk::Rect2D) -> &mut Self {
+  pub fn area(mut self, area: vk::Rect2D) -> Self {
     self.info.renderArea = area;
     self
   }
 
-  pub fn clear(&mut self, clear: &[vk::ClearValue]) -> &mut Self {
+  pub fn clear(mut self, clear: &[vk::ClearValue]) -> Self {
     self.info.clearValueCount = clear.len() as u32;
     self.info.pClearValues = clear.as_ptr();
     self
@@ -777,47 +777,47 @@ impl Blit {
     }
   }
 
-  pub fn src(&mut self, img: vk::Image) -> &mut Self {
+  pub fn src(mut self, img: vk::Image) -> Self {
     self.src = img;
     self
   }
 
-  pub fn src_subresource(&mut self, subresource: vk::ImageSubresourceLayers) -> &mut Self {
+  pub fn src_subresource(mut self, subresource: vk::ImageSubresourceLayers) -> Self {
     self.region.srcSubresource = subresource;
     self
   }
 
-  pub fn src_offset_begin(&mut self, x: i32, y: i32, z: i32) -> &mut Self {
+  pub fn src_offset_begin(mut self, x: i32, y: i32, z: i32) -> Self {
     self.region.srcOffsets[0] = vk::Offset3D { x, y, z };
     self
   }
 
-  pub fn src_offset_end(&mut self, x: i32, y: i32, z: i32) -> &mut Self {
+  pub fn src_offset_end(mut self, x: i32, y: i32, z: i32) -> Self {
     self.region.srcOffsets[1] = vk::Offset3D { x, y, z };
     self
   }
 
-  pub fn dst(&mut self, img: vk::Image) -> &mut Self {
+  pub fn dst(mut self, img: vk::Image) -> Self {
     self.dst = img;
     self
   }
 
-  pub fn dst_subresource(&mut self, subresource: vk::ImageSubresourceLayers) -> &mut Self {
+  pub fn dst_subresource(mut self, subresource: vk::ImageSubresourceLayers) -> Self {
     self.region.dstSubresource = subresource;
     self
   }
 
-  pub fn dst_offset_begin(&mut self, x: i32, y: i32, z: i32) -> &mut Self {
+  pub fn dst_offset_begin(mut self, x: i32, y: i32, z: i32) -> Self {
     self.region.dstOffsets[0] = vk::Offset3D { x, y, z };
     self
   }
 
-  pub fn dst_offset_end(&mut self, x: i32, y: i32, z: i32) -> &mut Self {
+  pub fn dst_offset_end(mut self, x: i32, y: i32, z: i32) -> Self {
     self.region.dstOffsets[1] = vk::Offset3D { x, y, z };
     self
   }
 
-  pub fn filter(&mut self, filter: vk::Filter) -> &mut Self {
+  pub fn filter(mut self, filter: vk::Filter) -> Self {
     self.filter = filter;
     self
   }

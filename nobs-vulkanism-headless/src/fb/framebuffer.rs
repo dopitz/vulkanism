@@ -24,10 +24,10 @@ impl Framebuffer {
   }
 
   pub fn begin_area(&self, area: vk::Rect2D) -> cmd::RenderpassBegin {
-    *cmd::RenderpassBegin::new(self.pass, self.handle).clear(&self.clear).area(area)
+    cmd::RenderpassBegin::new(self.pass, self.handle).clear(&self.clear).area(area)
   }
   pub fn begin(&self) -> cmd::RenderpassBegin {
-    *cmd::RenderpassBegin::new(self.pass, self.handle)
+    cmd::RenderpassBegin::new(self.pass, self.handle)
       .clear(&self.clear)
       .extent(self.extent)
   }

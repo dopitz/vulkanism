@@ -63,7 +63,19 @@ impl<'a> Graphics<'a> {
       vertex_input: Default::default(),
       input_assembly: Default::default(),
       tesselation: Default::default(),
-      viewport: Default::default(),
+      viewport: viewport::Builder::default()
+        .push_viewport(vk::Viewport {
+          x: 0.0,
+          y: 0.0,
+          width: 1.0,
+          height: 1.0,
+          minDepth: 0.0,
+          maxDepth: 1.0,
+        })
+        .push_scissors_rect(vk::Rect2D {
+          offset: vk::Offset2D { x: 0, y: 0 },
+          extent: vk::Extent2D { width: 0, height: 0 },
+        }),
       raster: Default::default(),
       multisample: Default::default(),
       depth_stencil: Default::default(),
