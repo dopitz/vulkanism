@@ -97,7 +97,7 @@ impl AttachmentBuilder {
     self.info.alphaBlendOp = op;
     self
   }
-  pub fn color_and_alpha(mut self, src: vk::BlendFactor, dst: vk::BlendFactor, op: vk::BlendOp) -> Self {
+  pub fn color_and_alpha(self, src: vk::BlendFactor, dst: vk::BlendFactor, op: vk::BlendOp) -> Self {
     self.color(src, dst, op).alpha(src, dst, op)
   }
 }

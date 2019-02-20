@@ -69,7 +69,7 @@ impl Default for Builder {
         flags: 0,
         depthTestEnable: vk::TRUE,
         depthWriteEnable: vk::TRUE,
-        depthCompareOp: vk::COMPARE_OP_LESS,
+        depthCompareOp: vk::COMPARE_OP_LESS_OR_EQUAL,
         depthBoundsTestEnable: vk::FALSE,
         minDepthBounds: 0.0f32,
         maxDepthBounds: 1.0f32,

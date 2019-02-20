@@ -84,11 +84,16 @@ pub fn setup_rendertargets(
     .create()
     .unwrap();
 
-  let fbs = vec![
+  let mut fbs = vec![
     vk::fb::new_framebuffer_from_pass(&pass, alloc).extent(sc.extent).create(),
     vk::fb::new_framebuffer_from_pass(&pass, alloc).extent(sc.extent).create(),
     vk::fb::new_framebuffer_from_pass(&pass, alloc).extent(sc.extent).create(),
   ];
+
+  //fbs[0].set_clear(&[vk::fb::clear_colorf32([1.0,0.0,0.0,1.0]), vk::fb::clear_depth(0.0)]);
+  //fbs[1].set_clear(&[vk::fb::clear_colorf32([0.0,1.0,0.0,1.0]), vk::fb::clear_depth(0.0)]);
+  //fbs[2].set_clear(&[vk::fb::clear_colorf32([0.0,0.0,1.0,1.0]), vk::fb::clear_depth(0.0)]);
+
   (sc, pass, fbs)
 }
 
@@ -153,14 +158,15 @@ pub fn main() {
       .wait_for(next.signal, vk::PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT)
       .push(vk::cmd::ImageBarrier::new(fb.images[0]).to(vk::IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, vk::ACCESS_COLOR_ATTACHMENT_WRITE_BIT))
       .push(&fb.begin())
+      .push(&vk::cmd::Viewport::with_extent(sc.extent))
+      .push(&vk::cmd::Scissor::with_extent(sc.extent))
       .push(&vk::cmd::BindPipeline::graphics(pipe.handle))
-      .push(&vk::cmd::Draw::default().vertices().num_vertices(3).num_instances(1))
-      //.push(&vk::cmd::BindPipeline::compute(p.handle))
-      //.push(&vk::cmd::BindDset::new(vk::PIPELINE_BIND_POINT_COMPUTE, p.layout, 0, ds))
-      //.push(&vk::cmd::Dispatch::xyz(1, 1, 1))
+      .push(&vk::cmd::Draw::default().vertices().vertex_count(3))
       .push(&fb.end())
       .push(&sc.blit(next.index, fb.images[0]))
       .submit_signals();
+
+    //println!("{:?}   {}   {}",next.index, next.signal, wait);
 
     sc.present(device.queues[0].handle, next.index, &[wait]);
     n += 1;

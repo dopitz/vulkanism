@@ -103,38 +103,52 @@ impl StreamPush for Dispatch {
   }
 }
 
-/// Issues a draw call for graphics pipelines into a command stream
+/// Binds vertex buffers to command stream
 #[derive(Default, Clone)]
-pub struct Draw {
+pub struct BindVertexBuffers {
   pub buffers: Vec<vk::Buffer>,
   pub offsets: Vec<vk::DeviceSize>,
 }
+/// Binds vertex buffers and issues draw call
 #[derive(Default)]
 pub struct DrawVertices {
-  pub draw: Draw,
-  pub n_vertices: u32,
-  pub n_instances: u32,
+  pub vertex_buffers: BindVertexBuffers,
+  pub vertex_count: u32,
+  pub instance_count: u32,
   pub first_vertex: u32,
   pub first_instance: u32,
 }
-//#[derive(Default)]
-//pub struct DrawTypeIndices {
-//  n_indices: u32,
-//  first_index: u32,
-//  vertex_offset: u32,
-//  buffer: vk::Buffer,
-//  buffer_offset: vk::DeviceSize,
-//  index_type: vk::IndexType,
-//}
-//#[derive(Default)]
-//pub struct DrawTypeIndirect {
-//  n_commands: u32,
-//  offset: u32,
-//  stride: u32,
-//  buffer: vk::Buffer,
-//}
+/// Bind vertex buffers and issues an indexed draw call
+#[derive(Default)]
+pub struct DrawIndexed {
+  pub vertex_buffers: BindVertexBuffers,
+  pub index_count: u32,
+  pub instance_count: u32,
+  pub first_index: u32,
+  pub vertex_offset: i32,
+  pub first_instance: u32,
 
-impl Draw {
+  pub index_buffer: vk::Buffer,
+  pub index_buffer_offset: vk::DeviceSize,
+  pub index_type: vk::IndexType,
+}
+/// Binds vertex buffers and issues an indirect draw call
+#[derive(Default)]
+pub struct DrawIndirect {
+  pub vertex_buffers: BindVertexBuffers,
+  pub count: u32,
+  pub offset: vk::DeviceSize,
+  pub stride: u32,
+  pub buffer: vk::Buffer,
+
+  pub index_buffer: Option<vk::Buffer>,
+  pub index_offset: vk::DeviceSize,
+  pub index_type: vk::IndexType,
+}
+
+pub type Draw = BindVertexBuffers;
+
+impl BindVertexBuffers {
   pub fn push(mut self, buffer: vk::Buffer, offset: vk::DeviceSize) -> Self {
     self.buffers.push(buffer);
     self.offsets.push(offset);
@@ -144,14 +158,37 @@ impl Draw {
   pub fn vertices(self) -> DrawVertices {
     DrawVertices::new(self)
   }
+
+  pub fn indexed(self, indices: vk::Buffer) -> DrawIndexed {
+    DrawIndexed::new(self, indices)
+  }
+
+  pub fn indirect(self, buffer: vk::Buffer) -> DrawIndirect {
+    DrawIndirect::new(self, buffer)
+  }
+}
+
+impl StreamPush for BindVertexBuffers {
+  fn enqueue(&self, cb: vk::CommandBuffer) {
+    if !self.buffers.is_empty() {
+      vk::CmdBindVertexBuffers(cb, 0, self.buffers.len() as u32, self.buffers.as_ptr(), self.offsets.as_ptr());
+    }
+  }
 }
 
 impl DrawVertices {
-  pub fn new(draw: Draw) -> Self {
+  /// Creates a new builder for normal drawing
+  ///
+  /// Default initializes:
+  ///  - `index_count = 0`
+  ///  - `instance_count = 1`
+  ///  - `first_index = 0`
+  ///  - `first_instance = 0`
+  pub fn new(vertex_buffers: BindVertexBuffers) -> Self {
     Self {
-      draw,
-      n_vertices: 0,
-      n_instances: 0,
+      vertex_buffers,
+      vertex_count: 0,
+      instance_count: 1,
       first_vertex: 0,
       first_instance: 0,
     }
@@ -161,13 +198,13 @@ impl DrawVertices {
     self.first_vertex = first;
     self
   }
-  pub fn num_vertices(mut self, n: u32) -> Self {
-    self.n_vertices = n;
+  pub fn vertex_count(mut self, count: u32) -> Self {
+    self.vertex_count = count;
     self
   }
-  pub fn vertices(mut self, first: u32, n: u32) -> Self {
+  pub fn vertices(mut self, first: u32, count: u32) -> Self {
     self.first_vertex = first;
-    self.n_vertices = n;
+    self.vertex_count = count;
     self
   }
 
@@ -175,30 +212,160 @@ impl DrawVertices {
     self.first_instance = first;
     self
   }
-  pub fn num_instances(mut self, n: u32) -> Self {
-    self.n_instances = n;
+  pub fn instance_count(mut self, count: u32) -> Self {
+    self.instance_count = count;
     self
   }
-  pub fn instances(mut self, first: u32, n: u32) -> Self {
+  pub fn instances(mut self, first: u32, count: u32) -> Self {
     self.first_instance = first;
-    self.n_instances = n;
+    self.instance_count = count;
     self
   }
 }
 
 impl StreamPush for DrawVertices {
   fn enqueue(&self, cb: vk::CommandBuffer) {
-    if !self.draw.buffers.is_empty() {
-      vk::CmdBindVertexBuffers(
-        cb,
-        0,
-        self.draw.buffers.len() as u32,
-        self.draw.buffers.as_ptr(),
-        self.draw.offsets.as_ptr(),
-      );
-    }
+    self.vertex_buffers.enqueue(cb);
+    vk::CmdDraw(cb, self.vertex_count, self.instance_count, self.first_vertex, self.first_instance);
+  }
+}
 
-    vk::CmdDraw(cb, self.n_vertices, self.n_instances, self.first_vertex, self.first_instance);
+impl DrawIndexed {
+  /// Creates a new builder for indexed drawing
+  ///
+  /// Default initializes:
+  ///  - `index_count = 0`
+  ///  - `instance_count = 1`
+  ///  - `first_index = 0`
+  ///  - `vertex_offset = 0`
+  ///  - `first_instance = 0`
+  ///  - `index_buffer_offeset = 0`
+  ///  - `index_type = vk::INDEX_TYPE_UINT16`
+  pub fn new(vertex_buffers: BindVertexBuffers, index_buffer: vk::Buffer) -> Self {
+    Self {
+      vertex_buffers,
+      index_count: 0,
+      instance_count: 1,
+      first_index: 0,
+      vertex_offset: 0,
+      first_instance: 0,
+
+      index_buffer,
+      index_buffer_offset: 0,
+      index_type: vk::INDEX_TYPE_UINT16,
+    }
+  }
+
+  pub fn first_index(mut self, first: u32) -> Self {
+    self.first_index = first;
+    self
+  }
+  pub fn index_count(mut self, count: u32) -> Self {
+    self.index_count = count;
+    self
+  }
+  pub fn indices(mut self, first: u32, count: u32) -> Self {
+    self.first_index = first;
+    self.index_count = count;
+    self
+  }
+
+  pub fn vertex_offset(mut self, offset: i32) -> Self {
+    self.vertex_offset = offset;
+    self
+  }
+
+  pub fn first_instance(mut self, first: u32) -> Self {
+    self.first_instance = first;
+    self
+  }
+  pub fn instance_count(mut self, count: u32) -> Self {
+    self.instance_count = count;
+    self
+  }
+  pub fn instances(mut self, first: u32, count: u32) -> Self {
+    self.first_instance = first;
+    self.instance_count = count;
+    self
+  }
+
+  pub fn buffer_offset(mut self, offset: vk::DeviceSize) -> Self {
+    self.index_buffer_offset = offset;
+    self
+  }
+  pub fn index_type(mut self, ty: vk::IndexType) -> Self {
+    self.index_type = ty;
+    self
+  }
+}
+
+impl StreamPush for DrawIndexed {
+  fn enqueue(&self, cb: vk::CommandBuffer) {
+    self.vertex_buffers.enqueue(cb);
+    vk::CmdBindIndexBuffer(cb, self.index_buffer, self.index_buffer_offset, self.index_type);
+    vk::CmdDrawIndexed(
+      cb,
+      self.index_count,
+      self.instance_count,
+      self.first_index,
+      self.vertex_offset,
+      self.first_instance,
+    );
+  }
+}
+
+impl DrawIndirect {
+  /// Creates a new builder for indirect drawing
+  ///
+  /// Default initializes:
+  ///  - `count = 0`
+  ///  - `offset = 0`
+  ///  - `stride = sizeof(vk::DrawIndirectCommand)`
+  ///  - `index_buffer = None`
+  pub fn new(vertex_buffers: BindVertexBuffers, buffer: vk::Buffer) -> Self {
+    Self {
+      vertex_buffers,
+      count: 0,
+      offset: 0,
+      stride: std::mem::size_of::<vk::DrawIndirectCommand>() as u32,
+      buffer,
+
+      index_buffer: None,
+      index_offset: 0,
+      index_type: vk::INDEX_TYPE_UINT16,
+    }
+  }
+
+  /// Set the builder for indexed indirect drawing
+  ///
+  /// Also sets the `stride` to teh required `sizeof(vk::DrawIndexedIndirectCommand)`
+  pub fn indexed(mut self, index_buffer: vk::Buffer, index_offset: vk::DeviceSize, index_type: vk::IndexType) -> Self {
+    self.index_buffer = Some(index_buffer);
+    self.index_offset = index_offset;
+    self.index_type = index_type;
+    self.stride = std::mem::size_of::<vk::DrawIndexedIndirectCommand>() as u32;
+    self
+  }
+
+  pub fn count(mut self, count: u32) -> Self {
+    self.count = count;
+    self
+  }
+  pub fn offset(mut self, offset: vk::DeviceSize) -> Self {
+    self.offset = offset;
+    self
+  }
+}
+
+impl StreamPush for DrawIndirect {
+  fn enqueue(&self, cb: vk::CommandBuffer) {
+    self.vertex_buffers.enqueue(cb);
+    if let Some(indices) = self.index_buffer {
+      vk::CmdBindIndexBuffer(cb, indices, self.index_offset, self.index_type);
+      vk::CmdDrawIndexedIndirect(cb, self.buffer, self.offset, self.count, self.stride);
+    } else {
+      vk::CmdDrawIndirect(cb, self.buffer, self.offset, self.count, self.stride);
+    }
   }
 }
 
@@ -677,5 +844,76 @@ impl StreamPush for Blit {
     ImageBarrier::new(self.dst)
       .to(vk::IMAGE_LAYOUT_PRESENT_SRC_KHR, vk::ACCESS_COLOR_ATTACHMENT_READ_BIT)
       .enqueue(cb);
+  }
+}
+
+/// Sets a viewport for the command stream
+#[derive(Clone, Copy)]
+pub struct Viewport {
+  pub vp: vk::Viewport,
+}
+
+impl Viewport {
+  pub fn with_size(width: f32, height: f32) -> Self {
+    Self {
+      vp: vk::Viewport {
+        x: 0.0,
+        y: 0.0,
+        width,
+        height,
+        minDepth: 0.0,
+        maxDepth: 1.0,
+      },
+    }
+  }
+
+  pub fn with_extent(extent: vk::Extent2D) -> Self {
+    Self::with_size(extent.width as f32, extent.height as f32)
+  }
+
+  pub fn offset(mut self, x: f32, y: f32) -> Self {
+    self.vp.x = x;
+    self.vp.y = y;
+    self
+  }
+
+  pub fn depth(mut self, mindepth: f32, maxdepth: f32) -> Self {
+    self.vp.minDepth = mindepth;
+    self.vp.maxDepth = maxdepth;
+    self
+  }
+}
+
+impl StreamPush for Viewport {
+  fn enqueue(&self, cb: vk::CommandBuffer) {
+    vk::CmdSetViewport(cb, 0, 1, &self.vp);
+  }
+}
+
+/// Sets a scissor rect for the command stream
+#[derive(Clone, Copy)]
+pub struct Scissor {
+  pub rect: vk::Rect2D,
+}
+
+impl Scissor {
+  pub fn with_size(width: u32, height: u32) -> Self {
+    Self::with_extent(vk::Extent2D { width, height })
+  }
+
+  pub fn with_extent(extent: vk::Extent2D) -> Self {
+    Self::with_offset(vk::Offset2D { x: 0, y: 0 }, extent)
+  }
+
+  pub fn with_offset(offset: vk::Offset2D, extent: vk::Extent2D) -> Self {
+    Self {
+      rect: vk::Rect2D { offset, extent },
+    }
+  }
+}
+
+impl StreamPush for Scissor {
+  fn enqueue(&self, cb: vk::CommandBuffer) {
+    vk::CmdSetScissor(cb, 0, 1, &self.rect);
   }
 }
