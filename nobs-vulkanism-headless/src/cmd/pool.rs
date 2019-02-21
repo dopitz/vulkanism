@@ -47,6 +47,15 @@ impl Pool {
     stream::Pool::stream_begin(&mut self.streams, queue)
   }
 
+  pub fn begin_after(
+    &mut self,
+    queue: vk::device::Queue,
+    sig: vk::Semaphore,
+    stage: vk::ShaderStageFlags,
+  ) -> Result<stream::Stream, Error> {
+    self.begin(queue).map(|cs| cs.wait_for(sig, stage))
+  }
+
   pub fn next_frame(&mut self) -> usize {
     self.streams.lock().unwrap().next_frame()
   }

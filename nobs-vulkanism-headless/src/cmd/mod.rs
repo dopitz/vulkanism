@@ -1,10 +1,10 @@
 mod pool;
 mod stream;
-mod streampush;
+mod commands;
 
 pub use pool::Pool;
 pub use stream::Stream;
-pub use streampush::*;
+pub use commands::*;
 
 #[derive(Debug, Clone)]
 pub enum Error {

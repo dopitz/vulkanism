@@ -154,11 +154,11 @@ impl Pool {
 }
 
 pub struct Stream {
-  device: vk::Device,
-  queue: vk::device::Queue,
+  pub device: vk::Device,
+  pub queue: vk::device::Queue,
+  pub buffer: vk::CommandBuffer,
   wait_signals: Vec<vk::Semaphore>,
   wait_stages: Vec<vk::ShaderStageFlags>,
-  buffer: vk::CommandBuffer,
   signals: vk::Semaphore,
   fence: vk::Fence,
   streams: Weak<Mutex<Pool>>,
@@ -182,9 +182,8 @@ impl Stream {
     pool.begin(queue)
   }
 
-  pub fn push<T: StreamPush>(self, o: &T) -> Self {
-    o.enqueue(self.buffer);
-    self
+  pub fn push<T: StreamPush>(mut self, o: &T) -> Self {
+    o.enqueue(self)
   }
 
   pub fn wait_for(mut self, sig: vk::Semaphore, stage: vk::ShaderStageFlags) -> Self {
@@ -248,17 +247,5 @@ impl Stream {
 
   pub fn get_commandbuffer(&self) -> vk::CommandBuffer {
     self.buffer
-  }
-}
-
-pub struct Sp<'a, T: StreamPush> {
-  pub p: &'a T,
-}
-
-impl<'a, T: StreamPush> std::ops::Shl<Sp<'a, T>> for Stream {
-  type Output = Self;
-
-  fn shl(mut self, push: Sp<'a, T>) -> Stream {
-    self.push(push.p)
   }
 }

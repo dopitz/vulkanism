@@ -140,33 +140,19 @@ pub fn main() {
     let next = sc.next_image();
     let fb = &fbs[i];
 
-    //let cc = cmds
-    //  .begin(device.queues[0])
-    //  .unwrap()
-    //  .wait_for(next.signal, vk::PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
-    //let cc  = cc << vk::cmd::ImageBarrier::new(fb.images[0]).to(vk::IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, vk::ACCESS_COLOR_ATTACHMENT_WRITE_BIT)
-    //  << fb.begin()
-    //  << vk::cmd::Viewport::with_extent(sc.extent)
-    //  << vk::cmd::Scissor::with_extent(sc.extent)
-    //  << vk::cmd::BindPipeline::graphics(pipe.handle)
-    //  << draw
-    //  << fb.end()
-    //  << sc.blit(next.index, fb.images[0]);
-
-    //let wait = cc.submit_signals();
-
     let wait = cmds
-      .begin(device.queues[0])
-      .unwrap()
-      .wait_for(next.signal, vk::PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT)
-      .push(&vk::cmd::ImageBarrier::new(fb.images[0]).to(vk::IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, vk::ACCESS_COLOR_ATTACHMENT_WRITE_BIT))
-      .push(&fb.begin())
-      .push(&vk::cmd::Viewport::with_extent(sc.extent))
-      .push(&vk::cmd::Scissor::with_extent(sc.extent))
-      .push(&vk::cmd::BindPipeline::graphics(pipe.handle))
-      .push(&vk::cmd::Draw::default().vertices().vertex_count(3))
-      .push(&fb.end())
-      .push(&sc.blit(next.index, fb.images[0]))
+      .begin_after(device.queues[0], next.signal, vk::PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT)
+      .map(|cs| {
+        cs.push(&vk::cmd::ImageBarrier::to_color_attachment(fb.images[0]))
+          .push(&fb.begin())
+          .push(&vk::cmd::Viewport::with_extent(sc.extent))
+          .push(&vk::cmd::Scissor::with_extent(sc.extent))
+          .push(&vk::cmd::BindPipeline::graphics(pipe.handle))
+          .push(&vk::cmd::Draw::default().vertices().vertex_count(3))
+          .push(&fb.end())
+          .push(&sc.blit(next.index, fb.images[0]))
+      })
+      .expect("AOUAOUEAOEU")
       .submit_signals();
 
     //println!("{:?}   {}   {}",next.index, next.signal, wait);
