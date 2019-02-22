@@ -121,7 +121,8 @@ pub fn main() {
   let mut close = false;
   let mut x = 'x';
 
-  let draw = vk::cmd::Draw::default().vertices().vertex_count(3);
+  use vk::cmd::commands::*;
+  let draw = Draw::default().vertices().vertex_count(3);
 
   loop {
     events_loop.poll_events(|event| match event {
@@ -143,17 +144,17 @@ pub fn main() {
     let wait = cmds
       .begin_after(device.queues[0], next.signal, vk::PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT)
       .map(|cs| {
-        cs.push(&vk::cmd::ImageBarrier::to_color_attachment(fb.images[0]))
+        cs.push(&ImageBarrier::to_color_attachment(fb.images[0]))
           .push(&fb.begin())
-          .push(&vk::cmd::Viewport::with_extent(sc.extent))
-          .push(&vk::cmd::Scissor::with_extent(sc.extent))
-          .push(&vk::cmd::BindPipeline::graphics(pipe.handle))
-          .push(&vk::cmd::Draw::default().vertices().vertex_count(3))
+          .push(&Viewport::with_extent(sc.extent))
+          .push(&Scissor::with_extent(sc.extent))
+          .push(&BindPipeline::graphics(pipe.handle))
+          .push(&Draw::default().vertices().vertex_count(3))
           .push(&fb.end())
           .push(&sc.blit(next.index, fb.images[0]))
       })
       .expect("AOUAOUEAOEU")
-      .submit_signals();
+      .submit_signals().unwrap();
 
     //println!("{:?}   {}   {}",next.index, next.signal, wait);
 

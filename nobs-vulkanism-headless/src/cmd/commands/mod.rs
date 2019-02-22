@@ -13,6 +13,7 @@ pub use framebuffer::*;
 pub use pipeline::*;
 
 use super::Stream;
+use super::Error;
 
 /// Allows to use [push](../stream/struct.Stream.html#method.push) on a [Stream](../stream/struct.Stream.html)
 pub trait StreamPush {

@@ -86,12 +86,13 @@ pub fn main() {
     mapped.device_to_host(&mut ubb);
   }
 
+  use vk::cmd::commands::*;
   cpool
     .begin(device.queues[0])
     .unwrap()
-    .push(&vk::cmd::BindPipeline::compute(p.handle))
-    .push(&vk::cmd::BindDset::new(vk::PIPELINE_BIND_POINT_COMPUTE, p.layout, 0, ds))
-    .push(&vk::cmd::Dispatch::xyz(1, 1, 1))
+    .push(&BindPipeline::compute(p.handle))
+    .push(&BindDset::new(vk::PIPELINE_BIND_POINT_COMPUTE, p.layout, 0, ds))
+    .push(&Dispatch::xyz(1, 1, 1))
     .submit_immediate();
 
   {

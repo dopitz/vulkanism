@@ -568,11 +568,11 @@ impl PageTable {
         }
       }
 
-      write!(s, "    - SumAlloc   = {}\n", sum_alloc);
-      write!(s, "    - SumFree    = {}\n", sum_free);
-      write!(s, "    - SumPadding = {}\n", sum_paddings);
-      write!(s, "    - NAlloc = {}\n", n_alloc);
-      write!(s, "    - NFree  = {}\n", n_free);
+      write!(s, "    - SumAlloc   = {}\n", sum_alloc).unwrap();
+      write!(s, "    - SumFree    = {}\n", sum_free).unwrap();
+      write!(s, "    - SumPadding = {}\n", sum_paddings).unwrap();
+      write!(s, "    - NAlloc = {}\n", n_alloc).unwrap();
+      write!(s, "    - NFree  = {}\n", n_free).unwrap();
     }
     s
   }

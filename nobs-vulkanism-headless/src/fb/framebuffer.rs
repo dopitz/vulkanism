@@ -1,6 +1,7 @@
-use crate::cmd;
 use vk;
 
+use crate::cmd::commands::RenderpassBegin;
+use crate::cmd::commands::RenderpassEnd;
 use crate::fb::Renderpass;
 use crate::mem;
 
@@ -23,16 +24,14 @@ impl Framebuffer {
     }
   }
 
-  pub fn begin_area(&self, area: vk::Rect2D) -> cmd::RenderpassBegin {
-    cmd::RenderpassBegin::new(self.pass, self.handle).clear(&self.clear).area(area)
+  pub fn begin_area(&self, area: vk::Rect2D) -> RenderpassBegin {
+    RenderpassBegin::new(self.pass, self.handle).clear(&self.clear).area(area)
   }
-  pub fn begin(&self) -> cmd::RenderpassBegin {
-    cmd::RenderpassBegin::new(self.pass, self.handle)
-      .clear(&self.clear)
-      .extent(self.extent)
+  pub fn begin(&self) -> RenderpassBegin {
+    RenderpassBegin::new(self.pass, self.handle).clear(&self.clear).extent(self.extent)
   }
-  pub fn end(&self) -> cmd::RenderpassEnd {
-    cmd::RenderpassEnd {}
+  pub fn end(&self) -> RenderpassEnd {
+    RenderpassEnd {}
   }
 }
 

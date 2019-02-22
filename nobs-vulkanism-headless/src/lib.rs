@@ -1,8 +1,8 @@
 //! vulkan for offscreen rendering and compute
 //!
 //! This library compiles the nobs-vk base crates into a single depencency and introduces two more moduls:
-//!  - [cmd](mod.cmd.html) - Handles command buffers and syrchronization
-//!  - [fm](mod.fb.html) - Handles renderpass and framebuffer management
+//!  - [cmd](cmd/index.html) - Handles command buffers and syrchronization
+//!  - [fm](fb/index.html) - Handles renderpass and framebuffer management
 //!
 //! Rearranges module namespaces, so that we only have to use a single `external crate nobs_vulkanism` instruction instead of
 //! the all three depencencies (nobs-vk, nobs-vkmem, nobs-vkpipes). Inlines the nobs-vk Symbols into thes crates root namespace.

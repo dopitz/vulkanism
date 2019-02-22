@@ -44,8 +44,8 @@ impl Swapchain {
     NextImage { signal, index }
   }
 
-  pub fn blit(&self, index: u32, src: vk::Image) -> vk::cmd::Blit {
-    vk::cmd::Blit::new()
+  pub fn blit(&self, index: u32, src: vk::Image) -> vk::cmd::commands::Blit {
+    vk::cmd::commands::Blit::new()
       .src(src)
       .src_offset_end(self.extent.width as i32, self.extent.height as i32, 1)
       .dst(self.images[index as usize])

@@ -1,15 +1,18 @@
+use std::rc::Rc;
+use std::rc::Weak as RcWeak;
 use std::sync::Arc;
 use std::sync::Mutex;
 use std::sync::Weak;
 
 use vk;
 
+use crate::cmd::commands::StreamPush;
 use crate::cmd::pool;
 use crate::cmd::Error;
-use crate::cmd::StreamPush;
 
 pub struct Pool {
   device: vk::Device,
+  device_extensions: Rc<vk::DeviceExtensions>,
   pool: vk::CommandPool,
   unused: Vec<Stream>,
 
@@ -33,6 +36,7 @@ impl Pool {
 
     Arc::new(Mutex::new(Self {
       device,
+      device_extensions: Rc::new(vk::DeviceExtensions::new(device)),
       pool,
       unused,
       group_index: 0,
@@ -47,6 +51,7 @@ impl Pool {
       Some(s) => s,
       None => {
         let device = streams.device;
+        let mut err = None;
 
         let buffer = {
           let info = vk::CommandBufferAllocateInfo {
@@ -57,7 +62,11 @@ impl Pool {
             commandBufferCount: 1,
           };
           let mut h = vk::NULL_HANDLE;
-          vk_check!(vk::AllocateCommandBuffers(device, &info, &mut h)).map_err(|e| Error::CreateStreamFailed(e))?;
+          err = err.and(
+            vk_check!(vk::AllocateCommandBuffers(device, &info, &mut h))
+              .map_err(|e| Error::CreateStreamFailed(e))
+              .err(),
+          );
           h
         };
 
@@ -68,7 +77,11 @@ impl Pool {
             flags: vk::FENCE_CREATE_SIGNALED_BIT,
           };
           let mut h = vk::NULL_HANDLE;
-          vk_check!(vk::CreateFence(device, &info, std::ptr::null(), &mut h)).map_err(|e| Error::CreateStreamFailed(e))?;
+          err = err.and(
+            vk_check!(vk::CreateFence(device, &info, std::ptr::null(), &mut h))
+              .map_err(|e| Error::CreateStreamFailed(e))
+              .err(),
+          );
           h
         };
 
@@ -79,12 +92,17 @@ impl Pool {
             flags: 0,
           };
           let mut h = vk::NULL_HANDLE;
-          vk_check!(vk::CreateSemaphore(device, &info, std::ptr::null(), &mut h)).map_err(|e| Error::CreateStreamFailed(e))?;
+          err = err.and(
+            vk_check!(vk::CreateSemaphore(device, &info, std::ptr::null(), &mut h))
+              .map_err(|e| Error::CreateStreamFailed(e))
+              .err(),
+          );
           h
         };
 
         Stream {
           device,
+          device_extensions: Rc::clone(&streams.device_extensions),
           queue,
           wait_signals: Default::default(),
           wait_stages: Default::default(),
@@ -92,6 +110,8 @@ impl Pool {
           signals,
           fence,
           streams: weak,
+
+          err,
         }
       }
     };
@@ -153,8 +173,13 @@ impl Pool {
   }
 }
 
+/// Manages a vulkan command buffer
+///
+/// The command stream handles the life cycle of a command buffer.
+/// It has
 pub struct Stream {
   pub device: vk::Device,
+  pub device_extensions: Rc<vk::DeviceExtensions>,
   pub queue: vk::device::Queue,
   pub buffer: vk::CommandBuffer,
   wait_signals: Vec<vk::Semaphore>,
@@ -162,6 +187,8 @@ pub struct Stream {
   signals: vk::Semaphore,
   fence: vk::Fence,
   streams: Weak<Mutex<Pool>>,
+
+  err: Option<Error>,
 }
 
 impl Drop for Stream {
@@ -178,21 +205,30 @@ impl Drop for Stream {
 }
 
 impl Stream {
-  pub fn begin(pool: &mut pool::Pool, queue: vk::device::Queue) -> Result<Self, Error> {
-    pool.begin(queue)
-  }
-
-  pub fn push<T: StreamPush>(mut self, o: &T) -> Self {
-    o.enqueue(self)
-  }
-
-  pub fn wait_for(mut self, sig: vk::Semaphore, stage: vk::ShaderStageFlags) -> Self {
-    self.wait_signals.push(sig);
-    self.wait_stages.push(stage);
+  pub fn map_err(mut self, err: Result<(), Error>) -> Self {
+    match err {
+      Ok(_) => (),
+      Err(e) => self.err = Some(e),
+    }
     self
   }
 
-  fn submit_inner(self, signal: bool, immediate: bool) -> vk::Semaphore {
+  pub fn push<T: StreamPush>(self, o: &T) -> Self {
+    match self.err {
+      None => o.enqueue(self),
+      Some(_) => self,
+    }
+  }
+
+  pub fn wait_for(mut self, sig: vk::Semaphore, stage: vk::ShaderStageFlags) -> Self {
+    if self.err.is_none() {
+      self.wait_signals.push(sig);
+      self.wait_stages.push(stage);
+    }
+    self
+  }
+
+  fn submit_inner(self, signal: bool, immediate: bool) -> Result<vk::Semaphore, Error> {
     vk::EndCommandBuffer(self.buffer);
 
     let info = vk::SubmitInfo {
@@ -223,29 +259,25 @@ impl Stream {
     if let Some(streams) = self.streams.upgrade() {
       let mut streams = streams.lock().unwrap();
       if immediate {
-        vk_uncheck!(vk::WaitForFences(self.device, 1, &self.fence, vk::TRUE, u64::max_value()));
+        vk_check!(vk::WaitForFences(self.device, 1, &self.fence, vk::TRUE, u64::max_value())).map_err(|e| Error::SubmitFailed(e))?;
         streams.retain(self);
       } else {
         streams.submit(self);
       }
     }
 
-    sig
+    Ok(sig)
   }
 
-  pub fn submit(self) {
-    self.submit_inner(false, false);
+  pub fn submit(self) -> Result<(), Error> {
+    self.submit_inner(false, false).map(|sig| ())
   }
 
-  pub fn submit_signals(self) -> vk::Semaphore {
+  pub fn submit_signals(self) -> Result<vk::Semaphore, Error> {
     self.submit_inner(true, false)
   }
 
-  pub fn submit_immediate(self) {
-    self.submit_inner(false, true);
-  }
-
-  pub fn get_commandbuffer(&self) -> vk::CommandBuffer {
-    self.buffer
+  pub fn submit_immediate(self) -> Result<(), Error> {
+    self.submit_inner(false, true).map(|sig| ())
   }
 }
