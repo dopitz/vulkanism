@@ -84,7 +84,7 @@ pub fn setup_rendertargets(
     .create()
     .unwrap();
 
-  let mut fbs = vec![
+  let fbs = vec![
     vk::fb::new_framebuffer_from_pass(&pass, alloc).extent(sc.extent).create(),
     vk::fb::new_framebuffer_from_pass(&pass, alloc).extent(sc.extent).create(),
     vk::fb::new_framebuffer_from_pass(&pass, alloc).extent(sc.extent).create(),
@@ -101,7 +101,7 @@ pub fn main() {
   let (inst, pdevice, device, mut events_loop, window) = setup_vulkan_window();
 
   let mut alloc = vk::mem::Allocator::new(pdevice.handle, device.handle);
-  let mut cmds = vk::cmd::Pool::new(device.handle, device.queues[0].family, 3).unwrap();
+  let cmds = vk::cmd::Pool::new(device.handle, device.queues[0].family).unwrap();
 
   let (mut sc, rp, fbs) = setup_rendertargets(&inst, &pdevice, &device, &window, &mut alloc);
 
@@ -123,6 +123,7 @@ pub fn main() {
 
   use vk::cmd::commands::*;
   let draw = Draw::default().vertices().vertex_count(3);
+  let mut frame = vk::cmd::Frame::new(device.handle, fbs.len()).unwrap();
 
   loop {
     events_loop.poll_events(|event| match event {
@@ -137,28 +138,28 @@ pub fn main() {
       _ => (),
     });
 
-    let i = cmds.next_frame();
+    let i = frame.next().unwrap();
     let next = sc.next_image();
     let fb = &fbs[i];
 
-    let wait = cmds
-      .begin_after(device.queues[0], next.signal, vk::PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT)
-      .map(|cs| {
-        cs.push(&ImageBarrier::to_color_attachment(fb.images[0]))
-          .push(&fb.begin())
-          .push(&Viewport::with_extent(sc.extent))
-          .push(&Scissor::with_extent(sc.extent))
-          .push(&BindPipeline::graphics(pipe.handle))
-          .push(&Draw::default().vertices().vertex_count(3))
-          .push(&fb.end())
-          .push(&sc.blit(next.index, fb.images[0]))
-      })
-      .expect("AOUAOUEAOEU")
-      .submit_signals().unwrap();
+    let cs = cmds
+      .begin_stream()
+      .unwrap()
+      .push(&ImageBarrier::to_color_attachment(fb.images[0]))
+      .push(&fb.begin())
+      .push(&Viewport::with_extent(sc.extent))
+      .push(&Scissor::with_extent(sc.extent))
+      .push(&BindPipeline::graphics(pipe.handle))
+      .push(&draw)
+      .push(&fb.end())
+      .push(&sc.blit(next.index, fb.images[0]));
 
-    //println!("{:?}   {}   {}",next.index, next.signal, wait);
+    let (_, wait) = frame
+      .wait_for(next.signal, vk::PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT)
+      .push(cs)
+      .submit(device.queues[0].handle);
 
-    sc.present(device.queues[0].handle, next.index, &[wait]);
+    sc.present(device.queues[0].handle, next.index, &[wait.unwrap()]);
     n += 1;
 
     if close {
@@ -169,6 +170,4 @@ pub fn main() {
   let t = t.elapsed().unwrap();
   let t = t.as_secs() as f32 + t.subsec_millis() as f32 / 1000.0;
   println!("{}, {}   {}", n, t, n as f32 / t);
-
-  cmds.wait_all();
 }

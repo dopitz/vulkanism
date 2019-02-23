@@ -69,7 +69,7 @@ pub fn main() {
     .b_out(|b| b.buffer(buf_out))
     .update();
 
-  let mut cpool = vk::cmd::Pool::new(device.handle, device.queues[0].family, 3).unwrap();
+  let cpool = vk::cmd::Pool::new(device.handle, device.queues[0].family).unwrap();
 
   {
     let mapped = allocator.get_mapped(buf_ub).unwrap();
@@ -87,13 +87,23 @@ pub fn main() {
   }
 
   use vk::cmd::commands::*;
-  cpool
-    .begin(device.queues[0])
+  let cs = cpool
+    .begin_stream()
     .unwrap()
     .push(&BindPipeline::compute(p.handle))
     .push(&BindDset::new(vk::PIPELINE_BIND_POINT_COMPUTE, p.layout, 0, ds))
-    .push(&Dispatch::xyz(1, 1, 1))
-    .submit_immediate();
+    .push(&Dispatch::xyz(1, 1, 1));
+
+  //let batch = vk::cmd::BatchSubmit::new(device.handle).unwrap();
+  let mut batch = vk::cmd::AutoBatch::new(device.handle).unwrap();
+  batch.push(cs).submit(device.queues[0].handle).0.sync().unwrap();
+
+  //    .begin(device.queues[0])
+  //    .unwrap()
+  //    .push(&BindPipeline::compute(p.handle))
+  //    .push(&BindDset::new(vk::PIPELINE_BIND_POINT_COMPUTE, p.layout, 0, ds))
+  //    .push(&Dispatch::xyz(1, 1, 1))
+  //    .submit_immediate();
 
   {
     let mapped = allocator.get_mapped_region(buf_out, 0, 100 * 4).unwrap();
