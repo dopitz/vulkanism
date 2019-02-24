@@ -7,7 +7,6 @@ license = "MIT"
 keywords = ["vulkan", "ffi", "graphics", "gpu", "rendering"]
 categories = ["rendering::graphics-api"]
 repository = "https://github.com/dopitz/vulkanism/nobs-vkpipes"
-readme = "README.md"
 edition = "2018"
 
 [dependencies]
