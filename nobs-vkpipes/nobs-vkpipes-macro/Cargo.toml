@@ -7,7 +7,7 @@ license = "MIT"
 keywords = ["vulkan", "memory", "graphics", "gpu", "rendering"]
 categories = ["rendering::graphics-api"]
 repository = "https://github.com/dopitz/nobs-vkmem"
-readme = "README.md"
+readme = "../README.md"
 
 [lib]
 proc_macro = true
