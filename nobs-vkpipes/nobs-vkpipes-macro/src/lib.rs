@@ -10,7 +10,7 @@
 //! We define the pipeline with several comma separated fields, paths are always specified relative to the compilied crate's cargo.toml:
 //!
 //! See [pipeline](macro.pipeline.html) and [shader](macro.shader.html) for complete list of supported options.
-//! ```rust
+//! ```rust,compile_fail
 //! extern crate nobs_vulkanism as vk;
 //!
 //! // declare the module that will contain our pipeline

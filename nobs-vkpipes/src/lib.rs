@@ -10,7 +10,7 @@
 //! We define the pipeline with several comma separated fields, paths are always specified relative to the compilied crate's cargo.toml:
 //!
 //! See the reexported macros [pipeline](../nobs_vkpipes_macro/macro.pipeline.html) and [shader](../nobs_vkpipes_macro/macro.shader.html) for a list of configurable options.
-//! ```rust
+//! ```rust,compile_fail
 //! extern crate nobs_vulkanism as vk;
 //! // IMPORTANT import these two crates with their original name
 //! // (e.g. not extern crate nobs_vk as vk)
@@ -64,13 +64,13 @@
 //!
 //! // create an instance of the pipeline
 //! // uses the nobs_vk::DeviceExtensions to build the pipeline
-//! //let p = make_sequence::build(&device_ext).new().unwrap();
+//! let p = make_sequence::build(device.handle).new().unwrap();
 //!
 //! // update the descriptor set
-//! //make_sequence::dset::write(&device.ext, ds)
-//! //  .ub(|b| b.buffer(buf_ub))
-//! //  .b_out(|b| b.buffer(buf_out))
-//! //  .update();
+//! make_sequence::dset::write(device.handle, ds)
+//!   .ub(|b| b.buffer(buf_ub))
+//!   .b_out(|b| b.buffer(buf_out))
+//!   .update();
 //! ```
 
 #[macro_use]
