@@ -4,6 +4,12 @@ use vk;
 
 use crate::fb::Error;
 
+/// Managed vulkan rendepass
+///
+/// Tracks the lifetime and automatically destroys the vulkan handle when dropped.
+///
+/// The main advantage of `Renderpass` is, that with it we can conveniently create framebuffers from it with the [specialized builder](struct.RenderpassFramebufferBuilder.thml).
+/// This way textures for every attachment are created automatically if nothing else is specified.
 pub struct Renderpass {
   pub device: vk::Device,
   pub pass: vk::RenderPass,
@@ -16,6 +22,7 @@ impl Drop for Renderpass {
   }
 }
 
+/// Builder pattern for vk::AttachmentDescription
 #[derive(Clone, Copy)]
 pub struct AttachmentBuilder {
   pub desc: vk::AttachmentDescription,
@@ -76,6 +83,7 @@ impl AttachmentBuilder {
   }
 }
 
+/// Builder pattern for vk::SubpassDescription
 #[derive(Clone)]
 pub struct SubpassBuilder {
   pub input: Vec<vk::AttachmentReference>,
@@ -173,6 +181,7 @@ impl SubpassBuilder {
   }
 }
 
+/// Builder pattern for vk::SubpassDependency
 #[derive(Clone, Copy)]
 pub struct DependencyBuilder {
   pub desc: vk::SubpassDependency,
@@ -226,6 +235,7 @@ impl DependencyBuilder {
   }
 }
 
+/// Builder for [Renderpass](struct.Renderpass.html)
 pub struct Builder {
   pub device: vk::Device,
 
@@ -237,6 +247,7 @@ pub struct Builder {
 }
 
 impl Builder {
+  /// Build a renderpass for the specified device
   pub fn new(device: vk::Device) -> Self {
     Self {
       device,
@@ -247,6 +258,7 @@ impl Builder {
     }
   }
 
+  /// Adds an attachment at position `index`
   pub fn attachment(&mut self, index: u32, builder: AttachmentBuilder) -> &mut Self {
     let desc = self.attachments.entry(index).or_insert_with(|| builder.get_desc());
     if crate::fb::DEPTH_FORMATS.iter().find(|f| **f == desc.format).is_some() {
@@ -255,16 +267,19 @@ impl Builder {
     self
   }
 
+  /// Adds the subpass at position `index`
   pub fn subpass(&mut self, index: u32, builder: SubpassBuilder) -> &mut Self {
     self.subpasses.entry(index).or_insert_with(|| builder.clone());
     self
   }
 
+  /// Adds a subpass dependency
   pub fn dependency(&mut self, builder: DependencyBuilder) -> &mut Self {
     self.dependencies.push(builder.get_desc());
     self
   }
 
+  /// Create the Renderpass
   pub fn create(&self) -> Result<Renderpass, Error> {
     for i in 0..self.subpasses.len() {
       match self.subpasses.get(&(i as u32)) {

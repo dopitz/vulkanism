@@ -254,7 +254,7 @@ class Commands:
             s += for_each_command(lambda cmd: fn_typedef(cmd))
             s += "\n"
             s += "\n"
-            s += "/// Vulkan commands\n"
+            s += "/// Vulkan library initialization struct\n"
             s += "///\n"
             s += "/// This struct is used to initialize vulkan commands and holds function pointers to them.\n"
             s += "/// Function pointers are initialized during construction.\n"

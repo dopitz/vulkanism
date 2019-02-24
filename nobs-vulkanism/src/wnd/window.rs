@@ -7,6 +7,7 @@ pub enum Error {
   SurfaceCreate(vk::Error),
 }
 
+/// Wrapper around a window plus a vulkan surface for drawing
 pub struct Window {
   inst: vk::Instance,
   pub window: winit::Window,
@@ -14,6 +15,7 @@ pub struct Window {
 }
 
 impl Window {
+  /// Creates the window from a [winit window](../../winit/index.html) and a swapchain
   pub fn new(inst: vk::Instance, window: winit::Window) -> Result<Self, Error> {
     let surface = Self::create_surface(inst, &window)?;
     Ok(Self { inst, window, surface })

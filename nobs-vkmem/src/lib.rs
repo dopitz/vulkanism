@@ -1,7 +1,7 @@
 //! Vulkan memory management as extension to [nobs-vk](https://docs.rs/nobs-vk).
 //!
 //! Buffer and image creation in vulkan is tricky in comparison to e.g. OpenGL, because
-//! 1. We have to create the buffer/image and then later bind it to a`vkDeviceMemory` that has to be created separately.
+//! 1. We have to create the buffer/image and then later bind it to a `vkDeviceMemory` that has to be created separately.
 //! 2. Creating a single `vkDeviceMemory` allocation for every buffer/image is bad practice,
 //!     in fact it is [encouraged](https://developer.nvidia.com/vulkan-memory-management) to bind esources that are used together on the same allocation.
 //! 3. Another layer of difficulty is introduced with memory types, since not all resources (should) share the same memory properties - which is different for each Driver/Vendor

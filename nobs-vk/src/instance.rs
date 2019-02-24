@@ -1,3 +1,4 @@
+//! Covenience instance creation.
 use std::ffi::CStr;
 use std::ffi::CString;
 use std::os::raw::*;

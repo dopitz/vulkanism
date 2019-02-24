@@ -1,3 +1,9 @@
+//! Covenience device and physical device creation.
+//!
+//! Defines easily accessible ways to enumerate physical devices on the system and querry for their features.
+//!
+//! A physical device can then be used to create a logical vulkan device from it.
+
 mod device;
 mod physical_device;
 

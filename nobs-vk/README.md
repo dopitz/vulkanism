@@ -66,12 +66,10 @@ There is no second.
 However it is required to only have a single instance maximum of `VkLib` at any given time. It's not a problem to drop the instance and create another one. After library initilization we can call vulkan commands in two ways:
  - through `VkLib` e.g:
  ```rust
- ///...
  vk_lib.CreateInstance(&info, std::ptr::null(), &mut handle);
  ```
  - through its global function e.g:
  ```rust
- ///...
  vk::CreateInstance(&info, std::ptr::null(), &mut handle);
  ```
 

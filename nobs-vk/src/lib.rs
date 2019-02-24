@@ -6745,7 +6745,7 @@ pub const VERSION_1_1: u32 = make_version!(1, 1, 0);
 #[doc(hidden)] pub type PFN_vkGetQueueCheckpointDataNV = extern "system" fn (queue: Queue, pCheckpointDataCount: *mut u32, pCheckpointData: *mut CheckpointDataNV);
 
 
-/// Vulkan commands
+/// Vulkan library initialization struct
 ///
 /// This struct is used to initialize vulkan commands and holds function pointers to them.
 /// Function pointers are initialized during construction.

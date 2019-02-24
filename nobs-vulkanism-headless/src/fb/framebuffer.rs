@@ -5,6 +5,9 @@ use crate::cmd::commands::RenderpassEnd;
 use crate::fb::Renderpass;
 use crate::mem;
 
+/// Wrapper for a vulkan framebuffer 
+///
+/// Owns the images and image views for all framebuffer attachments
 pub struct Framebuffer {
   device: vk::Device,
   pub pass: vk::RenderPass,
@@ -17,6 +20,7 @@ pub struct Framebuffer {
 }
 
 impl Framebuffer {
+  /// Set the clear values for all attachments
   pub fn set_clear(&mut self, clear: &[vk::ClearValue]) {
     assert!(self.clear.len() == clear.len());
     for (c, s) in self.clear.iter_mut().zip(clear.iter()) {
@@ -24,12 +28,17 @@ impl Framebuffer {
     }
   }
 
+  /// Returns a render pass begin command
+  ///
+  /// The returned command is configured to draw in the specified `area`.
   pub fn begin_area(&self, area: vk::Rect2D) -> RenderpassBegin {
     RenderpassBegin::new(self.pass, self.handle).clear(&self.clear).area(area)
   }
+  /// Returns a render pass begin command
   pub fn begin(&self) -> RenderpassBegin {
     RenderpassBegin::new(self.pass, self.handle).clear(&self.clear).extent(self.extent)
   }
+  /// Returns a render pass end command
   pub fn end(&self) -> RenderpassEnd {
     RenderpassEnd {}
   }
@@ -54,7 +63,9 @@ pub struct Builder {
   clear: Vec<vk::ClearValue>,
 }
 
+/// Builder for [Framebuffer](struct.Framebuffer.html)
 impl Builder {
+  /// Build a new framebuffer for the specified renderpass
   pub fn new(device: vk::Device, pass: vk::RenderPass) -> Self {
     Self {
       device,
@@ -66,11 +77,15 @@ impl Builder {
     }
   }
 
+  /// Sets the extend of all framebuffer attachments
   pub fn extent(&mut self, extent: vk::Extent2D) -> &mut Self {
     self.extent = extent;
     self
   }
 
+  /// Adds the `image` as framebuffer attachment
+  ///
+  /// Attachments are added in sequence, meaning the attachment at position 0 is set by the first call to `target`, the one at position 1 by the second call, etc.
   pub fn target(&mut self, image: vk::Image, view: vk::ImageView, clear: vk::ClearValue) -> &mut Self {
     self.images.push(image);
     self.views.push(view);
@@ -78,6 +93,7 @@ impl Builder {
     self
   }
 
+  /// Creates the framebuffer
   pub fn create(&mut self) -> Framebuffer {
     let info = vk::FramebufferCreateInfo {
       sType: vk::STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
@@ -105,6 +121,11 @@ impl Builder {
   }
 }
 
+/// Builder for [Framebuffer](struct.Framebuffer.html)
+///
+/// This builder is specialized in a way that we do not need to specify any images as attachments.
+/// For attachments in the renderpass that have not been externally specified with [target](struct.RenderpassFramebufferBuilder.html#method.target)
+/// the builder creates new images automatically.
 pub struct RenderpassFramebufferBuilder<'a, 'b> {
   alloc: &'a mut mem::Allocator,
   pass: &'b Renderpass,
@@ -113,6 +134,7 @@ pub struct RenderpassFramebufferBuilder<'a, 'b> {
 }
 
 impl<'a, 'b> RenderpassFramebufferBuilder<'a, 'b> {
+  /// Build a new framebuffer for the specified renderpass
   pub fn new(pass: &'b Renderpass, alloc: &'a mut mem::Allocator) -> Self {
     let mut images = Vec::new();
     images.resize(pass.attachments.len(), vk::NULL_HANDLE);
@@ -124,17 +146,27 @@ impl<'a, 'b> RenderpassFramebufferBuilder<'a, 'b> {
     }
   }
 
+  /// Specify `image` as rendertarget at position `index`.
+  ///
+  /// The builder will use the specified image as attachment. 
+  /// For the attachment at position `index` no image will be created in [create](struct.RenderpassFramebufferBuilder.html#method.create).
+  /// An image view will still be created.
   pub fn target(mut self, index: usize, image: vk::Image) -> Self {
     debug_assert!(index < self.images.len());
     self.images[index] = image;
     self
   }
 
+  /// Specyfy the extent of all attachments
   pub fn extent(mut self, extent: vk::Extent2D) -> Self {
     self.extent = extent;
     self
   }
 
+  /// Creates the Framebuffer
+  ///
+  /// This will create an image and image view for every attachment, except an image has been [set](struct.RenderpassFramebufferBuilder.html#method.target).
+  /// Images are created with the [Allocator](../../mem/struct.Allocator.html) that has been specified in the builders constructor.
   pub fn create(mut self) -> Framebuffer {
     fn is_depth(format: vk::Format) -> bool {
       crate::fb::DEPTH_FORMATS.iter().find(|f| **f == format).is_some()
