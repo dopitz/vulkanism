@@ -9,7 +9,7 @@ use crate as vk;
 ///
 /// Manages a vulkan instance with an optional debug callback for validation layers
 ///
-/// The Instance will take ownership of the [Core](../struct.Core.html):
+/// The Instance will take ownership of the [VkLib](../struct.VkLib.html):
 ///  - there is no need to ever have multiple vulkan instances in the same process.
 ///  - the Instance and vulkan core library should go out of scope simultanously.
 ///
@@ -63,7 +63,7 @@ extern "system" fn debug_callback_fn(
 ///
 /// Configures validation layers, application, engine name and used extensions for the new instance.
 ///
-/// Creating an Instance will take ownership of the specified [Core](../struct.Core.html) object.
+/// Creating an Instance will take ownership of the specified [VkLib](../struct.VkLib.html) object.
 /// However it is still necessary to create it before the Builder, so that we can look up supported layers and extensions, while configuring.
 ///
 /// ## Example
@@ -72,7 +72,7 @@ extern "system" fn debug_callback_fn(
 /// extern crate nobs_vk as vk;
 ///
 /// # fn main() {
-/// let vk_lib = vk::Core::new();
+/// let vk_lib = vk::VkLib::new();
 /// let inst = vk::instance::new()
 ///   .validate(vk::DEBUG_REPORT_ERROR_BIT_EXT | vk::DEBUG_REPORT_WARNING_BIT_EXT)
 ///   .application("awesome app", make_version!(1, 0, 0))

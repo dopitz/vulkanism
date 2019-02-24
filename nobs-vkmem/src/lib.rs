@@ -353,7 +353,7 @@ impl AllocatorSizes {
 /// }
 ///
 /// # fn main() {
-/// #  let lib = vk::Core::new();
+/// #  let lib = vk::VkLib::new();
 /// #  let inst = vk::instance::new()
 /// #    .validate(vk::DEBUG_REPORT_ERROR_BIT_EXT | vk::DEBUG_REPORT_WARNING_BIT_EXT)
 /// #    .application("awesome app", 0)
@@ -527,7 +527,7 @@ impl Allocator {
   /// # extern crate nobs_vk as vk;
   /// # extern crate nobs_vkmem as vkmem;
   /// # fn main() {
-  /// #  let lib = vk::Core::new();
+  /// #  let lib = vk::VkLib::new();
   /// #  let inst = vk::instance::new()
   /// #    .validate(vk::DEBUG_REPORT_ERROR_BIT_EXT | vk::DEBUG_REPORT_WARNING_BIT_EXT)
   /// #    .application("awesome app", 0)
@@ -600,7 +600,7 @@ impl Allocator {
   /// # extern crate nobs_vk as vk;
   /// # extern crate nobs_vkmem as vkmem;
   /// # fn main() {
-  /// #  let lib = vk::Core::new();
+  /// #  let lib = vk::VkLib::new();
   /// #  let inst = vk::instance::new()
   /// #    .validate(vk::DEBUG_REPORT_ERROR_BIT_EXT | vk::DEBUG_REPORT_WARNING_BIT_EXT)
   /// #    .application("awesome app", 0)
@@ -690,7 +690,7 @@ impl Allocator {
   /// # extern crate nobs_vk as vk;
   /// # extern crate nobs_vkmem as vkmem;
   /// # fn main() {
-  /// #  let lib = vk::Core::new();
+  /// #  let lib = vk::VkLib::new();
   /// #  let inst = vk::instance::new()
   /// #    .validate(vk::DEBUG_REPORT_ERROR_BIT_EXT | vk::DEBUG_REPORT_WARNING_BIT_EXT)
   /// #    .application("awesome app", 0)
@@ -779,7 +779,7 @@ impl Allocator {
   /// # extern crate nobs_vk as vk;
   /// # extern crate nobs_vkmem as vkmem;
   /// # fn main() {
-  /// #  let lib = vk::Core::new();
+  /// #  let lib = vk::VkLib::new();
   /// #  let inst = vk::instance::new()
   /// #    .validate(vk::DEBUG_REPORT_ERROR_BIT_EXT | vk::DEBUG_REPORT_WARNING_BIT_EXT)
   /// #    .application("awesome app", 0)
@@ -836,7 +836,7 @@ impl Allocator {
   /// # extern crate nobs_vk as vk;
   /// # extern crate nobs_vkmem as vkmem;
   /// # fn main() {
-  /// #  let lib = vk::Core::new();
+  /// #  let lib = vk::VkLib::new();
   /// #  let inst = vk::instance::new()
   /// #    .validate(vk::DEBUG_REPORT_ERROR_BIT_EXT | vk::DEBUG_REPORT_WARNING_BIT_EXT)
   /// #    .application("awesome app", 0)

@@ -138,7 +138,7 @@ def write_result(types):
     s += "/// #[macro_use] extern crate nobs_vk as vk;\n"
     s += "/// //...\n"
     s += "/// # fn main() {\n"
-    s += "/// # let _vk_lib = vk::Core::new();\n"
+    s += "/// # let _vk_lib = vk::VkLib::new();\n"
     s += "/// # let mut inst_ver = 0;\n"
     s += "/// match vk_check!(vk::EnumerateInstanceVersion(&mut inst_ver)) {\n"
     s += "///   Err(e) => println!(\"EnumerateInstanceVersion returned with: {:?}\", e),\n"

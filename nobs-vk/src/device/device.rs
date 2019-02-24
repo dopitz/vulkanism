@@ -57,7 +57,7 @@ impl Drop for Device {
 /// extern crate nobs_vk as vk;
 /// # fn main() {
 /// // create instance ...
-/// # let vk_lib = vk::Core::new();
+/// # let vk_lib = vk::VkLib::new();
 /// # let inst = vk::instance::new()
 /// #   .validate(vk::DEBUG_REPORT_ERROR_BIT_EXT | vk::DEBUG_REPORT_WARNING_BIT_EXT)
 /// #   .application("awesome app", make_version!(1, 0, 0))

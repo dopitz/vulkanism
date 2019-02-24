@@ -14,7 +14,7 @@
 //!
 //! fn main() {
 //!   // nobs-vk Symbols remain in vk::*
-//!   let lib = vk::Core::new();
+//!   let lib = vk::VkLib::new();
 //!   let inst = vk::instance::new()
 //!     .validate(vk::DEBUG_REPORT_ERROR_BIT_EXT | vk::DEBUG_REPORT_WARNING_BIT_EXT)
 //!     .application("awesome app", 0)

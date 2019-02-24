@@ -102,17 +102,6 @@ class Commands:
             numbers = f.replace("VK_VERSION_", "").split("_")
             s += "pub const " + f[3:] + ": u32 = make_version!(" + numbers[0] + ", " + numbers[1] + ", 0);\n"
 
-        #s += "\n"
-        #s += "\n"
-	#s += make_commands("Core", "core")
-        #s += "\n"
-        #s += "\n"
-	#s += make_commands("InstanceExtensions", "instance")
-        #s += "\n"
-        #s += "\n"
-	#s += make_commands("DeviceExtensions", "device")
-
-
 	def write_cmds():
             def params(cmd, flags = ""):
                 s = ""
@@ -162,7 +151,7 @@ class Commands:
 
             # function that always panics, for not loaded commands
             def fn_typedef(cmd):
-                return "pub type PFN_"+ cmd.proto.name + " = " + fn_proto(extern_sys, cmd) + ";\n"
+                return "#[doc(hidden)] pub type PFN_"+ cmd.proto.name + " = " + fn_proto(extern_sys, cmd) + ";\n"
 
             # function that always panics, for not loaded commands
             def fn_panic(cmd):

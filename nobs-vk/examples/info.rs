@@ -7,7 +7,7 @@ use std::mem;
 use std::ptr;
 
 fn main() {
-  let _vk_lib = vk::Core::new();
+  let _vk_lib = vk::VkLib::new();
 
   // global vulkan version
   let mut inst_ver: u32 = 0;
@@ -65,8 +65,6 @@ fn main() {
   println!("vendor:                {}", unsafe {
     CStr::from_ptr(&props.deviceName[0]).to_str().unwrap()
   });
-
-  let _ie = vk::InstanceExtensions::new(inst);
 
   vk::DestroyInstance(inst, ptr::null());
 }

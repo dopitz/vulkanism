@@ -6,8 +6,7 @@
 //! 1. [Existential questions](#existential-questions)
 //! 2. [Examples](#examples)
 //!     1. [Vulkan core initialisation](#vulkan-core-initialisation)
-//!     2. [Manual Instance creation and extension loading](#manual-instance-creation-and-extension-loading)
-//!     3. [Convenience Instance and Device creation](#convenience-instance-and-device-creation)
+//!     2. [Convenience Instance and Device creation](#convenience-instance-and-device-creation)
 //! 3. [Details](#details)
 //!     1. [Namespaces](#namespaces)
 //!     2. [Function pointers](#function-pointers)
@@ -31,11 +30,11 @@
 //! //...
 //! 
 //! # fn main() {
-//! // loads vulkan core
-//! let _vk_lib = vk::Core::new();
+//! // loads vulkan
+//! let _vk_lib = vk::VkLib::new();
 //! 
 //! // good to go from here, we can use any vulkan function that is supported by this system
-//! // make sure _vk_lib lives throughout the time that vulkan is used and is dropped afterwards
+//! // make sure `_vk_lib` lives throughout the time that vulkan is used and is dropped afterwards
 //! 
 //! // global vulkan version
 //! let mut inst_ver: u32 = 0;
@@ -49,60 +48,6 @@
 //! # }
 //! ```
 //! 
-//! ### Manual Instance creation and extension loading
-//! After we created a vulkan instance we can load extensions
-//! ```rust
-//! #[macro_use] extern crate nobs_vk as vk;
-//! use std::ffi::CString;
-//! use std::ffi::CStr;
-//! use std::ptr;
-//! use std::os::raw::c_char;
-//! # fn main() {
-//! // ...
-//! let _vk_lib = vk::Core::new();
-//! 
-//! // Define some extensions and convert them to c-strings
-//! let ext_names = vec![vk::KHR_SURFACE_EXTENSION_NAME, vk::KHR_XLIB_SURFACE_EXTENSION_NAME];
-//! let ext_names_cstr = ext_names
-//!   .iter()
-//!   .map(|e| CString::new(*e).unwrap())
-//!   .collect::<Vec<CString>>();
-//! let ext_names_ptr = ext_names_cstr
-//!   .iter()
-//!   .map(|e| e.as_ptr())
-//!   .collect::<Vec<*const c_char>>();
-//! 
-//! // create the instance
-//! let appinfo = vk::InstanceCreateInfo {
-//!   sType: vk::STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
-//!   pNext: ptr::null(),
-//!   flags: 0,
-//!   pApplicationInfo: ptr::null(),
-//!   enabledLayerCount: 0,
-//!   ppEnabledLayerNames: ptr::null(),
-//!   enabledExtensionCount: ext_names.len() as u32,   // <- extension names go here
-//!   ppEnabledExtensionNames: ext_names_ptr.as_ptr(), // <-
-//! };
-//! 
-//! let mut inst = vk::NULL_HANDLE;
-//! vk::CreateInstance(&appinfo, ptr::null(), &mut inst);
-//! 
-//! // not an extension, so we can call it no matter what
-//! let mut num_devices: u32 = 0;
-//! vk::EnumeratePhysicalDevices(inst, &mut num_devices, ptr::null_mut());
-//! println!("num devices:  {}", num_devices);
-//! 
-//! // load extensions
-//! // note that only extensions are loaded, that have been specified in ext_names
-//! let ie = vk::InstanceExtensions::new(inst);
-//! // we can now use instence extensions, e.g.:
-//! // ie.CreateXlibSurfaceKHR(...)
-//! 
-//! // don't forget to clean up
-//! vk::DestroyInstance(inst, ptr::null());
-//! # }
-//! ```
-//! 
 //! ### Convenience Instance and Device creation
 //! Instance and device creation are a large portion of the boiler plate code that comes with implementing a vulkan application, so it makes sence to have a convenient way of doing this in the library (which is why you could argue that it barely does not contradicts the "no bullshit" paradigm)
 //! ```rust
@@ -113,7 +58,7 @@
 //! use std::ffi::CStr;
 //! 
 //! fn main() {
-//!   let lib = vk::Core::new();
+//!   let lib = vk::VkLib::new();
 //!   let inst = vk::instance::new()
 //!     .validate(vk::DEBUG_REPORT_ERROR_BIT_EXT | vk::DEBUG_REPORT_WARNING_BIT_EXT)
 //!     .application("awesome app", 0)
@@ -159,14 +104,8 @@
 //! For example `VK_Result` becomes `vk::Result`, `VK_SUCCESS` becomes `vk::SUCCESS`, `vkCreateInstance()` becomes `vk::CreateInstance()`.
 //! 
 //! ### Function pointers
-//! Entry points to vulkan commands are placed in objects containing funcion pointes. After loading the function pointers contain the address to the respective vulkan API call. Vulkan commands are either core or extension. We provide two different mechanisms to load function pointers:
+//! Entry points to vulkan commands are stored in [VkLib](struct.VkLib.html). There are also functions declared globally for every vulkan command. After creating an instance of `VkLib` these function redirect to the `VkLib` instance. This is done for convenience purposes, so that we do not have to pass on the `VkLib` instance. Since there is a function for every vulkan command, this also includes commands, that are not supported on the system. In this case calling the function will panic even after instance/device creation. The same will happen if the vkulan library was initialized with a feature level and the function is therefore not supported.
 //! 
-//! **Core commands** are loaded with [nobs_vk::Core::new](struct.Core.html#method.new) or [nobs_vk::Core::with_version](struct.Core.html#method.with_version). The returned object holds entry points to core vulkan commands and defines member function to call them. Additionaly global functions in the `nobs_vk` namespace are defined that may be called as long as a valid instance of `nobs_vk::Core` exists. *Warning: do not create multiple instances of `nobs_vk::Core`.*
-//! 
-//! **Instance and device extensions** are loaded with
-//! `nobs_vk::[InstanceExtensions|DeviceExtensions]`. The two types hold entry points to vulkan extensions and define member functions to call them. Only those extension are loaded, that have been specified during instance/device creation (`enabledExtensionCount` and `ppEnabledExtensionNames` fields of fields of [VkInstanceCreateInfo](https://www.khronos.org/registry/vulkan/specs/1.1-extensions/man/html/VkInstanceCreateInfo.html) and [VkDeviceCreateInfo](https://www.khronos.org/registry/vulkan/specs/1.1-extensions/man/html/VkDeviceCreateInfo.html)).
-//! 
-//! Objects with function pointes define all commands that are listed the vulkan reference. In case a specific feature level is selected as well as platform or hardware vendor specific extensions the definitions for the functions or methods are not removed. However calling such a function, that is not supported will always cause a panic.
 //! ### Check macros
 //! Additionally to the [result integer constants](https://www.khronos.org/registry/vulkan/specs/1.1-extensions/man/html/VkResult.html) that are defined by the vulkan api, the two enums [Success](enum.Success.html) and [Error](enum.Error.html) are declared. These capture the successful and unsuccessful error codes. The [vk_check!](macro.vk_check.html) converts the error code returned from vulkan with [make_result](fn.make_result.html) and prints debug information when the command failed. `vk_uncheck!` will consume the result and panic on error, while `vk_check!` returns the `Result<Success, Error>`
 //! 
@@ -6489,321 +6428,321 @@ pub const VERSION_1_1: u32 = make_version!(1, 1, 0);
 
 
 
-pub type PFN_vkCreateInstance = extern "system" fn (pCreateInfo: *const InstanceCreateInfo, pAllocator: *const AllocationCallbacks, pInstance: *mut Instance) -> Result;
-pub type PFN_vkDestroyInstance = extern "system" fn (instance: Instance, pAllocator: *const AllocationCallbacks);
-pub type PFN_vkEnumeratePhysicalDevices = extern "system" fn (instance: Instance, pPhysicalDeviceCount: *mut u32, pPhysicalDevices: *mut PhysicalDevice) -> Result;
-pub type PFN_vkGetPhysicalDeviceFeatures = extern "system" fn (physicalDevice: PhysicalDevice, pFeatures: *mut PhysicalDeviceFeatures);
-pub type PFN_vkGetPhysicalDeviceFormatProperties = extern "system" fn (physicalDevice: PhysicalDevice, format: Format, pFormatProperties: *mut FormatProperties);
-pub type PFN_vkGetPhysicalDeviceImageFormatProperties = extern "system" fn (physicalDevice: PhysicalDevice, format: Format, typ: ImageType, tiling: ImageTiling, usage: ImageUsageFlags, flags: ImageCreateFlags, pImageFormatProperties: *mut ImageFormatProperties) -> Result;
-pub type PFN_vkGetPhysicalDeviceProperties = extern "system" fn (physicalDevice: PhysicalDevice, pProperties: *mut PhysicalDeviceProperties);
-pub type PFN_vkGetPhysicalDeviceQueueFamilyProperties = extern "system" fn (physicalDevice: PhysicalDevice, pQueueFamilyPropertyCount: *mut u32, pQueueFamilyProperties: *mut QueueFamilyProperties);
-pub type PFN_vkGetPhysicalDeviceMemoryProperties = extern "system" fn (physicalDevice: PhysicalDevice, pMemoryProperties: *mut PhysicalDeviceMemoryProperties);
-pub type PFN_vkGetInstanceProcAddr = extern "system" fn (instance: Instance, pName: *const c_char) -> PFN_vkVoidFunction;
-pub type PFN_vkGetDeviceProcAddr = extern "system" fn (device: Device, pName: *const c_char) -> PFN_vkVoidFunction;
-pub type PFN_vkCreateDevice = extern "system" fn (physicalDevice: PhysicalDevice, pCreateInfo: *const DeviceCreateInfo, pAllocator: *const AllocationCallbacks, pDevice: *mut Device) -> Result;
-pub type PFN_vkDestroyDevice = extern "system" fn (device: Device, pAllocator: *const AllocationCallbacks);
-pub type PFN_vkEnumerateInstanceExtensionProperties = extern "system" fn (pLayerName: *const c_char, pPropertyCount: *mut u32, pProperties: *mut ExtensionProperties) -> Result;
-pub type PFN_vkEnumerateDeviceExtensionProperties = extern "system" fn (physicalDevice: PhysicalDevice, pLayerName: *const c_char, pPropertyCount: *mut u32, pProperties: *mut ExtensionProperties) -> Result;
-pub type PFN_vkEnumerateInstanceLayerProperties = extern "system" fn (pPropertyCount: *mut u32, pProperties: *mut LayerProperties) -> Result;
-pub type PFN_vkEnumerateDeviceLayerProperties = extern "system" fn (physicalDevice: PhysicalDevice, pPropertyCount: *mut u32, pProperties: *mut LayerProperties) -> Result;
-pub type PFN_vkGetDeviceQueue = extern "system" fn (device: Device, queueFamilyIndex: u32, queueIndex: u32, pQueue: *mut Queue);
-pub type PFN_vkQueueSubmit = extern "system" fn (queue: Queue, submitCount: u32, pSubmits: *const SubmitInfo, fence: Fence) -> Result;
-pub type PFN_vkQueueWaitIdle = extern "system" fn (queue: Queue) -> Result;
-pub type PFN_vkDeviceWaitIdle = extern "system" fn (device: Device) -> Result;
-pub type PFN_vkAllocateMemory = extern "system" fn (device: Device, pAllocateInfo: *const MemoryAllocateInfo, pAllocator: *const AllocationCallbacks, pMemory: *mut DeviceMemory) -> Result;
-pub type PFN_vkFreeMemory = extern "system" fn (device: Device, memory: DeviceMemory, pAllocator: *const AllocationCallbacks);
-pub type PFN_vkMapMemory = extern "system" fn (device: Device, memory: DeviceMemory, offset: DeviceSize, size: DeviceSize, flags: MemoryMapFlags, ppData: *mut *mut c_void) -> Result;
-pub type PFN_vkUnmapMemory = extern "system" fn (device: Device, memory: DeviceMemory);
-pub type PFN_vkFlushMappedMemoryRanges = extern "system" fn (device: Device, memoryRangeCount: u32, pMemoryRanges: *const MappedMemoryRange) -> Result;
-pub type PFN_vkInvalidateMappedMemoryRanges = extern "system" fn (device: Device, memoryRangeCount: u32, pMemoryRanges: *const MappedMemoryRange) -> Result;
-pub type PFN_vkGetDeviceMemoryCommitment = extern "system" fn (device: Device, memory: DeviceMemory, pCommittedMemoryInBytes: *mut DeviceSize);
-pub type PFN_vkBindBufferMemory = extern "system" fn (device: Device, buffer: Buffer, memory: DeviceMemory, memoryOffset: DeviceSize) -> Result;
-pub type PFN_vkBindImageMemory = extern "system" fn (device: Device, image: Image, memory: DeviceMemory, memoryOffset: DeviceSize) -> Result;
-pub type PFN_vkGetBufferMemoryRequirements = extern "system" fn (device: Device, buffer: Buffer, pMemoryRequirements: *mut MemoryRequirements);
-pub type PFN_vkGetImageMemoryRequirements = extern "system" fn (device: Device, image: Image, pMemoryRequirements: *mut MemoryRequirements);
-pub type PFN_vkGetImageSparseMemoryRequirements = extern "system" fn (device: Device, image: Image, pSparseMemoryRequirementCount: *mut u32, pSparseMemoryRequirements: *mut SparseImageMemoryRequirements);
-pub type PFN_vkGetPhysicalDeviceSparseImageFormatProperties = extern "system" fn (physicalDevice: PhysicalDevice, format: Format, typ: ImageType, samples: SampleCountFlagBits, usage: ImageUsageFlags, tiling: ImageTiling, pPropertyCount: *mut u32, pProperties: *mut SparseImageFormatProperties);
-pub type PFN_vkQueueBindSparse = extern "system" fn (queue: Queue, bindInfoCount: u32, pBindInfo: *const BindSparseInfo, fence: Fence) -> Result;
-pub type PFN_vkCreateFence = extern "system" fn (device: Device, pCreateInfo: *const FenceCreateInfo, pAllocator: *const AllocationCallbacks, pFence: *mut Fence) -> Result;
-pub type PFN_vkDestroyFence = extern "system" fn (device: Device, fence: Fence, pAllocator: *const AllocationCallbacks);
-pub type PFN_vkResetFences = extern "system" fn (device: Device, fenceCount: u32, pFences: *const Fence) -> Result;
-pub type PFN_vkGetFenceStatus = extern "system" fn (device: Device, fence: Fence) -> Result;
-pub type PFN_vkWaitForFences = extern "system" fn (device: Device, fenceCount: u32, pFences: *const Fence, waitAll: Bool32, timeout: u64) -> Result;
-pub type PFN_vkCreateSemaphore = extern "system" fn (device: Device, pCreateInfo: *const SemaphoreCreateInfo, pAllocator: *const AllocationCallbacks, pSemaphore: *mut Semaphore) -> Result;
-pub type PFN_vkDestroySemaphore = extern "system" fn (device: Device, semaphore: Semaphore, pAllocator: *const AllocationCallbacks);
-pub type PFN_vkCreateEvent = extern "system" fn (device: Device, pCreateInfo: *const EventCreateInfo, pAllocator: *const AllocationCallbacks, pEvent: *mut Event) -> Result;
-pub type PFN_vkDestroyEvent = extern "system" fn (device: Device, event: Event, pAllocator: *const AllocationCallbacks);
-pub type PFN_vkGetEventStatus = extern "system" fn (device: Device, event: Event) -> Result;
-pub type PFN_vkSetEvent = extern "system" fn (device: Device, event: Event) -> Result;
-pub type PFN_vkResetEvent = extern "system" fn (device: Device, event: Event) -> Result;
-pub type PFN_vkCreateQueryPool = extern "system" fn (device: Device, pCreateInfo: *const QueryPoolCreateInfo, pAllocator: *const AllocationCallbacks, pQueryPool: *mut QueryPool) -> Result;
-pub type PFN_vkDestroyQueryPool = extern "system" fn (device: Device, queryPool: QueryPool, pAllocator: *const AllocationCallbacks);
-pub type PFN_vkGetQueryPoolResults = extern "system" fn (device: Device, queryPool: QueryPool, firstQuery: u32, queryCount: u32, dataSize: usize, pData: *mut c_void, stride: DeviceSize, flags: QueryResultFlags) -> Result;
-pub type PFN_vkCreateBuffer = extern "system" fn (device: Device, pCreateInfo: *const BufferCreateInfo, pAllocator: *const AllocationCallbacks, pBuffer: *mut Buffer) -> Result;
-pub type PFN_vkDestroyBuffer = extern "system" fn (device: Device, buffer: Buffer, pAllocator: *const AllocationCallbacks);
-pub type PFN_vkCreateBufferView = extern "system" fn (device: Device, pCreateInfo: *const BufferViewCreateInfo, pAllocator: *const AllocationCallbacks, pView: *mut BufferView) -> Result;
-pub type PFN_vkDestroyBufferView = extern "system" fn (device: Device, bufferView: BufferView, pAllocator: *const AllocationCallbacks);
-pub type PFN_vkCreateImage = extern "system" fn (device: Device, pCreateInfo: *const ImageCreateInfo, pAllocator: *const AllocationCallbacks, pImage: *mut Image) -> Result;
-pub type PFN_vkDestroyImage = extern "system" fn (device: Device, image: Image, pAllocator: *const AllocationCallbacks);
-pub type PFN_vkGetImageSubresourceLayout = extern "system" fn (device: Device, image: Image, pSubresource: *const ImageSubresource, pLayout: *mut SubresourceLayout);
-pub type PFN_vkCreateImageView = extern "system" fn (device: Device, pCreateInfo: *const ImageViewCreateInfo, pAllocator: *const AllocationCallbacks, pView: *mut ImageView) -> Result;
-pub type PFN_vkDestroyImageView = extern "system" fn (device: Device, imageView: ImageView, pAllocator: *const AllocationCallbacks);
-pub type PFN_vkCreateShaderModule = extern "system" fn (device: Device, pCreateInfo: *const ShaderModuleCreateInfo, pAllocator: *const AllocationCallbacks, pShaderModule: *mut ShaderModule) -> Result;
-pub type PFN_vkDestroyShaderModule = extern "system" fn (device: Device, shaderModule: ShaderModule, pAllocator: *const AllocationCallbacks);
-pub type PFN_vkCreatePipelineCache = extern "system" fn (device: Device, pCreateInfo: *const PipelineCacheCreateInfo, pAllocator: *const AllocationCallbacks, pPipelineCache: *mut PipelineCache) -> Result;
-pub type PFN_vkDestroyPipelineCache = extern "system" fn (device: Device, pipelineCache: PipelineCache, pAllocator: *const AllocationCallbacks);
-pub type PFN_vkGetPipelineCacheData = extern "system" fn (device: Device, pipelineCache: PipelineCache, pDataSize: *mut usize, pData: *mut c_void) -> Result;
-pub type PFN_vkMergePipelineCaches = extern "system" fn (device: Device, dstCache: PipelineCache, srcCacheCount: u32, pSrcCaches: *const PipelineCache) -> Result;
-pub type PFN_vkCreateGraphicsPipelines = extern "system" fn (device: Device, pipelineCache: PipelineCache, createInfoCount: u32, pCreateInfos: *const GraphicsPipelineCreateInfo, pAllocator: *const AllocationCallbacks, pPipelines: *mut Pipeline) -> Result;
-pub type PFN_vkCreateComputePipelines = extern "system" fn (device: Device, pipelineCache: PipelineCache, createInfoCount: u32, pCreateInfos: *const ComputePipelineCreateInfo, pAllocator: *const AllocationCallbacks, pPipelines: *mut Pipeline) -> Result;
-pub type PFN_vkDestroyPipeline = extern "system" fn (device: Device, pipeline: Pipeline, pAllocator: *const AllocationCallbacks);
-pub type PFN_vkCreatePipelineLayout = extern "system" fn (device: Device, pCreateInfo: *const PipelineLayoutCreateInfo, pAllocator: *const AllocationCallbacks, pPipelineLayout: *mut PipelineLayout) -> Result;
-pub type PFN_vkDestroyPipelineLayout = extern "system" fn (device: Device, pipelineLayout: PipelineLayout, pAllocator: *const AllocationCallbacks);
-pub type PFN_vkCreateSampler = extern "system" fn (device: Device, pCreateInfo: *const SamplerCreateInfo, pAllocator: *const AllocationCallbacks, pSampler: *mut Sampler) -> Result;
-pub type PFN_vkDestroySampler = extern "system" fn (device: Device, sampler: Sampler, pAllocator: *const AllocationCallbacks);
-pub type PFN_vkCreateDescriptorSetLayout = extern "system" fn (device: Device, pCreateInfo: *const DescriptorSetLayoutCreateInfo, pAllocator: *const AllocationCallbacks, pSetLayout: *mut DescriptorSetLayout) -> Result;
-pub type PFN_vkDestroyDescriptorSetLayout = extern "system" fn (device: Device, descriptorSetLayout: DescriptorSetLayout, pAllocator: *const AllocationCallbacks);
-pub type PFN_vkCreateDescriptorPool = extern "system" fn (device: Device, pCreateInfo: *const DescriptorPoolCreateInfo, pAllocator: *const AllocationCallbacks, pDescriptorPool: *mut DescriptorPool) -> Result;
-pub type PFN_vkDestroyDescriptorPool = extern "system" fn (device: Device, descriptorPool: DescriptorPool, pAllocator: *const AllocationCallbacks);
-pub type PFN_vkResetDescriptorPool = extern "system" fn (device: Device, descriptorPool: DescriptorPool, flags: DescriptorPoolResetFlags) -> Result;
-pub type PFN_vkAllocateDescriptorSets = extern "system" fn (device: Device, pAllocateInfo: *const DescriptorSetAllocateInfo, pDescriptorSets: *mut DescriptorSet) -> Result;
-pub type PFN_vkFreeDescriptorSets = extern "system" fn (device: Device, descriptorPool: DescriptorPool, descriptorSetCount: u32, pDescriptorSets: *const DescriptorSet) -> Result;
-pub type PFN_vkUpdateDescriptorSets = extern "system" fn (device: Device, descriptorWriteCount: u32, pDescriptorWrites: *const WriteDescriptorSet, descriptorCopyCount: u32, pDescriptorCopies: *const CopyDescriptorSet);
-pub type PFN_vkCreateFramebuffer = extern "system" fn (device: Device, pCreateInfo: *const FramebufferCreateInfo, pAllocator: *const AllocationCallbacks, pFramebuffer: *mut Framebuffer) -> Result;
-pub type PFN_vkDestroyFramebuffer = extern "system" fn (device: Device, framebuffer: Framebuffer, pAllocator: *const AllocationCallbacks);
-pub type PFN_vkCreateRenderPass = extern "system" fn (device: Device, pCreateInfo: *const RenderPassCreateInfo, pAllocator: *const AllocationCallbacks, pRenderPass: *mut RenderPass) -> Result;
-pub type PFN_vkDestroyRenderPass = extern "system" fn (device: Device, renderPass: RenderPass, pAllocator: *const AllocationCallbacks);
-pub type PFN_vkGetRenderAreaGranularity = extern "system" fn (device: Device, renderPass: RenderPass, pGranularity: *mut Extent2D);
-pub type PFN_vkCreateCommandPool = extern "system" fn (device: Device, pCreateInfo: *const CommandPoolCreateInfo, pAllocator: *const AllocationCallbacks, pCommandPool: *mut CommandPool) -> Result;
-pub type PFN_vkDestroyCommandPool = extern "system" fn (device: Device, commandPool: CommandPool, pAllocator: *const AllocationCallbacks);
-pub type PFN_vkResetCommandPool = extern "system" fn (device: Device, commandPool: CommandPool, flags: CommandPoolResetFlags) -> Result;
-pub type PFN_vkAllocateCommandBuffers = extern "system" fn (device: Device, pAllocateInfo: *const CommandBufferAllocateInfo, pCommandBuffers: *mut CommandBuffer) -> Result;
-pub type PFN_vkFreeCommandBuffers = extern "system" fn (device: Device, commandPool: CommandPool, commandBufferCount: u32, pCommandBuffers: *const CommandBuffer);
-pub type PFN_vkBeginCommandBuffer = extern "system" fn (commandBuffer: CommandBuffer, pBeginInfo: *const CommandBufferBeginInfo) -> Result;
-pub type PFN_vkEndCommandBuffer = extern "system" fn (commandBuffer: CommandBuffer) -> Result;
-pub type PFN_vkResetCommandBuffer = extern "system" fn (commandBuffer: CommandBuffer, flags: CommandBufferResetFlags) -> Result;
-pub type PFN_vkCmdBindPipeline = extern "system" fn (commandBuffer: CommandBuffer, pipelineBindPoint: PipelineBindPoint, pipeline: Pipeline);
-pub type PFN_vkCmdSetViewport = extern "system" fn (commandBuffer: CommandBuffer, firstViewport: u32, viewportCount: u32, pViewports: *const Viewport);
-pub type PFN_vkCmdSetScissor = extern "system" fn (commandBuffer: CommandBuffer, firstScissor: u32, scissorCount: u32, pScissors: *const Rect2D);
-pub type PFN_vkCmdSetLineWidth = extern "system" fn (commandBuffer: CommandBuffer, lineWidth: f32);
-pub type PFN_vkCmdSetDepthBias = extern "system" fn (commandBuffer: CommandBuffer, depthBiasConstantFactor: f32, depthBiasClamp: f32, depthBiasSlopeFactor: f32);
-pub type PFN_vkCmdSetBlendConstants = extern "system" fn (commandBuffer: CommandBuffer, blendConstants: [f32; 4]);
-pub type PFN_vkCmdSetDepthBounds = extern "system" fn (commandBuffer: CommandBuffer, minDepthBounds: f32, maxDepthBounds: f32);
-pub type PFN_vkCmdSetStencilCompareMask = extern "system" fn (commandBuffer: CommandBuffer, faceMask: StencilFaceFlags, compareMask: u32);
-pub type PFN_vkCmdSetStencilWriteMask = extern "system" fn (commandBuffer: CommandBuffer, faceMask: StencilFaceFlags, writeMask: u32);
-pub type PFN_vkCmdSetStencilReference = extern "system" fn (commandBuffer: CommandBuffer, faceMask: StencilFaceFlags, reference: u32);
-pub type PFN_vkCmdBindDescriptorSets = extern "system" fn (commandBuffer: CommandBuffer, pipelineBindPoint: PipelineBindPoint, layout: PipelineLayout, firstSet: u32, descriptorSetCount: u32, pDescriptorSets: *const DescriptorSet, dynamicOffsetCount: u32, pDynamicOffsets: *const u32);
-pub type PFN_vkCmdBindIndexBuffer = extern "system" fn (commandBuffer: CommandBuffer, buffer: Buffer, offset: DeviceSize, indexType: IndexType);
-pub type PFN_vkCmdBindVertexBuffers = extern "system" fn (commandBuffer: CommandBuffer, firstBinding: u32, bindingCount: u32, pBuffers: *const Buffer, pOffsets: *const DeviceSize);
-pub type PFN_vkCmdDraw = extern "system" fn (commandBuffer: CommandBuffer, vertexCount: u32, instanceCount: u32, firstVertex: u32, firstInstance: u32);
-pub type PFN_vkCmdDrawIndexed = extern "system" fn (commandBuffer: CommandBuffer, indexCount: u32, instanceCount: u32, firstIndex: u32, vertexOffset: i32, firstInstance: u32);
-pub type PFN_vkCmdDrawIndirect = extern "system" fn (commandBuffer: CommandBuffer, buffer: Buffer, offset: DeviceSize, drawCount: u32, stride: u32);
-pub type PFN_vkCmdDrawIndexedIndirect = extern "system" fn (commandBuffer: CommandBuffer, buffer: Buffer, offset: DeviceSize, drawCount: u32, stride: u32);
-pub type PFN_vkCmdDispatch = extern "system" fn (commandBuffer: CommandBuffer, groupCountX: u32, groupCountY: u32, groupCountZ: u32);
-pub type PFN_vkCmdDispatchIndirect = extern "system" fn (commandBuffer: CommandBuffer, buffer: Buffer, offset: DeviceSize);
-pub type PFN_vkCmdCopyBuffer = extern "system" fn (commandBuffer: CommandBuffer, srcBuffer: Buffer, dstBuffer: Buffer, regionCount: u32, pRegions: *const BufferCopy);
-pub type PFN_vkCmdCopyImage = extern "system" fn (commandBuffer: CommandBuffer, srcImage: Image, srcImageLayout: ImageLayout, dstImage: Image, dstImageLayout: ImageLayout, regionCount: u32, pRegions: *const ImageCopy);
-pub type PFN_vkCmdBlitImage = extern "system" fn (commandBuffer: CommandBuffer, srcImage: Image, srcImageLayout: ImageLayout, dstImage: Image, dstImageLayout: ImageLayout, regionCount: u32, pRegions: *const ImageBlit, filter: Filter);
-pub type PFN_vkCmdCopyBufferToImage = extern "system" fn (commandBuffer: CommandBuffer, srcBuffer: Buffer, dstImage: Image, dstImageLayout: ImageLayout, regionCount: u32, pRegions: *const BufferImageCopy);
-pub type PFN_vkCmdCopyImageToBuffer = extern "system" fn (commandBuffer: CommandBuffer, srcImage: Image, srcImageLayout: ImageLayout, dstBuffer: Buffer, regionCount: u32, pRegions: *const BufferImageCopy);
-pub type PFN_vkCmdUpdateBuffer = extern "system" fn (commandBuffer: CommandBuffer, dstBuffer: Buffer, dstOffset: DeviceSize, dataSize: DeviceSize, pData: *const c_void);
-pub type PFN_vkCmdFillBuffer = extern "system" fn (commandBuffer: CommandBuffer, dstBuffer: Buffer, dstOffset: DeviceSize, size: DeviceSize, data: u32);
-pub type PFN_vkCmdClearColorImage = extern "system" fn (commandBuffer: CommandBuffer, image: Image, imageLayout: ImageLayout, pColor: *const ClearColorValue, rangeCount: u32, pRanges: *const ImageSubresourceRange);
-pub type PFN_vkCmdClearDepthStencilImage = extern "system" fn (commandBuffer: CommandBuffer, image: Image, imageLayout: ImageLayout, pDepthStencil: *const ClearDepthStencilValue, rangeCount: u32, pRanges: *const ImageSubresourceRange);
-pub type PFN_vkCmdClearAttachments = extern "system" fn (commandBuffer: CommandBuffer, attachmentCount: u32, pAttachments: *const ClearAttachment, rectCount: u32, pRects: *const ClearRect);
-pub type PFN_vkCmdResolveImage = extern "system" fn (commandBuffer: CommandBuffer, srcImage: Image, srcImageLayout: ImageLayout, dstImage: Image, dstImageLayout: ImageLayout, regionCount: u32, pRegions: *const ImageResolve);
-pub type PFN_vkCmdSetEvent = extern "system" fn (commandBuffer: CommandBuffer, event: Event, stageMask: PipelineStageFlags);
-pub type PFN_vkCmdResetEvent = extern "system" fn (commandBuffer: CommandBuffer, event: Event, stageMask: PipelineStageFlags);
-pub type PFN_vkCmdWaitEvents = extern "system" fn (commandBuffer: CommandBuffer, eventCount: u32, pEvents: *const Event, srcStageMask: PipelineStageFlags, dstStageMask: PipelineStageFlags, memoryBarrierCount: u32, pMemoryBarriers: *const MemoryBarrier, bufferMemoryBarrierCount: u32, pBufferMemoryBarriers: *const BufferMemoryBarrier, imageMemoryBarrierCount: u32, pImageMemoryBarriers: *const ImageMemoryBarrier);
-pub type PFN_vkCmdPipelineBarrier = extern "system" fn (commandBuffer: CommandBuffer, srcStageMask: PipelineStageFlags, dstStageMask: PipelineStageFlags, dependencyFlags: DependencyFlags, memoryBarrierCount: u32, pMemoryBarriers: *const MemoryBarrier, bufferMemoryBarrierCount: u32, pBufferMemoryBarriers: *const BufferMemoryBarrier, imageMemoryBarrierCount: u32, pImageMemoryBarriers: *const ImageMemoryBarrier);
-pub type PFN_vkCmdBeginQuery = extern "system" fn (commandBuffer: CommandBuffer, queryPool: QueryPool, query: u32, flags: QueryControlFlags);
-pub type PFN_vkCmdEndQuery = extern "system" fn (commandBuffer: CommandBuffer, queryPool: QueryPool, query: u32);
-pub type PFN_vkCmdResetQueryPool = extern "system" fn (commandBuffer: CommandBuffer, queryPool: QueryPool, firstQuery: u32, queryCount: u32);
-pub type PFN_vkCmdWriteTimestamp = extern "system" fn (commandBuffer: CommandBuffer, pipelineStage: PipelineStageFlagBits, queryPool: QueryPool, query: u32);
-pub type PFN_vkCmdCopyQueryPoolResults = extern "system" fn (commandBuffer: CommandBuffer, queryPool: QueryPool, firstQuery: u32, queryCount: u32, dstBuffer: Buffer, dstOffset: DeviceSize, stride: DeviceSize, flags: QueryResultFlags);
-pub type PFN_vkCmdPushConstants = extern "system" fn (commandBuffer: CommandBuffer, layout: PipelineLayout, stageFlags: ShaderStageFlags, offset: u32, size: u32, pValues: *const c_void);
-pub type PFN_vkCmdBeginRenderPass = extern "system" fn (commandBuffer: CommandBuffer, pRenderPassBegin: *const RenderPassBeginInfo, contents: SubpassContents);
-pub type PFN_vkCmdNextSubpass = extern "system" fn (commandBuffer: CommandBuffer, contents: SubpassContents);
-pub type PFN_vkCmdEndRenderPass = extern "system" fn (commandBuffer: CommandBuffer);
-pub type PFN_vkCmdExecuteCommands = extern "system" fn (commandBuffer: CommandBuffer, commandBufferCount: u32, pCommandBuffers: *const CommandBuffer);
-pub type PFN_vkEnumerateInstanceVersion = extern "system" fn (pApiVersion: *mut u32) -> Result;
-pub type PFN_vkBindBufferMemory2 = extern "system" fn (device: Device, bindInfoCount: u32, pBindInfos: *const BindBufferMemoryInfo) -> Result;
-pub type PFN_vkBindImageMemory2 = extern "system" fn (device: Device, bindInfoCount: u32, pBindInfos: *const BindImageMemoryInfo) -> Result;
-pub type PFN_vkGetDeviceGroupPeerMemoryFeatures = extern "system" fn (device: Device, heapIndex: u32, localDeviceIndex: u32, remoteDeviceIndex: u32, pPeerMemoryFeatures: *mut PeerMemoryFeatureFlags);
-pub type PFN_vkCmdSetDeviceMask = extern "system" fn (commandBuffer: CommandBuffer, deviceMask: u32);
-pub type PFN_vkCmdDispatchBase = extern "system" fn (commandBuffer: CommandBuffer, baseGroupX: u32, baseGroupY: u32, baseGroupZ: u32, groupCountX: u32, groupCountY: u32, groupCountZ: u32);
-pub type PFN_vkEnumeratePhysicalDeviceGroups = extern "system" fn (instance: Instance, pPhysicalDeviceGroupCount: *mut u32, pPhysicalDeviceGroupProperties: *mut PhysicalDeviceGroupProperties) -> Result;
-pub type PFN_vkGetImageMemoryRequirements2 = extern "system" fn (device: Device, pInfo: *const ImageMemoryRequirementsInfo2, pMemoryRequirements: *mut MemoryRequirements2);
-pub type PFN_vkGetBufferMemoryRequirements2 = extern "system" fn (device: Device, pInfo: *const BufferMemoryRequirementsInfo2, pMemoryRequirements: *mut MemoryRequirements2);
-pub type PFN_vkGetImageSparseMemoryRequirements2 = extern "system" fn (device: Device, pInfo: *const ImageSparseMemoryRequirementsInfo2, pSparseMemoryRequirementCount: *mut u32, pSparseMemoryRequirements: *mut SparseImageMemoryRequirements2);
-pub type PFN_vkGetPhysicalDeviceFeatures2 = extern "system" fn (physicalDevice: PhysicalDevice, pFeatures: *mut PhysicalDeviceFeatures2);
-pub type PFN_vkGetPhysicalDeviceProperties2 = extern "system" fn (physicalDevice: PhysicalDevice, pProperties: *mut PhysicalDeviceProperties2);
-pub type PFN_vkGetPhysicalDeviceFormatProperties2 = extern "system" fn (physicalDevice: PhysicalDevice, format: Format, pFormatProperties: *mut FormatProperties2);
-pub type PFN_vkGetPhysicalDeviceImageFormatProperties2 = extern "system" fn (physicalDevice: PhysicalDevice, pImageFormatInfo: *const PhysicalDeviceImageFormatInfo2, pImageFormatProperties: *mut ImageFormatProperties2) -> Result;
-pub type PFN_vkGetPhysicalDeviceQueueFamilyProperties2 = extern "system" fn (physicalDevice: PhysicalDevice, pQueueFamilyPropertyCount: *mut u32, pQueueFamilyProperties: *mut QueueFamilyProperties2);
-pub type PFN_vkGetPhysicalDeviceMemoryProperties2 = extern "system" fn (physicalDevice: PhysicalDevice, pMemoryProperties: *mut PhysicalDeviceMemoryProperties2);
-pub type PFN_vkGetPhysicalDeviceSparseImageFormatProperties2 = extern "system" fn (physicalDevice: PhysicalDevice, pFormatInfo: *const PhysicalDeviceSparseImageFormatInfo2, pPropertyCount: *mut u32, pProperties: *mut SparseImageFormatProperties2);
-pub type PFN_vkTrimCommandPool = extern "system" fn (device: Device, commandPool: CommandPool, flags: CommandPoolTrimFlags);
-pub type PFN_vkGetDeviceQueue2 = extern "system" fn (device: Device, pQueueInfo: *const DeviceQueueInfo2, pQueue: *mut Queue);
-pub type PFN_vkCreateSamplerYcbcrConversion = extern "system" fn (device: Device, pCreateInfo: *const SamplerYcbcrConversionCreateInfo, pAllocator: *const AllocationCallbacks, pYcbcrConversion: *mut SamplerYcbcrConversion) -> Result;
-pub type PFN_vkDestroySamplerYcbcrConversion = extern "system" fn (device: Device, ycbcrConversion: SamplerYcbcrConversion, pAllocator: *const AllocationCallbacks);
-pub type PFN_vkCreateDescriptorUpdateTemplate = extern "system" fn (device: Device, pCreateInfo: *const DescriptorUpdateTemplateCreateInfo, pAllocator: *const AllocationCallbacks, pDescriptorUpdateTemplate: *mut DescriptorUpdateTemplate) -> Result;
-pub type PFN_vkDestroyDescriptorUpdateTemplate = extern "system" fn (device: Device, descriptorUpdateTemplate: DescriptorUpdateTemplate, pAllocator: *const AllocationCallbacks);
-pub type PFN_vkUpdateDescriptorSetWithTemplate = extern "system" fn (device: Device, descriptorSet: DescriptorSet, descriptorUpdateTemplate: DescriptorUpdateTemplate, pData: *const c_void);
-pub type PFN_vkGetPhysicalDeviceExternalBufferProperties = extern "system" fn (physicalDevice: PhysicalDevice, pExternalBufferInfo: *const PhysicalDeviceExternalBufferInfo, pExternalBufferProperties: *mut ExternalBufferProperties);
-pub type PFN_vkGetPhysicalDeviceExternalFenceProperties = extern "system" fn (physicalDevice: PhysicalDevice, pExternalFenceInfo: *const PhysicalDeviceExternalFenceInfo, pExternalFenceProperties: *mut ExternalFenceProperties);
-pub type PFN_vkGetPhysicalDeviceExternalSemaphoreProperties = extern "system" fn (physicalDevice: PhysicalDevice, pExternalSemaphoreInfo: *const PhysicalDeviceExternalSemaphoreInfo, pExternalSemaphoreProperties: *mut ExternalSemaphoreProperties);
-pub type PFN_vkGetDescriptorSetLayoutSupport = extern "system" fn (device: Device, pCreateInfo: *const DescriptorSetLayoutCreateInfo, pSupport: *mut DescriptorSetLayoutSupport);
-pub type PFN_vkDestroySurfaceKHR = extern "system" fn (instance: Instance, surface: SurfaceKHR, pAllocator: *const AllocationCallbacks);
-pub type PFN_vkGetPhysicalDeviceSurfaceSupportKHR = extern "system" fn (physicalDevice: PhysicalDevice, queueFamilyIndex: u32, surface: SurfaceKHR, pSupported: *mut Bool32) -> Result;
-pub type PFN_vkGetPhysicalDeviceSurfaceCapabilitiesKHR = extern "system" fn (physicalDevice: PhysicalDevice, surface: SurfaceKHR, pSurfaceCapabilities: *mut SurfaceCapabilitiesKHR) -> Result;
-pub type PFN_vkGetPhysicalDeviceSurfaceFormatsKHR = extern "system" fn (physicalDevice: PhysicalDevice, surface: SurfaceKHR, pSurfaceFormatCount: *mut u32, pSurfaceFormats: *mut SurfaceFormatKHR) -> Result;
-pub type PFN_vkGetPhysicalDeviceSurfacePresentModesKHR = extern "system" fn (physicalDevice: PhysicalDevice, surface: SurfaceKHR, pPresentModeCount: *mut u32, pPresentModes: *mut PresentModeKHR) -> Result;
-pub type PFN_vkGetPhysicalDeviceDisplayPropertiesKHR = extern "system" fn (physicalDevice: PhysicalDevice, pPropertyCount: *mut u32, pProperties: *mut DisplayPropertiesKHR) -> Result;
-pub type PFN_vkGetPhysicalDeviceDisplayPlanePropertiesKHR = extern "system" fn (physicalDevice: PhysicalDevice, pPropertyCount: *mut u32, pProperties: *mut DisplayPlanePropertiesKHR) -> Result;
-pub type PFN_vkGetDisplayPlaneSupportedDisplaysKHR = extern "system" fn (physicalDevice: PhysicalDevice, planeIndex: u32, pDisplayCount: *mut u32, pDisplays: *mut DisplayKHR) -> Result;
-pub type PFN_vkGetDisplayModePropertiesKHR = extern "system" fn (physicalDevice: PhysicalDevice, display: DisplayKHR, pPropertyCount: *mut u32, pProperties: *mut DisplayModePropertiesKHR) -> Result;
-pub type PFN_vkCreateDisplayModeKHR = extern "system" fn (physicalDevice: PhysicalDevice, display: DisplayKHR, pCreateInfo: *const DisplayModeCreateInfoKHR, pAllocator: *const AllocationCallbacks, pMode: *mut DisplayModeKHR) -> Result;
-pub type PFN_vkGetDisplayPlaneCapabilitiesKHR = extern "system" fn (physicalDevice: PhysicalDevice, mode: DisplayModeKHR, planeIndex: u32, pCapabilities: *mut DisplayPlaneCapabilitiesKHR) -> Result;
-pub type PFN_vkCreateDisplayPlaneSurfaceKHR = extern "system" fn (instance: Instance, pCreateInfo: *const DisplaySurfaceCreateInfoKHR, pAllocator: *const AllocationCallbacks, pSurface: *mut SurfaceKHR) -> Result;
-pub type PFN_vkCreateXlibSurfaceKHR = extern "system" fn (instance: Instance, pCreateInfo: *const XlibSurfaceCreateInfoKHR, pAllocator: *const AllocationCallbacks, pSurface: *mut SurfaceKHR) -> Result;
-pub type PFN_vkGetPhysicalDeviceXlibPresentationSupportKHR = extern "system" fn (physicalDevice: PhysicalDevice, queueFamilyIndex: u32, dpy: *mut Display, visualID: VisualID) -> Bool32;
-pub type PFN_vkCreateXcbSurfaceKHR = extern "system" fn (instance: Instance, pCreateInfo: *const XcbSurfaceCreateInfoKHR, pAllocator: *const AllocationCallbacks, pSurface: *mut SurfaceKHR) -> Result;
-pub type PFN_vkGetPhysicalDeviceXcbPresentationSupportKHR = extern "system" fn (physicalDevice: PhysicalDevice, queueFamilyIndex: u32, connection: *mut xcb_connection_t, visual_id: xcb_visualid_t) -> Bool32;
-pub type PFN_vkCreateWaylandSurfaceKHR = extern "system" fn (instance: Instance, pCreateInfo: *const WaylandSurfaceCreateInfoKHR, pAllocator: *const AllocationCallbacks, pSurface: *mut SurfaceKHR) -> Result;
-pub type PFN_vkGetPhysicalDeviceWaylandPresentationSupportKHR = extern "system" fn (physicalDevice: PhysicalDevice, queueFamilyIndex: u32, display: *mut wl_display) -> Bool32;
-pub type PFN_vkCreateAndroidSurfaceKHR = extern "system" fn (instance: Instance, pCreateInfo: *const AndroidSurfaceCreateInfoKHR, pAllocator: *const AllocationCallbacks, pSurface: *mut SurfaceKHR) -> Result;
-pub type PFN_vkCreateWin32SurfaceKHR = extern "system" fn (instance: Instance, pCreateInfo: *const Win32SurfaceCreateInfoKHR, pAllocator: *const AllocationCallbacks, pSurface: *mut SurfaceKHR) -> Result;
-pub type PFN_vkGetPhysicalDeviceWin32PresentationSupportKHR = extern "system" fn (physicalDevice: PhysicalDevice, queueFamilyIndex: u32) -> Bool32;
-pub type PFN_vkCreateDebugReportCallbackEXT = extern "system" fn (instance: Instance, pCreateInfo: *const DebugReportCallbackCreateInfoEXT, pAllocator: *const AllocationCallbacks, pCallback: *mut DebugReportCallbackEXT) -> Result;
-pub type PFN_vkDestroyDebugReportCallbackEXT = extern "system" fn (instance: Instance, callback: DebugReportCallbackEXT, pAllocator: *const AllocationCallbacks);
-pub type PFN_vkDebugReportMessageEXT = extern "system" fn (instance: Instance, flags: DebugReportFlagsEXT, objectType: DebugReportObjectTypeEXT, object: u64, location: usize, messageCode: i32, pLayerPrefix: *const c_char, pMessage: *const c_char);
-pub type PFN_vkGetPhysicalDeviceExternalImageFormatPropertiesNV = extern "system" fn (physicalDevice: PhysicalDevice, format: Format, typ: ImageType, tiling: ImageTiling, usage: ImageUsageFlags, flags: ImageCreateFlags, externalHandleType: ExternalMemoryHandleTypeFlagsNV, pExternalImageFormatProperties: *mut ExternalImageFormatPropertiesNV) -> Result;
-pub type PFN_vkCreateViSurfaceNN = extern "system" fn (instance: Instance, pCreateInfo: *const ViSurfaceCreateInfoNN, pAllocator: *const AllocationCallbacks, pSurface: *mut SurfaceKHR) -> Result;
-pub type PFN_vkReleaseDisplayEXT = extern "system" fn (physicalDevice: PhysicalDevice, display: DisplayKHR) -> Result;
-pub type PFN_vkAcquireXlibDisplayEXT = extern "system" fn (physicalDevice: PhysicalDevice, dpy: *mut Display, display: DisplayKHR) -> Result;
-pub type PFN_vkGetRandROutputDisplayEXT = extern "system" fn (physicalDevice: PhysicalDevice, dpy: *mut Display, rrOutput: RROutput, pDisplay: *mut DisplayKHR) -> Result;
-pub type PFN_vkGetPhysicalDeviceSurfaceCapabilities2EXT = extern "system" fn (physicalDevice: PhysicalDevice, surface: SurfaceKHR, pSurfaceCapabilities: *mut SurfaceCapabilities2EXT) -> Result;
-pub type PFN_vkGetPhysicalDeviceSurfaceCapabilities2KHR = extern "system" fn (physicalDevice: PhysicalDevice, pSurfaceInfo: *const PhysicalDeviceSurfaceInfo2KHR, pSurfaceCapabilities: *mut SurfaceCapabilities2KHR) -> Result;
-pub type PFN_vkGetPhysicalDeviceSurfaceFormats2KHR = extern "system" fn (physicalDevice: PhysicalDevice, pSurfaceInfo: *const PhysicalDeviceSurfaceInfo2KHR, pSurfaceFormatCount: *mut u32, pSurfaceFormats: *mut SurfaceFormat2KHR) -> Result;
-pub type PFN_vkGetPhysicalDeviceDisplayProperties2KHR = extern "system" fn (physicalDevice: PhysicalDevice, pPropertyCount: *mut u32, pProperties: *mut DisplayProperties2KHR) -> Result;
-pub type PFN_vkGetPhysicalDeviceDisplayPlaneProperties2KHR = extern "system" fn (physicalDevice: PhysicalDevice, pPropertyCount: *mut u32, pProperties: *mut DisplayPlaneProperties2KHR) -> Result;
-pub type PFN_vkGetDisplayModeProperties2KHR = extern "system" fn (physicalDevice: PhysicalDevice, display: DisplayKHR, pPropertyCount: *mut u32, pProperties: *mut DisplayModeProperties2KHR) -> Result;
-pub type PFN_vkGetDisplayPlaneCapabilities2KHR = extern "system" fn (physicalDevice: PhysicalDevice, pDisplayPlaneInfo: *const DisplayPlaneInfo2KHR, pCapabilities: *mut DisplayPlaneCapabilities2KHR) -> Result;
-pub type PFN_vkCreateIOSSurfaceMVK = extern "system" fn (instance: Instance, pCreateInfo: *const IOSSurfaceCreateInfoMVK, pAllocator: *const AllocationCallbacks, pSurface: *mut SurfaceKHR) -> Result;
-pub type PFN_vkCreateMacOSSurfaceMVK = extern "system" fn (instance: Instance, pCreateInfo: *const MacOSSurfaceCreateInfoMVK, pAllocator: *const AllocationCallbacks, pSurface: *mut SurfaceKHR) -> Result;
-pub type PFN_vkSetDebugUtilsObjectNameEXT = extern "system" fn (device: Device, pNameInfo: *const DebugUtilsObjectNameInfoEXT) -> Result;
-pub type PFN_vkSetDebugUtilsObjectTagEXT = extern "system" fn (device: Device, pTagInfo: *const DebugUtilsObjectTagInfoEXT) -> Result;
-pub type PFN_vkQueueBeginDebugUtilsLabelEXT = extern "system" fn (queue: Queue, pLabelInfo: *const DebugUtilsLabelEXT);
-pub type PFN_vkQueueEndDebugUtilsLabelEXT = extern "system" fn (queue: Queue);
-pub type PFN_vkQueueInsertDebugUtilsLabelEXT = extern "system" fn (queue: Queue, pLabelInfo: *const DebugUtilsLabelEXT);
-pub type PFN_vkCmdBeginDebugUtilsLabelEXT = extern "system" fn (commandBuffer: CommandBuffer, pLabelInfo: *const DebugUtilsLabelEXT);
-pub type PFN_vkCmdEndDebugUtilsLabelEXT = extern "system" fn (commandBuffer: CommandBuffer);
-pub type PFN_vkCmdInsertDebugUtilsLabelEXT = extern "system" fn (commandBuffer: CommandBuffer, pLabelInfo: *const DebugUtilsLabelEXT);
-pub type PFN_vkCreateDebugUtilsMessengerEXT = extern "system" fn (instance: Instance, pCreateInfo: *const DebugUtilsMessengerCreateInfoEXT, pAllocator: *const AllocationCallbacks, pMessenger: *mut DebugUtilsMessengerEXT) -> Result;
-pub type PFN_vkDestroyDebugUtilsMessengerEXT = extern "system" fn (instance: Instance, messenger: DebugUtilsMessengerEXT, pAllocator: *const AllocationCallbacks);
-pub type PFN_vkSubmitDebugUtilsMessageEXT = extern "system" fn (instance: Instance, messageSeverity: DebugUtilsMessageSeverityFlagBitsEXT, messageTypes: DebugUtilsMessageTypeFlagsEXT, pCallbackData: *const DebugUtilsMessengerCallbackDataEXT);
-pub type PFN_vkCreateImagePipeSurfaceFUCHSIA = extern "system" fn (instance: Instance, pCreateInfo: *const ImagePipeSurfaceCreateInfoFUCHSIA, pAllocator: *const AllocationCallbacks, pSurface: *mut SurfaceKHR) -> Result;
-pub type PFN_vkCreateSwapchainKHR = extern "system" fn (device: Device, pCreateInfo: *const SwapchainCreateInfoKHR, pAllocator: *const AllocationCallbacks, pSwapchain: *mut SwapchainKHR) -> Result;
-pub type PFN_vkDestroySwapchainKHR = extern "system" fn (device: Device, swapchain: SwapchainKHR, pAllocator: *const AllocationCallbacks);
-pub type PFN_vkGetSwapchainImagesKHR = extern "system" fn (device: Device, swapchain: SwapchainKHR, pSwapchainImageCount: *mut u32, pSwapchainImages: *mut Image) -> Result;
-pub type PFN_vkAcquireNextImageKHR = extern "system" fn (device: Device, swapchain: SwapchainKHR, timeout: u64, semaphore: Semaphore, fence: Fence, pImageIndex: *mut u32) -> Result;
-pub type PFN_vkQueuePresentKHR = extern "system" fn (queue: Queue, pPresentInfo: *const PresentInfoKHR) -> Result;
-pub type PFN_vkGetDeviceGroupPresentCapabilitiesKHR = extern "system" fn (device: Device, pDeviceGroupPresentCapabilities: *mut DeviceGroupPresentCapabilitiesKHR) -> Result;
-pub type PFN_vkGetDeviceGroupSurfacePresentModesKHR = extern "system" fn (device: Device, surface: SurfaceKHR, pModes: *mut DeviceGroupPresentModeFlagsKHR) -> Result;
-pub type PFN_vkGetPhysicalDevicePresentRectanglesKHR = extern "system" fn (physicalDevice: PhysicalDevice, surface: SurfaceKHR, pRectCount: *mut u32, pRects: *mut Rect2D) -> Result;
-pub type PFN_vkAcquireNextImage2KHR = extern "system" fn (device: Device, pAcquireInfo: *const AcquireNextImageInfoKHR, pImageIndex: *mut u32) -> Result;
-pub type PFN_vkCreateSharedSwapchainsKHR = extern "system" fn (device: Device, swapchainCount: u32, pCreateInfos: *const SwapchainCreateInfoKHR, pAllocator: *const AllocationCallbacks, pSwapchains: *mut SwapchainKHR) -> Result;
-pub type PFN_vkDebugMarkerSetObjectTagEXT = extern "system" fn (device: Device, pTagInfo: *const DebugMarkerObjectTagInfoEXT) -> Result;
-pub type PFN_vkDebugMarkerSetObjectNameEXT = extern "system" fn (device: Device, pNameInfo: *const DebugMarkerObjectNameInfoEXT) -> Result;
-pub type PFN_vkCmdDebugMarkerBeginEXT = extern "system" fn (commandBuffer: CommandBuffer, pMarkerInfo: *const DebugMarkerMarkerInfoEXT);
-pub type PFN_vkCmdDebugMarkerEndEXT = extern "system" fn (commandBuffer: CommandBuffer);
-pub type PFN_vkCmdDebugMarkerInsertEXT = extern "system" fn (commandBuffer: CommandBuffer, pMarkerInfo: *const DebugMarkerMarkerInfoEXT);
-pub type PFN_vkCmdBindTransformFeedbackBuffersEXT = extern "system" fn (commandBuffer: CommandBuffer, firstBinding: u32, bindingCount: u32, pBuffers: *const Buffer, pOffsets: *const DeviceSize, pSizes: *const DeviceSize);
-pub type PFN_vkCmdBeginTransformFeedbackEXT = extern "system" fn (commandBuffer: CommandBuffer, firstCounterBuffer: u32, counterBufferCount: u32, pCounterBuffers: *const Buffer, pCounterBufferOffsets: *const DeviceSize);
-pub type PFN_vkCmdEndTransformFeedbackEXT = extern "system" fn (commandBuffer: CommandBuffer, firstCounterBuffer: u32, counterBufferCount: u32, pCounterBuffers: *const Buffer, pCounterBufferOffsets: *const DeviceSize);
-pub type PFN_vkCmdBeginQueryIndexedEXT = extern "system" fn (commandBuffer: CommandBuffer, queryPool: QueryPool, query: u32, flags: QueryControlFlags, index: u32);
-pub type PFN_vkCmdEndQueryIndexedEXT = extern "system" fn (commandBuffer: CommandBuffer, queryPool: QueryPool, query: u32, index: u32);
-pub type PFN_vkCmdDrawIndirectByteCountEXT = extern "system" fn (commandBuffer: CommandBuffer, instanceCount: u32, firstInstance: u32, counterBuffer: Buffer, counterBufferOffset: DeviceSize, counterOffset: u32, vertexStride: u32);
-pub type PFN_vkCmdDrawIndirectCountAMD = extern "system" fn (commandBuffer: CommandBuffer, buffer: Buffer, offset: DeviceSize, countBuffer: Buffer, countBufferOffset: DeviceSize, maxDrawCount: u32, stride: u32);
-pub type PFN_vkCmdDrawIndexedIndirectCountAMD = extern "system" fn (commandBuffer: CommandBuffer, buffer: Buffer, offset: DeviceSize, countBuffer: Buffer, countBufferOffset: DeviceSize, maxDrawCount: u32, stride: u32);
-pub type PFN_vkGetShaderInfoAMD = extern "system" fn (device: Device, pipeline: Pipeline, shaderStage: ShaderStageFlagBits, infoType: ShaderInfoTypeAMD, pInfoSize: *mut usize, pInfo: *mut c_void) -> Result;
-pub type PFN_vkGetMemoryWin32HandleNV = extern "system" fn (device: Device, memory: DeviceMemory, handleType: ExternalMemoryHandleTypeFlagsNV, pHandle: *mut HANDLE) -> Result;
-pub type PFN_vkGetMemoryWin32HandleKHR = extern "system" fn (device: Device, pGetWin32HandleInfo: *const MemoryGetWin32HandleInfoKHR, pHandle: *mut HANDLE) -> Result;
-pub type PFN_vkGetMemoryWin32HandlePropertiesKHR = extern "system" fn (device: Device, handleType: ExternalMemoryHandleTypeFlagBits, handle: HANDLE, pMemoryWin32HandleProperties: *mut MemoryWin32HandlePropertiesKHR) -> Result;
-pub type PFN_vkGetMemoryFdKHR = extern "system" fn (device: Device, pGetFdInfo: *const MemoryGetFdInfoKHR, pFd: *mut i32) -> Result;
-pub type PFN_vkGetMemoryFdPropertiesKHR = extern "system" fn (device: Device, handleType: ExternalMemoryHandleTypeFlagBits, fd: i32, pMemoryFdProperties: *mut MemoryFdPropertiesKHR) -> Result;
-pub type PFN_vkImportSemaphoreWin32HandleKHR = extern "system" fn (device: Device, pImportSemaphoreWin32HandleInfo: *const ImportSemaphoreWin32HandleInfoKHR) -> Result;
-pub type PFN_vkGetSemaphoreWin32HandleKHR = extern "system" fn (device: Device, pGetWin32HandleInfo: *const SemaphoreGetWin32HandleInfoKHR, pHandle: *mut HANDLE) -> Result;
-pub type PFN_vkImportSemaphoreFdKHR = extern "system" fn (device: Device, pImportSemaphoreFdInfo: *const ImportSemaphoreFdInfoKHR) -> Result;
-pub type PFN_vkGetSemaphoreFdKHR = extern "system" fn (device: Device, pGetFdInfo: *const SemaphoreGetFdInfoKHR, pFd: *mut i32) -> Result;
-pub type PFN_vkCmdPushDescriptorSetKHR = extern "system" fn (commandBuffer: CommandBuffer, pipelineBindPoint: PipelineBindPoint, layout: PipelineLayout, set: u32, descriptorWriteCount: u32, pDescriptorWrites: *const WriteDescriptorSet);
-pub type PFN_vkCmdPushDescriptorSetWithTemplateKHR = extern "system" fn (commandBuffer: CommandBuffer, descriptorUpdateTemplate: DescriptorUpdateTemplate, layout: PipelineLayout, set: u32, pData: *const c_void);
-pub type PFN_vkCmdBeginConditionalRenderingEXT = extern "system" fn (commandBuffer: CommandBuffer, pConditionalRenderingBegin: *const ConditionalRenderingBeginInfoEXT);
-pub type PFN_vkCmdEndConditionalRenderingEXT = extern "system" fn (commandBuffer: CommandBuffer);
-pub type PFN_vkCmdProcessCommandsNVX = extern "system" fn (commandBuffer: CommandBuffer, pProcessCommandsInfo: *const CmdProcessCommandsInfoNVX);
-pub type PFN_vkCmdReserveSpaceForCommandsNVX = extern "system" fn (commandBuffer: CommandBuffer, pReserveSpaceInfo: *const CmdReserveSpaceForCommandsInfoNVX);
-pub type PFN_vkCreateIndirectCommandsLayoutNVX = extern "system" fn (device: Device, pCreateInfo: *const IndirectCommandsLayoutCreateInfoNVX, pAllocator: *const AllocationCallbacks, pIndirectCommandsLayout: *mut IndirectCommandsLayoutNVX) -> Result;
-pub type PFN_vkDestroyIndirectCommandsLayoutNVX = extern "system" fn (device: Device, indirectCommandsLayout: IndirectCommandsLayoutNVX, pAllocator: *const AllocationCallbacks);
-pub type PFN_vkCreateObjectTableNVX = extern "system" fn (device: Device, pCreateInfo: *const ObjectTableCreateInfoNVX, pAllocator: *const AllocationCallbacks, pObjectTable: *mut ObjectTableNVX) -> Result;
-pub type PFN_vkDestroyObjectTableNVX = extern "system" fn (device: Device, objectTable: ObjectTableNVX, pAllocator: *const AllocationCallbacks);
-pub type PFN_vkRegisterObjectsNVX = extern "system" fn (device: Device, objectTable: ObjectTableNVX, objectCount: u32, ppObjectTableEntries: *const *const ObjectTableEntryNVX, pObjectIndices: *const u32) -> Result;
-pub type PFN_vkUnregisterObjectsNVX = extern "system" fn (device: Device, objectTable: ObjectTableNVX, objectCount: u32, pObjectEntryTypes: *const ObjectEntryTypeNVX, pObjectIndices: *const u32) -> Result;
-pub type PFN_vkGetPhysicalDeviceGeneratedCommandsPropertiesNVX = extern "system" fn (physicalDevice: PhysicalDevice, pFeatures: *mut DeviceGeneratedCommandsFeaturesNVX, pLimits: *mut DeviceGeneratedCommandsLimitsNVX);
-pub type PFN_vkCmdSetViewportWScalingNV = extern "system" fn (commandBuffer: CommandBuffer, firstViewport: u32, viewportCount: u32, pViewportWScalings: *const ViewportWScalingNV);
-pub type PFN_vkDisplayPowerControlEXT = extern "system" fn (device: Device, display: DisplayKHR, pDisplayPowerInfo: *const DisplayPowerInfoEXT) -> Result;
-pub type PFN_vkRegisterDeviceEventEXT = extern "system" fn (device: Device, pDeviceEventInfo: *const DeviceEventInfoEXT, pAllocator: *const AllocationCallbacks, pFence: *mut Fence) -> Result;
-pub type PFN_vkRegisterDisplayEventEXT = extern "system" fn (device: Device, display: DisplayKHR, pDisplayEventInfo: *const DisplayEventInfoEXT, pAllocator: *const AllocationCallbacks, pFence: *mut Fence) -> Result;
-pub type PFN_vkGetSwapchainCounterEXT = extern "system" fn (device: Device, swapchain: SwapchainKHR, counter: SurfaceCounterFlagBitsEXT, pCounterValue: *mut u64) -> Result;
-pub type PFN_vkGetRefreshCycleDurationGOOGLE = extern "system" fn (device: Device, swapchain: SwapchainKHR, pDisplayTimingProperties: *mut RefreshCycleDurationGOOGLE) -> Result;
-pub type PFN_vkGetPastPresentationTimingGOOGLE = extern "system" fn (device: Device, swapchain: SwapchainKHR, pPresentationTimingCount: *mut u32, pPresentationTimings: *mut PastPresentationTimingGOOGLE) -> Result;
-pub type PFN_vkCmdSetDiscardRectangleEXT = extern "system" fn (commandBuffer: CommandBuffer, firstDiscardRectangle: u32, discardRectangleCount: u32, pDiscardRectangles: *const Rect2D);
-pub type PFN_vkSetHdrMetadataEXT = extern "system" fn (device: Device, swapchainCount: u32, pSwapchains: *const SwapchainKHR, pMetadata: *const HdrMetadataEXT);
-pub type PFN_vkCreateRenderPass2KHR = extern "system" fn (device: Device, pCreateInfo: *const RenderPassCreateInfo2KHR, pAllocator: *const AllocationCallbacks, pRenderPass: *mut RenderPass) -> Result;
-pub type PFN_vkCmdBeginRenderPass2KHR = extern "system" fn (commandBuffer: CommandBuffer, pRenderPassBegin: *const RenderPassBeginInfo, pSubpassBeginInfo: *const SubpassBeginInfoKHR);
-pub type PFN_vkCmdNextSubpass2KHR = extern "system" fn (commandBuffer: CommandBuffer, pSubpassBeginInfo: *const SubpassBeginInfoKHR, pSubpassEndInfo: *const SubpassEndInfoKHR);
-pub type PFN_vkCmdEndRenderPass2KHR = extern "system" fn (commandBuffer: CommandBuffer, pSubpassEndInfo: *const SubpassEndInfoKHR);
-pub type PFN_vkGetSwapchainStatusKHR = extern "system" fn (device: Device, swapchain: SwapchainKHR) -> Result;
-pub type PFN_vkImportFenceWin32HandleKHR = extern "system" fn (device: Device, pImportFenceWin32HandleInfo: *const ImportFenceWin32HandleInfoKHR) -> Result;
-pub type PFN_vkGetFenceWin32HandleKHR = extern "system" fn (device: Device, pGetWin32HandleInfo: *const FenceGetWin32HandleInfoKHR, pHandle: *mut HANDLE) -> Result;
-pub type PFN_vkImportFenceFdKHR = extern "system" fn (device: Device, pImportFenceFdInfo: *const ImportFenceFdInfoKHR) -> Result;
-pub type PFN_vkGetFenceFdKHR = extern "system" fn (device: Device, pGetFdInfo: *const FenceGetFdInfoKHR, pFd: *mut i32) -> Result;
-pub type PFN_vkGetAndroidHardwareBufferPropertiesANDROID = extern "system" fn (device: Device, buffer: *const AHardwareBuffer, pProperties: *mut AndroidHardwareBufferPropertiesANDROID) -> Result;
-pub type PFN_vkGetMemoryAndroidHardwareBufferANDROID = extern "system" fn (device: Device, pInfo: *const MemoryGetAndroidHardwareBufferInfoANDROID, pBuffer: *mut *mut AHardwareBuffer) -> Result;
-pub type PFN_vkCmdSetSampleLocationsEXT = extern "system" fn (commandBuffer: CommandBuffer, pSampleLocationsInfo: *const SampleLocationsInfoEXT);
-pub type PFN_vkGetPhysicalDeviceMultisamplePropertiesEXT = extern "system" fn (physicalDevice: PhysicalDevice, samples: SampleCountFlagBits, pMultisampleProperties: *mut MultisamplePropertiesEXT);
-pub type PFN_vkGetImageDrmFormatModifierPropertiesEXT = extern "system" fn (device: Device, image: Image, pProperties: *mut ImageDrmFormatModifierPropertiesEXT) -> Result;
-pub type PFN_vkCreateValidationCacheEXT = extern "system" fn (device: Device, pCreateInfo: *const ValidationCacheCreateInfoEXT, pAllocator: *const AllocationCallbacks, pValidationCache: *mut ValidationCacheEXT) -> Result;
-pub type PFN_vkDestroyValidationCacheEXT = extern "system" fn (device: Device, validationCache: ValidationCacheEXT, pAllocator: *const AllocationCallbacks);
-pub type PFN_vkMergeValidationCachesEXT = extern "system" fn (device: Device, dstCache: ValidationCacheEXT, srcCacheCount: u32, pSrcCaches: *const ValidationCacheEXT) -> Result;
-pub type PFN_vkGetValidationCacheDataEXT = extern "system" fn (device: Device, validationCache: ValidationCacheEXT, pDataSize: *mut usize, pData: *mut c_void) -> Result;
-pub type PFN_vkCmdBindShadingRateImageNV = extern "system" fn (commandBuffer: CommandBuffer, imageView: ImageView, imageLayout: ImageLayout);
-pub type PFN_vkCmdSetViewportShadingRatePaletteNV = extern "system" fn (commandBuffer: CommandBuffer, firstViewport: u32, viewportCount: u32, pShadingRatePalettes: *const ShadingRatePaletteNV);
-pub type PFN_vkCmdSetCoarseSampleOrderNV = extern "system" fn (commandBuffer: CommandBuffer, sampleOrderType: CoarseSampleOrderTypeNV, customSampleOrderCount: u32, pCustomSampleOrders: *const CoarseSampleOrderCustomNV);
-pub type PFN_vkCreateAccelerationStructureNV = extern "system" fn (device: Device, pCreateInfo: *const AccelerationStructureCreateInfoNV, pAllocator: *const AllocationCallbacks, pAccelerationStructure: *mut AccelerationStructureNV) -> Result;
-pub type PFN_vkDestroyAccelerationStructureNV = extern "system" fn (device: Device, accelerationStructure: AccelerationStructureNV, pAllocator: *const AllocationCallbacks);
-pub type PFN_vkGetAccelerationStructureMemoryRequirementsNV = extern "system" fn (device: Device, pInfo: *const AccelerationStructureMemoryRequirementsInfoNV, pMemoryRequirements: *mut MemoryRequirements2);
-pub type PFN_vkBindAccelerationStructureMemoryNV = extern "system" fn (device: Device, bindInfoCount: u32, pBindInfos: *const BindAccelerationStructureMemoryInfoNV) -> Result;
-pub type PFN_vkCmdBuildAccelerationStructureNV = extern "system" fn (commandBuffer: CommandBuffer, pInfo: *const AccelerationStructureInfoNV, instanceData: Buffer, instanceOffset: DeviceSize, update: Bool32, dst: AccelerationStructureNV, src: AccelerationStructureNV, scratch: Buffer, scratchOffset: DeviceSize);
-pub type PFN_vkCmdCopyAccelerationStructureNV = extern "system" fn (commandBuffer: CommandBuffer, dst: AccelerationStructureNV, src: AccelerationStructureNV, mode: CopyAccelerationStructureModeNV);
-pub type PFN_vkCmdTraceRaysNV = extern "system" fn (commandBuffer: CommandBuffer, raygenShaderBindingTableBuffer: Buffer, raygenShaderBindingOffset: DeviceSize, missShaderBindingTableBuffer: Buffer, missShaderBindingOffset: DeviceSize, missShaderBindingStride: DeviceSize, hitShaderBindingTableBuffer: Buffer, hitShaderBindingOffset: DeviceSize, hitShaderBindingStride: DeviceSize, callableShaderBindingTableBuffer: Buffer, callableShaderBindingOffset: DeviceSize, callableShaderBindingStride: DeviceSize, width: u32, height: u32, depth: u32);
-pub type PFN_vkCreateRayTracingPipelinesNV = extern "system" fn (device: Device, pipelineCache: PipelineCache, createInfoCount: u32, pCreateInfos: *const RayTracingPipelineCreateInfoNV, pAllocator: *const AllocationCallbacks, pPipelines: *mut Pipeline) -> Result;
-pub type PFN_vkGetRayTracingShaderGroupHandlesNV = extern "system" fn (device: Device, pipeline: Pipeline, firstGroup: u32, groupCount: u32, dataSize: usize, pData: *mut c_void) -> Result;
-pub type PFN_vkGetAccelerationStructureHandleNV = extern "system" fn (device: Device, accelerationStructure: AccelerationStructureNV, dataSize: usize, pData: *mut c_void) -> Result;
-pub type PFN_vkCmdWriteAccelerationStructuresPropertiesNV = extern "system" fn (commandBuffer: CommandBuffer, accelerationStructureCount: u32, pAccelerationStructures: *const AccelerationStructureNV, queryType: QueryType, queryPool: QueryPool, firstQuery: u32);
-pub type PFN_vkCompileDeferredNV = extern "system" fn (device: Device, pipeline: Pipeline, shader: u32) -> Result;
-pub type PFN_vkCmdDrawIndirectCountKHR = extern "system" fn (commandBuffer: CommandBuffer, buffer: Buffer, offset: DeviceSize, countBuffer: Buffer, countBufferOffset: DeviceSize, maxDrawCount: u32, stride: u32);
-pub type PFN_vkCmdDrawIndexedIndirectCountKHR = extern "system" fn (commandBuffer: CommandBuffer, buffer: Buffer, offset: DeviceSize, countBuffer: Buffer, countBufferOffset: DeviceSize, maxDrawCount: u32, stride: u32);
-pub type PFN_vkGetMemoryHostPointerPropertiesEXT = extern "system" fn (device: Device, handleType: ExternalMemoryHandleTypeFlagBits, pHostPointer: *const c_void, pMemoryHostPointerProperties: *mut MemoryHostPointerPropertiesEXT) -> Result;
-pub type PFN_vkCmdWriteBufferMarkerAMD = extern "system" fn (commandBuffer: CommandBuffer, pipelineStage: PipelineStageFlagBits, dstBuffer: Buffer, dstOffset: DeviceSize, marker: u32);
-pub type PFN_vkGetPhysicalDeviceCalibrateableTimeDomainsEXT = extern "system" fn (physicalDevice: PhysicalDevice, pTimeDomainCount: *mut u32, pTimeDomains: *mut TimeDomainEXT) -> Result;
-pub type PFN_vkGetCalibratedTimestampsEXT = extern "system" fn (device: Device, timestampCount: u32, pTimestampInfos: *const CalibratedTimestampInfoEXT, pTimestamps: *mut u64, pMaxDeviation: *mut u64) -> Result;
-pub type PFN_vkCmdDrawMeshTasksNV = extern "system" fn (commandBuffer: CommandBuffer, taskCount: u32, firstTask: u32);
-pub type PFN_vkCmdDrawMeshTasksIndirectNV = extern "system" fn (commandBuffer: CommandBuffer, buffer: Buffer, offset: DeviceSize, drawCount: u32, stride: u32);
-pub type PFN_vkCmdDrawMeshTasksIndirectCountNV = extern "system" fn (commandBuffer: CommandBuffer, buffer: Buffer, offset: DeviceSize, countBuffer: Buffer, countBufferOffset: DeviceSize, maxDrawCount: u32, stride: u32);
-pub type PFN_vkCmdSetExclusiveScissorNV = extern "system" fn (commandBuffer: CommandBuffer, firstExclusiveScissor: u32, exclusiveScissorCount: u32, pExclusiveScissors: *const Rect2D);
-pub type PFN_vkCmdSetCheckpointNV = extern "system" fn (commandBuffer: CommandBuffer, pCheckpointMarker: *const c_void);
-pub type PFN_vkGetQueueCheckpointDataNV = extern "system" fn (queue: Queue, pCheckpointDataCount: *mut u32, pCheckpointData: *mut CheckpointDataNV);
+#[doc(hidden)] pub type PFN_vkCreateInstance = extern "system" fn (pCreateInfo: *const InstanceCreateInfo, pAllocator: *const AllocationCallbacks, pInstance: *mut Instance) -> Result;
+#[doc(hidden)] pub type PFN_vkDestroyInstance = extern "system" fn (instance: Instance, pAllocator: *const AllocationCallbacks);
+#[doc(hidden)] pub type PFN_vkEnumeratePhysicalDevices = extern "system" fn (instance: Instance, pPhysicalDeviceCount: *mut u32, pPhysicalDevices: *mut PhysicalDevice) -> Result;
+#[doc(hidden)] pub type PFN_vkGetPhysicalDeviceFeatures = extern "system" fn (physicalDevice: PhysicalDevice, pFeatures: *mut PhysicalDeviceFeatures);
+#[doc(hidden)] pub type PFN_vkGetPhysicalDeviceFormatProperties = extern "system" fn (physicalDevice: PhysicalDevice, format: Format, pFormatProperties: *mut FormatProperties);
+#[doc(hidden)] pub type PFN_vkGetPhysicalDeviceImageFormatProperties = extern "system" fn (physicalDevice: PhysicalDevice, format: Format, typ: ImageType, tiling: ImageTiling, usage: ImageUsageFlags, flags: ImageCreateFlags, pImageFormatProperties: *mut ImageFormatProperties) -> Result;
+#[doc(hidden)] pub type PFN_vkGetPhysicalDeviceProperties = extern "system" fn (physicalDevice: PhysicalDevice, pProperties: *mut PhysicalDeviceProperties);
+#[doc(hidden)] pub type PFN_vkGetPhysicalDeviceQueueFamilyProperties = extern "system" fn (physicalDevice: PhysicalDevice, pQueueFamilyPropertyCount: *mut u32, pQueueFamilyProperties: *mut QueueFamilyProperties);
+#[doc(hidden)] pub type PFN_vkGetPhysicalDeviceMemoryProperties = extern "system" fn (physicalDevice: PhysicalDevice, pMemoryProperties: *mut PhysicalDeviceMemoryProperties);
+#[doc(hidden)] pub type PFN_vkGetInstanceProcAddr = extern "system" fn (instance: Instance, pName: *const c_char) -> PFN_vkVoidFunction;
+#[doc(hidden)] pub type PFN_vkGetDeviceProcAddr = extern "system" fn (device: Device, pName: *const c_char) -> PFN_vkVoidFunction;
+#[doc(hidden)] pub type PFN_vkCreateDevice = extern "system" fn (physicalDevice: PhysicalDevice, pCreateInfo: *const DeviceCreateInfo, pAllocator: *const AllocationCallbacks, pDevice: *mut Device) -> Result;
+#[doc(hidden)] pub type PFN_vkDestroyDevice = extern "system" fn (device: Device, pAllocator: *const AllocationCallbacks);
+#[doc(hidden)] pub type PFN_vkEnumerateInstanceExtensionProperties = extern "system" fn (pLayerName: *const c_char, pPropertyCount: *mut u32, pProperties: *mut ExtensionProperties) -> Result;
+#[doc(hidden)] pub type PFN_vkEnumerateDeviceExtensionProperties = extern "system" fn (physicalDevice: PhysicalDevice, pLayerName: *const c_char, pPropertyCount: *mut u32, pProperties: *mut ExtensionProperties) -> Result;
+#[doc(hidden)] pub type PFN_vkEnumerateInstanceLayerProperties = extern "system" fn (pPropertyCount: *mut u32, pProperties: *mut LayerProperties) -> Result;
+#[doc(hidden)] pub type PFN_vkEnumerateDeviceLayerProperties = extern "system" fn (physicalDevice: PhysicalDevice, pPropertyCount: *mut u32, pProperties: *mut LayerProperties) -> Result;
+#[doc(hidden)] pub type PFN_vkGetDeviceQueue = extern "system" fn (device: Device, queueFamilyIndex: u32, queueIndex: u32, pQueue: *mut Queue);
+#[doc(hidden)] pub type PFN_vkQueueSubmit = extern "system" fn (queue: Queue, submitCount: u32, pSubmits: *const SubmitInfo, fence: Fence) -> Result;
+#[doc(hidden)] pub type PFN_vkQueueWaitIdle = extern "system" fn (queue: Queue) -> Result;
+#[doc(hidden)] pub type PFN_vkDeviceWaitIdle = extern "system" fn (device: Device) -> Result;
+#[doc(hidden)] pub type PFN_vkAllocateMemory = extern "system" fn (device: Device, pAllocateInfo: *const MemoryAllocateInfo, pAllocator: *const AllocationCallbacks, pMemory: *mut DeviceMemory) -> Result;
+#[doc(hidden)] pub type PFN_vkFreeMemory = extern "system" fn (device: Device, memory: DeviceMemory, pAllocator: *const AllocationCallbacks);
+#[doc(hidden)] pub type PFN_vkMapMemory = extern "system" fn (device: Device, memory: DeviceMemory, offset: DeviceSize, size: DeviceSize, flags: MemoryMapFlags, ppData: *mut *mut c_void) -> Result;
+#[doc(hidden)] pub type PFN_vkUnmapMemory = extern "system" fn (device: Device, memory: DeviceMemory);
+#[doc(hidden)] pub type PFN_vkFlushMappedMemoryRanges = extern "system" fn (device: Device, memoryRangeCount: u32, pMemoryRanges: *const MappedMemoryRange) -> Result;
+#[doc(hidden)] pub type PFN_vkInvalidateMappedMemoryRanges = extern "system" fn (device: Device, memoryRangeCount: u32, pMemoryRanges: *const MappedMemoryRange) -> Result;
+#[doc(hidden)] pub type PFN_vkGetDeviceMemoryCommitment = extern "system" fn (device: Device, memory: DeviceMemory, pCommittedMemoryInBytes: *mut DeviceSize);
+#[doc(hidden)] pub type PFN_vkBindBufferMemory = extern "system" fn (device: Device, buffer: Buffer, memory: DeviceMemory, memoryOffset: DeviceSize) -> Result;
+#[doc(hidden)] pub type PFN_vkBindImageMemory = extern "system" fn (device: Device, image: Image, memory: DeviceMemory, memoryOffset: DeviceSize) -> Result;
+#[doc(hidden)] pub type PFN_vkGetBufferMemoryRequirements = extern "system" fn (device: Device, buffer: Buffer, pMemoryRequirements: *mut MemoryRequirements);
+#[doc(hidden)] pub type PFN_vkGetImageMemoryRequirements = extern "system" fn (device: Device, image: Image, pMemoryRequirements: *mut MemoryRequirements);
+#[doc(hidden)] pub type PFN_vkGetImageSparseMemoryRequirements = extern "system" fn (device: Device, image: Image, pSparseMemoryRequirementCount: *mut u32, pSparseMemoryRequirements: *mut SparseImageMemoryRequirements);
+#[doc(hidden)] pub type PFN_vkGetPhysicalDeviceSparseImageFormatProperties = extern "system" fn (physicalDevice: PhysicalDevice, format: Format, typ: ImageType, samples: SampleCountFlagBits, usage: ImageUsageFlags, tiling: ImageTiling, pPropertyCount: *mut u32, pProperties: *mut SparseImageFormatProperties);
+#[doc(hidden)] pub type PFN_vkQueueBindSparse = extern "system" fn (queue: Queue, bindInfoCount: u32, pBindInfo: *const BindSparseInfo, fence: Fence) -> Result;
+#[doc(hidden)] pub type PFN_vkCreateFence = extern "system" fn (device: Device, pCreateInfo: *const FenceCreateInfo, pAllocator: *const AllocationCallbacks, pFence: *mut Fence) -> Result;
+#[doc(hidden)] pub type PFN_vkDestroyFence = extern "system" fn (device: Device, fence: Fence, pAllocator: *const AllocationCallbacks);
+#[doc(hidden)] pub type PFN_vkResetFences = extern "system" fn (device: Device, fenceCount: u32, pFences: *const Fence) -> Result;
+#[doc(hidden)] pub type PFN_vkGetFenceStatus = extern "system" fn (device: Device, fence: Fence) -> Result;
+#[doc(hidden)] pub type PFN_vkWaitForFences = extern "system" fn (device: Device, fenceCount: u32, pFences: *const Fence, waitAll: Bool32, timeout: u64) -> Result;
+#[doc(hidden)] pub type PFN_vkCreateSemaphore = extern "system" fn (device: Device, pCreateInfo: *const SemaphoreCreateInfo, pAllocator: *const AllocationCallbacks, pSemaphore: *mut Semaphore) -> Result;
+#[doc(hidden)] pub type PFN_vkDestroySemaphore = extern "system" fn (device: Device, semaphore: Semaphore, pAllocator: *const AllocationCallbacks);
+#[doc(hidden)] pub type PFN_vkCreateEvent = extern "system" fn (device: Device, pCreateInfo: *const EventCreateInfo, pAllocator: *const AllocationCallbacks, pEvent: *mut Event) -> Result;
+#[doc(hidden)] pub type PFN_vkDestroyEvent = extern "system" fn (device: Device, event: Event, pAllocator: *const AllocationCallbacks);
+#[doc(hidden)] pub type PFN_vkGetEventStatus = extern "system" fn (device: Device, event: Event) -> Result;
+#[doc(hidden)] pub type PFN_vkSetEvent = extern "system" fn (device: Device, event: Event) -> Result;
+#[doc(hidden)] pub type PFN_vkResetEvent = extern "system" fn (device: Device, event: Event) -> Result;
+#[doc(hidden)] pub type PFN_vkCreateQueryPool = extern "system" fn (device: Device, pCreateInfo: *const QueryPoolCreateInfo, pAllocator: *const AllocationCallbacks, pQueryPool: *mut QueryPool) -> Result;
+#[doc(hidden)] pub type PFN_vkDestroyQueryPool = extern "system" fn (device: Device, queryPool: QueryPool, pAllocator: *const AllocationCallbacks);
+#[doc(hidden)] pub type PFN_vkGetQueryPoolResults = extern "system" fn (device: Device, queryPool: QueryPool, firstQuery: u32, queryCount: u32, dataSize: usize, pData: *mut c_void, stride: DeviceSize, flags: QueryResultFlags) -> Result;
+#[doc(hidden)] pub type PFN_vkCreateBuffer = extern "system" fn (device: Device, pCreateInfo: *const BufferCreateInfo, pAllocator: *const AllocationCallbacks, pBuffer: *mut Buffer) -> Result;
+#[doc(hidden)] pub type PFN_vkDestroyBuffer = extern "system" fn (device: Device, buffer: Buffer, pAllocator: *const AllocationCallbacks);
+#[doc(hidden)] pub type PFN_vkCreateBufferView = extern "system" fn (device: Device, pCreateInfo: *const BufferViewCreateInfo, pAllocator: *const AllocationCallbacks, pView: *mut BufferView) -> Result;
+#[doc(hidden)] pub type PFN_vkDestroyBufferView = extern "system" fn (device: Device, bufferView: BufferView, pAllocator: *const AllocationCallbacks);
+#[doc(hidden)] pub type PFN_vkCreateImage = extern "system" fn (device: Device, pCreateInfo: *const ImageCreateInfo, pAllocator: *const AllocationCallbacks, pImage: *mut Image) -> Result;
+#[doc(hidden)] pub type PFN_vkDestroyImage = extern "system" fn (device: Device, image: Image, pAllocator: *const AllocationCallbacks);
+#[doc(hidden)] pub type PFN_vkGetImageSubresourceLayout = extern "system" fn (device: Device, image: Image, pSubresource: *const ImageSubresource, pLayout: *mut SubresourceLayout);
+#[doc(hidden)] pub type PFN_vkCreateImageView = extern "system" fn (device: Device, pCreateInfo: *const ImageViewCreateInfo, pAllocator: *const AllocationCallbacks, pView: *mut ImageView) -> Result;
+#[doc(hidden)] pub type PFN_vkDestroyImageView = extern "system" fn (device: Device, imageView: ImageView, pAllocator: *const AllocationCallbacks);
+#[doc(hidden)] pub type PFN_vkCreateShaderModule = extern "system" fn (device: Device, pCreateInfo: *const ShaderModuleCreateInfo, pAllocator: *const AllocationCallbacks, pShaderModule: *mut ShaderModule) -> Result;
+#[doc(hidden)] pub type PFN_vkDestroyShaderModule = extern "system" fn (device: Device, shaderModule: ShaderModule, pAllocator: *const AllocationCallbacks);
+#[doc(hidden)] pub type PFN_vkCreatePipelineCache = extern "system" fn (device: Device, pCreateInfo: *const PipelineCacheCreateInfo, pAllocator: *const AllocationCallbacks, pPipelineCache: *mut PipelineCache) -> Result;
+#[doc(hidden)] pub type PFN_vkDestroyPipelineCache = extern "system" fn (device: Device, pipelineCache: PipelineCache, pAllocator: *const AllocationCallbacks);
+#[doc(hidden)] pub type PFN_vkGetPipelineCacheData = extern "system" fn (device: Device, pipelineCache: PipelineCache, pDataSize: *mut usize, pData: *mut c_void) -> Result;
+#[doc(hidden)] pub type PFN_vkMergePipelineCaches = extern "system" fn (device: Device, dstCache: PipelineCache, srcCacheCount: u32, pSrcCaches: *const PipelineCache) -> Result;
+#[doc(hidden)] pub type PFN_vkCreateGraphicsPipelines = extern "system" fn (device: Device, pipelineCache: PipelineCache, createInfoCount: u32, pCreateInfos: *const GraphicsPipelineCreateInfo, pAllocator: *const AllocationCallbacks, pPipelines: *mut Pipeline) -> Result;
+#[doc(hidden)] pub type PFN_vkCreateComputePipelines = extern "system" fn (device: Device, pipelineCache: PipelineCache, createInfoCount: u32, pCreateInfos: *const ComputePipelineCreateInfo, pAllocator: *const AllocationCallbacks, pPipelines: *mut Pipeline) -> Result;
+#[doc(hidden)] pub type PFN_vkDestroyPipeline = extern "system" fn (device: Device, pipeline: Pipeline, pAllocator: *const AllocationCallbacks);
+#[doc(hidden)] pub type PFN_vkCreatePipelineLayout = extern "system" fn (device: Device, pCreateInfo: *const PipelineLayoutCreateInfo, pAllocator: *const AllocationCallbacks, pPipelineLayout: *mut PipelineLayout) -> Result;
+#[doc(hidden)] pub type PFN_vkDestroyPipelineLayout = extern "system" fn (device: Device, pipelineLayout: PipelineLayout, pAllocator: *const AllocationCallbacks);
+#[doc(hidden)] pub type PFN_vkCreateSampler = extern "system" fn (device: Device, pCreateInfo: *const SamplerCreateInfo, pAllocator: *const AllocationCallbacks, pSampler: *mut Sampler) -> Result;
+#[doc(hidden)] pub type PFN_vkDestroySampler = extern "system" fn (device: Device, sampler: Sampler, pAllocator: *const AllocationCallbacks);
+#[doc(hidden)] pub type PFN_vkCreateDescriptorSetLayout = extern "system" fn (device: Device, pCreateInfo: *const DescriptorSetLayoutCreateInfo, pAllocator: *const AllocationCallbacks, pSetLayout: *mut DescriptorSetLayout) -> Result;
+#[doc(hidden)] pub type PFN_vkDestroyDescriptorSetLayout = extern "system" fn (device: Device, descriptorSetLayout: DescriptorSetLayout, pAllocator: *const AllocationCallbacks);
+#[doc(hidden)] pub type PFN_vkCreateDescriptorPool = extern "system" fn (device: Device, pCreateInfo: *const DescriptorPoolCreateInfo, pAllocator: *const AllocationCallbacks, pDescriptorPool: *mut DescriptorPool) -> Result;
+#[doc(hidden)] pub type PFN_vkDestroyDescriptorPool = extern "system" fn (device: Device, descriptorPool: DescriptorPool, pAllocator: *const AllocationCallbacks);
+#[doc(hidden)] pub type PFN_vkResetDescriptorPool = extern "system" fn (device: Device, descriptorPool: DescriptorPool, flags: DescriptorPoolResetFlags) -> Result;
+#[doc(hidden)] pub type PFN_vkAllocateDescriptorSets = extern "system" fn (device: Device, pAllocateInfo: *const DescriptorSetAllocateInfo, pDescriptorSets: *mut DescriptorSet) -> Result;
+#[doc(hidden)] pub type PFN_vkFreeDescriptorSets = extern "system" fn (device: Device, descriptorPool: DescriptorPool, descriptorSetCount: u32, pDescriptorSets: *const DescriptorSet) -> Result;
+#[doc(hidden)] pub type PFN_vkUpdateDescriptorSets = extern "system" fn (device: Device, descriptorWriteCount: u32, pDescriptorWrites: *const WriteDescriptorSet, descriptorCopyCount: u32, pDescriptorCopies: *const CopyDescriptorSet);
+#[doc(hidden)] pub type PFN_vkCreateFramebuffer = extern "system" fn (device: Device, pCreateInfo: *const FramebufferCreateInfo, pAllocator: *const AllocationCallbacks, pFramebuffer: *mut Framebuffer) -> Result;
+#[doc(hidden)] pub type PFN_vkDestroyFramebuffer = extern "system" fn (device: Device, framebuffer: Framebuffer, pAllocator: *const AllocationCallbacks);
+#[doc(hidden)] pub type PFN_vkCreateRenderPass = extern "system" fn (device: Device, pCreateInfo: *const RenderPassCreateInfo, pAllocator: *const AllocationCallbacks, pRenderPass: *mut RenderPass) -> Result;
+#[doc(hidden)] pub type PFN_vkDestroyRenderPass = extern "system" fn (device: Device, renderPass: RenderPass, pAllocator: *const AllocationCallbacks);
+#[doc(hidden)] pub type PFN_vkGetRenderAreaGranularity = extern "system" fn (device: Device, renderPass: RenderPass, pGranularity: *mut Extent2D);
+#[doc(hidden)] pub type PFN_vkCreateCommandPool = extern "system" fn (device: Device, pCreateInfo: *const CommandPoolCreateInfo, pAllocator: *const AllocationCallbacks, pCommandPool: *mut CommandPool) -> Result;
+#[doc(hidden)] pub type PFN_vkDestroyCommandPool = extern "system" fn (device: Device, commandPool: CommandPool, pAllocator: *const AllocationCallbacks);
+#[doc(hidden)] pub type PFN_vkResetCommandPool = extern "system" fn (device: Device, commandPool: CommandPool, flags: CommandPoolResetFlags) -> Result;
+#[doc(hidden)] pub type PFN_vkAllocateCommandBuffers = extern "system" fn (device: Device, pAllocateInfo: *const CommandBufferAllocateInfo, pCommandBuffers: *mut CommandBuffer) -> Result;
+#[doc(hidden)] pub type PFN_vkFreeCommandBuffers = extern "system" fn (device: Device, commandPool: CommandPool, commandBufferCount: u32, pCommandBuffers: *const CommandBuffer);
+#[doc(hidden)] pub type PFN_vkBeginCommandBuffer = extern "system" fn (commandBuffer: CommandBuffer, pBeginInfo: *const CommandBufferBeginInfo) -> Result;
+#[doc(hidden)] pub type PFN_vkEndCommandBuffer = extern "system" fn (commandBuffer: CommandBuffer) -> Result;
+#[doc(hidden)] pub type PFN_vkResetCommandBuffer = extern "system" fn (commandBuffer: CommandBuffer, flags: CommandBufferResetFlags) -> Result;
+#[doc(hidden)] pub type PFN_vkCmdBindPipeline = extern "system" fn (commandBuffer: CommandBuffer, pipelineBindPoint: PipelineBindPoint, pipeline: Pipeline);
+#[doc(hidden)] pub type PFN_vkCmdSetViewport = extern "system" fn (commandBuffer: CommandBuffer, firstViewport: u32, viewportCount: u32, pViewports: *const Viewport);
+#[doc(hidden)] pub type PFN_vkCmdSetScissor = extern "system" fn (commandBuffer: CommandBuffer, firstScissor: u32, scissorCount: u32, pScissors: *const Rect2D);
+#[doc(hidden)] pub type PFN_vkCmdSetLineWidth = extern "system" fn (commandBuffer: CommandBuffer, lineWidth: f32);
+#[doc(hidden)] pub type PFN_vkCmdSetDepthBias = extern "system" fn (commandBuffer: CommandBuffer, depthBiasConstantFactor: f32, depthBiasClamp: f32, depthBiasSlopeFactor: f32);
+#[doc(hidden)] pub type PFN_vkCmdSetBlendConstants = extern "system" fn (commandBuffer: CommandBuffer, blendConstants: [f32; 4]);
+#[doc(hidden)] pub type PFN_vkCmdSetDepthBounds = extern "system" fn (commandBuffer: CommandBuffer, minDepthBounds: f32, maxDepthBounds: f32);
+#[doc(hidden)] pub type PFN_vkCmdSetStencilCompareMask = extern "system" fn (commandBuffer: CommandBuffer, faceMask: StencilFaceFlags, compareMask: u32);
+#[doc(hidden)] pub type PFN_vkCmdSetStencilWriteMask = extern "system" fn (commandBuffer: CommandBuffer, faceMask: StencilFaceFlags, writeMask: u32);
+#[doc(hidden)] pub type PFN_vkCmdSetStencilReference = extern "system" fn (commandBuffer: CommandBuffer, faceMask: StencilFaceFlags, reference: u32);
+#[doc(hidden)] pub type PFN_vkCmdBindDescriptorSets = extern "system" fn (commandBuffer: CommandBuffer, pipelineBindPoint: PipelineBindPoint, layout: PipelineLayout, firstSet: u32, descriptorSetCount: u32, pDescriptorSets: *const DescriptorSet, dynamicOffsetCount: u32, pDynamicOffsets: *const u32);
+#[doc(hidden)] pub type PFN_vkCmdBindIndexBuffer = extern "system" fn (commandBuffer: CommandBuffer, buffer: Buffer, offset: DeviceSize, indexType: IndexType);
+#[doc(hidden)] pub type PFN_vkCmdBindVertexBuffers = extern "system" fn (commandBuffer: CommandBuffer, firstBinding: u32, bindingCount: u32, pBuffers: *const Buffer, pOffsets: *const DeviceSize);
+#[doc(hidden)] pub type PFN_vkCmdDraw = extern "system" fn (commandBuffer: CommandBuffer, vertexCount: u32, instanceCount: u32, firstVertex: u32, firstInstance: u32);
+#[doc(hidden)] pub type PFN_vkCmdDrawIndexed = extern "system" fn (commandBuffer: CommandBuffer, indexCount: u32, instanceCount: u32, firstIndex: u32, vertexOffset: i32, firstInstance: u32);
+#[doc(hidden)] pub type PFN_vkCmdDrawIndirect = extern "system" fn (commandBuffer: CommandBuffer, buffer: Buffer, offset: DeviceSize, drawCount: u32, stride: u32);
+#[doc(hidden)] pub type PFN_vkCmdDrawIndexedIndirect = extern "system" fn (commandBuffer: CommandBuffer, buffer: Buffer, offset: DeviceSize, drawCount: u32, stride: u32);
+#[doc(hidden)] pub type PFN_vkCmdDispatch = extern "system" fn (commandBuffer: CommandBuffer, groupCountX: u32, groupCountY: u32, groupCountZ: u32);
+#[doc(hidden)] pub type PFN_vkCmdDispatchIndirect = extern "system" fn (commandBuffer: CommandBuffer, buffer: Buffer, offset: DeviceSize);
+#[doc(hidden)] pub type PFN_vkCmdCopyBuffer = extern "system" fn (commandBuffer: CommandBuffer, srcBuffer: Buffer, dstBuffer: Buffer, regionCount: u32, pRegions: *const BufferCopy);
+#[doc(hidden)] pub type PFN_vkCmdCopyImage = extern "system" fn (commandBuffer: CommandBuffer, srcImage: Image, srcImageLayout: ImageLayout, dstImage: Image, dstImageLayout: ImageLayout, regionCount: u32, pRegions: *const ImageCopy);
+#[doc(hidden)] pub type PFN_vkCmdBlitImage = extern "system" fn (commandBuffer: CommandBuffer, srcImage: Image, srcImageLayout: ImageLayout, dstImage: Image, dstImageLayout: ImageLayout, regionCount: u32, pRegions: *const ImageBlit, filter: Filter);
+#[doc(hidden)] pub type PFN_vkCmdCopyBufferToImage = extern "system" fn (commandBuffer: CommandBuffer, srcBuffer: Buffer, dstImage: Image, dstImageLayout: ImageLayout, regionCount: u32, pRegions: *const BufferImageCopy);
+#[doc(hidden)] pub type PFN_vkCmdCopyImageToBuffer = extern "system" fn (commandBuffer: CommandBuffer, srcImage: Image, srcImageLayout: ImageLayout, dstBuffer: Buffer, regionCount: u32, pRegions: *const BufferImageCopy);
+#[doc(hidden)] pub type PFN_vkCmdUpdateBuffer = extern "system" fn (commandBuffer: CommandBuffer, dstBuffer: Buffer, dstOffset: DeviceSize, dataSize: DeviceSize, pData: *const c_void);
+#[doc(hidden)] pub type PFN_vkCmdFillBuffer = extern "system" fn (commandBuffer: CommandBuffer, dstBuffer: Buffer, dstOffset: DeviceSize, size: DeviceSize, data: u32);
+#[doc(hidden)] pub type PFN_vkCmdClearColorImage = extern "system" fn (commandBuffer: CommandBuffer, image: Image, imageLayout: ImageLayout, pColor: *const ClearColorValue, rangeCount: u32, pRanges: *const ImageSubresourceRange);
+#[doc(hidden)] pub type PFN_vkCmdClearDepthStencilImage = extern "system" fn (commandBuffer: CommandBuffer, image: Image, imageLayout: ImageLayout, pDepthStencil: *const ClearDepthStencilValue, rangeCount: u32, pRanges: *const ImageSubresourceRange);
+#[doc(hidden)] pub type PFN_vkCmdClearAttachments = extern "system" fn (commandBuffer: CommandBuffer, attachmentCount: u32, pAttachments: *const ClearAttachment, rectCount: u32, pRects: *const ClearRect);
+#[doc(hidden)] pub type PFN_vkCmdResolveImage = extern "system" fn (commandBuffer: CommandBuffer, srcImage: Image, srcImageLayout: ImageLayout, dstImage: Image, dstImageLayout: ImageLayout, regionCount: u32, pRegions: *const ImageResolve);
+#[doc(hidden)] pub type PFN_vkCmdSetEvent = extern "system" fn (commandBuffer: CommandBuffer, event: Event, stageMask: PipelineStageFlags);
+#[doc(hidden)] pub type PFN_vkCmdResetEvent = extern "system" fn (commandBuffer: CommandBuffer, event: Event, stageMask: PipelineStageFlags);
+#[doc(hidden)] pub type PFN_vkCmdWaitEvents = extern "system" fn (commandBuffer: CommandBuffer, eventCount: u32, pEvents: *const Event, srcStageMask: PipelineStageFlags, dstStageMask: PipelineStageFlags, memoryBarrierCount: u32, pMemoryBarriers: *const MemoryBarrier, bufferMemoryBarrierCount: u32, pBufferMemoryBarriers: *const BufferMemoryBarrier, imageMemoryBarrierCount: u32, pImageMemoryBarriers: *const ImageMemoryBarrier);
+#[doc(hidden)] pub type PFN_vkCmdPipelineBarrier = extern "system" fn (commandBuffer: CommandBuffer, srcStageMask: PipelineStageFlags, dstStageMask: PipelineStageFlags, dependencyFlags: DependencyFlags, memoryBarrierCount: u32, pMemoryBarriers: *const MemoryBarrier, bufferMemoryBarrierCount: u32, pBufferMemoryBarriers: *const BufferMemoryBarrier, imageMemoryBarrierCount: u32, pImageMemoryBarriers: *const ImageMemoryBarrier);
+#[doc(hidden)] pub type PFN_vkCmdBeginQuery = extern "system" fn (commandBuffer: CommandBuffer, queryPool: QueryPool, query: u32, flags: QueryControlFlags);
+#[doc(hidden)] pub type PFN_vkCmdEndQuery = extern "system" fn (commandBuffer: CommandBuffer, queryPool: QueryPool, query: u32);
+#[doc(hidden)] pub type PFN_vkCmdResetQueryPool = extern "system" fn (commandBuffer: CommandBuffer, queryPool: QueryPool, firstQuery: u32, queryCount: u32);
+#[doc(hidden)] pub type PFN_vkCmdWriteTimestamp = extern "system" fn (commandBuffer: CommandBuffer, pipelineStage: PipelineStageFlagBits, queryPool: QueryPool, query: u32);
+#[doc(hidden)] pub type PFN_vkCmdCopyQueryPoolResults = extern "system" fn (commandBuffer: CommandBuffer, queryPool: QueryPool, firstQuery: u32, queryCount: u32, dstBuffer: Buffer, dstOffset: DeviceSize, stride: DeviceSize, flags: QueryResultFlags);
+#[doc(hidden)] pub type PFN_vkCmdPushConstants = extern "system" fn (commandBuffer: CommandBuffer, layout: PipelineLayout, stageFlags: ShaderStageFlags, offset: u32, size: u32, pValues: *const c_void);
+#[doc(hidden)] pub type PFN_vkCmdBeginRenderPass = extern "system" fn (commandBuffer: CommandBuffer, pRenderPassBegin: *const RenderPassBeginInfo, contents: SubpassContents);
+#[doc(hidden)] pub type PFN_vkCmdNextSubpass = extern "system" fn (commandBuffer: CommandBuffer, contents: SubpassContents);
+#[doc(hidden)] pub type PFN_vkCmdEndRenderPass = extern "system" fn (commandBuffer: CommandBuffer);
+#[doc(hidden)] pub type PFN_vkCmdExecuteCommands = extern "system" fn (commandBuffer: CommandBuffer, commandBufferCount: u32, pCommandBuffers: *const CommandBuffer);
+#[doc(hidden)] pub type PFN_vkEnumerateInstanceVersion = extern "system" fn (pApiVersion: *mut u32) -> Result;
+#[doc(hidden)] pub type PFN_vkBindBufferMemory2 = extern "system" fn (device: Device, bindInfoCount: u32, pBindInfos: *const BindBufferMemoryInfo) -> Result;
+#[doc(hidden)] pub type PFN_vkBindImageMemory2 = extern "system" fn (device: Device, bindInfoCount: u32, pBindInfos: *const BindImageMemoryInfo) -> Result;
+#[doc(hidden)] pub type PFN_vkGetDeviceGroupPeerMemoryFeatures = extern "system" fn (device: Device, heapIndex: u32, localDeviceIndex: u32, remoteDeviceIndex: u32, pPeerMemoryFeatures: *mut PeerMemoryFeatureFlags);
+#[doc(hidden)] pub type PFN_vkCmdSetDeviceMask = extern "system" fn (commandBuffer: CommandBuffer, deviceMask: u32);
+#[doc(hidden)] pub type PFN_vkCmdDispatchBase = extern "system" fn (commandBuffer: CommandBuffer, baseGroupX: u32, baseGroupY: u32, baseGroupZ: u32, groupCountX: u32, groupCountY: u32, groupCountZ: u32);
+#[doc(hidden)] pub type PFN_vkEnumeratePhysicalDeviceGroups = extern "system" fn (instance: Instance, pPhysicalDeviceGroupCount: *mut u32, pPhysicalDeviceGroupProperties: *mut PhysicalDeviceGroupProperties) -> Result;
+#[doc(hidden)] pub type PFN_vkGetImageMemoryRequirements2 = extern "system" fn (device: Device, pInfo: *const ImageMemoryRequirementsInfo2, pMemoryRequirements: *mut MemoryRequirements2);
+#[doc(hidden)] pub type PFN_vkGetBufferMemoryRequirements2 = extern "system" fn (device: Device, pInfo: *const BufferMemoryRequirementsInfo2, pMemoryRequirements: *mut MemoryRequirements2);
+#[doc(hidden)] pub type PFN_vkGetImageSparseMemoryRequirements2 = extern "system" fn (device: Device, pInfo: *const ImageSparseMemoryRequirementsInfo2, pSparseMemoryRequirementCount: *mut u32, pSparseMemoryRequirements: *mut SparseImageMemoryRequirements2);
+#[doc(hidden)] pub type PFN_vkGetPhysicalDeviceFeatures2 = extern "system" fn (physicalDevice: PhysicalDevice, pFeatures: *mut PhysicalDeviceFeatures2);
+#[doc(hidden)] pub type PFN_vkGetPhysicalDeviceProperties2 = extern "system" fn (physicalDevice: PhysicalDevice, pProperties: *mut PhysicalDeviceProperties2);
+#[doc(hidden)] pub type PFN_vkGetPhysicalDeviceFormatProperties2 = extern "system" fn (physicalDevice: PhysicalDevice, format: Format, pFormatProperties: *mut FormatProperties2);
+#[doc(hidden)] pub type PFN_vkGetPhysicalDeviceImageFormatProperties2 = extern "system" fn (physicalDevice: PhysicalDevice, pImageFormatInfo: *const PhysicalDeviceImageFormatInfo2, pImageFormatProperties: *mut ImageFormatProperties2) -> Result;
+#[doc(hidden)] pub type PFN_vkGetPhysicalDeviceQueueFamilyProperties2 = extern "system" fn (physicalDevice: PhysicalDevice, pQueueFamilyPropertyCount: *mut u32, pQueueFamilyProperties: *mut QueueFamilyProperties2);
+#[doc(hidden)] pub type PFN_vkGetPhysicalDeviceMemoryProperties2 = extern "system" fn (physicalDevice: PhysicalDevice, pMemoryProperties: *mut PhysicalDeviceMemoryProperties2);
+#[doc(hidden)] pub type PFN_vkGetPhysicalDeviceSparseImageFormatProperties2 = extern "system" fn (physicalDevice: PhysicalDevice, pFormatInfo: *const PhysicalDeviceSparseImageFormatInfo2, pPropertyCount: *mut u32, pProperties: *mut SparseImageFormatProperties2);
+#[doc(hidden)] pub type PFN_vkTrimCommandPool = extern "system" fn (device: Device, commandPool: CommandPool, flags: CommandPoolTrimFlags);
+#[doc(hidden)] pub type PFN_vkGetDeviceQueue2 = extern "system" fn (device: Device, pQueueInfo: *const DeviceQueueInfo2, pQueue: *mut Queue);
+#[doc(hidden)] pub type PFN_vkCreateSamplerYcbcrConversion = extern "system" fn (device: Device, pCreateInfo: *const SamplerYcbcrConversionCreateInfo, pAllocator: *const AllocationCallbacks, pYcbcrConversion: *mut SamplerYcbcrConversion) -> Result;
+#[doc(hidden)] pub type PFN_vkDestroySamplerYcbcrConversion = extern "system" fn (device: Device, ycbcrConversion: SamplerYcbcrConversion, pAllocator: *const AllocationCallbacks);
+#[doc(hidden)] pub type PFN_vkCreateDescriptorUpdateTemplate = extern "system" fn (device: Device, pCreateInfo: *const DescriptorUpdateTemplateCreateInfo, pAllocator: *const AllocationCallbacks, pDescriptorUpdateTemplate: *mut DescriptorUpdateTemplate) -> Result;
+#[doc(hidden)] pub type PFN_vkDestroyDescriptorUpdateTemplate = extern "system" fn (device: Device, descriptorUpdateTemplate: DescriptorUpdateTemplate, pAllocator: *const AllocationCallbacks);
+#[doc(hidden)] pub type PFN_vkUpdateDescriptorSetWithTemplate = extern "system" fn (device: Device, descriptorSet: DescriptorSet, descriptorUpdateTemplate: DescriptorUpdateTemplate, pData: *const c_void);
+#[doc(hidden)] pub type PFN_vkGetPhysicalDeviceExternalBufferProperties = extern "system" fn (physicalDevice: PhysicalDevice, pExternalBufferInfo: *const PhysicalDeviceExternalBufferInfo, pExternalBufferProperties: *mut ExternalBufferProperties);
+#[doc(hidden)] pub type PFN_vkGetPhysicalDeviceExternalFenceProperties = extern "system" fn (physicalDevice: PhysicalDevice, pExternalFenceInfo: *const PhysicalDeviceExternalFenceInfo, pExternalFenceProperties: *mut ExternalFenceProperties);
+#[doc(hidden)] pub type PFN_vkGetPhysicalDeviceExternalSemaphoreProperties = extern "system" fn (physicalDevice: PhysicalDevice, pExternalSemaphoreInfo: *const PhysicalDeviceExternalSemaphoreInfo, pExternalSemaphoreProperties: *mut ExternalSemaphoreProperties);
+#[doc(hidden)] pub type PFN_vkGetDescriptorSetLayoutSupport = extern "system" fn (device: Device, pCreateInfo: *const DescriptorSetLayoutCreateInfo, pSupport: *mut DescriptorSetLayoutSupport);
+#[doc(hidden)] pub type PFN_vkDestroySurfaceKHR = extern "system" fn (instance: Instance, surface: SurfaceKHR, pAllocator: *const AllocationCallbacks);
+#[doc(hidden)] pub type PFN_vkGetPhysicalDeviceSurfaceSupportKHR = extern "system" fn (physicalDevice: PhysicalDevice, queueFamilyIndex: u32, surface: SurfaceKHR, pSupported: *mut Bool32) -> Result;
+#[doc(hidden)] pub type PFN_vkGetPhysicalDeviceSurfaceCapabilitiesKHR = extern "system" fn (physicalDevice: PhysicalDevice, surface: SurfaceKHR, pSurfaceCapabilities: *mut SurfaceCapabilitiesKHR) -> Result;
+#[doc(hidden)] pub type PFN_vkGetPhysicalDeviceSurfaceFormatsKHR = extern "system" fn (physicalDevice: PhysicalDevice, surface: SurfaceKHR, pSurfaceFormatCount: *mut u32, pSurfaceFormats: *mut SurfaceFormatKHR) -> Result;
+#[doc(hidden)] pub type PFN_vkGetPhysicalDeviceSurfacePresentModesKHR = extern "system" fn (physicalDevice: PhysicalDevice, surface: SurfaceKHR, pPresentModeCount: *mut u32, pPresentModes: *mut PresentModeKHR) -> Result;
+#[doc(hidden)] pub type PFN_vkGetPhysicalDeviceDisplayPropertiesKHR = extern "system" fn (physicalDevice: PhysicalDevice, pPropertyCount: *mut u32, pProperties: *mut DisplayPropertiesKHR) -> Result;
+#[doc(hidden)] pub type PFN_vkGetPhysicalDeviceDisplayPlanePropertiesKHR = extern "system" fn (physicalDevice: PhysicalDevice, pPropertyCount: *mut u32, pProperties: *mut DisplayPlanePropertiesKHR) -> Result;
+#[doc(hidden)] pub type PFN_vkGetDisplayPlaneSupportedDisplaysKHR = extern "system" fn (physicalDevice: PhysicalDevice, planeIndex: u32, pDisplayCount: *mut u32, pDisplays: *mut DisplayKHR) -> Result;
+#[doc(hidden)] pub type PFN_vkGetDisplayModePropertiesKHR = extern "system" fn (physicalDevice: PhysicalDevice, display: DisplayKHR, pPropertyCount: *mut u32, pProperties: *mut DisplayModePropertiesKHR) -> Result;
+#[doc(hidden)] pub type PFN_vkCreateDisplayModeKHR = extern "system" fn (physicalDevice: PhysicalDevice, display: DisplayKHR, pCreateInfo: *const DisplayModeCreateInfoKHR, pAllocator: *const AllocationCallbacks, pMode: *mut DisplayModeKHR) -> Result;
+#[doc(hidden)] pub type PFN_vkGetDisplayPlaneCapabilitiesKHR = extern "system" fn (physicalDevice: PhysicalDevice, mode: DisplayModeKHR, planeIndex: u32, pCapabilities: *mut DisplayPlaneCapabilitiesKHR) -> Result;
+#[doc(hidden)] pub type PFN_vkCreateDisplayPlaneSurfaceKHR = extern "system" fn (instance: Instance, pCreateInfo: *const DisplaySurfaceCreateInfoKHR, pAllocator: *const AllocationCallbacks, pSurface: *mut SurfaceKHR) -> Result;
+#[doc(hidden)] pub type PFN_vkCreateXlibSurfaceKHR = extern "system" fn (instance: Instance, pCreateInfo: *const XlibSurfaceCreateInfoKHR, pAllocator: *const AllocationCallbacks, pSurface: *mut SurfaceKHR) -> Result;
+#[doc(hidden)] pub type PFN_vkGetPhysicalDeviceXlibPresentationSupportKHR = extern "system" fn (physicalDevice: PhysicalDevice, queueFamilyIndex: u32, dpy: *mut Display, visualID: VisualID) -> Bool32;
+#[doc(hidden)] pub type PFN_vkCreateXcbSurfaceKHR = extern "system" fn (instance: Instance, pCreateInfo: *const XcbSurfaceCreateInfoKHR, pAllocator: *const AllocationCallbacks, pSurface: *mut SurfaceKHR) -> Result;
+#[doc(hidden)] pub type PFN_vkGetPhysicalDeviceXcbPresentationSupportKHR = extern "system" fn (physicalDevice: PhysicalDevice, queueFamilyIndex: u32, connection: *mut xcb_connection_t, visual_id: xcb_visualid_t) -> Bool32;
+#[doc(hidden)] pub type PFN_vkCreateWaylandSurfaceKHR = extern "system" fn (instance: Instance, pCreateInfo: *const WaylandSurfaceCreateInfoKHR, pAllocator: *const AllocationCallbacks, pSurface: *mut SurfaceKHR) -> Result;
+#[doc(hidden)] pub type PFN_vkGetPhysicalDeviceWaylandPresentationSupportKHR = extern "system" fn (physicalDevice: PhysicalDevice, queueFamilyIndex: u32, display: *mut wl_display) -> Bool32;
+#[doc(hidden)] pub type PFN_vkCreateAndroidSurfaceKHR = extern "system" fn (instance: Instance, pCreateInfo: *const AndroidSurfaceCreateInfoKHR, pAllocator: *const AllocationCallbacks, pSurface: *mut SurfaceKHR) -> Result;
+#[doc(hidden)] pub type PFN_vkCreateWin32SurfaceKHR = extern "system" fn (instance: Instance, pCreateInfo: *const Win32SurfaceCreateInfoKHR, pAllocator: *const AllocationCallbacks, pSurface: *mut SurfaceKHR) -> Result;
+#[doc(hidden)] pub type PFN_vkGetPhysicalDeviceWin32PresentationSupportKHR = extern "system" fn (physicalDevice: PhysicalDevice, queueFamilyIndex: u32) -> Bool32;
+#[doc(hidden)] pub type PFN_vkCreateDebugReportCallbackEXT = extern "system" fn (instance: Instance, pCreateInfo: *const DebugReportCallbackCreateInfoEXT, pAllocator: *const AllocationCallbacks, pCallback: *mut DebugReportCallbackEXT) -> Result;
+#[doc(hidden)] pub type PFN_vkDestroyDebugReportCallbackEXT = extern "system" fn (instance: Instance, callback: DebugReportCallbackEXT, pAllocator: *const AllocationCallbacks);
+#[doc(hidden)] pub type PFN_vkDebugReportMessageEXT = extern "system" fn (instance: Instance, flags: DebugReportFlagsEXT, objectType: DebugReportObjectTypeEXT, object: u64, location: usize, messageCode: i32, pLayerPrefix: *const c_char, pMessage: *const c_char);
+#[doc(hidden)] pub type PFN_vkGetPhysicalDeviceExternalImageFormatPropertiesNV = extern "system" fn (physicalDevice: PhysicalDevice, format: Format, typ: ImageType, tiling: ImageTiling, usage: ImageUsageFlags, flags: ImageCreateFlags, externalHandleType: ExternalMemoryHandleTypeFlagsNV, pExternalImageFormatProperties: *mut ExternalImageFormatPropertiesNV) -> Result;
+#[doc(hidden)] pub type PFN_vkCreateViSurfaceNN = extern "system" fn (instance: Instance, pCreateInfo: *const ViSurfaceCreateInfoNN, pAllocator: *const AllocationCallbacks, pSurface: *mut SurfaceKHR) -> Result;
+#[doc(hidden)] pub type PFN_vkReleaseDisplayEXT = extern "system" fn (physicalDevice: PhysicalDevice, display: DisplayKHR) -> Result;
+#[doc(hidden)] pub type PFN_vkAcquireXlibDisplayEXT = extern "system" fn (physicalDevice: PhysicalDevice, dpy: *mut Display, display: DisplayKHR) -> Result;
+#[doc(hidden)] pub type PFN_vkGetRandROutputDisplayEXT = extern "system" fn (physicalDevice: PhysicalDevice, dpy: *mut Display, rrOutput: RROutput, pDisplay: *mut DisplayKHR) -> Result;
+#[doc(hidden)] pub type PFN_vkGetPhysicalDeviceSurfaceCapabilities2EXT = extern "system" fn (physicalDevice: PhysicalDevice, surface: SurfaceKHR, pSurfaceCapabilities: *mut SurfaceCapabilities2EXT) -> Result;
+#[doc(hidden)] pub type PFN_vkGetPhysicalDeviceSurfaceCapabilities2KHR = extern "system" fn (physicalDevice: PhysicalDevice, pSurfaceInfo: *const PhysicalDeviceSurfaceInfo2KHR, pSurfaceCapabilities: *mut SurfaceCapabilities2KHR) -> Result;
+#[doc(hidden)] pub type PFN_vkGetPhysicalDeviceSurfaceFormats2KHR = extern "system" fn (physicalDevice: PhysicalDevice, pSurfaceInfo: *const PhysicalDeviceSurfaceInfo2KHR, pSurfaceFormatCount: *mut u32, pSurfaceFormats: *mut SurfaceFormat2KHR) -> Result;
+#[doc(hidden)] pub type PFN_vkGetPhysicalDeviceDisplayProperties2KHR = extern "system" fn (physicalDevice: PhysicalDevice, pPropertyCount: *mut u32, pProperties: *mut DisplayProperties2KHR) -> Result;
+#[doc(hidden)] pub type PFN_vkGetPhysicalDeviceDisplayPlaneProperties2KHR = extern "system" fn (physicalDevice: PhysicalDevice, pPropertyCount: *mut u32, pProperties: *mut DisplayPlaneProperties2KHR) -> Result;
+#[doc(hidden)] pub type PFN_vkGetDisplayModeProperties2KHR = extern "system" fn (physicalDevice: PhysicalDevice, display: DisplayKHR, pPropertyCount: *mut u32, pProperties: *mut DisplayModeProperties2KHR) -> Result;
+#[doc(hidden)] pub type PFN_vkGetDisplayPlaneCapabilities2KHR = extern "system" fn (physicalDevice: PhysicalDevice, pDisplayPlaneInfo: *const DisplayPlaneInfo2KHR, pCapabilities: *mut DisplayPlaneCapabilities2KHR) -> Result;
+#[doc(hidden)] pub type PFN_vkCreateIOSSurfaceMVK = extern "system" fn (instance: Instance, pCreateInfo: *const IOSSurfaceCreateInfoMVK, pAllocator: *const AllocationCallbacks, pSurface: *mut SurfaceKHR) -> Result;
+#[doc(hidden)] pub type PFN_vkCreateMacOSSurfaceMVK = extern "system" fn (instance: Instance, pCreateInfo: *const MacOSSurfaceCreateInfoMVK, pAllocator: *const AllocationCallbacks, pSurface: *mut SurfaceKHR) -> Result;
+#[doc(hidden)] pub type PFN_vkSetDebugUtilsObjectNameEXT = extern "system" fn (device: Device, pNameInfo: *const DebugUtilsObjectNameInfoEXT) -> Result;
+#[doc(hidden)] pub type PFN_vkSetDebugUtilsObjectTagEXT = extern "system" fn (device: Device, pTagInfo: *const DebugUtilsObjectTagInfoEXT) -> Result;
+#[doc(hidden)] pub type PFN_vkQueueBeginDebugUtilsLabelEXT = extern "system" fn (queue: Queue, pLabelInfo: *const DebugUtilsLabelEXT);
+#[doc(hidden)] pub type PFN_vkQueueEndDebugUtilsLabelEXT = extern "system" fn (queue: Queue);
+#[doc(hidden)] pub type PFN_vkQueueInsertDebugUtilsLabelEXT = extern "system" fn (queue: Queue, pLabelInfo: *const DebugUtilsLabelEXT);
+#[doc(hidden)] pub type PFN_vkCmdBeginDebugUtilsLabelEXT = extern "system" fn (commandBuffer: CommandBuffer, pLabelInfo: *const DebugUtilsLabelEXT);
+#[doc(hidden)] pub type PFN_vkCmdEndDebugUtilsLabelEXT = extern "system" fn (commandBuffer: CommandBuffer);
+#[doc(hidden)] pub type PFN_vkCmdInsertDebugUtilsLabelEXT = extern "system" fn (commandBuffer: CommandBuffer, pLabelInfo: *const DebugUtilsLabelEXT);
+#[doc(hidden)] pub type PFN_vkCreateDebugUtilsMessengerEXT = extern "system" fn (instance: Instance, pCreateInfo: *const DebugUtilsMessengerCreateInfoEXT, pAllocator: *const AllocationCallbacks, pMessenger: *mut DebugUtilsMessengerEXT) -> Result;
+#[doc(hidden)] pub type PFN_vkDestroyDebugUtilsMessengerEXT = extern "system" fn (instance: Instance, messenger: DebugUtilsMessengerEXT, pAllocator: *const AllocationCallbacks);
+#[doc(hidden)] pub type PFN_vkSubmitDebugUtilsMessageEXT = extern "system" fn (instance: Instance, messageSeverity: DebugUtilsMessageSeverityFlagBitsEXT, messageTypes: DebugUtilsMessageTypeFlagsEXT, pCallbackData: *const DebugUtilsMessengerCallbackDataEXT);
+#[doc(hidden)] pub type PFN_vkCreateImagePipeSurfaceFUCHSIA = extern "system" fn (instance: Instance, pCreateInfo: *const ImagePipeSurfaceCreateInfoFUCHSIA, pAllocator: *const AllocationCallbacks, pSurface: *mut SurfaceKHR) -> Result;
+#[doc(hidden)] pub type PFN_vkCreateSwapchainKHR = extern "system" fn (device: Device, pCreateInfo: *const SwapchainCreateInfoKHR, pAllocator: *const AllocationCallbacks, pSwapchain: *mut SwapchainKHR) -> Result;
+#[doc(hidden)] pub type PFN_vkDestroySwapchainKHR = extern "system" fn (device: Device, swapchain: SwapchainKHR, pAllocator: *const AllocationCallbacks);
+#[doc(hidden)] pub type PFN_vkGetSwapchainImagesKHR = extern "system" fn (device: Device, swapchain: SwapchainKHR, pSwapchainImageCount: *mut u32, pSwapchainImages: *mut Image) -> Result;
+#[doc(hidden)] pub type PFN_vkAcquireNextImageKHR = extern "system" fn (device: Device, swapchain: SwapchainKHR, timeout: u64, semaphore: Semaphore, fence: Fence, pImageIndex: *mut u32) -> Result;
+#[doc(hidden)] pub type PFN_vkQueuePresentKHR = extern "system" fn (queue: Queue, pPresentInfo: *const PresentInfoKHR) -> Result;
+#[doc(hidden)] pub type PFN_vkGetDeviceGroupPresentCapabilitiesKHR = extern "system" fn (device: Device, pDeviceGroupPresentCapabilities: *mut DeviceGroupPresentCapabilitiesKHR) -> Result;
+#[doc(hidden)] pub type PFN_vkGetDeviceGroupSurfacePresentModesKHR = extern "system" fn (device: Device, surface: SurfaceKHR, pModes: *mut DeviceGroupPresentModeFlagsKHR) -> Result;
+#[doc(hidden)] pub type PFN_vkGetPhysicalDevicePresentRectanglesKHR = extern "system" fn (physicalDevice: PhysicalDevice, surface: SurfaceKHR, pRectCount: *mut u32, pRects: *mut Rect2D) -> Result;
+#[doc(hidden)] pub type PFN_vkAcquireNextImage2KHR = extern "system" fn (device: Device, pAcquireInfo: *const AcquireNextImageInfoKHR, pImageIndex: *mut u32) -> Result;
+#[doc(hidden)] pub type PFN_vkCreateSharedSwapchainsKHR = extern "system" fn (device: Device, swapchainCount: u32, pCreateInfos: *const SwapchainCreateInfoKHR, pAllocator: *const AllocationCallbacks, pSwapchains: *mut SwapchainKHR) -> Result;
+#[doc(hidden)] pub type PFN_vkDebugMarkerSetObjectTagEXT = extern "system" fn (device: Device, pTagInfo: *const DebugMarkerObjectTagInfoEXT) -> Result;
+#[doc(hidden)] pub type PFN_vkDebugMarkerSetObjectNameEXT = extern "system" fn (device: Device, pNameInfo: *const DebugMarkerObjectNameInfoEXT) -> Result;
+#[doc(hidden)] pub type PFN_vkCmdDebugMarkerBeginEXT = extern "system" fn (commandBuffer: CommandBuffer, pMarkerInfo: *const DebugMarkerMarkerInfoEXT);
+#[doc(hidden)] pub type PFN_vkCmdDebugMarkerEndEXT = extern "system" fn (commandBuffer: CommandBuffer);
+#[doc(hidden)] pub type PFN_vkCmdDebugMarkerInsertEXT = extern "system" fn (commandBuffer: CommandBuffer, pMarkerInfo: *const DebugMarkerMarkerInfoEXT);
+#[doc(hidden)] pub type PFN_vkCmdBindTransformFeedbackBuffersEXT = extern "system" fn (commandBuffer: CommandBuffer, firstBinding: u32, bindingCount: u32, pBuffers: *const Buffer, pOffsets: *const DeviceSize, pSizes: *const DeviceSize);
+#[doc(hidden)] pub type PFN_vkCmdBeginTransformFeedbackEXT = extern "system" fn (commandBuffer: CommandBuffer, firstCounterBuffer: u32, counterBufferCount: u32, pCounterBuffers: *const Buffer, pCounterBufferOffsets: *const DeviceSize);
+#[doc(hidden)] pub type PFN_vkCmdEndTransformFeedbackEXT = extern "system" fn (commandBuffer: CommandBuffer, firstCounterBuffer: u32, counterBufferCount: u32, pCounterBuffers: *const Buffer, pCounterBufferOffsets: *const DeviceSize);
+#[doc(hidden)] pub type PFN_vkCmdBeginQueryIndexedEXT = extern "system" fn (commandBuffer: CommandBuffer, queryPool: QueryPool, query: u32, flags: QueryControlFlags, index: u32);
+#[doc(hidden)] pub type PFN_vkCmdEndQueryIndexedEXT = extern "system" fn (commandBuffer: CommandBuffer, queryPool: QueryPool, query: u32, index: u32);
+#[doc(hidden)] pub type PFN_vkCmdDrawIndirectByteCountEXT = extern "system" fn (commandBuffer: CommandBuffer, instanceCount: u32, firstInstance: u32, counterBuffer: Buffer, counterBufferOffset: DeviceSize, counterOffset: u32, vertexStride: u32);
+#[doc(hidden)] pub type PFN_vkCmdDrawIndirectCountAMD = extern "system" fn (commandBuffer: CommandBuffer, buffer: Buffer, offset: DeviceSize, countBuffer: Buffer, countBufferOffset: DeviceSize, maxDrawCount: u32, stride: u32);
+#[doc(hidden)] pub type PFN_vkCmdDrawIndexedIndirectCountAMD = extern "system" fn (commandBuffer: CommandBuffer, buffer: Buffer, offset: DeviceSize, countBuffer: Buffer, countBufferOffset: DeviceSize, maxDrawCount: u32, stride: u32);
+#[doc(hidden)] pub type PFN_vkGetShaderInfoAMD = extern "system" fn (device: Device, pipeline: Pipeline, shaderStage: ShaderStageFlagBits, infoType: ShaderInfoTypeAMD, pInfoSize: *mut usize, pInfo: *mut c_void) -> Result;
+#[doc(hidden)] pub type PFN_vkGetMemoryWin32HandleNV = extern "system" fn (device: Device, memory: DeviceMemory, handleType: ExternalMemoryHandleTypeFlagsNV, pHandle: *mut HANDLE) -> Result;
+#[doc(hidden)] pub type PFN_vkGetMemoryWin32HandleKHR = extern "system" fn (device: Device, pGetWin32HandleInfo: *const MemoryGetWin32HandleInfoKHR, pHandle: *mut HANDLE) -> Result;
+#[doc(hidden)] pub type PFN_vkGetMemoryWin32HandlePropertiesKHR = extern "system" fn (device: Device, handleType: ExternalMemoryHandleTypeFlagBits, handle: HANDLE, pMemoryWin32HandleProperties: *mut MemoryWin32HandlePropertiesKHR) -> Result;
+#[doc(hidden)] pub type PFN_vkGetMemoryFdKHR = extern "system" fn (device: Device, pGetFdInfo: *const MemoryGetFdInfoKHR, pFd: *mut i32) -> Result;
+#[doc(hidden)] pub type PFN_vkGetMemoryFdPropertiesKHR = extern "system" fn (device: Device, handleType: ExternalMemoryHandleTypeFlagBits, fd: i32, pMemoryFdProperties: *mut MemoryFdPropertiesKHR) -> Result;
+#[doc(hidden)] pub type PFN_vkImportSemaphoreWin32HandleKHR = extern "system" fn (device: Device, pImportSemaphoreWin32HandleInfo: *const ImportSemaphoreWin32HandleInfoKHR) -> Result;
+#[doc(hidden)] pub type PFN_vkGetSemaphoreWin32HandleKHR = extern "system" fn (device: Device, pGetWin32HandleInfo: *const SemaphoreGetWin32HandleInfoKHR, pHandle: *mut HANDLE) -> Result;
+#[doc(hidden)] pub type PFN_vkImportSemaphoreFdKHR = extern "system" fn (device: Device, pImportSemaphoreFdInfo: *const ImportSemaphoreFdInfoKHR) -> Result;
+#[doc(hidden)] pub type PFN_vkGetSemaphoreFdKHR = extern "system" fn (device: Device, pGetFdInfo: *const SemaphoreGetFdInfoKHR, pFd: *mut i32) -> Result;
+#[doc(hidden)] pub type PFN_vkCmdPushDescriptorSetKHR = extern "system" fn (commandBuffer: CommandBuffer, pipelineBindPoint: PipelineBindPoint, layout: PipelineLayout, set: u32, descriptorWriteCount: u32, pDescriptorWrites: *const WriteDescriptorSet);
+#[doc(hidden)] pub type PFN_vkCmdPushDescriptorSetWithTemplateKHR = extern "system" fn (commandBuffer: CommandBuffer, descriptorUpdateTemplate: DescriptorUpdateTemplate, layout: PipelineLayout, set: u32, pData: *const c_void);
+#[doc(hidden)] pub type PFN_vkCmdBeginConditionalRenderingEXT = extern "system" fn (commandBuffer: CommandBuffer, pConditionalRenderingBegin: *const ConditionalRenderingBeginInfoEXT);
+#[doc(hidden)] pub type PFN_vkCmdEndConditionalRenderingEXT = extern "system" fn (commandBuffer: CommandBuffer);
+#[doc(hidden)] pub type PFN_vkCmdProcessCommandsNVX = extern "system" fn (commandBuffer: CommandBuffer, pProcessCommandsInfo: *const CmdProcessCommandsInfoNVX);
+#[doc(hidden)] pub type PFN_vkCmdReserveSpaceForCommandsNVX = extern "system" fn (commandBuffer: CommandBuffer, pReserveSpaceInfo: *const CmdReserveSpaceForCommandsInfoNVX);
+#[doc(hidden)] pub type PFN_vkCreateIndirectCommandsLayoutNVX = extern "system" fn (device: Device, pCreateInfo: *const IndirectCommandsLayoutCreateInfoNVX, pAllocator: *const AllocationCallbacks, pIndirectCommandsLayout: *mut IndirectCommandsLayoutNVX) -> Result;
+#[doc(hidden)] pub type PFN_vkDestroyIndirectCommandsLayoutNVX = extern "system" fn (device: Device, indirectCommandsLayout: IndirectCommandsLayoutNVX, pAllocator: *const AllocationCallbacks);
+#[doc(hidden)] pub type PFN_vkCreateObjectTableNVX = extern "system" fn (device: Device, pCreateInfo: *const ObjectTableCreateInfoNVX, pAllocator: *const AllocationCallbacks, pObjectTable: *mut ObjectTableNVX) -> Result;
+#[doc(hidden)] pub type PFN_vkDestroyObjectTableNVX = extern "system" fn (device: Device, objectTable: ObjectTableNVX, pAllocator: *const AllocationCallbacks);
+#[doc(hidden)] pub type PFN_vkRegisterObjectsNVX = extern "system" fn (device: Device, objectTable: ObjectTableNVX, objectCount: u32, ppObjectTableEntries: *const *const ObjectTableEntryNVX, pObjectIndices: *const u32) -> Result;
+#[doc(hidden)] pub type PFN_vkUnregisterObjectsNVX = extern "system" fn (device: Device, objectTable: ObjectTableNVX, objectCount: u32, pObjectEntryTypes: *const ObjectEntryTypeNVX, pObjectIndices: *const u32) -> Result;
+#[doc(hidden)] pub type PFN_vkGetPhysicalDeviceGeneratedCommandsPropertiesNVX = extern "system" fn (physicalDevice: PhysicalDevice, pFeatures: *mut DeviceGeneratedCommandsFeaturesNVX, pLimits: *mut DeviceGeneratedCommandsLimitsNVX);
+#[doc(hidden)] pub type PFN_vkCmdSetViewportWScalingNV = extern "system" fn (commandBuffer: CommandBuffer, firstViewport: u32, viewportCount: u32, pViewportWScalings: *const ViewportWScalingNV);
+#[doc(hidden)] pub type PFN_vkDisplayPowerControlEXT = extern "system" fn (device: Device, display: DisplayKHR, pDisplayPowerInfo: *const DisplayPowerInfoEXT) -> Result;
+#[doc(hidden)] pub type PFN_vkRegisterDeviceEventEXT = extern "system" fn (device: Device, pDeviceEventInfo: *const DeviceEventInfoEXT, pAllocator: *const AllocationCallbacks, pFence: *mut Fence) -> Result;
+#[doc(hidden)] pub type PFN_vkRegisterDisplayEventEXT = extern "system" fn (device: Device, display: DisplayKHR, pDisplayEventInfo: *const DisplayEventInfoEXT, pAllocator: *const AllocationCallbacks, pFence: *mut Fence) -> Result;
+#[doc(hidden)] pub type PFN_vkGetSwapchainCounterEXT = extern "system" fn (device: Device, swapchain: SwapchainKHR, counter: SurfaceCounterFlagBitsEXT, pCounterValue: *mut u64) -> Result;
+#[doc(hidden)] pub type PFN_vkGetRefreshCycleDurationGOOGLE = extern "system" fn (device: Device, swapchain: SwapchainKHR, pDisplayTimingProperties: *mut RefreshCycleDurationGOOGLE) -> Result;
+#[doc(hidden)] pub type PFN_vkGetPastPresentationTimingGOOGLE = extern "system" fn (device: Device, swapchain: SwapchainKHR, pPresentationTimingCount: *mut u32, pPresentationTimings: *mut PastPresentationTimingGOOGLE) -> Result;
+#[doc(hidden)] pub type PFN_vkCmdSetDiscardRectangleEXT = extern "system" fn (commandBuffer: CommandBuffer, firstDiscardRectangle: u32, discardRectangleCount: u32, pDiscardRectangles: *const Rect2D);
+#[doc(hidden)] pub type PFN_vkSetHdrMetadataEXT = extern "system" fn (device: Device, swapchainCount: u32, pSwapchains: *const SwapchainKHR, pMetadata: *const HdrMetadataEXT);
+#[doc(hidden)] pub type PFN_vkCreateRenderPass2KHR = extern "system" fn (device: Device, pCreateInfo: *const RenderPassCreateInfo2KHR, pAllocator: *const AllocationCallbacks, pRenderPass: *mut RenderPass) -> Result;
+#[doc(hidden)] pub type PFN_vkCmdBeginRenderPass2KHR = extern "system" fn (commandBuffer: CommandBuffer, pRenderPassBegin: *const RenderPassBeginInfo, pSubpassBeginInfo: *const SubpassBeginInfoKHR);
+#[doc(hidden)] pub type PFN_vkCmdNextSubpass2KHR = extern "system" fn (commandBuffer: CommandBuffer, pSubpassBeginInfo: *const SubpassBeginInfoKHR, pSubpassEndInfo: *const SubpassEndInfoKHR);
+#[doc(hidden)] pub type PFN_vkCmdEndRenderPass2KHR = extern "system" fn (commandBuffer: CommandBuffer, pSubpassEndInfo: *const SubpassEndInfoKHR);
+#[doc(hidden)] pub type PFN_vkGetSwapchainStatusKHR = extern "system" fn (device: Device, swapchain: SwapchainKHR) -> Result;
+#[doc(hidden)] pub type PFN_vkImportFenceWin32HandleKHR = extern "system" fn (device: Device, pImportFenceWin32HandleInfo: *const ImportFenceWin32HandleInfoKHR) -> Result;
+#[doc(hidden)] pub type PFN_vkGetFenceWin32HandleKHR = extern "system" fn (device: Device, pGetWin32HandleInfo: *const FenceGetWin32HandleInfoKHR, pHandle: *mut HANDLE) -> Result;
+#[doc(hidden)] pub type PFN_vkImportFenceFdKHR = extern "system" fn (device: Device, pImportFenceFdInfo: *const ImportFenceFdInfoKHR) -> Result;
+#[doc(hidden)] pub type PFN_vkGetFenceFdKHR = extern "system" fn (device: Device, pGetFdInfo: *const FenceGetFdInfoKHR, pFd: *mut i32) -> Result;
+#[doc(hidden)] pub type PFN_vkGetAndroidHardwareBufferPropertiesANDROID = extern "system" fn (device: Device, buffer: *const AHardwareBuffer, pProperties: *mut AndroidHardwareBufferPropertiesANDROID) -> Result;
+#[doc(hidden)] pub type PFN_vkGetMemoryAndroidHardwareBufferANDROID = extern "system" fn (device: Device, pInfo: *const MemoryGetAndroidHardwareBufferInfoANDROID, pBuffer: *mut *mut AHardwareBuffer) -> Result;
+#[doc(hidden)] pub type PFN_vkCmdSetSampleLocationsEXT = extern "system" fn (commandBuffer: CommandBuffer, pSampleLocationsInfo: *const SampleLocationsInfoEXT);
+#[doc(hidden)] pub type PFN_vkGetPhysicalDeviceMultisamplePropertiesEXT = extern "system" fn (physicalDevice: PhysicalDevice, samples: SampleCountFlagBits, pMultisampleProperties: *mut MultisamplePropertiesEXT);
+#[doc(hidden)] pub type PFN_vkGetImageDrmFormatModifierPropertiesEXT = extern "system" fn (device: Device, image: Image, pProperties: *mut ImageDrmFormatModifierPropertiesEXT) -> Result;
+#[doc(hidden)] pub type PFN_vkCreateValidationCacheEXT = extern "system" fn (device: Device, pCreateInfo: *const ValidationCacheCreateInfoEXT, pAllocator: *const AllocationCallbacks, pValidationCache: *mut ValidationCacheEXT) -> Result;
+#[doc(hidden)] pub type PFN_vkDestroyValidationCacheEXT = extern "system" fn (device: Device, validationCache: ValidationCacheEXT, pAllocator: *const AllocationCallbacks);
+#[doc(hidden)] pub type PFN_vkMergeValidationCachesEXT = extern "system" fn (device: Device, dstCache: ValidationCacheEXT, srcCacheCount: u32, pSrcCaches: *const ValidationCacheEXT) -> Result;
+#[doc(hidden)] pub type PFN_vkGetValidationCacheDataEXT = extern "system" fn (device: Device, validationCache: ValidationCacheEXT, pDataSize: *mut usize, pData: *mut c_void) -> Result;
+#[doc(hidden)] pub type PFN_vkCmdBindShadingRateImageNV = extern "system" fn (commandBuffer: CommandBuffer, imageView: ImageView, imageLayout: ImageLayout);
+#[doc(hidden)] pub type PFN_vkCmdSetViewportShadingRatePaletteNV = extern "system" fn (commandBuffer: CommandBuffer, firstViewport: u32, viewportCount: u32, pShadingRatePalettes: *const ShadingRatePaletteNV);
+#[doc(hidden)] pub type PFN_vkCmdSetCoarseSampleOrderNV = extern "system" fn (commandBuffer: CommandBuffer, sampleOrderType: CoarseSampleOrderTypeNV, customSampleOrderCount: u32, pCustomSampleOrders: *const CoarseSampleOrderCustomNV);
+#[doc(hidden)] pub type PFN_vkCreateAccelerationStructureNV = extern "system" fn (device: Device, pCreateInfo: *const AccelerationStructureCreateInfoNV, pAllocator: *const AllocationCallbacks, pAccelerationStructure: *mut AccelerationStructureNV) -> Result;
+#[doc(hidden)] pub type PFN_vkDestroyAccelerationStructureNV = extern "system" fn (device: Device, accelerationStructure: AccelerationStructureNV, pAllocator: *const AllocationCallbacks);
+#[doc(hidden)] pub type PFN_vkGetAccelerationStructureMemoryRequirementsNV = extern "system" fn (device: Device, pInfo: *const AccelerationStructureMemoryRequirementsInfoNV, pMemoryRequirements: *mut MemoryRequirements2);
+#[doc(hidden)] pub type PFN_vkBindAccelerationStructureMemoryNV = extern "system" fn (device: Device, bindInfoCount: u32, pBindInfos: *const BindAccelerationStructureMemoryInfoNV) -> Result;
+#[doc(hidden)] pub type PFN_vkCmdBuildAccelerationStructureNV = extern "system" fn (commandBuffer: CommandBuffer, pInfo: *const AccelerationStructureInfoNV, instanceData: Buffer, instanceOffset: DeviceSize, update: Bool32, dst: AccelerationStructureNV, src: AccelerationStructureNV, scratch: Buffer, scratchOffset: DeviceSize);
+#[doc(hidden)] pub type PFN_vkCmdCopyAccelerationStructureNV = extern "system" fn (commandBuffer: CommandBuffer, dst: AccelerationStructureNV, src: AccelerationStructureNV, mode: CopyAccelerationStructureModeNV);
+#[doc(hidden)] pub type PFN_vkCmdTraceRaysNV = extern "system" fn (commandBuffer: CommandBuffer, raygenShaderBindingTableBuffer: Buffer, raygenShaderBindingOffset: DeviceSize, missShaderBindingTableBuffer: Buffer, missShaderBindingOffset: DeviceSize, missShaderBindingStride: DeviceSize, hitShaderBindingTableBuffer: Buffer, hitShaderBindingOffset: DeviceSize, hitShaderBindingStride: DeviceSize, callableShaderBindingTableBuffer: Buffer, callableShaderBindingOffset: DeviceSize, callableShaderBindingStride: DeviceSize, width: u32, height: u32, depth: u32);
+#[doc(hidden)] pub type PFN_vkCreateRayTracingPipelinesNV = extern "system" fn (device: Device, pipelineCache: PipelineCache, createInfoCount: u32, pCreateInfos: *const RayTracingPipelineCreateInfoNV, pAllocator: *const AllocationCallbacks, pPipelines: *mut Pipeline) -> Result;
+#[doc(hidden)] pub type PFN_vkGetRayTracingShaderGroupHandlesNV = extern "system" fn (device: Device, pipeline: Pipeline, firstGroup: u32, groupCount: u32, dataSize: usize, pData: *mut c_void) -> Result;
+#[doc(hidden)] pub type PFN_vkGetAccelerationStructureHandleNV = extern "system" fn (device: Device, accelerationStructure: AccelerationStructureNV, dataSize: usize, pData: *mut c_void) -> Result;
+#[doc(hidden)] pub type PFN_vkCmdWriteAccelerationStructuresPropertiesNV = extern "system" fn (commandBuffer: CommandBuffer, accelerationStructureCount: u32, pAccelerationStructures: *const AccelerationStructureNV, queryType: QueryType, queryPool: QueryPool, firstQuery: u32);
+#[doc(hidden)] pub type PFN_vkCompileDeferredNV = extern "system" fn (device: Device, pipeline: Pipeline, shader: u32) -> Result;
+#[doc(hidden)] pub type PFN_vkCmdDrawIndirectCountKHR = extern "system" fn (commandBuffer: CommandBuffer, buffer: Buffer, offset: DeviceSize, countBuffer: Buffer, countBufferOffset: DeviceSize, maxDrawCount: u32, stride: u32);
+#[doc(hidden)] pub type PFN_vkCmdDrawIndexedIndirectCountKHR = extern "system" fn (commandBuffer: CommandBuffer, buffer: Buffer, offset: DeviceSize, countBuffer: Buffer, countBufferOffset: DeviceSize, maxDrawCount: u32, stride: u32);
+#[doc(hidden)] pub type PFN_vkGetMemoryHostPointerPropertiesEXT = extern "system" fn (device: Device, handleType: ExternalMemoryHandleTypeFlagBits, pHostPointer: *const c_void, pMemoryHostPointerProperties: *mut MemoryHostPointerPropertiesEXT) -> Result;
+#[doc(hidden)] pub type PFN_vkCmdWriteBufferMarkerAMD = extern "system" fn (commandBuffer: CommandBuffer, pipelineStage: PipelineStageFlagBits, dstBuffer: Buffer, dstOffset: DeviceSize, marker: u32);
+#[doc(hidden)] pub type PFN_vkGetPhysicalDeviceCalibrateableTimeDomainsEXT = extern "system" fn (physicalDevice: PhysicalDevice, pTimeDomainCount: *mut u32, pTimeDomains: *mut TimeDomainEXT) -> Result;
+#[doc(hidden)] pub type PFN_vkGetCalibratedTimestampsEXT = extern "system" fn (device: Device, timestampCount: u32, pTimestampInfos: *const CalibratedTimestampInfoEXT, pTimestamps: *mut u64, pMaxDeviation: *mut u64) -> Result;
+#[doc(hidden)] pub type PFN_vkCmdDrawMeshTasksNV = extern "system" fn (commandBuffer: CommandBuffer, taskCount: u32, firstTask: u32);
+#[doc(hidden)] pub type PFN_vkCmdDrawMeshTasksIndirectNV = extern "system" fn (commandBuffer: CommandBuffer, buffer: Buffer, offset: DeviceSize, drawCount: u32, stride: u32);
+#[doc(hidden)] pub type PFN_vkCmdDrawMeshTasksIndirectCountNV = extern "system" fn (commandBuffer: CommandBuffer, buffer: Buffer, offset: DeviceSize, countBuffer: Buffer, countBufferOffset: DeviceSize, maxDrawCount: u32, stride: u32);
+#[doc(hidden)] pub type PFN_vkCmdSetExclusiveScissorNV = extern "system" fn (commandBuffer: CommandBuffer, firstExclusiveScissor: u32, exclusiveScissorCount: u32, pExclusiveScissors: *const Rect2D);
+#[doc(hidden)] pub type PFN_vkCmdSetCheckpointNV = extern "system" fn (commandBuffer: CommandBuffer, pCheckpointMarker: *const c_void);
+#[doc(hidden)] pub type PFN_vkGetQueueCheckpointDataNV = extern "system" fn (queue: Queue, pCheckpointDataCount: *mut u32, pCheckpointData: *mut CheckpointDataNV);
 
 
 /// Vulkan commands
@@ -13359,7 +13298,7 @@ static mut vklib: Option<*mut VkLib> = None;
 /// #[macro_use] extern crate nobs_vk as vk;
 /// //...
 /// # fn main() {
-/// # let _vk_lib = vk::Core::new();
+/// # let _vk_lib = vk::VkLib::new();
 /// # let mut inst_ver = 0;
 /// match vk_check!(vk::EnumerateInstanceVersion(&mut inst_ver)) {
 ///   Err(e) => println!("EnumerateInstanceVersion returned with: {:?}", e),
