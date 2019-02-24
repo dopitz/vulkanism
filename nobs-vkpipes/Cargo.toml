@@ -12,7 +12,7 @@ edition = "2018"
 
 [dependencies]
 nobs-vk = {version = "0.2.0", path = "../nobs-vk"}
-nobs-vkpipes-macro = {path = "nobs-vkpipes-macro"}
+nobs-vkpipes-macro = {version = "0.1.0", path = "nobs-vkpipes-macro"}
 
 [dev-dependencies]
-nobs-vulkanism = {path = "../nobs-vulkanism"}
+nobs-vulkanism = {version = "0.1.0", path = "../nobs-vulkanism"}
