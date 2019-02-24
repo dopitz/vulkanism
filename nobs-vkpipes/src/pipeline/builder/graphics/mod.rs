@@ -19,8 +19,8 @@ use vk;
 ///
 /// For a successfull pipeline creation the builder needs to be constructed from a valid device and
 /// valid bindings and at least a vertex and fragment shader stage need to be configured.
-pub struct Graphics<'a> {
-  device: &'a vk::DeviceExtensions,
+pub struct Graphics {
+  device: vk::Device,
   pass: vk::RenderPass,
   subpass: u32,
 
@@ -42,12 +42,12 @@ pub struct Graphics<'a> {
   dynamic: dynamic::Builder,
 }
 
-impl<'a> Graphics<'a> {
+impl Graphics {
   /// Create builder from a device
   ///
   /// The builder is initialized with no bindings and no shader stages configured.
   /// The default states are initialized with the default constructor of their respective builder.
-  pub fn from_pass(device: &vk::DeviceExtensions, pass: vk::RenderPass) -> Graphics {
+  pub fn from_pass(device: vk::Device, pass: vk::RenderPass) -> Graphics {
     Graphics {
       device,
       pass,
@@ -203,21 +203,14 @@ impl<'a> Graphics<'a> {
     };
 
     let mut handle = vk::NULL_HANDLE;
-    vk::CreateGraphicsPipelines(
-      self.device.get_handle(),
-      vk::NULL_HANDLE,
-      1,
-      &create_info,
-      std::ptr::null(),
-      &mut handle,
-    );
+    vk::CreateGraphicsPipelines(self.device, vk::NULL_HANDLE, 1, &create_info, std::ptr::null(), &mut handle);
 
     stages
       .iter()
-      .for_each(|s| vk::DestroyShaderModule(self.device.get_handle(), s.module, std::ptr::null()));
+      .for_each(|s| vk::DestroyShaderModule(self.device, s.module, std::ptr::null()));
 
     Ok(Pipeline {
-      device: self.device.get_handle(),
+      device: self.device,
       handle,
       dsets,
       layout,

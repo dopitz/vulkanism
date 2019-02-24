@@ -23,8 +23,6 @@ impl Window {
   fn create_surface(inst: vk::Instance, window: &winit::Window) -> Result<vk::SurfaceKHR, Error> {
     use winit::os::unix::WindowExt;
 
-    let ext = vk::InstanceExtensions::new(inst);
-
     if let Some(dpy) = window.get_xlib_display() {
       let window = window.get_xlib_window().unwrap();
 
@@ -37,7 +35,7 @@ impl Window {
       };
 
       let mut handle = vk::NULL_HANDLE;
-      vk_check!(ext.CreateXlibSurfaceKHR(inst, &info, std::ptr::null(), &mut handle)).map_err(|e| Error::SurfaceCreate(e))?;
+      vk_check!(vk::CreateXlibSurfaceKHR(inst, &info, std::ptr::null(), &mut handle)).map_err(|e| Error::SurfaceCreate(e))?;
       return Ok(handle);
     }
 
@@ -53,7 +51,7 @@ impl Window {
       };
 
       let mut handle = vk::NULL_HANDLE;
-      vk_check!(ext.CreateWaylandSurfaceKHR(inst, &info, std::ptr::null(), &mut handle)).map_err(|e| Error::SurfaceCreate(e))?;
+      vk_check!(vk::CreateWaylandSurfaceKHR(inst, &info, std::ptr::null(), &mut handle)).map_err(|e| Error::SurfaceCreate(e))?;
       return Ok(handle);
 
     }
@@ -77,7 +75,7 @@ impl Window {
     };
 
     let mut handle = vk::NULL_HANDLE;
-    vk_check!(ext.CreateWin32SurfaceKHR(inst, &info, std::ptr::null(), &mut handle))?;
+    vk_check!(vk::CreateWin32SurfaceKHR(inst, &info, std::ptr::null(), &mut handle))?;
     Ok(handle)
   }
 
@@ -86,8 +84,7 @@ impl Window {
 
 impl Drop for Window {
   fn drop(&mut self) {
-    let ext = vk::InstanceExtensions::new(self.inst);
-    ext.DestroySurfaceKHR(self.inst, self.surface, std::ptr::null());
+    vk::DestroySurfaceKHR(self.inst, self.surface, std::ptr::null());
   }
 }
 

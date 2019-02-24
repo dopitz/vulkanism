@@ -6,7 +6,7 @@ use crate::pipeline::Binding;
 use std::collections::HashMap;
 use vk;
 
-fn create_descriptor_layout(device: &vk::DeviceExtensions, bindings: &[Binding]) -> vk::DescriptorSetLayout {
+fn create_descriptor_layout(device: vk::Device, bindings: &[Binding]) -> vk::DescriptorSetLayout {
   let layout_bindings: Vec<vk::DescriptorSetLayoutBinding> = bindings
     .iter()
     .map(|b| vk::DescriptorSetLayoutBinding {
@@ -27,11 +27,11 @@ fn create_descriptor_layout(device: &vk::DeviceExtensions, bindings: &[Binding])
   };
 
   let mut handle = vk::NULL_HANDLE;
-  vk::CreateDescriptorSetLayout(device.get_handle(), &create_info, std::ptr::null(), &mut handle);
+  vk::CreateDescriptorSetLayout(device, &create_info, std::ptr::null(), &mut handle);
   handle
 }
 
-fn create_pipeline_layout(device: &vk::DeviceExtensions, dset_layouts: &[vk::DescriptorSetLayout]) -> vk::PipelineLayout {
+fn create_pipeline_layout(device: vk::Device, dset_layouts: &[vk::DescriptorSetLayout]) -> vk::PipelineLayout {
   // create the pipeline layout
   let create_info = vk::PipelineLayoutCreateInfo {
     sType: vk::STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
@@ -44,7 +44,7 @@ fn create_pipeline_layout(device: &vk::DeviceExtensions, dset_layouts: &[vk::Des
   };
 
   let mut handle = vk::NULL_HANDLE;
-  vk::CreatePipelineLayout(device.get_handle(), &create_info, std::ptr::null(), &mut handle);
+  vk::CreatePipelineLayout(device, &create_info, std::ptr::null(), &mut handle);
   handle
 }
 
@@ -63,7 +63,7 @@ fn create_pool_sizes(bindings: &[Binding]) -> Vec<vk::DescriptorPoolSize> {
     .collect()
 }
 
-fn create_layouts(device: &vk::DeviceExtensions, bindings: &[Binding]) -> (HashMap<u32, DsetLayout>, vk::PipelineLayout) {
+fn create_layouts(device: vk::Device, bindings: &[Binding]) -> (HashMap<u32, DsetLayout>, vk::PipelineLayout) {
   // spilt up bindings by descriptor set
   let dset_bindings = bindings.iter().fold(HashMap::new(), |mut acc, b| {
     {

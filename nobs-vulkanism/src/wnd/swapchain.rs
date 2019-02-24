@@ -8,7 +8,6 @@ pub struct NextImage {
 
 pub struct Swapchain {
   device: vk::Device,
-  ext: vk::DeviceExtensions,
   sig_index: usize,
   pub extent: vk::Extent2D,
   pub handle: vk::SwapchainKHR,
@@ -25,7 +24,7 @@ impl Drop for Swapchain {
     for s in self.signals.iter() {
       vk::DestroySemaphore(self.device, *s, std::ptr::null());
     }
-    self.ext.DestroySwapchainKHR(self.device, self.handle, std::ptr::null());
+    vk::DestroySwapchainKHR(self.device, self.handle, std::ptr::null());
   }
 }
 
@@ -38,9 +37,7 @@ impl Swapchain {
     let signal = self.signals[self.sig_index];
     let mut index = 0;
     self.sig_index = (self.sig_index + 1) % self.signals.len();
-    self
-      .ext
-      .AcquireNextImageKHR(self.device, self.handle, u64::max_value(), signal, vk::NULL_HANDLE, &mut index);
+vk::AcquireNextImageKHR(self.device, self.handle, u64::max_value(), signal, vk::NULL_HANDLE, &mut index);
     NextImage { signal, index }
   }
 
@@ -64,7 +61,7 @@ impl Swapchain {
       pResults: std::ptr::null_mut(),
     };
 
-    self.ext.QueuePresentKHR(q, &present_info);
+    vk::QueuePresentKHR(q, &present_info);
   }
 }
 
@@ -76,14 +73,13 @@ pub struct Builder {
 
 impl Builder {
   fn get_default_format(
-    ext: &vk::InstanceExtensions,
     pdevice: vk::PhysicalDevice,
     surface: vk::SurfaceKHR,
   ) -> (vk::Format, vk::ColorSpaceKHR) {
     let mut format_count = 0;
-    ext.GetPhysicalDeviceSurfaceFormatsKHR(pdevice, surface, &mut format_count, std::ptr::null_mut());
+    vk::GetPhysicalDeviceSurfaceFormatsKHR(pdevice, surface, &mut format_count, std::ptr::null_mut());
     let mut formats = Vec::with_capacity(format_count as usize);
-    ext.GetPhysicalDeviceSurfaceFormatsKHR(pdevice, surface, &mut format_count, formats.as_mut_ptr());
+    vk::GetPhysicalDeviceSurfaceFormatsKHR(pdevice, surface, &mut format_count, formats.as_mut_ptr());
     unsafe {
       formats.set_len(format_count as usize);
     }
@@ -102,11 +98,11 @@ impl Builder {
       None => (formats[0].format, formats[0].colorSpace),
     }
   }
-  fn get_default_presentmode(ext: &vk::InstanceExtensions, pdevice: vk::PhysicalDevice, surface: vk::SurfaceKHR) -> vk::PresentModeKHR {
+  fn get_default_presentmode(pdevice: vk::PhysicalDevice, surface: vk::SurfaceKHR) -> vk::PresentModeKHR {
     let mut mode_count = 0;
-    ext.GetPhysicalDeviceSurfacePresentModesKHR(pdevice, surface, &mut mode_count, std::ptr::null_mut());
+    vk::GetPhysicalDeviceSurfacePresentModesKHR(pdevice, surface, &mut mode_count, std::ptr::null_mut());
     let mut modes = Vec::with_capacity(mode_count as usize);
-    ext.GetPhysicalDeviceSurfacePresentModesKHR(pdevice, surface, &mut mode_count, modes.as_mut_ptr());
+    vk::GetPhysicalDeviceSurfacePresentModesKHR(pdevice, surface, &mut mode_count, modes.as_mut_ptr());
     unsafe {
       modes.set_len(mode_count as usize);
     }
@@ -123,11 +119,10 @@ impl Builder {
   fn new(inst: vk::Instance, pdevice: vk::PhysicalDevice, device: vk::Device, surface: vk::SurfaceKHR) -> Self {
     // surface capabilities
     let mut capabilities = unsafe { std::mem::uninitialized() };
-    let ext = vk::InstanceExtensions::new(inst);
-    ext.GetPhysicalDeviceSurfaceCapabilitiesKHR(pdevice, surface, &mut capabilities);
+    vk::GetPhysicalDeviceSurfaceCapabilitiesKHR(pdevice, surface, &mut capabilities);
 
-    let (format, colorspace) = Self::get_default_format(&ext, pdevice, surface);
-    let presentmode = Self::get_default_presentmode(&ext, pdevice, surface);
+    let (format, colorspace) = Self::get_default_format(pdevice, surface);
+    let presentmode = Self::get_default_presentmode(pdevice, surface);
 
     Builder {
       device,
@@ -187,16 +182,15 @@ impl Builder {
 
   pub fn create(self) -> Swapchain {
     let device = self.device;
-    let ext = vk::DeviceExtensions::new(device);
 
     let mut handle = vk::NULL_HANDLE;
-    ext.CreateSwapchainKHR(device, &self.info, std::ptr::null(), &mut handle);
+    vk::CreateSwapchainKHR(device, &self.info, std::ptr::null(), &mut handle);
 
     // create image views for the swap chain
     let mut image_count = 0;
-    ext.GetSwapchainImagesKHR(device, handle, &mut image_count, std::ptr::null_mut());
+    vk::GetSwapchainImagesKHR(device, handle, &mut image_count, std::ptr::null_mut());
     let mut images = Vec::with_capacity(image_count as usize);
-    ext.GetSwapchainImagesKHR(device, handle, &mut image_count, images.as_mut_ptr());
+    vk::GetSwapchainImagesKHR(device, handle, &mut image_count, images.as_mut_ptr());
     unsafe {
       images.set_len(image_count as usize);
     }
@@ -244,7 +238,6 @@ impl Builder {
 
     Swapchain {
       device,
-      ext,
       sig_index: 0,
       extent: self.info.imageExtent,
       handle,

@@ -6487,14 +6487,333 @@ pub const VERSION_1_0: u32 = make_version!(1, 0, 0);
 pub const VERSION_1_1: u32 = make_version!(1, 1, 0);
 
 
-/// Vulkan core commands
+
+
+pub type PFN_vkCreateInstance = extern "system" fn (pCreateInfo: *const InstanceCreateInfo, pAllocator: *const AllocationCallbacks, pInstance: *mut Instance) -> Result;
+pub type PFN_vkDestroyInstance = extern "system" fn (instance: Instance, pAllocator: *const AllocationCallbacks);
+pub type PFN_vkEnumeratePhysicalDevices = extern "system" fn (instance: Instance, pPhysicalDeviceCount: *mut u32, pPhysicalDevices: *mut PhysicalDevice) -> Result;
+pub type PFN_vkGetPhysicalDeviceFeatures = extern "system" fn (physicalDevice: PhysicalDevice, pFeatures: *mut PhysicalDeviceFeatures);
+pub type PFN_vkGetPhysicalDeviceFormatProperties = extern "system" fn (physicalDevice: PhysicalDevice, format: Format, pFormatProperties: *mut FormatProperties);
+pub type PFN_vkGetPhysicalDeviceImageFormatProperties = extern "system" fn (physicalDevice: PhysicalDevice, format: Format, typ: ImageType, tiling: ImageTiling, usage: ImageUsageFlags, flags: ImageCreateFlags, pImageFormatProperties: *mut ImageFormatProperties) -> Result;
+pub type PFN_vkGetPhysicalDeviceProperties = extern "system" fn (physicalDevice: PhysicalDevice, pProperties: *mut PhysicalDeviceProperties);
+pub type PFN_vkGetPhysicalDeviceQueueFamilyProperties = extern "system" fn (physicalDevice: PhysicalDevice, pQueueFamilyPropertyCount: *mut u32, pQueueFamilyProperties: *mut QueueFamilyProperties);
+pub type PFN_vkGetPhysicalDeviceMemoryProperties = extern "system" fn (physicalDevice: PhysicalDevice, pMemoryProperties: *mut PhysicalDeviceMemoryProperties);
+pub type PFN_vkGetInstanceProcAddr = extern "system" fn (instance: Instance, pName: *const c_char) -> PFN_vkVoidFunction;
+pub type PFN_vkGetDeviceProcAddr = extern "system" fn (device: Device, pName: *const c_char) -> PFN_vkVoidFunction;
+pub type PFN_vkCreateDevice = extern "system" fn (physicalDevice: PhysicalDevice, pCreateInfo: *const DeviceCreateInfo, pAllocator: *const AllocationCallbacks, pDevice: *mut Device) -> Result;
+pub type PFN_vkDestroyDevice = extern "system" fn (device: Device, pAllocator: *const AllocationCallbacks);
+pub type PFN_vkEnumerateInstanceExtensionProperties = extern "system" fn (pLayerName: *const c_char, pPropertyCount: *mut u32, pProperties: *mut ExtensionProperties) -> Result;
+pub type PFN_vkEnumerateDeviceExtensionProperties = extern "system" fn (physicalDevice: PhysicalDevice, pLayerName: *const c_char, pPropertyCount: *mut u32, pProperties: *mut ExtensionProperties) -> Result;
+pub type PFN_vkEnumerateInstanceLayerProperties = extern "system" fn (pPropertyCount: *mut u32, pProperties: *mut LayerProperties) -> Result;
+pub type PFN_vkEnumerateDeviceLayerProperties = extern "system" fn (physicalDevice: PhysicalDevice, pPropertyCount: *mut u32, pProperties: *mut LayerProperties) -> Result;
+pub type PFN_vkGetDeviceQueue = extern "system" fn (device: Device, queueFamilyIndex: u32, queueIndex: u32, pQueue: *mut Queue);
+pub type PFN_vkQueueSubmit = extern "system" fn (queue: Queue, submitCount: u32, pSubmits: *const SubmitInfo, fence: Fence) -> Result;
+pub type PFN_vkQueueWaitIdle = extern "system" fn (queue: Queue) -> Result;
+pub type PFN_vkDeviceWaitIdle = extern "system" fn (device: Device) -> Result;
+pub type PFN_vkAllocateMemory = extern "system" fn (device: Device, pAllocateInfo: *const MemoryAllocateInfo, pAllocator: *const AllocationCallbacks, pMemory: *mut DeviceMemory) -> Result;
+pub type PFN_vkFreeMemory = extern "system" fn (device: Device, memory: DeviceMemory, pAllocator: *const AllocationCallbacks);
+pub type PFN_vkMapMemory = extern "system" fn (device: Device, memory: DeviceMemory, offset: DeviceSize, size: DeviceSize, flags: MemoryMapFlags, ppData: *mut *mut c_void) -> Result;
+pub type PFN_vkUnmapMemory = extern "system" fn (device: Device, memory: DeviceMemory);
+pub type PFN_vkFlushMappedMemoryRanges = extern "system" fn (device: Device, memoryRangeCount: u32, pMemoryRanges: *const MappedMemoryRange) -> Result;
+pub type PFN_vkInvalidateMappedMemoryRanges = extern "system" fn (device: Device, memoryRangeCount: u32, pMemoryRanges: *const MappedMemoryRange) -> Result;
+pub type PFN_vkGetDeviceMemoryCommitment = extern "system" fn (device: Device, memory: DeviceMemory, pCommittedMemoryInBytes: *mut DeviceSize);
+pub type PFN_vkBindBufferMemory = extern "system" fn (device: Device, buffer: Buffer, memory: DeviceMemory, memoryOffset: DeviceSize) -> Result;
+pub type PFN_vkBindImageMemory = extern "system" fn (device: Device, image: Image, memory: DeviceMemory, memoryOffset: DeviceSize) -> Result;
+pub type PFN_vkGetBufferMemoryRequirements = extern "system" fn (device: Device, buffer: Buffer, pMemoryRequirements: *mut MemoryRequirements);
+pub type PFN_vkGetImageMemoryRequirements = extern "system" fn (device: Device, image: Image, pMemoryRequirements: *mut MemoryRequirements);
+pub type PFN_vkGetImageSparseMemoryRequirements = extern "system" fn (device: Device, image: Image, pSparseMemoryRequirementCount: *mut u32, pSparseMemoryRequirements: *mut SparseImageMemoryRequirements);
+pub type PFN_vkGetPhysicalDeviceSparseImageFormatProperties = extern "system" fn (physicalDevice: PhysicalDevice, format: Format, typ: ImageType, samples: SampleCountFlagBits, usage: ImageUsageFlags, tiling: ImageTiling, pPropertyCount: *mut u32, pProperties: *mut SparseImageFormatProperties);
+pub type PFN_vkQueueBindSparse = extern "system" fn (queue: Queue, bindInfoCount: u32, pBindInfo: *const BindSparseInfo, fence: Fence) -> Result;
+pub type PFN_vkCreateFence = extern "system" fn (device: Device, pCreateInfo: *const FenceCreateInfo, pAllocator: *const AllocationCallbacks, pFence: *mut Fence) -> Result;
+pub type PFN_vkDestroyFence = extern "system" fn (device: Device, fence: Fence, pAllocator: *const AllocationCallbacks);
+pub type PFN_vkResetFences = extern "system" fn (device: Device, fenceCount: u32, pFences: *const Fence) -> Result;
+pub type PFN_vkGetFenceStatus = extern "system" fn (device: Device, fence: Fence) -> Result;
+pub type PFN_vkWaitForFences = extern "system" fn (device: Device, fenceCount: u32, pFences: *const Fence, waitAll: Bool32, timeout: u64) -> Result;
+pub type PFN_vkCreateSemaphore = extern "system" fn (device: Device, pCreateInfo: *const SemaphoreCreateInfo, pAllocator: *const AllocationCallbacks, pSemaphore: *mut Semaphore) -> Result;
+pub type PFN_vkDestroySemaphore = extern "system" fn (device: Device, semaphore: Semaphore, pAllocator: *const AllocationCallbacks);
+pub type PFN_vkCreateEvent = extern "system" fn (device: Device, pCreateInfo: *const EventCreateInfo, pAllocator: *const AllocationCallbacks, pEvent: *mut Event) -> Result;
+pub type PFN_vkDestroyEvent = extern "system" fn (device: Device, event: Event, pAllocator: *const AllocationCallbacks);
+pub type PFN_vkGetEventStatus = extern "system" fn (device: Device, event: Event) -> Result;
+pub type PFN_vkSetEvent = extern "system" fn (device: Device, event: Event) -> Result;
+pub type PFN_vkResetEvent = extern "system" fn (device: Device, event: Event) -> Result;
+pub type PFN_vkCreateQueryPool = extern "system" fn (device: Device, pCreateInfo: *const QueryPoolCreateInfo, pAllocator: *const AllocationCallbacks, pQueryPool: *mut QueryPool) -> Result;
+pub type PFN_vkDestroyQueryPool = extern "system" fn (device: Device, queryPool: QueryPool, pAllocator: *const AllocationCallbacks);
+pub type PFN_vkGetQueryPoolResults = extern "system" fn (device: Device, queryPool: QueryPool, firstQuery: u32, queryCount: u32, dataSize: usize, pData: *mut c_void, stride: DeviceSize, flags: QueryResultFlags) -> Result;
+pub type PFN_vkCreateBuffer = extern "system" fn (device: Device, pCreateInfo: *const BufferCreateInfo, pAllocator: *const AllocationCallbacks, pBuffer: *mut Buffer) -> Result;
+pub type PFN_vkDestroyBuffer = extern "system" fn (device: Device, buffer: Buffer, pAllocator: *const AllocationCallbacks);
+pub type PFN_vkCreateBufferView = extern "system" fn (device: Device, pCreateInfo: *const BufferViewCreateInfo, pAllocator: *const AllocationCallbacks, pView: *mut BufferView) -> Result;
+pub type PFN_vkDestroyBufferView = extern "system" fn (device: Device, bufferView: BufferView, pAllocator: *const AllocationCallbacks);
+pub type PFN_vkCreateImage = extern "system" fn (device: Device, pCreateInfo: *const ImageCreateInfo, pAllocator: *const AllocationCallbacks, pImage: *mut Image) -> Result;
+pub type PFN_vkDestroyImage = extern "system" fn (device: Device, image: Image, pAllocator: *const AllocationCallbacks);
+pub type PFN_vkGetImageSubresourceLayout = extern "system" fn (device: Device, image: Image, pSubresource: *const ImageSubresource, pLayout: *mut SubresourceLayout);
+pub type PFN_vkCreateImageView = extern "system" fn (device: Device, pCreateInfo: *const ImageViewCreateInfo, pAllocator: *const AllocationCallbacks, pView: *mut ImageView) -> Result;
+pub type PFN_vkDestroyImageView = extern "system" fn (device: Device, imageView: ImageView, pAllocator: *const AllocationCallbacks);
+pub type PFN_vkCreateShaderModule = extern "system" fn (device: Device, pCreateInfo: *const ShaderModuleCreateInfo, pAllocator: *const AllocationCallbacks, pShaderModule: *mut ShaderModule) -> Result;
+pub type PFN_vkDestroyShaderModule = extern "system" fn (device: Device, shaderModule: ShaderModule, pAllocator: *const AllocationCallbacks);
+pub type PFN_vkCreatePipelineCache = extern "system" fn (device: Device, pCreateInfo: *const PipelineCacheCreateInfo, pAllocator: *const AllocationCallbacks, pPipelineCache: *mut PipelineCache) -> Result;
+pub type PFN_vkDestroyPipelineCache = extern "system" fn (device: Device, pipelineCache: PipelineCache, pAllocator: *const AllocationCallbacks);
+pub type PFN_vkGetPipelineCacheData = extern "system" fn (device: Device, pipelineCache: PipelineCache, pDataSize: *mut usize, pData: *mut c_void) -> Result;
+pub type PFN_vkMergePipelineCaches = extern "system" fn (device: Device, dstCache: PipelineCache, srcCacheCount: u32, pSrcCaches: *const PipelineCache) -> Result;
+pub type PFN_vkCreateGraphicsPipelines = extern "system" fn (device: Device, pipelineCache: PipelineCache, createInfoCount: u32, pCreateInfos: *const GraphicsPipelineCreateInfo, pAllocator: *const AllocationCallbacks, pPipelines: *mut Pipeline) -> Result;
+pub type PFN_vkCreateComputePipelines = extern "system" fn (device: Device, pipelineCache: PipelineCache, createInfoCount: u32, pCreateInfos: *const ComputePipelineCreateInfo, pAllocator: *const AllocationCallbacks, pPipelines: *mut Pipeline) -> Result;
+pub type PFN_vkDestroyPipeline = extern "system" fn (device: Device, pipeline: Pipeline, pAllocator: *const AllocationCallbacks);
+pub type PFN_vkCreatePipelineLayout = extern "system" fn (device: Device, pCreateInfo: *const PipelineLayoutCreateInfo, pAllocator: *const AllocationCallbacks, pPipelineLayout: *mut PipelineLayout) -> Result;
+pub type PFN_vkDestroyPipelineLayout = extern "system" fn (device: Device, pipelineLayout: PipelineLayout, pAllocator: *const AllocationCallbacks);
+pub type PFN_vkCreateSampler = extern "system" fn (device: Device, pCreateInfo: *const SamplerCreateInfo, pAllocator: *const AllocationCallbacks, pSampler: *mut Sampler) -> Result;
+pub type PFN_vkDestroySampler = extern "system" fn (device: Device, sampler: Sampler, pAllocator: *const AllocationCallbacks);
+pub type PFN_vkCreateDescriptorSetLayout = extern "system" fn (device: Device, pCreateInfo: *const DescriptorSetLayoutCreateInfo, pAllocator: *const AllocationCallbacks, pSetLayout: *mut DescriptorSetLayout) -> Result;
+pub type PFN_vkDestroyDescriptorSetLayout = extern "system" fn (device: Device, descriptorSetLayout: DescriptorSetLayout, pAllocator: *const AllocationCallbacks);
+pub type PFN_vkCreateDescriptorPool = extern "system" fn (device: Device, pCreateInfo: *const DescriptorPoolCreateInfo, pAllocator: *const AllocationCallbacks, pDescriptorPool: *mut DescriptorPool) -> Result;
+pub type PFN_vkDestroyDescriptorPool = extern "system" fn (device: Device, descriptorPool: DescriptorPool, pAllocator: *const AllocationCallbacks);
+pub type PFN_vkResetDescriptorPool = extern "system" fn (device: Device, descriptorPool: DescriptorPool, flags: DescriptorPoolResetFlags) -> Result;
+pub type PFN_vkAllocateDescriptorSets = extern "system" fn (device: Device, pAllocateInfo: *const DescriptorSetAllocateInfo, pDescriptorSets: *mut DescriptorSet) -> Result;
+pub type PFN_vkFreeDescriptorSets = extern "system" fn (device: Device, descriptorPool: DescriptorPool, descriptorSetCount: u32, pDescriptorSets: *const DescriptorSet) -> Result;
+pub type PFN_vkUpdateDescriptorSets = extern "system" fn (device: Device, descriptorWriteCount: u32, pDescriptorWrites: *const WriteDescriptorSet, descriptorCopyCount: u32, pDescriptorCopies: *const CopyDescriptorSet);
+pub type PFN_vkCreateFramebuffer = extern "system" fn (device: Device, pCreateInfo: *const FramebufferCreateInfo, pAllocator: *const AllocationCallbacks, pFramebuffer: *mut Framebuffer) -> Result;
+pub type PFN_vkDestroyFramebuffer = extern "system" fn (device: Device, framebuffer: Framebuffer, pAllocator: *const AllocationCallbacks);
+pub type PFN_vkCreateRenderPass = extern "system" fn (device: Device, pCreateInfo: *const RenderPassCreateInfo, pAllocator: *const AllocationCallbacks, pRenderPass: *mut RenderPass) -> Result;
+pub type PFN_vkDestroyRenderPass = extern "system" fn (device: Device, renderPass: RenderPass, pAllocator: *const AllocationCallbacks);
+pub type PFN_vkGetRenderAreaGranularity = extern "system" fn (device: Device, renderPass: RenderPass, pGranularity: *mut Extent2D);
+pub type PFN_vkCreateCommandPool = extern "system" fn (device: Device, pCreateInfo: *const CommandPoolCreateInfo, pAllocator: *const AllocationCallbacks, pCommandPool: *mut CommandPool) -> Result;
+pub type PFN_vkDestroyCommandPool = extern "system" fn (device: Device, commandPool: CommandPool, pAllocator: *const AllocationCallbacks);
+pub type PFN_vkResetCommandPool = extern "system" fn (device: Device, commandPool: CommandPool, flags: CommandPoolResetFlags) -> Result;
+pub type PFN_vkAllocateCommandBuffers = extern "system" fn (device: Device, pAllocateInfo: *const CommandBufferAllocateInfo, pCommandBuffers: *mut CommandBuffer) -> Result;
+pub type PFN_vkFreeCommandBuffers = extern "system" fn (device: Device, commandPool: CommandPool, commandBufferCount: u32, pCommandBuffers: *const CommandBuffer);
+pub type PFN_vkBeginCommandBuffer = extern "system" fn (commandBuffer: CommandBuffer, pBeginInfo: *const CommandBufferBeginInfo) -> Result;
+pub type PFN_vkEndCommandBuffer = extern "system" fn (commandBuffer: CommandBuffer) -> Result;
+pub type PFN_vkResetCommandBuffer = extern "system" fn (commandBuffer: CommandBuffer, flags: CommandBufferResetFlags) -> Result;
+pub type PFN_vkCmdBindPipeline = extern "system" fn (commandBuffer: CommandBuffer, pipelineBindPoint: PipelineBindPoint, pipeline: Pipeline);
+pub type PFN_vkCmdSetViewport = extern "system" fn (commandBuffer: CommandBuffer, firstViewport: u32, viewportCount: u32, pViewports: *const Viewport);
+pub type PFN_vkCmdSetScissor = extern "system" fn (commandBuffer: CommandBuffer, firstScissor: u32, scissorCount: u32, pScissors: *const Rect2D);
+pub type PFN_vkCmdSetLineWidth = extern "system" fn (commandBuffer: CommandBuffer, lineWidth: f32);
+pub type PFN_vkCmdSetDepthBias = extern "system" fn (commandBuffer: CommandBuffer, depthBiasConstantFactor: f32, depthBiasClamp: f32, depthBiasSlopeFactor: f32);
+pub type PFN_vkCmdSetBlendConstants = extern "system" fn (commandBuffer: CommandBuffer, blendConstants: [f32; 4]);
+pub type PFN_vkCmdSetDepthBounds = extern "system" fn (commandBuffer: CommandBuffer, minDepthBounds: f32, maxDepthBounds: f32);
+pub type PFN_vkCmdSetStencilCompareMask = extern "system" fn (commandBuffer: CommandBuffer, faceMask: StencilFaceFlags, compareMask: u32);
+pub type PFN_vkCmdSetStencilWriteMask = extern "system" fn (commandBuffer: CommandBuffer, faceMask: StencilFaceFlags, writeMask: u32);
+pub type PFN_vkCmdSetStencilReference = extern "system" fn (commandBuffer: CommandBuffer, faceMask: StencilFaceFlags, reference: u32);
+pub type PFN_vkCmdBindDescriptorSets = extern "system" fn (commandBuffer: CommandBuffer, pipelineBindPoint: PipelineBindPoint, layout: PipelineLayout, firstSet: u32, descriptorSetCount: u32, pDescriptorSets: *const DescriptorSet, dynamicOffsetCount: u32, pDynamicOffsets: *const u32);
+pub type PFN_vkCmdBindIndexBuffer = extern "system" fn (commandBuffer: CommandBuffer, buffer: Buffer, offset: DeviceSize, indexType: IndexType);
+pub type PFN_vkCmdBindVertexBuffers = extern "system" fn (commandBuffer: CommandBuffer, firstBinding: u32, bindingCount: u32, pBuffers: *const Buffer, pOffsets: *const DeviceSize);
+pub type PFN_vkCmdDraw = extern "system" fn (commandBuffer: CommandBuffer, vertexCount: u32, instanceCount: u32, firstVertex: u32, firstInstance: u32);
+pub type PFN_vkCmdDrawIndexed = extern "system" fn (commandBuffer: CommandBuffer, indexCount: u32, instanceCount: u32, firstIndex: u32, vertexOffset: i32, firstInstance: u32);
+pub type PFN_vkCmdDrawIndirect = extern "system" fn (commandBuffer: CommandBuffer, buffer: Buffer, offset: DeviceSize, drawCount: u32, stride: u32);
+pub type PFN_vkCmdDrawIndexedIndirect = extern "system" fn (commandBuffer: CommandBuffer, buffer: Buffer, offset: DeviceSize, drawCount: u32, stride: u32);
+pub type PFN_vkCmdDispatch = extern "system" fn (commandBuffer: CommandBuffer, groupCountX: u32, groupCountY: u32, groupCountZ: u32);
+pub type PFN_vkCmdDispatchIndirect = extern "system" fn (commandBuffer: CommandBuffer, buffer: Buffer, offset: DeviceSize);
+pub type PFN_vkCmdCopyBuffer = extern "system" fn (commandBuffer: CommandBuffer, srcBuffer: Buffer, dstBuffer: Buffer, regionCount: u32, pRegions: *const BufferCopy);
+pub type PFN_vkCmdCopyImage = extern "system" fn (commandBuffer: CommandBuffer, srcImage: Image, srcImageLayout: ImageLayout, dstImage: Image, dstImageLayout: ImageLayout, regionCount: u32, pRegions: *const ImageCopy);
+pub type PFN_vkCmdBlitImage = extern "system" fn (commandBuffer: CommandBuffer, srcImage: Image, srcImageLayout: ImageLayout, dstImage: Image, dstImageLayout: ImageLayout, regionCount: u32, pRegions: *const ImageBlit, filter: Filter);
+pub type PFN_vkCmdCopyBufferToImage = extern "system" fn (commandBuffer: CommandBuffer, srcBuffer: Buffer, dstImage: Image, dstImageLayout: ImageLayout, regionCount: u32, pRegions: *const BufferImageCopy);
+pub type PFN_vkCmdCopyImageToBuffer = extern "system" fn (commandBuffer: CommandBuffer, srcImage: Image, srcImageLayout: ImageLayout, dstBuffer: Buffer, regionCount: u32, pRegions: *const BufferImageCopy);
+pub type PFN_vkCmdUpdateBuffer = extern "system" fn (commandBuffer: CommandBuffer, dstBuffer: Buffer, dstOffset: DeviceSize, dataSize: DeviceSize, pData: *const c_void);
+pub type PFN_vkCmdFillBuffer = extern "system" fn (commandBuffer: CommandBuffer, dstBuffer: Buffer, dstOffset: DeviceSize, size: DeviceSize, data: u32);
+pub type PFN_vkCmdClearColorImage = extern "system" fn (commandBuffer: CommandBuffer, image: Image, imageLayout: ImageLayout, pColor: *const ClearColorValue, rangeCount: u32, pRanges: *const ImageSubresourceRange);
+pub type PFN_vkCmdClearDepthStencilImage = extern "system" fn (commandBuffer: CommandBuffer, image: Image, imageLayout: ImageLayout, pDepthStencil: *const ClearDepthStencilValue, rangeCount: u32, pRanges: *const ImageSubresourceRange);
+pub type PFN_vkCmdClearAttachments = extern "system" fn (commandBuffer: CommandBuffer, attachmentCount: u32, pAttachments: *const ClearAttachment, rectCount: u32, pRects: *const ClearRect);
+pub type PFN_vkCmdResolveImage = extern "system" fn (commandBuffer: CommandBuffer, srcImage: Image, srcImageLayout: ImageLayout, dstImage: Image, dstImageLayout: ImageLayout, regionCount: u32, pRegions: *const ImageResolve);
+pub type PFN_vkCmdSetEvent = extern "system" fn (commandBuffer: CommandBuffer, event: Event, stageMask: PipelineStageFlags);
+pub type PFN_vkCmdResetEvent = extern "system" fn (commandBuffer: CommandBuffer, event: Event, stageMask: PipelineStageFlags);
+pub type PFN_vkCmdWaitEvents = extern "system" fn (commandBuffer: CommandBuffer, eventCount: u32, pEvents: *const Event, srcStageMask: PipelineStageFlags, dstStageMask: PipelineStageFlags, memoryBarrierCount: u32, pMemoryBarriers: *const MemoryBarrier, bufferMemoryBarrierCount: u32, pBufferMemoryBarriers: *const BufferMemoryBarrier, imageMemoryBarrierCount: u32, pImageMemoryBarriers: *const ImageMemoryBarrier);
+pub type PFN_vkCmdPipelineBarrier = extern "system" fn (commandBuffer: CommandBuffer, srcStageMask: PipelineStageFlags, dstStageMask: PipelineStageFlags, dependencyFlags: DependencyFlags, memoryBarrierCount: u32, pMemoryBarriers: *const MemoryBarrier, bufferMemoryBarrierCount: u32, pBufferMemoryBarriers: *const BufferMemoryBarrier, imageMemoryBarrierCount: u32, pImageMemoryBarriers: *const ImageMemoryBarrier);
+pub type PFN_vkCmdBeginQuery = extern "system" fn (commandBuffer: CommandBuffer, queryPool: QueryPool, query: u32, flags: QueryControlFlags);
+pub type PFN_vkCmdEndQuery = extern "system" fn (commandBuffer: CommandBuffer, queryPool: QueryPool, query: u32);
+pub type PFN_vkCmdResetQueryPool = extern "system" fn (commandBuffer: CommandBuffer, queryPool: QueryPool, firstQuery: u32, queryCount: u32);
+pub type PFN_vkCmdWriteTimestamp = extern "system" fn (commandBuffer: CommandBuffer, pipelineStage: PipelineStageFlagBits, queryPool: QueryPool, query: u32);
+pub type PFN_vkCmdCopyQueryPoolResults = extern "system" fn (commandBuffer: CommandBuffer, queryPool: QueryPool, firstQuery: u32, queryCount: u32, dstBuffer: Buffer, dstOffset: DeviceSize, stride: DeviceSize, flags: QueryResultFlags);
+pub type PFN_vkCmdPushConstants = extern "system" fn (commandBuffer: CommandBuffer, layout: PipelineLayout, stageFlags: ShaderStageFlags, offset: u32, size: u32, pValues: *const c_void);
+pub type PFN_vkCmdBeginRenderPass = extern "system" fn (commandBuffer: CommandBuffer, pRenderPassBegin: *const RenderPassBeginInfo, contents: SubpassContents);
+pub type PFN_vkCmdNextSubpass = extern "system" fn (commandBuffer: CommandBuffer, contents: SubpassContents);
+pub type PFN_vkCmdEndRenderPass = extern "system" fn (commandBuffer: CommandBuffer);
+pub type PFN_vkCmdExecuteCommands = extern "system" fn (commandBuffer: CommandBuffer, commandBufferCount: u32, pCommandBuffers: *const CommandBuffer);
+pub type PFN_vkEnumerateInstanceVersion = extern "system" fn (pApiVersion: *mut u32) -> Result;
+pub type PFN_vkBindBufferMemory2 = extern "system" fn (device: Device, bindInfoCount: u32, pBindInfos: *const BindBufferMemoryInfo) -> Result;
+pub type PFN_vkBindImageMemory2 = extern "system" fn (device: Device, bindInfoCount: u32, pBindInfos: *const BindImageMemoryInfo) -> Result;
+pub type PFN_vkGetDeviceGroupPeerMemoryFeatures = extern "system" fn (device: Device, heapIndex: u32, localDeviceIndex: u32, remoteDeviceIndex: u32, pPeerMemoryFeatures: *mut PeerMemoryFeatureFlags);
+pub type PFN_vkCmdSetDeviceMask = extern "system" fn (commandBuffer: CommandBuffer, deviceMask: u32);
+pub type PFN_vkCmdDispatchBase = extern "system" fn (commandBuffer: CommandBuffer, baseGroupX: u32, baseGroupY: u32, baseGroupZ: u32, groupCountX: u32, groupCountY: u32, groupCountZ: u32);
+pub type PFN_vkEnumeratePhysicalDeviceGroups = extern "system" fn (instance: Instance, pPhysicalDeviceGroupCount: *mut u32, pPhysicalDeviceGroupProperties: *mut PhysicalDeviceGroupProperties) -> Result;
+pub type PFN_vkGetImageMemoryRequirements2 = extern "system" fn (device: Device, pInfo: *const ImageMemoryRequirementsInfo2, pMemoryRequirements: *mut MemoryRequirements2);
+pub type PFN_vkGetBufferMemoryRequirements2 = extern "system" fn (device: Device, pInfo: *const BufferMemoryRequirementsInfo2, pMemoryRequirements: *mut MemoryRequirements2);
+pub type PFN_vkGetImageSparseMemoryRequirements2 = extern "system" fn (device: Device, pInfo: *const ImageSparseMemoryRequirementsInfo2, pSparseMemoryRequirementCount: *mut u32, pSparseMemoryRequirements: *mut SparseImageMemoryRequirements2);
+pub type PFN_vkGetPhysicalDeviceFeatures2 = extern "system" fn (physicalDevice: PhysicalDevice, pFeatures: *mut PhysicalDeviceFeatures2);
+pub type PFN_vkGetPhysicalDeviceProperties2 = extern "system" fn (physicalDevice: PhysicalDevice, pProperties: *mut PhysicalDeviceProperties2);
+pub type PFN_vkGetPhysicalDeviceFormatProperties2 = extern "system" fn (physicalDevice: PhysicalDevice, format: Format, pFormatProperties: *mut FormatProperties2);
+pub type PFN_vkGetPhysicalDeviceImageFormatProperties2 = extern "system" fn (physicalDevice: PhysicalDevice, pImageFormatInfo: *const PhysicalDeviceImageFormatInfo2, pImageFormatProperties: *mut ImageFormatProperties2) -> Result;
+pub type PFN_vkGetPhysicalDeviceQueueFamilyProperties2 = extern "system" fn (physicalDevice: PhysicalDevice, pQueueFamilyPropertyCount: *mut u32, pQueueFamilyProperties: *mut QueueFamilyProperties2);
+pub type PFN_vkGetPhysicalDeviceMemoryProperties2 = extern "system" fn (physicalDevice: PhysicalDevice, pMemoryProperties: *mut PhysicalDeviceMemoryProperties2);
+pub type PFN_vkGetPhysicalDeviceSparseImageFormatProperties2 = extern "system" fn (physicalDevice: PhysicalDevice, pFormatInfo: *const PhysicalDeviceSparseImageFormatInfo2, pPropertyCount: *mut u32, pProperties: *mut SparseImageFormatProperties2);
+pub type PFN_vkTrimCommandPool = extern "system" fn (device: Device, commandPool: CommandPool, flags: CommandPoolTrimFlags);
+pub type PFN_vkGetDeviceQueue2 = extern "system" fn (device: Device, pQueueInfo: *const DeviceQueueInfo2, pQueue: *mut Queue);
+pub type PFN_vkCreateSamplerYcbcrConversion = extern "system" fn (device: Device, pCreateInfo: *const SamplerYcbcrConversionCreateInfo, pAllocator: *const AllocationCallbacks, pYcbcrConversion: *mut SamplerYcbcrConversion) -> Result;
+pub type PFN_vkDestroySamplerYcbcrConversion = extern "system" fn (device: Device, ycbcrConversion: SamplerYcbcrConversion, pAllocator: *const AllocationCallbacks);
+pub type PFN_vkCreateDescriptorUpdateTemplate = extern "system" fn (device: Device, pCreateInfo: *const DescriptorUpdateTemplateCreateInfo, pAllocator: *const AllocationCallbacks, pDescriptorUpdateTemplate: *mut DescriptorUpdateTemplate) -> Result;
+pub type PFN_vkDestroyDescriptorUpdateTemplate = extern "system" fn (device: Device, descriptorUpdateTemplate: DescriptorUpdateTemplate, pAllocator: *const AllocationCallbacks);
+pub type PFN_vkUpdateDescriptorSetWithTemplate = extern "system" fn (device: Device, descriptorSet: DescriptorSet, descriptorUpdateTemplate: DescriptorUpdateTemplate, pData: *const c_void);
+pub type PFN_vkGetPhysicalDeviceExternalBufferProperties = extern "system" fn (physicalDevice: PhysicalDevice, pExternalBufferInfo: *const PhysicalDeviceExternalBufferInfo, pExternalBufferProperties: *mut ExternalBufferProperties);
+pub type PFN_vkGetPhysicalDeviceExternalFenceProperties = extern "system" fn (physicalDevice: PhysicalDevice, pExternalFenceInfo: *const PhysicalDeviceExternalFenceInfo, pExternalFenceProperties: *mut ExternalFenceProperties);
+pub type PFN_vkGetPhysicalDeviceExternalSemaphoreProperties = extern "system" fn (physicalDevice: PhysicalDevice, pExternalSemaphoreInfo: *const PhysicalDeviceExternalSemaphoreInfo, pExternalSemaphoreProperties: *mut ExternalSemaphoreProperties);
+pub type PFN_vkGetDescriptorSetLayoutSupport = extern "system" fn (device: Device, pCreateInfo: *const DescriptorSetLayoutCreateInfo, pSupport: *mut DescriptorSetLayoutSupport);
+pub type PFN_vkDestroySurfaceKHR = extern "system" fn (instance: Instance, surface: SurfaceKHR, pAllocator: *const AllocationCallbacks);
+pub type PFN_vkGetPhysicalDeviceSurfaceSupportKHR = extern "system" fn (physicalDevice: PhysicalDevice, queueFamilyIndex: u32, surface: SurfaceKHR, pSupported: *mut Bool32) -> Result;
+pub type PFN_vkGetPhysicalDeviceSurfaceCapabilitiesKHR = extern "system" fn (physicalDevice: PhysicalDevice, surface: SurfaceKHR, pSurfaceCapabilities: *mut SurfaceCapabilitiesKHR) -> Result;
+pub type PFN_vkGetPhysicalDeviceSurfaceFormatsKHR = extern "system" fn (physicalDevice: PhysicalDevice, surface: SurfaceKHR, pSurfaceFormatCount: *mut u32, pSurfaceFormats: *mut SurfaceFormatKHR) -> Result;
+pub type PFN_vkGetPhysicalDeviceSurfacePresentModesKHR = extern "system" fn (physicalDevice: PhysicalDevice, surface: SurfaceKHR, pPresentModeCount: *mut u32, pPresentModes: *mut PresentModeKHR) -> Result;
+pub type PFN_vkGetPhysicalDeviceDisplayPropertiesKHR = extern "system" fn (physicalDevice: PhysicalDevice, pPropertyCount: *mut u32, pProperties: *mut DisplayPropertiesKHR) -> Result;
+pub type PFN_vkGetPhysicalDeviceDisplayPlanePropertiesKHR = extern "system" fn (physicalDevice: PhysicalDevice, pPropertyCount: *mut u32, pProperties: *mut DisplayPlanePropertiesKHR) -> Result;
+pub type PFN_vkGetDisplayPlaneSupportedDisplaysKHR = extern "system" fn (physicalDevice: PhysicalDevice, planeIndex: u32, pDisplayCount: *mut u32, pDisplays: *mut DisplayKHR) -> Result;
+pub type PFN_vkGetDisplayModePropertiesKHR = extern "system" fn (physicalDevice: PhysicalDevice, display: DisplayKHR, pPropertyCount: *mut u32, pProperties: *mut DisplayModePropertiesKHR) -> Result;
+pub type PFN_vkCreateDisplayModeKHR = extern "system" fn (physicalDevice: PhysicalDevice, display: DisplayKHR, pCreateInfo: *const DisplayModeCreateInfoKHR, pAllocator: *const AllocationCallbacks, pMode: *mut DisplayModeKHR) -> Result;
+pub type PFN_vkGetDisplayPlaneCapabilitiesKHR = extern "system" fn (physicalDevice: PhysicalDevice, mode: DisplayModeKHR, planeIndex: u32, pCapabilities: *mut DisplayPlaneCapabilitiesKHR) -> Result;
+pub type PFN_vkCreateDisplayPlaneSurfaceKHR = extern "system" fn (instance: Instance, pCreateInfo: *const DisplaySurfaceCreateInfoKHR, pAllocator: *const AllocationCallbacks, pSurface: *mut SurfaceKHR) -> Result;
+pub type PFN_vkCreateXlibSurfaceKHR = extern "system" fn (instance: Instance, pCreateInfo: *const XlibSurfaceCreateInfoKHR, pAllocator: *const AllocationCallbacks, pSurface: *mut SurfaceKHR) -> Result;
+pub type PFN_vkGetPhysicalDeviceXlibPresentationSupportKHR = extern "system" fn (physicalDevice: PhysicalDevice, queueFamilyIndex: u32, dpy: *mut Display, visualID: VisualID) -> Bool32;
+pub type PFN_vkCreateXcbSurfaceKHR = extern "system" fn (instance: Instance, pCreateInfo: *const XcbSurfaceCreateInfoKHR, pAllocator: *const AllocationCallbacks, pSurface: *mut SurfaceKHR) -> Result;
+pub type PFN_vkGetPhysicalDeviceXcbPresentationSupportKHR = extern "system" fn (physicalDevice: PhysicalDevice, queueFamilyIndex: u32, connection: *mut xcb_connection_t, visual_id: xcb_visualid_t) -> Bool32;
+pub type PFN_vkCreateWaylandSurfaceKHR = extern "system" fn (instance: Instance, pCreateInfo: *const WaylandSurfaceCreateInfoKHR, pAllocator: *const AllocationCallbacks, pSurface: *mut SurfaceKHR) -> Result;
+pub type PFN_vkGetPhysicalDeviceWaylandPresentationSupportKHR = extern "system" fn (physicalDevice: PhysicalDevice, queueFamilyIndex: u32, display: *mut wl_display) -> Bool32;
+pub type PFN_vkCreateAndroidSurfaceKHR = extern "system" fn (instance: Instance, pCreateInfo: *const AndroidSurfaceCreateInfoKHR, pAllocator: *const AllocationCallbacks, pSurface: *mut SurfaceKHR) -> Result;
+pub type PFN_vkCreateWin32SurfaceKHR = extern "system" fn (instance: Instance, pCreateInfo: *const Win32SurfaceCreateInfoKHR, pAllocator: *const AllocationCallbacks, pSurface: *mut SurfaceKHR) -> Result;
+pub type PFN_vkGetPhysicalDeviceWin32PresentationSupportKHR = extern "system" fn (physicalDevice: PhysicalDevice, queueFamilyIndex: u32) -> Bool32;
+pub type PFN_vkCreateDebugReportCallbackEXT = extern "system" fn (instance: Instance, pCreateInfo: *const DebugReportCallbackCreateInfoEXT, pAllocator: *const AllocationCallbacks, pCallback: *mut DebugReportCallbackEXT) -> Result;
+pub type PFN_vkDestroyDebugReportCallbackEXT = extern "system" fn (instance: Instance, callback: DebugReportCallbackEXT, pAllocator: *const AllocationCallbacks);
+pub type PFN_vkDebugReportMessageEXT = extern "system" fn (instance: Instance, flags: DebugReportFlagsEXT, objectType: DebugReportObjectTypeEXT, object: u64, location: usize, messageCode: i32, pLayerPrefix: *const c_char, pMessage: *const c_char);
+pub type PFN_vkGetPhysicalDeviceExternalImageFormatPropertiesNV = extern "system" fn (physicalDevice: PhysicalDevice, format: Format, typ: ImageType, tiling: ImageTiling, usage: ImageUsageFlags, flags: ImageCreateFlags, externalHandleType: ExternalMemoryHandleTypeFlagsNV, pExternalImageFormatProperties: *mut ExternalImageFormatPropertiesNV) -> Result;
+pub type PFN_vkCreateViSurfaceNN = extern "system" fn (instance: Instance, pCreateInfo: *const ViSurfaceCreateInfoNN, pAllocator: *const AllocationCallbacks, pSurface: *mut SurfaceKHR) -> Result;
+pub type PFN_vkReleaseDisplayEXT = extern "system" fn (physicalDevice: PhysicalDevice, display: DisplayKHR) -> Result;
+pub type PFN_vkAcquireXlibDisplayEXT = extern "system" fn (physicalDevice: PhysicalDevice, dpy: *mut Display, display: DisplayKHR) -> Result;
+pub type PFN_vkGetRandROutputDisplayEXT = extern "system" fn (physicalDevice: PhysicalDevice, dpy: *mut Display, rrOutput: RROutput, pDisplay: *mut DisplayKHR) -> Result;
+pub type PFN_vkGetPhysicalDeviceSurfaceCapabilities2EXT = extern "system" fn (physicalDevice: PhysicalDevice, surface: SurfaceKHR, pSurfaceCapabilities: *mut SurfaceCapabilities2EXT) -> Result;
+pub type PFN_vkGetPhysicalDeviceSurfaceCapabilities2KHR = extern "system" fn (physicalDevice: PhysicalDevice, pSurfaceInfo: *const PhysicalDeviceSurfaceInfo2KHR, pSurfaceCapabilities: *mut SurfaceCapabilities2KHR) -> Result;
+pub type PFN_vkGetPhysicalDeviceSurfaceFormats2KHR = extern "system" fn (physicalDevice: PhysicalDevice, pSurfaceInfo: *const PhysicalDeviceSurfaceInfo2KHR, pSurfaceFormatCount: *mut u32, pSurfaceFormats: *mut SurfaceFormat2KHR) -> Result;
+pub type PFN_vkGetPhysicalDeviceDisplayProperties2KHR = extern "system" fn (physicalDevice: PhysicalDevice, pPropertyCount: *mut u32, pProperties: *mut DisplayProperties2KHR) -> Result;
+pub type PFN_vkGetPhysicalDeviceDisplayPlaneProperties2KHR = extern "system" fn (physicalDevice: PhysicalDevice, pPropertyCount: *mut u32, pProperties: *mut DisplayPlaneProperties2KHR) -> Result;
+pub type PFN_vkGetDisplayModeProperties2KHR = extern "system" fn (physicalDevice: PhysicalDevice, display: DisplayKHR, pPropertyCount: *mut u32, pProperties: *mut DisplayModeProperties2KHR) -> Result;
+pub type PFN_vkGetDisplayPlaneCapabilities2KHR = extern "system" fn (physicalDevice: PhysicalDevice, pDisplayPlaneInfo: *const DisplayPlaneInfo2KHR, pCapabilities: *mut DisplayPlaneCapabilities2KHR) -> Result;
+pub type PFN_vkCreateIOSSurfaceMVK = extern "system" fn (instance: Instance, pCreateInfo: *const IOSSurfaceCreateInfoMVK, pAllocator: *const AllocationCallbacks, pSurface: *mut SurfaceKHR) -> Result;
+pub type PFN_vkCreateMacOSSurfaceMVK = extern "system" fn (instance: Instance, pCreateInfo: *const MacOSSurfaceCreateInfoMVK, pAllocator: *const AllocationCallbacks, pSurface: *mut SurfaceKHR) -> Result;
+pub type PFN_vkSetDebugUtilsObjectNameEXT = extern "system" fn (device: Device, pNameInfo: *const DebugUtilsObjectNameInfoEXT) -> Result;
+pub type PFN_vkSetDebugUtilsObjectTagEXT = extern "system" fn (device: Device, pTagInfo: *const DebugUtilsObjectTagInfoEXT) -> Result;
+pub type PFN_vkQueueBeginDebugUtilsLabelEXT = extern "system" fn (queue: Queue, pLabelInfo: *const DebugUtilsLabelEXT);
+pub type PFN_vkQueueEndDebugUtilsLabelEXT = extern "system" fn (queue: Queue);
+pub type PFN_vkQueueInsertDebugUtilsLabelEXT = extern "system" fn (queue: Queue, pLabelInfo: *const DebugUtilsLabelEXT);
+pub type PFN_vkCmdBeginDebugUtilsLabelEXT = extern "system" fn (commandBuffer: CommandBuffer, pLabelInfo: *const DebugUtilsLabelEXT);
+pub type PFN_vkCmdEndDebugUtilsLabelEXT = extern "system" fn (commandBuffer: CommandBuffer);
+pub type PFN_vkCmdInsertDebugUtilsLabelEXT = extern "system" fn (commandBuffer: CommandBuffer, pLabelInfo: *const DebugUtilsLabelEXT);
+pub type PFN_vkCreateDebugUtilsMessengerEXT = extern "system" fn (instance: Instance, pCreateInfo: *const DebugUtilsMessengerCreateInfoEXT, pAllocator: *const AllocationCallbacks, pMessenger: *mut DebugUtilsMessengerEXT) -> Result;
+pub type PFN_vkDestroyDebugUtilsMessengerEXT = extern "system" fn (instance: Instance, messenger: DebugUtilsMessengerEXT, pAllocator: *const AllocationCallbacks);
+pub type PFN_vkSubmitDebugUtilsMessageEXT = extern "system" fn (instance: Instance, messageSeverity: DebugUtilsMessageSeverityFlagBitsEXT, messageTypes: DebugUtilsMessageTypeFlagsEXT, pCallbackData: *const DebugUtilsMessengerCallbackDataEXT);
+pub type PFN_vkCreateImagePipeSurfaceFUCHSIA = extern "system" fn (instance: Instance, pCreateInfo: *const ImagePipeSurfaceCreateInfoFUCHSIA, pAllocator: *const AllocationCallbacks, pSurface: *mut SurfaceKHR) -> Result;
+pub type PFN_vkCreateSwapchainKHR = extern "system" fn (device: Device, pCreateInfo: *const SwapchainCreateInfoKHR, pAllocator: *const AllocationCallbacks, pSwapchain: *mut SwapchainKHR) -> Result;
+pub type PFN_vkDestroySwapchainKHR = extern "system" fn (device: Device, swapchain: SwapchainKHR, pAllocator: *const AllocationCallbacks);
+pub type PFN_vkGetSwapchainImagesKHR = extern "system" fn (device: Device, swapchain: SwapchainKHR, pSwapchainImageCount: *mut u32, pSwapchainImages: *mut Image) -> Result;
+pub type PFN_vkAcquireNextImageKHR = extern "system" fn (device: Device, swapchain: SwapchainKHR, timeout: u64, semaphore: Semaphore, fence: Fence, pImageIndex: *mut u32) -> Result;
+pub type PFN_vkQueuePresentKHR = extern "system" fn (queue: Queue, pPresentInfo: *const PresentInfoKHR) -> Result;
+pub type PFN_vkGetDeviceGroupPresentCapabilitiesKHR = extern "system" fn (device: Device, pDeviceGroupPresentCapabilities: *mut DeviceGroupPresentCapabilitiesKHR) -> Result;
+pub type PFN_vkGetDeviceGroupSurfacePresentModesKHR = extern "system" fn (device: Device, surface: SurfaceKHR, pModes: *mut DeviceGroupPresentModeFlagsKHR) -> Result;
+pub type PFN_vkGetPhysicalDevicePresentRectanglesKHR = extern "system" fn (physicalDevice: PhysicalDevice, surface: SurfaceKHR, pRectCount: *mut u32, pRects: *mut Rect2D) -> Result;
+pub type PFN_vkAcquireNextImage2KHR = extern "system" fn (device: Device, pAcquireInfo: *const AcquireNextImageInfoKHR, pImageIndex: *mut u32) -> Result;
+pub type PFN_vkCreateSharedSwapchainsKHR = extern "system" fn (device: Device, swapchainCount: u32, pCreateInfos: *const SwapchainCreateInfoKHR, pAllocator: *const AllocationCallbacks, pSwapchains: *mut SwapchainKHR) -> Result;
+pub type PFN_vkDebugMarkerSetObjectTagEXT = extern "system" fn (device: Device, pTagInfo: *const DebugMarkerObjectTagInfoEXT) -> Result;
+pub type PFN_vkDebugMarkerSetObjectNameEXT = extern "system" fn (device: Device, pNameInfo: *const DebugMarkerObjectNameInfoEXT) -> Result;
+pub type PFN_vkCmdDebugMarkerBeginEXT = extern "system" fn (commandBuffer: CommandBuffer, pMarkerInfo: *const DebugMarkerMarkerInfoEXT);
+pub type PFN_vkCmdDebugMarkerEndEXT = extern "system" fn (commandBuffer: CommandBuffer);
+pub type PFN_vkCmdDebugMarkerInsertEXT = extern "system" fn (commandBuffer: CommandBuffer, pMarkerInfo: *const DebugMarkerMarkerInfoEXT);
+pub type PFN_vkCmdBindTransformFeedbackBuffersEXT = extern "system" fn (commandBuffer: CommandBuffer, firstBinding: u32, bindingCount: u32, pBuffers: *const Buffer, pOffsets: *const DeviceSize, pSizes: *const DeviceSize);
+pub type PFN_vkCmdBeginTransformFeedbackEXT = extern "system" fn (commandBuffer: CommandBuffer, firstCounterBuffer: u32, counterBufferCount: u32, pCounterBuffers: *const Buffer, pCounterBufferOffsets: *const DeviceSize);
+pub type PFN_vkCmdEndTransformFeedbackEXT = extern "system" fn (commandBuffer: CommandBuffer, firstCounterBuffer: u32, counterBufferCount: u32, pCounterBuffers: *const Buffer, pCounterBufferOffsets: *const DeviceSize);
+pub type PFN_vkCmdBeginQueryIndexedEXT = extern "system" fn (commandBuffer: CommandBuffer, queryPool: QueryPool, query: u32, flags: QueryControlFlags, index: u32);
+pub type PFN_vkCmdEndQueryIndexedEXT = extern "system" fn (commandBuffer: CommandBuffer, queryPool: QueryPool, query: u32, index: u32);
+pub type PFN_vkCmdDrawIndirectByteCountEXT = extern "system" fn (commandBuffer: CommandBuffer, instanceCount: u32, firstInstance: u32, counterBuffer: Buffer, counterBufferOffset: DeviceSize, counterOffset: u32, vertexStride: u32);
+pub type PFN_vkCmdDrawIndirectCountAMD = extern "system" fn (commandBuffer: CommandBuffer, buffer: Buffer, offset: DeviceSize, countBuffer: Buffer, countBufferOffset: DeviceSize, maxDrawCount: u32, stride: u32);
+pub type PFN_vkCmdDrawIndexedIndirectCountAMD = extern "system" fn (commandBuffer: CommandBuffer, buffer: Buffer, offset: DeviceSize, countBuffer: Buffer, countBufferOffset: DeviceSize, maxDrawCount: u32, stride: u32);
+pub type PFN_vkGetShaderInfoAMD = extern "system" fn (device: Device, pipeline: Pipeline, shaderStage: ShaderStageFlagBits, infoType: ShaderInfoTypeAMD, pInfoSize: *mut usize, pInfo: *mut c_void) -> Result;
+pub type PFN_vkGetMemoryWin32HandleNV = extern "system" fn (device: Device, memory: DeviceMemory, handleType: ExternalMemoryHandleTypeFlagsNV, pHandle: *mut HANDLE) -> Result;
+pub type PFN_vkGetMemoryWin32HandleKHR = extern "system" fn (device: Device, pGetWin32HandleInfo: *const MemoryGetWin32HandleInfoKHR, pHandle: *mut HANDLE) -> Result;
+pub type PFN_vkGetMemoryWin32HandlePropertiesKHR = extern "system" fn (device: Device, handleType: ExternalMemoryHandleTypeFlagBits, handle: HANDLE, pMemoryWin32HandleProperties: *mut MemoryWin32HandlePropertiesKHR) -> Result;
+pub type PFN_vkGetMemoryFdKHR = extern "system" fn (device: Device, pGetFdInfo: *const MemoryGetFdInfoKHR, pFd: *mut i32) -> Result;
+pub type PFN_vkGetMemoryFdPropertiesKHR = extern "system" fn (device: Device, handleType: ExternalMemoryHandleTypeFlagBits, fd: i32, pMemoryFdProperties: *mut MemoryFdPropertiesKHR) -> Result;
+pub type PFN_vkImportSemaphoreWin32HandleKHR = extern "system" fn (device: Device, pImportSemaphoreWin32HandleInfo: *const ImportSemaphoreWin32HandleInfoKHR) -> Result;
+pub type PFN_vkGetSemaphoreWin32HandleKHR = extern "system" fn (device: Device, pGetWin32HandleInfo: *const SemaphoreGetWin32HandleInfoKHR, pHandle: *mut HANDLE) -> Result;
+pub type PFN_vkImportSemaphoreFdKHR = extern "system" fn (device: Device, pImportSemaphoreFdInfo: *const ImportSemaphoreFdInfoKHR) -> Result;
+pub type PFN_vkGetSemaphoreFdKHR = extern "system" fn (device: Device, pGetFdInfo: *const SemaphoreGetFdInfoKHR, pFd: *mut i32) -> Result;
+pub type PFN_vkCmdPushDescriptorSetKHR = extern "system" fn (commandBuffer: CommandBuffer, pipelineBindPoint: PipelineBindPoint, layout: PipelineLayout, set: u32, descriptorWriteCount: u32, pDescriptorWrites: *const WriteDescriptorSet);
+pub type PFN_vkCmdPushDescriptorSetWithTemplateKHR = extern "system" fn (commandBuffer: CommandBuffer, descriptorUpdateTemplate: DescriptorUpdateTemplate, layout: PipelineLayout, set: u32, pData: *const c_void);
+pub type PFN_vkCmdBeginConditionalRenderingEXT = extern "system" fn (commandBuffer: CommandBuffer, pConditionalRenderingBegin: *const ConditionalRenderingBeginInfoEXT);
+pub type PFN_vkCmdEndConditionalRenderingEXT = extern "system" fn (commandBuffer: CommandBuffer);
+pub type PFN_vkCmdProcessCommandsNVX = extern "system" fn (commandBuffer: CommandBuffer, pProcessCommandsInfo: *const CmdProcessCommandsInfoNVX);
+pub type PFN_vkCmdReserveSpaceForCommandsNVX = extern "system" fn (commandBuffer: CommandBuffer, pReserveSpaceInfo: *const CmdReserveSpaceForCommandsInfoNVX);
+pub type PFN_vkCreateIndirectCommandsLayoutNVX = extern "system" fn (device: Device, pCreateInfo: *const IndirectCommandsLayoutCreateInfoNVX, pAllocator: *const AllocationCallbacks, pIndirectCommandsLayout: *mut IndirectCommandsLayoutNVX) -> Result;
+pub type PFN_vkDestroyIndirectCommandsLayoutNVX = extern "system" fn (device: Device, indirectCommandsLayout: IndirectCommandsLayoutNVX, pAllocator: *const AllocationCallbacks);
+pub type PFN_vkCreateObjectTableNVX = extern "system" fn (device: Device, pCreateInfo: *const ObjectTableCreateInfoNVX, pAllocator: *const AllocationCallbacks, pObjectTable: *mut ObjectTableNVX) -> Result;
+pub type PFN_vkDestroyObjectTableNVX = extern "system" fn (device: Device, objectTable: ObjectTableNVX, pAllocator: *const AllocationCallbacks);
+pub type PFN_vkRegisterObjectsNVX = extern "system" fn (device: Device, objectTable: ObjectTableNVX, objectCount: u32, ppObjectTableEntries: *const *const ObjectTableEntryNVX, pObjectIndices: *const u32) -> Result;
+pub type PFN_vkUnregisterObjectsNVX = extern "system" fn (device: Device, objectTable: ObjectTableNVX, objectCount: u32, pObjectEntryTypes: *const ObjectEntryTypeNVX, pObjectIndices: *const u32) -> Result;
+pub type PFN_vkGetPhysicalDeviceGeneratedCommandsPropertiesNVX = extern "system" fn (physicalDevice: PhysicalDevice, pFeatures: *mut DeviceGeneratedCommandsFeaturesNVX, pLimits: *mut DeviceGeneratedCommandsLimitsNVX);
+pub type PFN_vkCmdSetViewportWScalingNV = extern "system" fn (commandBuffer: CommandBuffer, firstViewport: u32, viewportCount: u32, pViewportWScalings: *const ViewportWScalingNV);
+pub type PFN_vkDisplayPowerControlEXT = extern "system" fn (device: Device, display: DisplayKHR, pDisplayPowerInfo: *const DisplayPowerInfoEXT) -> Result;
+pub type PFN_vkRegisterDeviceEventEXT = extern "system" fn (device: Device, pDeviceEventInfo: *const DeviceEventInfoEXT, pAllocator: *const AllocationCallbacks, pFence: *mut Fence) -> Result;
+pub type PFN_vkRegisterDisplayEventEXT = extern "system" fn (device: Device, display: DisplayKHR, pDisplayEventInfo: *const DisplayEventInfoEXT, pAllocator: *const AllocationCallbacks, pFence: *mut Fence) -> Result;
+pub type PFN_vkGetSwapchainCounterEXT = extern "system" fn (device: Device, swapchain: SwapchainKHR, counter: SurfaceCounterFlagBitsEXT, pCounterValue: *mut u64) -> Result;
+pub type PFN_vkGetRefreshCycleDurationGOOGLE = extern "system" fn (device: Device, swapchain: SwapchainKHR, pDisplayTimingProperties: *mut RefreshCycleDurationGOOGLE) -> Result;
+pub type PFN_vkGetPastPresentationTimingGOOGLE = extern "system" fn (device: Device, swapchain: SwapchainKHR, pPresentationTimingCount: *mut u32, pPresentationTimings: *mut PastPresentationTimingGOOGLE) -> Result;
+pub type PFN_vkCmdSetDiscardRectangleEXT = extern "system" fn (commandBuffer: CommandBuffer, firstDiscardRectangle: u32, discardRectangleCount: u32, pDiscardRectangles: *const Rect2D);
+pub type PFN_vkSetHdrMetadataEXT = extern "system" fn (device: Device, swapchainCount: u32, pSwapchains: *const SwapchainKHR, pMetadata: *const HdrMetadataEXT);
+pub type PFN_vkCreateRenderPass2KHR = extern "system" fn (device: Device, pCreateInfo: *const RenderPassCreateInfo2KHR, pAllocator: *const AllocationCallbacks, pRenderPass: *mut RenderPass) -> Result;
+pub type PFN_vkCmdBeginRenderPass2KHR = extern "system" fn (commandBuffer: CommandBuffer, pRenderPassBegin: *const RenderPassBeginInfo, pSubpassBeginInfo: *const SubpassBeginInfoKHR);
+pub type PFN_vkCmdNextSubpass2KHR = extern "system" fn (commandBuffer: CommandBuffer, pSubpassBeginInfo: *const SubpassBeginInfoKHR, pSubpassEndInfo: *const SubpassEndInfoKHR);
+pub type PFN_vkCmdEndRenderPass2KHR = extern "system" fn (commandBuffer: CommandBuffer, pSubpassEndInfo: *const SubpassEndInfoKHR);
+pub type PFN_vkGetSwapchainStatusKHR = extern "system" fn (device: Device, swapchain: SwapchainKHR) -> Result;
+pub type PFN_vkImportFenceWin32HandleKHR = extern "system" fn (device: Device, pImportFenceWin32HandleInfo: *const ImportFenceWin32HandleInfoKHR) -> Result;
+pub type PFN_vkGetFenceWin32HandleKHR = extern "system" fn (device: Device, pGetWin32HandleInfo: *const FenceGetWin32HandleInfoKHR, pHandle: *mut HANDLE) -> Result;
+pub type PFN_vkImportFenceFdKHR = extern "system" fn (device: Device, pImportFenceFdInfo: *const ImportFenceFdInfoKHR) -> Result;
+pub type PFN_vkGetFenceFdKHR = extern "system" fn (device: Device, pGetFdInfo: *const FenceGetFdInfoKHR, pFd: *mut i32) -> Result;
+pub type PFN_vkGetAndroidHardwareBufferPropertiesANDROID = extern "system" fn (device: Device, buffer: *const AHardwareBuffer, pProperties: *mut AndroidHardwareBufferPropertiesANDROID) -> Result;
+pub type PFN_vkGetMemoryAndroidHardwareBufferANDROID = extern "system" fn (device: Device, pInfo: *const MemoryGetAndroidHardwareBufferInfoANDROID, pBuffer: *mut *mut AHardwareBuffer) -> Result;
+pub type PFN_vkCmdSetSampleLocationsEXT = extern "system" fn (commandBuffer: CommandBuffer, pSampleLocationsInfo: *const SampleLocationsInfoEXT);
+pub type PFN_vkGetPhysicalDeviceMultisamplePropertiesEXT = extern "system" fn (physicalDevice: PhysicalDevice, samples: SampleCountFlagBits, pMultisampleProperties: *mut MultisamplePropertiesEXT);
+pub type PFN_vkGetImageDrmFormatModifierPropertiesEXT = extern "system" fn (device: Device, image: Image, pProperties: *mut ImageDrmFormatModifierPropertiesEXT) -> Result;
+pub type PFN_vkCreateValidationCacheEXT = extern "system" fn (device: Device, pCreateInfo: *const ValidationCacheCreateInfoEXT, pAllocator: *const AllocationCallbacks, pValidationCache: *mut ValidationCacheEXT) -> Result;
+pub type PFN_vkDestroyValidationCacheEXT = extern "system" fn (device: Device, validationCache: ValidationCacheEXT, pAllocator: *const AllocationCallbacks);
+pub type PFN_vkMergeValidationCachesEXT = extern "system" fn (device: Device, dstCache: ValidationCacheEXT, srcCacheCount: u32, pSrcCaches: *const ValidationCacheEXT) -> Result;
+pub type PFN_vkGetValidationCacheDataEXT = extern "system" fn (device: Device, validationCache: ValidationCacheEXT, pDataSize: *mut usize, pData: *mut c_void) -> Result;
+pub type PFN_vkCmdBindShadingRateImageNV = extern "system" fn (commandBuffer: CommandBuffer, imageView: ImageView, imageLayout: ImageLayout);
+pub type PFN_vkCmdSetViewportShadingRatePaletteNV = extern "system" fn (commandBuffer: CommandBuffer, firstViewport: u32, viewportCount: u32, pShadingRatePalettes: *const ShadingRatePaletteNV);
+pub type PFN_vkCmdSetCoarseSampleOrderNV = extern "system" fn (commandBuffer: CommandBuffer, sampleOrderType: CoarseSampleOrderTypeNV, customSampleOrderCount: u32, pCustomSampleOrders: *const CoarseSampleOrderCustomNV);
+pub type PFN_vkCreateAccelerationStructureNV = extern "system" fn (device: Device, pCreateInfo: *const AccelerationStructureCreateInfoNV, pAllocator: *const AllocationCallbacks, pAccelerationStructure: *mut AccelerationStructureNV) -> Result;
+pub type PFN_vkDestroyAccelerationStructureNV = extern "system" fn (device: Device, accelerationStructure: AccelerationStructureNV, pAllocator: *const AllocationCallbacks);
+pub type PFN_vkGetAccelerationStructureMemoryRequirementsNV = extern "system" fn (device: Device, pInfo: *const AccelerationStructureMemoryRequirementsInfoNV, pMemoryRequirements: *mut MemoryRequirements2);
+pub type PFN_vkBindAccelerationStructureMemoryNV = extern "system" fn (device: Device, bindInfoCount: u32, pBindInfos: *const BindAccelerationStructureMemoryInfoNV) -> Result;
+pub type PFN_vkCmdBuildAccelerationStructureNV = extern "system" fn (commandBuffer: CommandBuffer, pInfo: *const AccelerationStructureInfoNV, instanceData: Buffer, instanceOffset: DeviceSize, update: Bool32, dst: AccelerationStructureNV, src: AccelerationStructureNV, scratch: Buffer, scratchOffset: DeviceSize);
+pub type PFN_vkCmdCopyAccelerationStructureNV = extern "system" fn (commandBuffer: CommandBuffer, dst: AccelerationStructureNV, src: AccelerationStructureNV, mode: CopyAccelerationStructureModeNV);
+pub type PFN_vkCmdTraceRaysNV = extern "system" fn (commandBuffer: CommandBuffer, raygenShaderBindingTableBuffer: Buffer, raygenShaderBindingOffset: DeviceSize, missShaderBindingTableBuffer: Buffer, missShaderBindingOffset: DeviceSize, missShaderBindingStride: DeviceSize, hitShaderBindingTableBuffer: Buffer, hitShaderBindingOffset: DeviceSize, hitShaderBindingStride: DeviceSize, callableShaderBindingTableBuffer: Buffer, callableShaderBindingOffset: DeviceSize, callableShaderBindingStride: DeviceSize, width: u32, height: u32, depth: u32);
+pub type PFN_vkCreateRayTracingPipelinesNV = extern "system" fn (device: Device, pipelineCache: PipelineCache, createInfoCount: u32, pCreateInfos: *const RayTracingPipelineCreateInfoNV, pAllocator: *const AllocationCallbacks, pPipelines: *mut Pipeline) -> Result;
+pub type PFN_vkGetRayTracingShaderGroupHandlesNV = extern "system" fn (device: Device, pipeline: Pipeline, firstGroup: u32, groupCount: u32, dataSize: usize, pData: *mut c_void) -> Result;
+pub type PFN_vkGetAccelerationStructureHandleNV = extern "system" fn (device: Device, accelerationStructure: AccelerationStructureNV, dataSize: usize, pData: *mut c_void) -> Result;
+pub type PFN_vkCmdWriteAccelerationStructuresPropertiesNV = extern "system" fn (commandBuffer: CommandBuffer, accelerationStructureCount: u32, pAccelerationStructures: *const AccelerationStructureNV, queryType: QueryType, queryPool: QueryPool, firstQuery: u32);
+pub type PFN_vkCompileDeferredNV = extern "system" fn (device: Device, pipeline: Pipeline, shader: u32) -> Result;
+pub type PFN_vkCmdDrawIndirectCountKHR = extern "system" fn (commandBuffer: CommandBuffer, buffer: Buffer, offset: DeviceSize, countBuffer: Buffer, countBufferOffset: DeviceSize, maxDrawCount: u32, stride: u32);
+pub type PFN_vkCmdDrawIndexedIndirectCountKHR = extern "system" fn (commandBuffer: CommandBuffer, buffer: Buffer, offset: DeviceSize, countBuffer: Buffer, countBufferOffset: DeviceSize, maxDrawCount: u32, stride: u32);
+pub type PFN_vkGetMemoryHostPointerPropertiesEXT = extern "system" fn (device: Device, handleType: ExternalMemoryHandleTypeFlagBits, pHostPointer: *const c_void, pMemoryHostPointerProperties: *mut MemoryHostPointerPropertiesEXT) -> Result;
+pub type PFN_vkCmdWriteBufferMarkerAMD = extern "system" fn (commandBuffer: CommandBuffer, pipelineStage: PipelineStageFlagBits, dstBuffer: Buffer, dstOffset: DeviceSize, marker: u32);
+pub type PFN_vkGetPhysicalDeviceCalibrateableTimeDomainsEXT = extern "system" fn (physicalDevice: PhysicalDevice, pTimeDomainCount: *mut u32, pTimeDomains: *mut TimeDomainEXT) -> Result;
+pub type PFN_vkGetCalibratedTimestampsEXT = extern "system" fn (device: Device, timestampCount: u32, pTimestampInfos: *const CalibratedTimestampInfoEXT, pTimestamps: *mut u64, pMaxDeviation: *mut u64) -> Result;
+pub type PFN_vkCmdDrawMeshTasksNV = extern "system" fn (commandBuffer: CommandBuffer, taskCount: u32, firstTask: u32);
+pub type PFN_vkCmdDrawMeshTasksIndirectNV = extern "system" fn (commandBuffer: CommandBuffer, buffer: Buffer, offset: DeviceSize, drawCount: u32, stride: u32);
+pub type PFN_vkCmdDrawMeshTasksIndirectCountNV = extern "system" fn (commandBuffer: CommandBuffer, buffer: Buffer, offset: DeviceSize, countBuffer: Buffer, countBufferOffset: DeviceSize, maxDrawCount: u32, stride: u32);
+pub type PFN_vkCmdSetExclusiveScissorNV = extern "system" fn (commandBuffer: CommandBuffer, firstExclusiveScissor: u32, exclusiveScissorCount: u32, pExclusiveScissors: *const Rect2D);
+pub type PFN_vkCmdSetCheckpointNV = extern "system" fn (commandBuffer: CommandBuffer, pCheckpointMarker: *const c_void);
+pub type PFN_vkGetQueueCheckpointDataNV = extern "system" fn (queue: Queue, pCheckpointDataCount: *mut u32, pCheckpointData: *mut CheckpointDataNV);
+
+
+/// Vulkan commands
 ///
-/// This struct is used to initialize vulkan core commands and holds function pointers to them.
+/// This struct is used to initialize vulkan commands and holds function pointers to them.
 /// Function pointers are initialized during construction.
 ///
-/// After successfull instantiation the global core functions are ready to use.
-/// There must be always at maximum a single instance of this struct.
-pub struct Core {
+/// After successfull instantiation the global vulkan functions are ready to use.
+/// There must always be only a single instance maximum of this struct.
+pub struct VkLib {
   #[allow(dead_code)]
   lib: shared_library::dynamic_library::DynamicLibrary,
   feature: u32,
@@ -6663,6 +6982,156 @@ pub struct Core {
   GetPhysicalDeviceExternalFenceProperties_ptr: extern "system" fn (physicalDevice: PhysicalDevice, pExternalFenceInfo: *const PhysicalDeviceExternalFenceInfo, pExternalFenceProperties: *mut ExternalFenceProperties),
   GetPhysicalDeviceExternalSemaphoreProperties_ptr: extern "system" fn (physicalDevice: PhysicalDevice, pExternalSemaphoreInfo: *const PhysicalDeviceExternalSemaphoreInfo, pExternalSemaphoreProperties: *mut ExternalSemaphoreProperties),
   GetDescriptorSetLayoutSupport_ptr: extern "system" fn (device: Device, pCreateInfo: *const DescriptorSetLayoutCreateInfo, pSupport: *mut DescriptorSetLayoutSupport),
+  DestroySurfaceKHR_ptr: extern "system" fn (instance: Instance, surface: SurfaceKHR, pAllocator: *const AllocationCallbacks),
+  GetPhysicalDeviceSurfaceSupportKHR_ptr: extern "system" fn (physicalDevice: PhysicalDevice, queueFamilyIndex: u32, surface: SurfaceKHR, pSupported: *mut Bool32) -> Result,
+  GetPhysicalDeviceSurfaceCapabilitiesKHR_ptr: extern "system" fn (physicalDevice: PhysicalDevice, surface: SurfaceKHR, pSurfaceCapabilities: *mut SurfaceCapabilitiesKHR) -> Result,
+  GetPhysicalDeviceSurfaceFormatsKHR_ptr: extern "system" fn (physicalDevice: PhysicalDevice, surface: SurfaceKHR, pSurfaceFormatCount: *mut u32, pSurfaceFormats: *mut SurfaceFormatKHR) -> Result,
+  GetPhysicalDeviceSurfacePresentModesKHR_ptr: extern "system" fn (physicalDevice: PhysicalDevice, surface: SurfaceKHR, pPresentModeCount: *mut u32, pPresentModes: *mut PresentModeKHR) -> Result,
+  GetPhysicalDeviceDisplayPropertiesKHR_ptr: extern "system" fn (physicalDevice: PhysicalDevice, pPropertyCount: *mut u32, pProperties: *mut DisplayPropertiesKHR) -> Result,
+  GetPhysicalDeviceDisplayPlanePropertiesKHR_ptr: extern "system" fn (physicalDevice: PhysicalDevice, pPropertyCount: *mut u32, pProperties: *mut DisplayPlanePropertiesKHR) -> Result,
+  GetDisplayPlaneSupportedDisplaysKHR_ptr: extern "system" fn (physicalDevice: PhysicalDevice, planeIndex: u32, pDisplayCount: *mut u32, pDisplays: *mut DisplayKHR) -> Result,
+  GetDisplayModePropertiesKHR_ptr: extern "system" fn (physicalDevice: PhysicalDevice, display: DisplayKHR, pPropertyCount: *mut u32, pProperties: *mut DisplayModePropertiesKHR) -> Result,
+  CreateDisplayModeKHR_ptr: extern "system" fn (physicalDevice: PhysicalDevice, display: DisplayKHR, pCreateInfo: *const DisplayModeCreateInfoKHR, pAllocator: *const AllocationCallbacks, pMode: *mut DisplayModeKHR) -> Result,
+  GetDisplayPlaneCapabilitiesKHR_ptr: extern "system" fn (physicalDevice: PhysicalDevice, mode: DisplayModeKHR, planeIndex: u32, pCapabilities: *mut DisplayPlaneCapabilitiesKHR) -> Result,
+  CreateDisplayPlaneSurfaceKHR_ptr: extern "system" fn (instance: Instance, pCreateInfo: *const DisplaySurfaceCreateInfoKHR, pAllocator: *const AllocationCallbacks, pSurface: *mut SurfaceKHR) -> Result,
+  CreateXlibSurfaceKHR_ptr: extern "system" fn (instance: Instance, pCreateInfo: *const XlibSurfaceCreateInfoKHR, pAllocator: *const AllocationCallbacks, pSurface: *mut SurfaceKHR) -> Result,
+  GetPhysicalDeviceXlibPresentationSupportKHR_ptr: extern "system" fn (physicalDevice: PhysicalDevice, queueFamilyIndex: u32, dpy: *mut Display, visualID: VisualID) -> Bool32,
+  CreateXcbSurfaceKHR_ptr: extern "system" fn (instance: Instance, pCreateInfo: *const XcbSurfaceCreateInfoKHR, pAllocator: *const AllocationCallbacks, pSurface: *mut SurfaceKHR) -> Result,
+  GetPhysicalDeviceXcbPresentationSupportKHR_ptr: extern "system" fn (physicalDevice: PhysicalDevice, queueFamilyIndex: u32, connection: *mut xcb_connection_t, visual_id: xcb_visualid_t) -> Bool32,
+  CreateWaylandSurfaceKHR_ptr: extern "system" fn (instance: Instance, pCreateInfo: *const WaylandSurfaceCreateInfoKHR, pAllocator: *const AllocationCallbacks, pSurface: *mut SurfaceKHR) -> Result,
+  GetPhysicalDeviceWaylandPresentationSupportKHR_ptr: extern "system" fn (physicalDevice: PhysicalDevice, queueFamilyIndex: u32, display: *mut wl_display) -> Bool32,
+  CreateAndroidSurfaceKHR_ptr: extern "system" fn (instance: Instance, pCreateInfo: *const AndroidSurfaceCreateInfoKHR, pAllocator: *const AllocationCallbacks, pSurface: *mut SurfaceKHR) -> Result,
+  CreateWin32SurfaceKHR_ptr: extern "system" fn (instance: Instance, pCreateInfo: *const Win32SurfaceCreateInfoKHR, pAllocator: *const AllocationCallbacks, pSurface: *mut SurfaceKHR) -> Result,
+  GetPhysicalDeviceWin32PresentationSupportKHR_ptr: extern "system" fn (physicalDevice: PhysicalDevice, queueFamilyIndex: u32) -> Bool32,
+  CreateDebugReportCallbackEXT_ptr: extern "system" fn (instance: Instance, pCreateInfo: *const DebugReportCallbackCreateInfoEXT, pAllocator: *const AllocationCallbacks, pCallback: *mut DebugReportCallbackEXT) -> Result,
+  DestroyDebugReportCallbackEXT_ptr: extern "system" fn (instance: Instance, callback: DebugReportCallbackEXT, pAllocator: *const AllocationCallbacks),
+  DebugReportMessageEXT_ptr: extern "system" fn (instance: Instance, flags: DebugReportFlagsEXT, objectType: DebugReportObjectTypeEXT, object: u64, location: usize, messageCode: i32, pLayerPrefix: *const c_char, pMessage: *const c_char),
+  GetPhysicalDeviceExternalImageFormatPropertiesNV_ptr: extern "system" fn (physicalDevice: PhysicalDevice, format: Format, typ: ImageType, tiling: ImageTiling, usage: ImageUsageFlags, flags: ImageCreateFlags, externalHandleType: ExternalMemoryHandleTypeFlagsNV, pExternalImageFormatProperties: *mut ExternalImageFormatPropertiesNV) -> Result,
+  CreateViSurfaceNN_ptr: extern "system" fn (instance: Instance, pCreateInfo: *const ViSurfaceCreateInfoNN, pAllocator: *const AllocationCallbacks, pSurface: *mut SurfaceKHR) -> Result,
+  ReleaseDisplayEXT_ptr: extern "system" fn (physicalDevice: PhysicalDevice, display: DisplayKHR) -> Result,
+  AcquireXlibDisplayEXT_ptr: extern "system" fn (physicalDevice: PhysicalDevice, dpy: *mut Display, display: DisplayKHR) -> Result,
+  GetRandROutputDisplayEXT_ptr: extern "system" fn (physicalDevice: PhysicalDevice, dpy: *mut Display, rrOutput: RROutput, pDisplay: *mut DisplayKHR) -> Result,
+  GetPhysicalDeviceSurfaceCapabilities2EXT_ptr: extern "system" fn (physicalDevice: PhysicalDevice, surface: SurfaceKHR, pSurfaceCapabilities: *mut SurfaceCapabilities2EXT) -> Result,
+  GetPhysicalDeviceSurfaceCapabilities2KHR_ptr: extern "system" fn (physicalDevice: PhysicalDevice, pSurfaceInfo: *const PhysicalDeviceSurfaceInfo2KHR, pSurfaceCapabilities: *mut SurfaceCapabilities2KHR) -> Result,
+  GetPhysicalDeviceSurfaceFormats2KHR_ptr: extern "system" fn (physicalDevice: PhysicalDevice, pSurfaceInfo: *const PhysicalDeviceSurfaceInfo2KHR, pSurfaceFormatCount: *mut u32, pSurfaceFormats: *mut SurfaceFormat2KHR) -> Result,
+  GetPhysicalDeviceDisplayProperties2KHR_ptr: extern "system" fn (physicalDevice: PhysicalDevice, pPropertyCount: *mut u32, pProperties: *mut DisplayProperties2KHR) -> Result,
+  GetPhysicalDeviceDisplayPlaneProperties2KHR_ptr: extern "system" fn (physicalDevice: PhysicalDevice, pPropertyCount: *mut u32, pProperties: *mut DisplayPlaneProperties2KHR) -> Result,
+  GetDisplayModeProperties2KHR_ptr: extern "system" fn (physicalDevice: PhysicalDevice, display: DisplayKHR, pPropertyCount: *mut u32, pProperties: *mut DisplayModeProperties2KHR) -> Result,
+  GetDisplayPlaneCapabilities2KHR_ptr: extern "system" fn (physicalDevice: PhysicalDevice, pDisplayPlaneInfo: *const DisplayPlaneInfo2KHR, pCapabilities: *mut DisplayPlaneCapabilities2KHR) -> Result,
+  CreateIOSSurfaceMVK_ptr: extern "system" fn (instance: Instance, pCreateInfo: *const IOSSurfaceCreateInfoMVK, pAllocator: *const AllocationCallbacks, pSurface: *mut SurfaceKHR) -> Result,
+  CreateMacOSSurfaceMVK_ptr: extern "system" fn (instance: Instance, pCreateInfo: *const MacOSSurfaceCreateInfoMVK, pAllocator: *const AllocationCallbacks, pSurface: *mut SurfaceKHR) -> Result,
+  SetDebugUtilsObjectNameEXT_ptr: extern "system" fn (device: Device, pNameInfo: *const DebugUtilsObjectNameInfoEXT) -> Result,
+  SetDebugUtilsObjectTagEXT_ptr: extern "system" fn (device: Device, pTagInfo: *const DebugUtilsObjectTagInfoEXT) -> Result,
+  QueueBeginDebugUtilsLabelEXT_ptr: extern "system" fn (queue: Queue, pLabelInfo: *const DebugUtilsLabelEXT),
+  QueueEndDebugUtilsLabelEXT_ptr: extern "system" fn (queue: Queue),
+  QueueInsertDebugUtilsLabelEXT_ptr: extern "system" fn (queue: Queue, pLabelInfo: *const DebugUtilsLabelEXT),
+  CmdBeginDebugUtilsLabelEXT_ptr: extern "system" fn (commandBuffer: CommandBuffer, pLabelInfo: *const DebugUtilsLabelEXT),
+  CmdEndDebugUtilsLabelEXT_ptr: extern "system" fn (commandBuffer: CommandBuffer),
+  CmdInsertDebugUtilsLabelEXT_ptr: extern "system" fn (commandBuffer: CommandBuffer, pLabelInfo: *const DebugUtilsLabelEXT),
+  CreateDebugUtilsMessengerEXT_ptr: extern "system" fn (instance: Instance, pCreateInfo: *const DebugUtilsMessengerCreateInfoEXT, pAllocator: *const AllocationCallbacks, pMessenger: *mut DebugUtilsMessengerEXT) -> Result,
+  DestroyDebugUtilsMessengerEXT_ptr: extern "system" fn (instance: Instance, messenger: DebugUtilsMessengerEXT, pAllocator: *const AllocationCallbacks),
+  SubmitDebugUtilsMessageEXT_ptr: extern "system" fn (instance: Instance, messageSeverity: DebugUtilsMessageSeverityFlagBitsEXT, messageTypes: DebugUtilsMessageTypeFlagsEXT, pCallbackData: *const DebugUtilsMessengerCallbackDataEXT),
+  CreateImagePipeSurfaceFUCHSIA_ptr: extern "system" fn (instance: Instance, pCreateInfo: *const ImagePipeSurfaceCreateInfoFUCHSIA, pAllocator: *const AllocationCallbacks, pSurface: *mut SurfaceKHR) -> Result,
+  CreateSwapchainKHR_ptr: extern "system" fn (device: Device, pCreateInfo: *const SwapchainCreateInfoKHR, pAllocator: *const AllocationCallbacks, pSwapchain: *mut SwapchainKHR) -> Result,
+  DestroySwapchainKHR_ptr: extern "system" fn (device: Device, swapchain: SwapchainKHR, pAllocator: *const AllocationCallbacks),
+  GetSwapchainImagesKHR_ptr: extern "system" fn (device: Device, swapchain: SwapchainKHR, pSwapchainImageCount: *mut u32, pSwapchainImages: *mut Image) -> Result,
+  AcquireNextImageKHR_ptr: extern "system" fn (device: Device, swapchain: SwapchainKHR, timeout: u64, semaphore: Semaphore, fence: Fence, pImageIndex: *mut u32) -> Result,
+  QueuePresentKHR_ptr: extern "system" fn (queue: Queue, pPresentInfo: *const PresentInfoKHR) -> Result,
+  GetDeviceGroupPresentCapabilitiesKHR_ptr: extern "system" fn (device: Device, pDeviceGroupPresentCapabilities: *mut DeviceGroupPresentCapabilitiesKHR) -> Result,
+  GetDeviceGroupSurfacePresentModesKHR_ptr: extern "system" fn (device: Device, surface: SurfaceKHR, pModes: *mut DeviceGroupPresentModeFlagsKHR) -> Result,
+  GetPhysicalDevicePresentRectanglesKHR_ptr: extern "system" fn (physicalDevice: PhysicalDevice, surface: SurfaceKHR, pRectCount: *mut u32, pRects: *mut Rect2D) -> Result,
+  AcquireNextImage2KHR_ptr: extern "system" fn (device: Device, pAcquireInfo: *const AcquireNextImageInfoKHR, pImageIndex: *mut u32) -> Result,
+  CreateSharedSwapchainsKHR_ptr: extern "system" fn (device: Device, swapchainCount: u32, pCreateInfos: *const SwapchainCreateInfoKHR, pAllocator: *const AllocationCallbacks, pSwapchains: *mut SwapchainKHR) -> Result,
+  DebugMarkerSetObjectTagEXT_ptr: extern "system" fn (device: Device, pTagInfo: *const DebugMarkerObjectTagInfoEXT) -> Result,
+  DebugMarkerSetObjectNameEXT_ptr: extern "system" fn (device: Device, pNameInfo: *const DebugMarkerObjectNameInfoEXT) -> Result,
+  CmdDebugMarkerBeginEXT_ptr: extern "system" fn (commandBuffer: CommandBuffer, pMarkerInfo: *const DebugMarkerMarkerInfoEXT),
+  CmdDebugMarkerEndEXT_ptr: extern "system" fn (commandBuffer: CommandBuffer),
+  CmdDebugMarkerInsertEXT_ptr: extern "system" fn (commandBuffer: CommandBuffer, pMarkerInfo: *const DebugMarkerMarkerInfoEXT),
+  CmdBindTransformFeedbackBuffersEXT_ptr: extern "system" fn (commandBuffer: CommandBuffer, firstBinding: u32, bindingCount: u32, pBuffers: *const Buffer, pOffsets: *const DeviceSize, pSizes: *const DeviceSize),
+  CmdBeginTransformFeedbackEXT_ptr: extern "system" fn (commandBuffer: CommandBuffer, firstCounterBuffer: u32, counterBufferCount: u32, pCounterBuffers: *const Buffer, pCounterBufferOffsets: *const DeviceSize),
+  CmdEndTransformFeedbackEXT_ptr: extern "system" fn (commandBuffer: CommandBuffer, firstCounterBuffer: u32, counterBufferCount: u32, pCounterBuffers: *const Buffer, pCounterBufferOffsets: *const DeviceSize),
+  CmdBeginQueryIndexedEXT_ptr: extern "system" fn (commandBuffer: CommandBuffer, queryPool: QueryPool, query: u32, flags: QueryControlFlags, index: u32),
+  CmdEndQueryIndexedEXT_ptr: extern "system" fn (commandBuffer: CommandBuffer, queryPool: QueryPool, query: u32, index: u32),
+  CmdDrawIndirectByteCountEXT_ptr: extern "system" fn (commandBuffer: CommandBuffer, instanceCount: u32, firstInstance: u32, counterBuffer: Buffer, counterBufferOffset: DeviceSize, counterOffset: u32, vertexStride: u32),
+  CmdDrawIndirectCountAMD_ptr: extern "system" fn (commandBuffer: CommandBuffer, buffer: Buffer, offset: DeviceSize, countBuffer: Buffer, countBufferOffset: DeviceSize, maxDrawCount: u32, stride: u32),
+  CmdDrawIndexedIndirectCountAMD_ptr: extern "system" fn (commandBuffer: CommandBuffer, buffer: Buffer, offset: DeviceSize, countBuffer: Buffer, countBufferOffset: DeviceSize, maxDrawCount: u32, stride: u32),
+  GetShaderInfoAMD_ptr: extern "system" fn (device: Device, pipeline: Pipeline, shaderStage: ShaderStageFlagBits, infoType: ShaderInfoTypeAMD, pInfoSize: *mut usize, pInfo: *mut c_void) -> Result,
+  GetMemoryWin32HandleNV_ptr: extern "system" fn (device: Device, memory: DeviceMemory, handleType: ExternalMemoryHandleTypeFlagsNV, pHandle: *mut HANDLE) -> Result,
+  GetMemoryWin32HandleKHR_ptr: extern "system" fn (device: Device, pGetWin32HandleInfo: *const MemoryGetWin32HandleInfoKHR, pHandle: *mut HANDLE) -> Result,
+  GetMemoryWin32HandlePropertiesKHR_ptr: extern "system" fn (device: Device, handleType: ExternalMemoryHandleTypeFlagBits, handle: HANDLE, pMemoryWin32HandleProperties: *mut MemoryWin32HandlePropertiesKHR) -> Result,
+  GetMemoryFdKHR_ptr: extern "system" fn (device: Device, pGetFdInfo: *const MemoryGetFdInfoKHR, pFd: *mut i32) -> Result,
+  GetMemoryFdPropertiesKHR_ptr: extern "system" fn (device: Device, handleType: ExternalMemoryHandleTypeFlagBits, fd: i32, pMemoryFdProperties: *mut MemoryFdPropertiesKHR) -> Result,
+  ImportSemaphoreWin32HandleKHR_ptr: extern "system" fn (device: Device, pImportSemaphoreWin32HandleInfo: *const ImportSemaphoreWin32HandleInfoKHR) -> Result,
+  GetSemaphoreWin32HandleKHR_ptr: extern "system" fn (device: Device, pGetWin32HandleInfo: *const SemaphoreGetWin32HandleInfoKHR, pHandle: *mut HANDLE) -> Result,
+  ImportSemaphoreFdKHR_ptr: extern "system" fn (device: Device, pImportSemaphoreFdInfo: *const ImportSemaphoreFdInfoKHR) -> Result,
+  GetSemaphoreFdKHR_ptr: extern "system" fn (device: Device, pGetFdInfo: *const SemaphoreGetFdInfoKHR, pFd: *mut i32) -> Result,
+  CmdPushDescriptorSetKHR_ptr: extern "system" fn (commandBuffer: CommandBuffer, pipelineBindPoint: PipelineBindPoint, layout: PipelineLayout, set: u32, descriptorWriteCount: u32, pDescriptorWrites: *const WriteDescriptorSet),
+  CmdPushDescriptorSetWithTemplateKHR_ptr: extern "system" fn (commandBuffer: CommandBuffer, descriptorUpdateTemplate: DescriptorUpdateTemplate, layout: PipelineLayout, set: u32, pData: *const c_void),
+  CmdBeginConditionalRenderingEXT_ptr: extern "system" fn (commandBuffer: CommandBuffer, pConditionalRenderingBegin: *const ConditionalRenderingBeginInfoEXT),
+  CmdEndConditionalRenderingEXT_ptr: extern "system" fn (commandBuffer: CommandBuffer),
+  CmdProcessCommandsNVX_ptr: extern "system" fn (commandBuffer: CommandBuffer, pProcessCommandsInfo: *const CmdProcessCommandsInfoNVX),
+  CmdReserveSpaceForCommandsNVX_ptr: extern "system" fn (commandBuffer: CommandBuffer, pReserveSpaceInfo: *const CmdReserveSpaceForCommandsInfoNVX),
+  CreateIndirectCommandsLayoutNVX_ptr: extern "system" fn (device: Device, pCreateInfo: *const IndirectCommandsLayoutCreateInfoNVX, pAllocator: *const AllocationCallbacks, pIndirectCommandsLayout: *mut IndirectCommandsLayoutNVX) -> Result,
+  DestroyIndirectCommandsLayoutNVX_ptr: extern "system" fn (device: Device, indirectCommandsLayout: IndirectCommandsLayoutNVX, pAllocator: *const AllocationCallbacks),
+  CreateObjectTableNVX_ptr: extern "system" fn (device: Device, pCreateInfo: *const ObjectTableCreateInfoNVX, pAllocator: *const AllocationCallbacks, pObjectTable: *mut ObjectTableNVX) -> Result,
+  DestroyObjectTableNVX_ptr: extern "system" fn (device: Device, objectTable: ObjectTableNVX, pAllocator: *const AllocationCallbacks),
+  RegisterObjectsNVX_ptr: extern "system" fn (device: Device, objectTable: ObjectTableNVX, objectCount: u32, ppObjectTableEntries: *const *const ObjectTableEntryNVX, pObjectIndices: *const u32) -> Result,
+  UnregisterObjectsNVX_ptr: extern "system" fn (device: Device, objectTable: ObjectTableNVX, objectCount: u32, pObjectEntryTypes: *const ObjectEntryTypeNVX, pObjectIndices: *const u32) -> Result,
+  GetPhysicalDeviceGeneratedCommandsPropertiesNVX_ptr: extern "system" fn (physicalDevice: PhysicalDevice, pFeatures: *mut DeviceGeneratedCommandsFeaturesNVX, pLimits: *mut DeviceGeneratedCommandsLimitsNVX),
+  CmdSetViewportWScalingNV_ptr: extern "system" fn (commandBuffer: CommandBuffer, firstViewport: u32, viewportCount: u32, pViewportWScalings: *const ViewportWScalingNV),
+  DisplayPowerControlEXT_ptr: extern "system" fn (device: Device, display: DisplayKHR, pDisplayPowerInfo: *const DisplayPowerInfoEXT) -> Result,
+  RegisterDeviceEventEXT_ptr: extern "system" fn (device: Device, pDeviceEventInfo: *const DeviceEventInfoEXT, pAllocator: *const AllocationCallbacks, pFence: *mut Fence) -> Result,
+  RegisterDisplayEventEXT_ptr: extern "system" fn (device: Device, display: DisplayKHR, pDisplayEventInfo: *const DisplayEventInfoEXT, pAllocator: *const AllocationCallbacks, pFence: *mut Fence) -> Result,
+  GetSwapchainCounterEXT_ptr: extern "system" fn (device: Device, swapchain: SwapchainKHR, counter: SurfaceCounterFlagBitsEXT, pCounterValue: *mut u64) -> Result,
+  GetRefreshCycleDurationGOOGLE_ptr: extern "system" fn (device: Device, swapchain: SwapchainKHR, pDisplayTimingProperties: *mut RefreshCycleDurationGOOGLE) -> Result,
+  GetPastPresentationTimingGOOGLE_ptr: extern "system" fn (device: Device, swapchain: SwapchainKHR, pPresentationTimingCount: *mut u32, pPresentationTimings: *mut PastPresentationTimingGOOGLE) -> Result,
+  CmdSetDiscardRectangleEXT_ptr: extern "system" fn (commandBuffer: CommandBuffer, firstDiscardRectangle: u32, discardRectangleCount: u32, pDiscardRectangles: *const Rect2D),
+  SetHdrMetadataEXT_ptr: extern "system" fn (device: Device, swapchainCount: u32, pSwapchains: *const SwapchainKHR, pMetadata: *const HdrMetadataEXT),
+  CreateRenderPass2KHR_ptr: extern "system" fn (device: Device, pCreateInfo: *const RenderPassCreateInfo2KHR, pAllocator: *const AllocationCallbacks, pRenderPass: *mut RenderPass) -> Result,
+  CmdBeginRenderPass2KHR_ptr: extern "system" fn (commandBuffer: CommandBuffer, pRenderPassBegin: *const RenderPassBeginInfo, pSubpassBeginInfo: *const SubpassBeginInfoKHR),
+  CmdNextSubpass2KHR_ptr: extern "system" fn (commandBuffer: CommandBuffer, pSubpassBeginInfo: *const SubpassBeginInfoKHR, pSubpassEndInfo: *const SubpassEndInfoKHR),
+  CmdEndRenderPass2KHR_ptr: extern "system" fn (commandBuffer: CommandBuffer, pSubpassEndInfo: *const SubpassEndInfoKHR),
+  GetSwapchainStatusKHR_ptr: extern "system" fn (device: Device, swapchain: SwapchainKHR) -> Result,
+  ImportFenceWin32HandleKHR_ptr: extern "system" fn (device: Device, pImportFenceWin32HandleInfo: *const ImportFenceWin32HandleInfoKHR) -> Result,
+  GetFenceWin32HandleKHR_ptr: extern "system" fn (device: Device, pGetWin32HandleInfo: *const FenceGetWin32HandleInfoKHR, pHandle: *mut HANDLE) -> Result,
+  ImportFenceFdKHR_ptr: extern "system" fn (device: Device, pImportFenceFdInfo: *const ImportFenceFdInfoKHR) -> Result,
+  GetFenceFdKHR_ptr: extern "system" fn (device: Device, pGetFdInfo: *const FenceGetFdInfoKHR, pFd: *mut i32) -> Result,
+  GetAndroidHardwareBufferPropertiesANDROID_ptr: extern "system" fn (device: Device, buffer: *const AHardwareBuffer, pProperties: *mut AndroidHardwareBufferPropertiesANDROID) -> Result,
+  GetMemoryAndroidHardwareBufferANDROID_ptr: extern "system" fn (device: Device, pInfo: *const MemoryGetAndroidHardwareBufferInfoANDROID, pBuffer: *mut *mut AHardwareBuffer) -> Result,
+  CmdSetSampleLocationsEXT_ptr: extern "system" fn (commandBuffer: CommandBuffer, pSampleLocationsInfo: *const SampleLocationsInfoEXT),
+  GetPhysicalDeviceMultisamplePropertiesEXT_ptr: extern "system" fn (physicalDevice: PhysicalDevice, samples: SampleCountFlagBits, pMultisampleProperties: *mut MultisamplePropertiesEXT),
+  GetImageDrmFormatModifierPropertiesEXT_ptr: extern "system" fn (device: Device, image: Image, pProperties: *mut ImageDrmFormatModifierPropertiesEXT) -> Result,
+  CreateValidationCacheEXT_ptr: extern "system" fn (device: Device, pCreateInfo: *const ValidationCacheCreateInfoEXT, pAllocator: *const AllocationCallbacks, pValidationCache: *mut ValidationCacheEXT) -> Result,
+  DestroyValidationCacheEXT_ptr: extern "system" fn (device: Device, validationCache: ValidationCacheEXT, pAllocator: *const AllocationCallbacks),
+  MergeValidationCachesEXT_ptr: extern "system" fn (device: Device, dstCache: ValidationCacheEXT, srcCacheCount: u32, pSrcCaches: *const ValidationCacheEXT) -> Result,
+  GetValidationCacheDataEXT_ptr: extern "system" fn (device: Device, validationCache: ValidationCacheEXT, pDataSize: *mut usize, pData: *mut c_void) -> Result,
+  CmdBindShadingRateImageNV_ptr: extern "system" fn (commandBuffer: CommandBuffer, imageView: ImageView, imageLayout: ImageLayout),
+  CmdSetViewportShadingRatePaletteNV_ptr: extern "system" fn (commandBuffer: CommandBuffer, firstViewport: u32, viewportCount: u32, pShadingRatePalettes: *const ShadingRatePaletteNV),
+  CmdSetCoarseSampleOrderNV_ptr: extern "system" fn (commandBuffer: CommandBuffer, sampleOrderType: CoarseSampleOrderTypeNV, customSampleOrderCount: u32, pCustomSampleOrders: *const CoarseSampleOrderCustomNV),
+  CreateAccelerationStructureNV_ptr: extern "system" fn (device: Device, pCreateInfo: *const AccelerationStructureCreateInfoNV, pAllocator: *const AllocationCallbacks, pAccelerationStructure: *mut AccelerationStructureNV) -> Result,
+  DestroyAccelerationStructureNV_ptr: extern "system" fn (device: Device, accelerationStructure: AccelerationStructureNV, pAllocator: *const AllocationCallbacks),
+  GetAccelerationStructureMemoryRequirementsNV_ptr: extern "system" fn (device: Device, pInfo: *const AccelerationStructureMemoryRequirementsInfoNV, pMemoryRequirements: *mut MemoryRequirements2),
+  BindAccelerationStructureMemoryNV_ptr: extern "system" fn (device: Device, bindInfoCount: u32, pBindInfos: *const BindAccelerationStructureMemoryInfoNV) -> Result,
+  CmdBuildAccelerationStructureNV_ptr: extern "system" fn (commandBuffer: CommandBuffer, pInfo: *const AccelerationStructureInfoNV, instanceData: Buffer, instanceOffset: DeviceSize, update: Bool32, dst: AccelerationStructureNV, src: AccelerationStructureNV, scratch: Buffer, scratchOffset: DeviceSize),
+  CmdCopyAccelerationStructureNV_ptr: extern "system" fn (commandBuffer: CommandBuffer, dst: AccelerationStructureNV, src: AccelerationStructureNV, mode: CopyAccelerationStructureModeNV),
+  CmdTraceRaysNV_ptr: extern "system" fn (commandBuffer: CommandBuffer, raygenShaderBindingTableBuffer: Buffer, raygenShaderBindingOffset: DeviceSize, missShaderBindingTableBuffer: Buffer, missShaderBindingOffset: DeviceSize, missShaderBindingStride: DeviceSize, hitShaderBindingTableBuffer: Buffer, hitShaderBindingOffset: DeviceSize, hitShaderBindingStride: DeviceSize, callableShaderBindingTableBuffer: Buffer, callableShaderBindingOffset: DeviceSize, callableShaderBindingStride: DeviceSize, width: u32, height: u32, depth: u32),
+  CreateRayTracingPipelinesNV_ptr: extern "system" fn (device: Device, pipelineCache: PipelineCache, createInfoCount: u32, pCreateInfos: *const RayTracingPipelineCreateInfoNV, pAllocator: *const AllocationCallbacks, pPipelines: *mut Pipeline) -> Result,
+  GetRayTracingShaderGroupHandlesNV_ptr: extern "system" fn (device: Device, pipeline: Pipeline, firstGroup: u32, groupCount: u32, dataSize: usize, pData: *mut c_void) -> Result,
+  GetAccelerationStructureHandleNV_ptr: extern "system" fn (device: Device, accelerationStructure: AccelerationStructureNV, dataSize: usize, pData: *mut c_void) -> Result,
+  CmdWriteAccelerationStructuresPropertiesNV_ptr: extern "system" fn (commandBuffer: CommandBuffer, accelerationStructureCount: u32, pAccelerationStructures: *const AccelerationStructureNV, queryType: QueryType, queryPool: QueryPool, firstQuery: u32),
+  CompileDeferredNV_ptr: extern "system" fn (device: Device, pipeline: Pipeline, shader: u32) -> Result,
+  CmdDrawIndirectCountKHR_ptr: extern "system" fn (commandBuffer: CommandBuffer, buffer: Buffer, offset: DeviceSize, countBuffer: Buffer, countBufferOffset: DeviceSize, maxDrawCount: u32, stride: u32),
+  CmdDrawIndexedIndirectCountKHR_ptr: extern "system" fn (commandBuffer: CommandBuffer, buffer: Buffer, offset: DeviceSize, countBuffer: Buffer, countBufferOffset: DeviceSize, maxDrawCount: u32, stride: u32),
+  GetMemoryHostPointerPropertiesEXT_ptr: extern "system" fn (device: Device, handleType: ExternalMemoryHandleTypeFlagBits, pHostPointer: *const c_void, pMemoryHostPointerProperties: *mut MemoryHostPointerPropertiesEXT) -> Result,
+  CmdWriteBufferMarkerAMD_ptr: extern "system" fn (commandBuffer: CommandBuffer, pipelineStage: PipelineStageFlagBits, dstBuffer: Buffer, dstOffset: DeviceSize, marker: u32),
+  GetPhysicalDeviceCalibrateableTimeDomainsEXT_ptr: extern "system" fn (physicalDevice: PhysicalDevice, pTimeDomainCount: *mut u32, pTimeDomains: *mut TimeDomainEXT) -> Result,
+  GetCalibratedTimestampsEXT_ptr: extern "system" fn (device: Device, timestampCount: u32, pTimestampInfos: *const CalibratedTimestampInfoEXT, pTimestamps: *mut u64, pMaxDeviation: *mut u64) -> Result,
+  CmdDrawMeshTasksNV_ptr: extern "system" fn (commandBuffer: CommandBuffer, taskCount: u32, firstTask: u32),
+  CmdDrawMeshTasksIndirectNV_ptr: extern "system" fn (commandBuffer: CommandBuffer, buffer: Buffer, offset: DeviceSize, drawCount: u32, stride: u32),
+  CmdDrawMeshTasksIndirectCountNV_ptr: extern "system" fn (commandBuffer: CommandBuffer, buffer: Buffer, offset: DeviceSize, countBuffer: Buffer, countBufferOffset: DeviceSize, maxDrawCount: u32, stride: u32),
+  CmdSetExclusiveScissorNV_ptr: extern "system" fn (commandBuffer: CommandBuffer, firstExclusiveScissor: u32, exclusiveScissorCount: u32, pExclusiveScissors: *const Rect2D),
+  CmdSetCheckpointNV_ptr: extern "system" fn (commandBuffer: CommandBuffer, pCheckpointMarker: *const c_void),
+  GetQueueCheckpointDataNV_ptr: extern "system" fn (queue: Queue, pCheckpointDataCount: *mut u32, pCheckpointData: *mut CheckpointDataNV),
 }
 
 
@@ -7161,12 +7630,462 @@ extern "system" fn GetPhysicalDeviceExternalSemaphoreProperties_panic(_physicalD
 extern "system" fn GetDescriptorSetLayoutSupport_panic(_device: Device, _pCreateInfo: *const DescriptorSetLayoutCreateInfo, _pSupport: *mut DescriptorSetLayoutSupport){
     panic!("extension vkGetDescriptorSetLayoutSupport not loaded")
 }
+extern "system" fn DestroySurfaceKHR_panic(_instance: Instance, _surface: SurfaceKHR, _pAllocator: *const AllocationCallbacks){
+    panic!("extension vkDestroySurfaceKHR not loaded")
+}
+extern "system" fn GetPhysicalDeviceSurfaceSupportKHR_panic(_physicalDevice: PhysicalDevice, _queueFamilyIndex: u32, _surface: SurfaceKHR, _pSupported: *mut Bool32) -> Result{
+    panic!("extension vkGetPhysicalDeviceSurfaceSupportKHR not loaded")
+}
+extern "system" fn GetPhysicalDeviceSurfaceCapabilitiesKHR_panic(_physicalDevice: PhysicalDevice, _surface: SurfaceKHR, _pSurfaceCapabilities: *mut SurfaceCapabilitiesKHR) -> Result{
+    panic!("extension vkGetPhysicalDeviceSurfaceCapabilitiesKHR not loaded")
+}
+extern "system" fn GetPhysicalDeviceSurfaceFormatsKHR_panic(_physicalDevice: PhysicalDevice, _surface: SurfaceKHR, _pSurfaceFormatCount: *mut u32, _pSurfaceFormats: *mut SurfaceFormatKHR) -> Result{
+    panic!("extension vkGetPhysicalDeviceSurfaceFormatsKHR not loaded")
+}
+extern "system" fn GetPhysicalDeviceSurfacePresentModesKHR_panic(_physicalDevice: PhysicalDevice, _surface: SurfaceKHR, _pPresentModeCount: *mut u32, _pPresentModes: *mut PresentModeKHR) -> Result{
+    panic!("extension vkGetPhysicalDeviceSurfacePresentModesKHR not loaded")
+}
+extern "system" fn GetPhysicalDeviceDisplayPropertiesKHR_panic(_physicalDevice: PhysicalDevice, _pPropertyCount: *mut u32, _pProperties: *mut DisplayPropertiesKHR) -> Result{
+    panic!("extension vkGetPhysicalDeviceDisplayPropertiesKHR not loaded")
+}
+extern "system" fn GetPhysicalDeviceDisplayPlanePropertiesKHR_panic(_physicalDevice: PhysicalDevice, _pPropertyCount: *mut u32, _pProperties: *mut DisplayPlanePropertiesKHR) -> Result{
+    panic!("extension vkGetPhysicalDeviceDisplayPlanePropertiesKHR not loaded")
+}
+extern "system" fn GetDisplayPlaneSupportedDisplaysKHR_panic(_physicalDevice: PhysicalDevice, _planeIndex: u32, _pDisplayCount: *mut u32, _pDisplays: *mut DisplayKHR) -> Result{
+    panic!("extension vkGetDisplayPlaneSupportedDisplaysKHR not loaded")
+}
+extern "system" fn GetDisplayModePropertiesKHR_panic(_physicalDevice: PhysicalDevice, _display: DisplayKHR, _pPropertyCount: *mut u32, _pProperties: *mut DisplayModePropertiesKHR) -> Result{
+    panic!("extension vkGetDisplayModePropertiesKHR not loaded")
+}
+extern "system" fn CreateDisplayModeKHR_panic(_physicalDevice: PhysicalDevice, _display: DisplayKHR, _pCreateInfo: *const DisplayModeCreateInfoKHR, _pAllocator: *const AllocationCallbacks, _pMode: *mut DisplayModeKHR) -> Result{
+    panic!("extension vkCreateDisplayModeKHR not loaded")
+}
+extern "system" fn GetDisplayPlaneCapabilitiesKHR_panic(_physicalDevice: PhysicalDevice, _mode: DisplayModeKHR, _planeIndex: u32, _pCapabilities: *mut DisplayPlaneCapabilitiesKHR) -> Result{
+    panic!("extension vkGetDisplayPlaneCapabilitiesKHR not loaded")
+}
+extern "system" fn CreateDisplayPlaneSurfaceKHR_panic(_instance: Instance, _pCreateInfo: *const DisplaySurfaceCreateInfoKHR, _pAllocator: *const AllocationCallbacks, _pSurface: *mut SurfaceKHR) -> Result{
+    panic!("extension vkCreateDisplayPlaneSurfaceKHR not loaded")
+}
+extern "system" fn CreateXlibSurfaceKHR_panic(_instance: Instance, _pCreateInfo: *const XlibSurfaceCreateInfoKHR, _pAllocator: *const AllocationCallbacks, _pSurface: *mut SurfaceKHR) -> Result{
+    panic!("extension vkCreateXlibSurfaceKHR not loaded")
+}
+extern "system" fn GetPhysicalDeviceXlibPresentationSupportKHR_panic(_physicalDevice: PhysicalDevice, _queueFamilyIndex: u32, _dpy: *mut Display, _visualID: VisualID) -> Bool32{
+    panic!("extension vkGetPhysicalDeviceXlibPresentationSupportKHR not loaded")
+}
+extern "system" fn CreateXcbSurfaceKHR_panic(_instance: Instance, _pCreateInfo: *const XcbSurfaceCreateInfoKHR, _pAllocator: *const AllocationCallbacks, _pSurface: *mut SurfaceKHR) -> Result{
+    panic!("extension vkCreateXcbSurfaceKHR not loaded")
+}
+extern "system" fn GetPhysicalDeviceXcbPresentationSupportKHR_panic(_physicalDevice: PhysicalDevice, _queueFamilyIndex: u32, _connection: *mut xcb_connection_t, _visual_id: xcb_visualid_t) -> Bool32{
+    panic!("extension vkGetPhysicalDeviceXcbPresentationSupportKHR not loaded")
+}
+extern "system" fn CreateWaylandSurfaceKHR_panic(_instance: Instance, _pCreateInfo: *const WaylandSurfaceCreateInfoKHR, _pAllocator: *const AllocationCallbacks, _pSurface: *mut SurfaceKHR) -> Result{
+    panic!("extension vkCreateWaylandSurfaceKHR not loaded")
+}
+extern "system" fn GetPhysicalDeviceWaylandPresentationSupportKHR_panic(_physicalDevice: PhysicalDevice, _queueFamilyIndex: u32, _display: *mut wl_display) -> Bool32{
+    panic!("extension vkGetPhysicalDeviceWaylandPresentationSupportKHR not loaded")
+}
+extern "system" fn CreateAndroidSurfaceKHR_panic(_instance: Instance, _pCreateInfo: *const AndroidSurfaceCreateInfoKHR, _pAllocator: *const AllocationCallbacks, _pSurface: *mut SurfaceKHR) -> Result{
+    panic!("extension vkCreateAndroidSurfaceKHR not loaded")
+}
+extern "system" fn CreateWin32SurfaceKHR_panic(_instance: Instance, _pCreateInfo: *const Win32SurfaceCreateInfoKHR, _pAllocator: *const AllocationCallbacks, _pSurface: *mut SurfaceKHR) -> Result{
+    panic!("extension vkCreateWin32SurfaceKHR not loaded")
+}
+extern "system" fn GetPhysicalDeviceWin32PresentationSupportKHR_panic(_physicalDevice: PhysicalDevice, _queueFamilyIndex: u32) -> Bool32{
+    panic!("extension vkGetPhysicalDeviceWin32PresentationSupportKHR not loaded")
+}
+extern "system" fn CreateDebugReportCallbackEXT_panic(_instance: Instance, _pCreateInfo: *const DebugReportCallbackCreateInfoEXT, _pAllocator: *const AllocationCallbacks, _pCallback: *mut DebugReportCallbackEXT) -> Result{
+    panic!("extension vkCreateDebugReportCallbackEXT not loaded")
+}
+extern "system" fn DestroyDebugReportCallbackEXT_panic(_instance: Instance, _callback: DebugReportCallbackEXT, _pAllocator: *const AllocationCallbacks){
+    panic!("extension vkDestroyDebugReportCallbackEXT not loaded")
+}
+extern "system" fn DebugReportMessageEXT_panic(_instance: Instance, _flags: DebugReportFlagsEXT, _objectType: DebugReportObjectTypeEXT, _object: u64, _location: usize, _messageCode: i32, _pLayerPrefix: *const c_char, _pMessage: *const c_char){
+    panic!("extension vkDebugReportMessageEXT not loaded")
+}
+extern "system" fn GetPhysicalDeviceExternalImageFormatPropertiesNV_panic(_physicalDevice: PhysicalDevice, _format: Format, _typ: ImageType, _tiling: ImageTiling, _usage: ImageUsageFlags, _flags: ImageCreateFlags, _externalHandleType: ExternalMemoryHandleTypeFlagsNV, _pExternalImageFormatProperties: *mut ExternalImageFormatPropertiesNV) -> Result{
+    panic!("extension vkGetPhysicalDeviceExternalImageFormatPropertiesNV not loaded")
+}
+extern "system" fn CreateViSurfaceNN_panic(_instance: Instance, _pCreateInfo: *const ViSurfaceCreateInfoNN, _pAllocator: *const AllocationCallbacks, _pSurface: *mut SurfaceKHR) -> Result{
+    panic!("extension vkCreateViSurfaceNN not loaded")
+}
+extern "system" fn ReleaseDisplayEXT_panic(_physicalDevice: PhysicalDevice, _display: DisplayKHR) -> Result{
+    panic!("extension vkReleaseDisplayEXT not loaded")
+}
+extern "system" fn AcquireXlibDisplayEXT_panic(_physicalDevice: PhysicalDevice, _dpy: *mut Display, _display: DisplayKHR) -> Result{
+    panic!("extension vkAcquireXlibDisplayEXT not loaded")
+}
+extern "system" fn GetRandROutputDisplayEXT_panic(_physicalDevice: PhysicalDevice, _dpy: *mut Display, _rrOutput: RROutput, _pDisplay: *mut DisplayKHR) -> Result{
+    panic!("extension vkGetRandROutputDisplayEXT not loaded")
+}
+extern "system" fn GetPhysicalDeviceSurfaceCapabilities2EXT_panic(_physicalDevice: PhysicalDevice, _surface: SurfaceKHR, _pSurfaceCapabilities: *mut SurfaceCapabilities2EXT) -> Result{
+    panic!("extension vkGetPhysicalDeviceSurfaceCapabilities2EXT not loaded")
+}
+extern "system" fn GetPhysicalDeviceSurfaceCapabilities2KHR_panic(_physicalDevice: PhysicalDevice, _pSurfaceInfo: *const PhysicalDeviceSurfaceInfo2KHR, _pSurfaceCapabilities: *mut SurfaceCapabilities2KHR) -> Result{
+    panic!("extension vkGetPhysicalDeviceSurfaceCapabilities2KHR not loaded")
+}
+extern "system" fn GetPhysicalDeviceSurfaceFormats2KHR_panic(_physicalDevice: PhysicalDevice, _pSurfaceInfo: *const PhysicalDeviceSurfaceInfo2KHR, _pSurfaceFormatCount: *mut u32, _pSurfaceFormats: *mut SurfaceFormat2KHR) -> Result{
+    panic!("extension vkGetPhysicalDeviceSurfaceFormats2KHR not loaded")
+}
+extern "system" fn GetPhysicalDeviceDisplayProperties2KHR_panic(_physicalDevice: PhysicalDevice, _pPropertyCount: *mut u32, _pProperties: *mut DisplayProperties2KHR) -> Result{
+    panic!("extension vkGetPhysicalDeviceDisplayProperties2KHR not loaded")
+}
+extern "system" fn GetPhysicalDeviceDisplayPlaneProperties2KHR_panic(_physicalDevice: PhysicalDevice, _pPropertyCount: *mut u32, _pProperties: *mut DisplayPlaneProperties2KHR) -> Result{
+    panic!("extension vkGetPhysicalDeviceDisplayPlaneProperties2KHR not loaded")
+}
+extern "system" fn GetDisplayModeProperties2KHR_panic(_physicalDevice: PhysicalDevice, _display: DisplayKHR, _pPropertyCount: *mut u32, _pProperties: *mut DisplayModeProperties2KHR) -> Result{
+    panic!("extension vkGetDisplayModeProperties2KHR not loaded")
+}
+extern "system" fn GetDisplayPlaneCapabilities2KHR_panic(_physicalDevice: PhysicalDevice, _pDisplayPlaneInfo: *const DisplayPlaneInfo2KHR, _pCapabilities: *mut DisplayPlaneCapabilities2KHR) -> Result{
+    panic!("extension vkGetDisplayPlaneCapabilities2KHR not loaded")
+}
+extern "system" fn CreateIOSSurfaceMVK_panic(_instance: Instance, _pCreateInfo: *const IOSSurfaceCreateInfoMVK, _pAllocator: *const AllocationCallbacks, _pSurface: *mut SurfaceKHR) -> Result{
+    panic!("extension vkCreateIOSSurfaceMVK not loaded")
+}
+extern "system" fn CreateMacOSSurfaceMVK_panic(_instance: Instance, _pCreateInfo: *const MacOSSurfaceCreateInfoMVK, _pAllocator: *const AllocationCallbacks, _pSurface: *mut SurfaceKHR) -> Result{
+    panic!("extension vkCreateMacOSSurfaceMVK not loaded")
+}
+extern "system" fn SetDebugUtilsObjectNameEXT_panic(_device: Device, _pNameInfo: *const DebugUtilsObjectNameInfoEXT) -> Result{
+    panic!("extension vkSetDebugUtilsObjectNameEXT not loaded")
+}
+extern "system" fn SetDebugUtilsObjectTagEXT_panic(_device: Device, _pTagInfo: *const DebugUtilsObjectTagInfoEXT) -> Result{
+    panic!("extension vkSetDebugUtilsObjectTagEXT not loaded")
+}
+extern "system" fn QueueBeginDebugUtilsLabelEXT_panic(_queue: Queue, _pLabelInfo: *const DebugUtilsLabelEXT){
+    panic!("extension vkQueueBeginDebugUtilsLabelEXT not loaded")
+}
+extern "system" fn QueueEndDebugUtilsLabelEXT_panic(_queue: Queue){
+    panic!("extension vkQueueEndDebugUtilsLabelEXT not loaded")
+}
+extern "system" fn QueueInsertDebugUtilsLabelEXT_panic(_queue: Queue, _pLabelInfo: *const DebugUtilsLabelEXT){
+    panic!("extension vkQueueInsertDebugUtilsLabelEXT not loaded")
+}
+extern "system" fn CmdBeginDebugUtilsLabelEXT_panic(_commandBuffer: CommandBuffer, _pLabelInfo: *const DebugUtilsLabelEXT){
+    panic!("extension vkCmdBeginDebugUtilsLabelEXT not loaded")
+}
+extern "system" fn CmdEndDebugUtilsLabelEXT_panic(_commandBuffer: CommandBuffer){
+    panic!("extension vkCmdEndDebugUtilsLabelEXT not loaded")
+}
+extern "system" fn CmdInsertDebugUtilsLabelEXT_panic(_commandBuffer: CommandBuffer, _pLabelInfo: *const DebugUtilsLabelEXT){
+    panic!("extension vkCmdInsertDebugUtilsLabelEXT not loaded")
+}
+extern "system" fn CreateDebugUtilsMessengerEXT_panic(_instance: Instance, _pCreateInfo: *const DebugUtilsMessengerCreateInfoEXT, _pAllocator: *const AllocationCallbacks, _pMessenger: *mut DebugUtilsMessengerEXT) -> Result{
+    panic!("extension vkCreateDebugUtilsMessengerEXT not loaded")
+}
+extern "system" fn DestroyDebugUtilsMessengerEXT_panic(_instance: Instance, _messenger: DebugUtilsMessengerEXT, _pAllocator: *const AllocationCallbacks){
+    panic!("extension vkDestroyDebugUtilsMessengerEXT not loaded")
+}
+extern "system" fn SubmitDebugUtilsMessageEXT_panic(_instance: Instance, _messageSeverity: DebugUtilsMessageSeverityFlagBitsEXT, _messageTypes: DebugUtilsMessageTypeFlagsEXT, _pCallbackData: *const DebugUtilsMessengerCallbackDataEXT){
+    panic!("extension vkSubmitDebugUtilsMessageEXT not loaded")
+}
+extern "system" fn CreateImagePipeSurfaceFUCHSIA_panic(_instance: Instance, _pCreateInfo: *const ImagePipeSurfaceCreateInfoFUCHSIA, _pAllocator: *const AllocationCallbacks, _pSurface: *mut SurfaceKHR) -> Result{
+    panic!("extension vkCreateImagePipeSurfaceFUCHSIA not loaded")
+}
+extern "system" fn CreateSwapchainKHR_panic(_device: Device, _pCreateInfo: *const SwapchainCreateInfoKHR, _pAllocator: *const AllocationCallbacks, _pSwapchain: *mut SwapchainKHR) -> Result{
+    panic!("extension vkCreateSwapchainKHR not loaded")
+}
+extern "system" fn DestroySwapchainKHR_panic(_device: Device, _swapchain: SwapchainKHR, _pAllocator: *const AllocationCallbacks){
+    panic!("extension vkDestroySwapchainKHR not loaded")
+}
+extern "system" fn GetSwapchainImagesKHR_panic(_device: Device, _swapchain: SwapchainKHR, _pSwapchainImageCount: *mut u32, _pSwapchainImages: *mut Image) -> Result{
+    panic!("extension vkGetSwapchainImagesKHR not loaded")
+}
+extern "system" fn AcquireNextImageKHR_panic(_device: Device, _swapchain: SwapchainKHR, _timeout: u64, _semaphore: Semaphore, _fence: Fence, _pImageIndex: *mut u32) -> Result{
+    panic!("extension vkAcquireNextImageKHR not loaded")
+}
+extern "system" fn QueuePresentKHR_panic(_queue: Queue, _pPresentInfo: *const PresentInfoKHR) -> Result{
+    panic!("extension vkQueuePresentKHR not loaded")
+}
+extern "system" fn GetDeviceGroupPresentCapabilitiesKHR_panic(_device: Device, _pDeviceGroupPresentCapabilities: *mut DeviceGroupPresentCapabilitiesKHR) -> Result{
+    panic!("extension vkGetDeviceGroupPresentCapabilitiesKHR not loaded")
+}
+extern "system" fn GetDeviceGroupSurfacePresentModesKHR_panic(_device: Device, _surface: SurfaceKHR, _pModes: *mut DeviceGroupPresentModeFlagsKHR) -> Result{
+    panic!("extension vkGetDeviceGroupSurfacePresentModesKHR not loaded")
+}
+extern "system" fn GetPhysicalDevicePresentRectanglesKHR_panic(_physicalDevice: PhysicalDevice, _surface: SurfaceKHR, _pRectCount: *mut u32, _pRects: *mut Rect2D) -> Result{
+    panic!("extension vkGetPhysicalDevicePresentRectanglesKHR not loaded")
+}
+extern "system" fn AcquireNextImage2KHR_panic(_device: Device, _pAcquireInfo: *const AcquireNextImageInfoKHR, _pImageIndex: *mut u32) -> Result{
+    panic!("extension vkAcquireNextImage2KHR not loaded")
+}
+extern "system" fn CreateSharedSwapchainsKHR_panic(_device: Device, _swapchainCount: u32, _pCreateInfos: *const SwapchainCreateInfoKHR, _pAllocator: *const AllocationCallbacks, _pSwapchains: *mut SwapchainKHR) -> Result{
+    panic!("extension vkCreateSharedSwapchainsKHR not loaded")
+}
+extern "system" fn DebugMarkerSetObjectTagEXT_panic(_device: Device, _pTagInfo: *const DebugMarkerObjectTagInfoEXT) -> Result{
+    panic!("extension vkDebugMarkerSetObjectTagEXT not loaded")
+}
+extern "system" fn DebugMarkerSetObjectNameEXT_panic(_device: Device, _pNameInfo: *const DebugMarkerObjectNameInfoEXT) -> Result{
+    panic!("extension vkDebugMarkerSetObjectNameEXT not loaded")
+}
+extern "system" fn CmdDebugMarkerBeginEXT_panic(_commandBuffer: CommandBuffer, _pMarkerInfo: *const DebugMarkerMarkerInfoEXT){
+    panic!("extension vkCmdDebugMarkerBeginEXT not loaded")
+}
+extern "system" fn CmdDebugMarkerEndEXT_panic(_commandBuffer: CommandBuffer){
+    panic!("extension vkCmdDebugMarkerEndEXT not loaded")
+}
+extern "system" fn CmdDebugMarkerInsertEXT_panic(_commandBuffer: CommandBuffer, _pMarkerInfo: *const DebugMarkerMarkerInfoEXT){
+    panic!("extension vkCmdDebugMarkerInsertEXT not loaded")
+}
+extern "system" fn CmdBindTransformFeedbackBuffersEXT_panic(_commandBuffer: CommandBuffer, _firstBinding: u32, _bindingCount: u32, _pBuffers: *const Buffer, _pOffsets: *const DeviceSize, _pSizes: *const DeviceSize){
+    panic!("extension vkCmdBindTransformFeedbackBuffersEXT not loaded")
+}
+extern "system" fn CmdBeginTransformFeedbackEXT_panic(_commandBuffer: CommandBuffer, _firstCounterBuffer: u32, _counterBufferCount: u32, _pCounterBuffers: *const Buffer, _pCounterBufferOffsets: *const DeviceSize){
+    panic!("extension vkCmdBeginTransformFeedbackEXT not loaded")
+}
+extern "system" fn CmdEndTransformFeedbackEXT_panic(_commandBuffer: CommandBuffer, _firstCounterBuffer: u32, _counterBufferCount: u32, _pCounterBuffers: *const Buffer, _pCounterBufferOffsets: *const DeviceSize){
+    panic!("extension vkCmdEndTransformFeedbackEXT not loaded")
+}
+extern "system" fn CmdBeginQueryIndexedEXT_panic(_commandBuffer: CommandBuffer, _queryPool: QueryPool, _query: u32, _flags: QueryControlFlags, _index: u32){
+    panic!("extension vkCmdBeginQueryIndexedEXT not loaded")
+}
+extern "system" fn CmdEndQueryIndexedEXT_panic(_commandBuffer: CommandBuffer, _queryPool: QueryPool, _query: u32, _index: u32){
+    panic!("extension vkCmdEndQueryIndexedEXT not loaded")
+}
+extern "system" fn CmdDrawIndirectByteCountEXT_panic(_commandBuffer: CommandBuffer, _instanceCount: u32, _firstInstance: u32, _counterBuffer: Buffer, _counterBufferOffset: DeviceSize, _counterOffset: u32, _vertexStride: u32){
+    panic!("extension vkCmdDrawIndirectByteCountEXT not loaded")
+}
+extern "system" fn CmdDrawIndirectCountAMD_panic(_commandBuffer: CommandBuffer, _buffer: Buffer, _offset: DeviceSize, _countBuffer: Buffer, _countBufferOffset: DeviceSize, _maxDrawCount: u32, _stride: u32){
+    panic!("extension vkCmdDrawIndirectCountAMD not loaded")
+}
+extern "system" fn CmdDrawIndexedIndirectCountAMD_panic(_commandBuffer: CommandBuffer, _buffer: Buffer, _offset: DeviceSize, _countBuffer: Buffer, _countBufferOffset: DeviceSize, _maxDrawCount: u32, _stride: u32){
+    panic!("extension vkCmdDrawIndexedIndirectCountAMD not loaded")
+}
+extern "system" fn GetShaderInfoAMD_panic(_device: Device, _pipeline: Pipeline, _shaderStage: ShaderStageFlagBits, _infoType: ShaderInfoTypeAMD, _pInfoSize: *mut usize, _pInfo: *mut c_void) -> Result{
+    panic!("extension vkGetShaderInfoAMD not loaded")
+}
+extern "system" fn GetMemoryWin32HandleNV_panic(_device: Device, _memory: DeviceMemory, _handleType: ExternalMemoryHandleTypeFlagsNV, _pHandle: *mut HANDLE) -> Result{
+    panic!("extension vkGetMemoryWin32HandleNV not loaded")
+}
+extern "system" fn GetMemoryWin32HandleKHR_panic(_device: Device, _pGetWin32HandleInfo: *const MemoryGetWin32HandleInfoKHR, _pHandle: *mut HANDLE) -> Result{
+    panic!("extension vkGetMemoryWin32HandleKHR not loaded")
+}
+extern "system" fn GetMemoryWin32HandlePropertiesKHR_panic(_device: Device, _handleType: ExternalMemoryHandleTypeFlagBits, _handle: HANDLE, _pMemoryWin32HandleProperties: *mut MemoryWin32HandlePropertiesKHR) -> Result{
+    panic!("extension vkGetMemoryWin32HandlePropertiesKHR not loaded")
+}
+extern "system" fn GetMemoryFdKHR_panic(_device: Device, _pGetFdInfo: *const MemoryGetFdInfoKHR, _pFd: *mut i32) -> Result{
+    panic!("extension vkGetMemoryFdKHR not loaded")
+}
+extern "system" fn GetMemoryFdPropertiesKHR_panic(_device: Device, _handleType: ExternalMemoryHandleTypeFlagBits, _fd: i32, _pMemoryFdProperties: *mut MemoryFdPropertiesKHR) -> Result{
+    panic!("extension vkGetMemoryFdPropertiesKHR not loaded")
+}
+extern "system" fn ImportSemaphoreWin32HandleKHR_panic(_device: Device, _pImportSemaphoreWin32HandleInfo: *const ImportSemaphoreWin32HandleInfoKHR) -> Result{
+    panic!("extension vkImportSemaphoreWin32HandleKHR not loaded")
+}
+extern "system" fn GetSemaphoreWin32HandleKHR_panic(_device: Device, _pGetWin32HandleInfo: *const SemaphoreGetWin32HandleInfoKHR, _pHandle: *mut HANDLE) -> Result{
+    panic!("extension vkGetSemaphoreWin32HandleKHR not loaded")
+}
+extern "system" fn ImportSemaphoreFdKHR_panic(_device: Device, _pImportSemaphoreFdInfo: *const ImportSemaphoreFdInfoKHR) -> Result{
+    panic!("extension vkImportSemaphoreFdKHR not loaded")
+}
+extern "system" fn GetSemaphoreFdKHR_panic(_device: Device, _pGetFdInfo: *const SemaphoreGetFdInfoKHR, _pFd: *mut i32) -> Result{
+    panic!("extension vkGetSemaphoreFdKHR not loaded")
+}
+extern "system" fn CmdPushDescriptorSetKHR_panic(_commandBuffer: CommandBuffer, _pipelineBindPoint: PipelineBindPoint, _layout: PipelineLayout, _set: u32, _descriptorWriteCount: u32, _pDescriptorWrites: *const WriteDescriptorSet){
+    panic!("extension vkCmdPushDescriptorSetKHR not loaded")
+}
+extern "system" fn CmdPushDescriptorSetWithTemplateKHR_panic(_commandBuffer: CommandBuffer, _descriptorUpdateTemplate: DescriptorUpdateTemplate, _layout: PipelineLayout, _set: u32, _pData: *const c_void){
+    panic!("extension vkCmdPushDescriptorSetWithTemplateKHR not loaded")
+}
+extern "system" fn CmdBeginConditionalRenderingEXT_panic(_commandBuffer: CommandBuffer, _pConditionalRenderingBegin: *const ConditionalRenderingBeginInfoEXT){
+    panic!("extension vkCmdBeginConditionalRenderingEXT not loaded")
+}
+extern "system" fn CmdEndConditionalRenderingEXT_panic(_commandBuffer: CommandBuffer){
+    panic!("extension vkCmdEndConditionalRenderingEXT not loaded")
+}
+extern "system" fn CmdProcessCommandsNVX_panic(_commandBuffer: CommandBuffer, _pProcessCommandsInfo: *const CmdProcessCommandsInfoNVX){
+    panic!("extension vkCmdProcessCommandsNVX not loaded")
+}
+extern "system" fn CmdReserveSpaceForCommandsNVX_panic(_commandBuffer: CommandBuffer, _pReserveSpaceInfo: *const CmdReserveSpaceForCommandsInfoNVX){
+    panic!("extension vkCmdReserveSpaceForCommandsNVX not loaded")
+}
+extern "system" fn CreateIndirectCommandsLayoutNVX_panic(_device: Device, _pCreateInfo: *const IndirectCommandsLayoutCreateInfoNVX, _pAllocator: *const AllocationCallbacks, _pIndirectCommandsLayout: *mut IndirectCommandsLayoutNVX) -> Result{
+    panic!("extension vkCreateIndirectCommandsLayoutNVX not loaded")
+}
+extern "system" fn DestroyIndirectCommandsLayoutNVX_panic(_device: Device, _indirectCommandsLayout: IndirectCommandsLayoutNVX, _pAllocator: *const AllocationCallbacks){
+    panic!("extension vkDestroyIndirectCommandsLayoutNVX not loaded")
+}
+extern "system" fn CreateObjectTableNVX_panic(_device: Device, _pCreateInfo: *const ObjectTableCreateInfoNVX, _pAllocator: *const AllocationCallbacks, _pObjectTable: *mut ObjectTableNVX) -> Result{
+    panic!("extension vkCreateObjectTableNVX not loaded")
+}
+extern "system" fn DestroyObjectTableNVX_panic(_device: Device, _objectTable: ObjectTableNVX, _pAllocator: *const AllocationCallbacks){
+    panic!("extension vkDestroyObjectTableNVX not loaded")
+}
+extern "system" fn RegisterObjectsNVX_panic(_device: Device, _objectTable: ObjectTableNVX, _objectCount: u32, _ppObjectTableEntries: *const *const ObjectTableEntryNVX, _pObjectIndices: *const u32) -> Result{
+    panic!("extension vkRegisterObjectsNVX not loaded")
+}
+extern "system" fn UnregisterObjectsNVX_panic(_device: Device, _objectTable: ObjectTableNVX, _objectCount: u32, _pObjectEntryTypes: *const ObjectEntryTypeNVX, _pObjectIndices: *const u32) -> Result{
+    panic!("extension vkUnregisterObjectsNVX not loaded")
+}
+extern "system" fn GetPhysicalDeviceGeneratedCommandsPropertiesNVX_panic(_physicalDevice: PhysicalDevice, _pFeatures: *mut DeviceGeneratedCommandsFeaturesNVX, _pLimits: *mut DeviceGeneratedCommandsLimitsNVX){
+    panic!("extension vkGetPhysicalDeviceGeneratedCommandsPropertiesNVX not loaded")
+}
+extern "system" fn CmdSetViewportWScalingNV_panic(_commandBuffer: CommandBuffer, _firstViewport: u32, _viewportCount: u32, _pViewportWScalings: *const ViewportWScalingNV){
+    panic!("extension vkCmdSetViewportWScalingNV not loaded")
+}
+extern "system" fn DisplayPowerControlEXT_panic(_device: Device, _display: DisplayKHR, _pDisplayPowerInfo: *const DisplayPowerInfoEXT) -> Result{
+    panic!("extension vkDisplayPowerControlEXT not loaded")
+}
+extern "system" fn RegisterDeviceEventEXT_panic(_device: Device, _pDeviceEventInfo: *const DeviceEventInfoEXT, _pAllocator: *const AllocationCallbacks, _pFence: *mut Fence) -> Result{
+    panic!("extension vkRegisterDeviceEventEXT not loaded")
+}
+extern "system" fn RegisterDisplayEventEXT_panic(_device: Device, _display: DisplayKHR, _pDisplayEventInfo: *const DisplayEventInfoEXT, _pAllocator: *const AllocationCallbacks, _pFence: *mut Fence) -> Result{
+    panic!("extension vkRegisterDisplayEventEXT not loaded")
+}
+extern "system" fn GetSwapchainCounterEXT_panic(_device: Device, _swapchain: SwapchainKHR, _counter: SurfaceCounterFlagBitsEXT, _pCounterValue: *mut u64) -> Result{
+    panic!("extension vkGetSwapchainCounterEXT not loaded")
+}
+extern "system" fn GetRefreshCycleDurationGOOGLE_panic(_device: Device, _swapchain: SwapchainKHR, _pDisplayTimingProperties: *mut RefreshCycleDurationGOOGLE) -> Result{
+    panic!("extension vkGetRefreshCycleDurationGOOGLE not loaded")
+}
+extern "system" fn GetPastPresentationTimingGOOGLE_panic(_device: Device, _swapchain: SwapchainKHR, _pPresentationTimingCount: *mut u32, _pPresentationTimings: *mut PastPresentationTimingGOOGLE) -> Result{
+    panic!("extension vkGetPastPresentationTimingGOOGLE not loaded")
+}
+extern "system" fn CmdSetDiscardRectangleEXT_panic(_commandBuffer: CommandBuffer, _firstDiscardRectangle: u32, _discardRectangleCount: u32, _pDiscardRectangles: *const Rect2D){
+    panic!("extension vkCmdSetDiscardRectangleEXT not loaded")
+}
+extern "system" fn SetHdrMetadataEXT_panic(_device: Device, _swapchainCount: u32, _pSwapchains: *const SwapchainKHR, _pMetadata: *const HdrMetadataEXT){
+    panic!("extension vkSetHdrMetadataEXT not loaded")
+}
+extern "system" fn CreateRenderPass2KHR_panic(_device: Device, _pCreateInfo: *const RenderPassCreateInfo2KHR, _pAllocator: *const AllocationCallbacks, _pRenderPass: *mut RenderPass) -> Result{
+    panic!("extension vkCreateRenderPass2KHR not loaded")
+}
+extern "system" fn CmdBeginRenderPass2KHR_panic(_commandBuffer: CommandBuffer, _pRenderPassBegin: *const RenderPassBeginInfo, _pSubpassBeginInfo: *const SubpassBeginInfoKHR){
+    panic!("extension vkCmdBeginRenderPass2KHR not loaded")
+}
+extern "system" fn CmdNextSubpass2KHR_panic(_commandBuffer: CommandBuffer, _pSubpassBeginInfo: *const SubpassBeginInfoKHR, _pSubpassEndInfo: *const SubpassEndInfoKHR){
+    panic!("extension vkCmdNextSubpass2KHR not loaded")
+}
+extern "system" fn CmdEndRenderPass2KHR_panic(_commandBuffer: CommandBuffer, _pSubpassEndInfo: *const SubpassEndInfoKHR){
+    panic!("extension vkCmdEndRenderPass2KHR not loaded")
+}
+extern "system" fn GetSwapchainStatusKHR_panic(_device: Device, _swapchain: SwapchainKHR) -> Result{
+    panic!("extension vkGetSwapchainStatusKHR not loaded")
+}
+extern "system" fn ImportFenceWin32HandleKHR_panic(_device: Device, _pImportFenceWin32HandleInfo: *const ImportFenceWin32HandleInfoKHR) -> Result{
+    panic!("extension vkImportFenceWin32HandleKHR not loaded")
+}
+extern "system" fn GetFenceWin32HandleKHR_panic(_device: Device, _pGetWin32HandleInfo: *const FenceGetWin32HandleInfoKHR, _pHandle: *mut HANDLE) -> Result{
+    panic!("extension vkGetFenceWin32HandleKHR not loaded")
+}
+extern "system" fn ImportFenceFdKHR_panic(_device: Device, _pImportFenceFdInfo: *const ImportFenceFdInfoKHR) -> Result{
+    panic!("extension vkImportFenceFdKHR not loaded")
+}
+extern "system" fn GetFenceFdKHR_panic(_device: Device, _pGetFdInfo: *const FenceGetFdInfoKHR, _pFd: *mut i32) -> Result{
+    panic!("extension vkGetFenceFdKHR not loaded")
+}
+extern "system" fn GetAndroidHardwareBufferPropertiesANDROID_panic(_device: Device, _buffer: *const AHardwareBuffer, _pProperties: *mut AndroidHardwareBufferPropertiesANDROID) -> Result{
+    panic!("extension vkGetAndroidHardwareBufferPropertiesANDROID not loaded")
+}
+extern "system" fn GetMemoryAndroidHardwareBufferANDROID_panic(_device: Device, _pInfo: *const MemoryGetAndroidHardwareBufferInfoANDROID, _pBuffer: *mut *mut AHardwareBuffer) -> Result{
+    panic!("extension vkGetMemoryAndroidHardwareBufferANDROID not loaded")
+}
+extern "system" fn CmdSetSampleLocationsEXT_panic(_commandBuffer: CommandBuffer, _pSampleLocationsInfo: *const SampleLocationsInfoEXT){
+    panic!("extension vkCmdSetSampleLocationsEXT not loaded")
+}
+extern "system" fn GetPhysicalDeviceMultisamplePropertiesEXT_panic(_physicalDevice: PhysicalDevice, _samples: SampleCountFlagBits, _pMultisampleProperties: *mut MultisamplePropertiesEXT){
+    panic!("extension vkGetPhysicalDeviceMultisamplePropertiesEXT not loaded")
+}
+extern "system" fn GetImageDrmFormatModifierPropertiesEXT_panic(_device: Device, _image: Image, _pProperties: *mut ImageDrmFormatModifierPropertiesEXT) -> Result{
+    panic!("extension vkGetImageDrmFormatModifierPropertiesEXT not loaded")
+}
+extern "system" fn CreateValidationCacheEXT_panic(_device: Device, _pCreateInfo: *const ValidationCacheCreateInfoEXT, _pAllocator: *const AllocationCallbacks, _pValidationCache: *mut ValidationCacheEXT) -> Result{
+    panic!("extension vkCreateValidationCacheEXT not loaded")
+}
+extern "system" fn DestroyValidationCacheEXT_panic(_device: Device, _validationCache: ValidationCacheEXT, _pAllocator: *const AllocationCallbacks){
+    panic!("extension vkDestroyValidationCacheEXT not loaded")
+}
+extern "system" fn MergeValidationCachesEXT_panic(_device: Device, _dstCache: ValidationCacheEXT, _srcCacheCount: u32, _pSrcCaches: *const ValidationCacheEXT) -> Result{
+    panic!("extension vkMergeValidationCachesEXT not loaded")
+}
+extern "system" fn GetValidationCacheDataEXT_panic(_device: Device, _validationCache: ValidationCacheEXT, _pDataSize: *mut usize, _pData: *mut c_void) -> Result{
+    panic!("extension vkGetValidationCacheDataEXT not loaded")
+}
+extern "system" fn CmdBindShadingRateImageNV_panic(_commandBuffer: CommandBuffer, _imageView: ImageView, _imageLayout: ImageLayout){
+    panic!("extension vkCmdBindShadingRateImageNV not loaded")
+}
+extern "system" fn CmdSetViewportShadingRatePaletteNV_panic(_commandBuffer: CommandBuffer, _firstViewport: u32, _viewportCount: u32, _pShadingRatePalettes: *const ShadingRatePaletteNV){
+    panic!("extension vkCmdSetViewportShadingRatePaletteNV not loaded")
+}
+extern "system" fn CmdSetCoarseSampleOrderNV_panic(_commandBuffer: CommandBuffer, _sampleOrderType: CoarseSampleOrderTypeNV, _customSampleOrderCount: u32, _pCustomSampleOrders: *const CoarseSampleOrderCustomNV){
+    panic!("extension vkCmdSetCoarseSampleOrderNV not loaded")
+}
+extern "system" fn CreateAccelerationStructureNV_panic(_device: Device, _pCreateInfo: *const AccelerationStructureCreateInfoNV, _pAllocator: *const AllocationCallbacks, _pAccelerationStructure: *mut AccelerationStructureNV) -> Result{
+    panic!("extension vkCreateAccelerationStructureNV not loaded")
+}
+extern "system" fn DestroyAccelerationStructureNV_panic(_device: Device, _accelerationStructure: AccelerationStructureNV, _pAllocator: *const AllocationCallbacks){
+    panic!("extension vkDestroyAccelerationStructureNV not loaded")
+}
+extern "system" fn GetAccelerationStructureMemoryRequirementsNV_panic(_device: Device, _pInfo: *const AccelerationStructureMemoryRequirementsInfoNV, _pMemoryRequirements: *mut MemoryRequirements2){
+    panic!("extension vkGetAccelerationStructureMemoryRequirementsNV not loaded")
+}
+extern "system" fn BindAccelerationStructureMemoryNV_panic(_device: Device, _bindInfoCount: u32, _pBindInfos: *const BindAccelerationStructureMemoryInfoNV) -> Result{
+    panic!("extension vkBindAccelerationStructureMemoryNV not loaded")
+}
+extern "system" fn CmdBuildAccelerationStructureNV_panic(_commandBuffer: CommandBuffer, _pInfo: *const AccelerationStructureInfoNV, _instanceData: Buffer, _instanceOffset: DeviceSize, _update: Bool32, _dst: AccelerationStructureNV, _src: AccelerationStructureNV, _scratch: Buffer, _scratchOffset: DeviceSize){
+    panic!("extension vkCmdBuildAccelerationStructureNV not loaded")
+}
+extern "system" fn CmdCopyAccelerationStructureNV_panic(_commandBuffer: CommandBuffer, _dst: AccelerationStructureNV, _src: AccelerationStructureNV, _mode: CopyAccelerationStructureModeNV){
+    panic!("extension vkCmdCopyAccelerationStructureNV not loaded")
+}
+extern "system" fn CmdTraceRaysNV_panic(_commandBuffer: CommandBuffer, _raygenShaderBindingTableBuffer: Buffer, _raygenShaderBindingOffset: DeviceSize, _missShaderBindingTableBuffer: Buffer, _missShaderBindingOffset: DeviceSize, _missShaderBindingStride: DeviceSize, _hitShaderBindingTableBuffer: Buffer, _hitShaderBindingOffset: DeviceSize, _hitShaderBindingStride: DeviceSize, _callableShaderBindingTableBuffer: Buffer, _callableShaderBindingOffset: DeviceSize, _callableShaderBindingStride: DeviceSize, _width: u32, _height: u32, _depth: u32){
+    panic!("extension vkCmdTraceRaysNV not loaded")
+}
+extern "system" fn CreateRayTracingPipelinesNV_panic(_device: Device, _pipelineCache: PipelineCache, _createInfoCount: u32, _pCreateInfos: *const RayTracingPipelineCreateInfoNV, _pAllocator: *const AllocationCallbacks, _pPipelines: *mut Pipeline) -> Result{
+    panic!("extension vkCreateRayTracingPipelinesNV not loaded")
+}
+extern "system" fn GetRayTracingShaderGroupHandlesNV_panic(_device: Device, _pipeline: Pipeline, _firstGroup: u32, _groupCount: u32, _dataSize: usize, _pData: *mut c_void) -> Result{
+    panic!("extension vkGetRayTracingShaderGroupHandlesNV not loaded")
+}
+extern "system" fn GetAccelerationStructureHandleNV_panic(_device: Device, _accelerationStructure: AccelerationStructureNV, _dataSize: usize, _pData: *mut c_void) -> Result{
+    panic!("extension vkGetAccelerationStructureHandleNV not loaded")
+}
+extern "system" fn CmdWriteAccelerationStructuresPropertiesNV_panic(_commandBuffer: CommandBuffer, _accelerationStructureCount: u32, _pAccelerationStructures: *const AccelerationStructureNV, _queryType: QueryType, _queryPool: QueryPool, _firstQuery: u32){
+    panic!("extension vkCmdWriteAccelerationStructuresPropertiesNV not loaded")
+}
+extern "system" fn CompileDeferredNV_panic(_device: Device, _pipeline: Pipeline, _shader: u32) -> Result{
+    panic!("extension vkCompileDeferredNV not loaded")
+}
+extern "system" fn CmdDrawIndirectCountKHR_panic(_commandBuffer: CommandBuffer, _buffer: Buffer, _offset: DeviceSize, _countBuffer: Buffer, _countBufferOffset: DeviceSize, _maxDrawCount: u32, _stride: u32){
+    panic!("extension vkCmdDrawIndirectCountKHR not loaded")
+}
+extern "system" fn CmdDrawIndexedIndirectCountKHR_panic(_commandBuffer: CommandBuffer, _buffer: Buffer, _offset: DeviceSize, _countBuffer: Buffer, _countBufferOffset: DeviceSize, _maxDrawCount: u32, _stride: u32){
+    panic!("extension vkCmdDrawIndexedIndirectCountKHR not loaded")
+}
+extern "system" fn GetMemoryHostPointerPropertiesEXT_panic(_device: Device, _handleType: ExternalMemoryHandleTypeFlagBits, _pHostPointer: *const c_void, _pMemoryHostPointerProperties: *mut MemoryHostPointerPropertiesEXT) -> Result{
+    panic!("extension vkGetMemoryHostPointerPropertiesEXT not loaded")
+}
+extern "system" fn CmdWriteBufferMarkerAMD_panic(_commandBuffer: CommandBuffer, _pipelineStage: PipelineStageFlagBits, _dstBuffer: Buffer, _dstOffset: DeviceSize, _marker: u32){
+    panic!("extension vkCmdWriteBufferMarkerAMD not loaded")
+}
+extern "system" fn GetPhysicalDeviceCalibrateableTimeDomainsEXT_panic(_physicalDevice: PhysicalDevice, _pTimeDomainCount: *mut u32, _pTimeDomains: *mut TimeDomainEXT) -> Result{
+    panic!("extension vkGetPhysicalDeviceCalibrateableTimeDomainsEXT not loaded")
+}
+extern "system" fn GetCalibratedTimestampsEXT_panic(_device: Device, _timestampCount: u32, _pTimestampInfos: *const CalibratedTimestampInfoEXT, _pTimestamps: *mut u64, _pMaxDeviation: *mut u64) -> Result{
+    panic!("extension vkGetCalibratedTimestampsEXT not loaded")
+}
+extern "system" fn CmdDrawMeshTasksNV_panic(_commandBuffer: CommandBuffer, _taskCount: u32, _firstTask: u32){
+    panic!("extension vkCmdDrawMeshTasksNV not loaded")
+}
+extern "system" fn CmdDrawMeshTasksIndirectNV_panic(_commandBuffer: CommandBuffer, _buffer: Buffer, _offset: DeviceSize, _drawCount: u32, _stride: u32){
+    panic!("extension vkCmdDrawMeshTasksIndirectNV not loaded")
+}
+extern "system" fn CmdDrawMeshTasksIndirectCountNV_panic(_commandBuffer: CommandBuffer, _buffer: Buffer, _offset: DeviceSize, _countBuffer: Buffer, _countBufferOffset: DeviceSize, _maxDrawCount: u32, _stride: u32){
+    panic!("extension vkCmdDrawMeshTasksIndirectCountNV not loaded")
+}
+extern "system" fn CmdSetExclusiveScissorNV_panic(_commandBuffer: CommandBuffer, _firstExclusiveScissor: u32, _exclusiveScissorCount: u32, _pExclusiveScissors: *const Rect2D){
+    panic!("extension vkCmdSetExclusiveScissorNV not loaded")
+}
+extern "system" fn CmdSetCheckpointNV_panic(_commandBuffer: CommandBuffer, _pCheckpointMarker: *const c_void){
+    panic!("extension vkCmdSetCheckpointNV not loaded")
+}
+extern "system" fn GetQueueCheckpointDataNV_panic(_queue: Queue, _pCheckpointDataCount: *mut u32, _pCheckpointData: *mut CheckpointDataNV){
+    panic!("extension vkGetQueueCheckpointDataNV not loaded")
+}
 
 
-impl Default for Core {
+impl Default for VkLib {
   /// Initializes all function pointers to functions that immediately panic.
-  fn default() -> Core {
-    Core {
+  fn default() -> VkLib {
+    VkLib {
       lib: shared_library::dynamic_library::DynamicLibrary::open(None).expect("can not open library"),
       feature: 0,
       CreateInstance_ptr: CreateInstance_panic,
@@ -7334,29 +8253,179 @@ impl Default for Core {
       GetPhysicalDeviceExternalFenceProperties_ptr: GetPhysicalDeviceExternalFenceProperties_panic,
       GetPhysicalDeviceExternalSemaphoreProperties_ptr: GetPhysicalDeviceExternalSemaphoreProperties_panic,
       GetDescriptorSetLayoutSupport_ptr: GetDescriptorSetLayoutSupport_panic,
+      DestroySurfaceKHR_ptr: DestroySurfaceKHR_panic,
+      GetPhysicalDeviceSurfaceSupportKHR_ptr: GetPhysicalDeviceSurfaceSupportKHR_panic,
+      GetPhysicalDeviceSurfaceCapabilitiesKHR_ptr: GetPhysicalDeviceSurfaceCapabilitiesKHR_panic,
+      GetPhysicalDeviceSurfaceFormatsKHR_ptr: GetPhysicalDeviceSurfaceFormatsKHR_panic,
+      GetPhysicalDeviceSurfacePresentModesKHR_ptr: GetPhysicalDeviceSurfacePresentModesKHR_panic,
+      GetPhysicalDeviceDisplayPropertiesKHR_ptr: GetPhysicalDeviceDisplayPropertiesKHR_panic,
+      GetPhysicalDeviceDisplayPlanePropertiesKHR_ptr: GetPhysicalDeviceDisplayPlanePropertiesKHR_panic,
+      GetDisplayPlaneSupportedDisplaysKHR_ptr: GetDisplayPlaneSupportedDisplaysKHR_panic,
+      GetDisplayModePropertiesKHR_ptr: GetDisplayModePropertiesKHR_panic,
+      CreateDisplayModeKHR_ptr: CreateDisplayModeKHR_panic,
+      GetDisplayPlaneCapabilitiesKHR_ptr: GetDisplayPlaneCapabilitiesKHR_panic,
+      CreateDisplayPlaneSurfaceKHR_ptr: CreateDisplayPlaneSurfaceKHR_panic,
+      CreateXlibSurfaceKHR_ptr: CreateXlibSurfaceKHR_panic,
+      GetPhysicalDeviceXlibPresentationSupportKHR_ptr: GetPhysicalDeviceXlibPresentationSupportKHR_panic,
+      CreateXcbSurfaceKHR_ptr: CreateXcbSurfaceKHR_panic,
+      GetPhysicalDeviceXcbPresentationSupportKHR_ptr: GetPhysicalDeviceXcbPresentationSupportKHR_panic,
+      CreateWaylandSurfaceKHR_ptr: CreateWaylandSurfaceKHR_panic,
+      GetPhysicalDeviceWaylandPresentationSupportKHR_ptr: GetPhysicalDeviceWaylandPresentationSupportKHR_panic,
+      CreateAndroidSurfaceKHR_ptr: CreateAndroidSurfaceKHR_panic,
+      CreateWin32SurfaceKHR_ptr: CreateWin32SurfaceKHR_panic,
+      GetPhysicalDeviceWin32PresentationSupportKHR_ptr: GetPhysicalDeviceWin32PresentationSupportKHR_panic,
+      CreateDebugReportCallbackEXT_ptr: CreateDebugReportCallbackEXT_panic,
+      DestroyDebugReportCallbackEXT_ptr: DestroyDebugReportCallbackEXT_panic,
+      DebugReportMessageEXT_ptr: DebugReportMessageEXT_panic,
+      GetPhysicalDeviceExternalImageFormatPropertiesNV_ptr: GetPhysicalDeviceExternalImageFormatPropertiesNV_panic,
+      CreateViSurfaceNN_ptr: CreateViSurfaceNN_panic,
+      ReleaseDisplayEXT_ptr: ReleaseDisplayEXT_panic,
+      AcquireXlibDisplayEXT_ptr: AcquireXlibDisplayEXT_panic,
+      GetRandROutputDisplayEXT_ptr: GetRandROutputDisplayEXT_panic,
+      GetPhysicalDeviceSurfaceCapabilities2EXT_ptr: GetPhysicalDeviceSurfaceCapabilities2EXT_panic,
+      GetPhysicalDeviceSurfaceCapabilities2KHR_ptr: GetPhysicalDeviceSurfaceCapabilities2KHR_panic,
+      GetPhysicalDeviceSurfaceFormats2KHR_ptr: GetPhysicalDeviceSurfaceFormats2KHR_panic,
+      GetPhysicalDeviceDisplayProperties2KHR_ptr: GetPhysicalDeviceDisplayProperties2KHR_panic,
+      GetPhysicalDeviceDisplayPlaneProperties2KHR_ptr: GetPhysicalDeviceDisplayPlaneProperties2KHR_panic,
+      GetDisplayModeProperties2KHR_ptr: GetDisplayModeProperties2KHR_panic,
+      GetDisplayPlaneCapabilities2KHR_ptr: GetDisplayPlaneCapabilities2KHR_panic,
+      CreateIOSSurfaceMVK_ptr: CreateIOSSurfaceMVK_panic,
+      CreateMacOSSurfaceMVK_ptr: CreateMacOSSurfaceMVK_panic,
+      SetDebugUtilsObjectNameEXT_ptr: SetDebugUtilsObjectNameEXT_panic,
+      SetDebugUtilsObjectTagEXT_ptr: SetDebugUtilsObjectTagEXT_panic,
+      QueueBeginDebugUtilsLabelEXT_ptr: QueueBeginDebugUtilsLabelEXT_panic,
+      QueueEndDebugUtilsLabelEXT_ptr: QueueEndDebugUtilsLabelEXT_panic,
+      QueueInsertDebugUtilsLabelEXT_ptr: QueueInsertDebugUtilsLabelEXT_panic,
+      CmdBeginDebugUtilsLabelEXT_ptr: CmdBeginDebugUtilsLabelEXT_panic,
+      CmdEndDebugUtilsLabelEXT_ptr: CmdEndDebugUtilsLabelEXT_panic,
+      CmdInsertDebugUtilsLabelEXT_ptr: CmdInsertDebugUtilsLabelEXT_panic,
+      CreateDebugUtilsMessengerEXT_ptr: CreateDebugUtilsMessengerEXT_panic,
+      DestroyDebugUtilsMessengerEXT_ptr: DestroyDebugUtilsMessengerEXT_panic,
+      SubmitDebugUtilsMessageEXT_ptr: SubmitDebugUtilsMessageEXT_panic,
+      CreateImagePipeSurfaceFUCHSIA_ptr: CreateImagePipeSurfaceFUCHSIA_panic,
+      CreateSwapchainKHR_ptr: CreateSwapchainKHR_panic,
+      DestroySwapchainKHR_ptr: DestroySwapchainKHR_panic,
+      GetSwapchainImagesKHR_ptr: GetSwapchainImagesKHR_panic,
+      AcquireNextImageKHR_ptr: AcquireNextImageKHR_panic,
+      QueuePresentKHR_ptr: QueuePresentKHR_panic,
+      GetDeviceGroupPresentCapabilitiesKHR_ptr: GetDeviceGroupPresentCapabilitiesKHR_panic,
+      GetDeviceGroupSurfacePresentModesKHR_ptr: GetDeviceGroupSurfacePresentModesKHR_panic,
+      GetPhysicalDevicePresentRectanglesKHR_ptr: GetPhysicalDevicePresentRectanglesKHR_panic,
+      AcquireNextImage2KHR_ptr: AcquireNextImage2KHR_panic,
+      CreateSharedSwapchainsKHR_ptr: CreateSharedSwapchainsKHR_panic,
+      DebugMarkerSetObjectTagEXT_ptr: DebugMarkerSetObjectTagEXT_panic,
+      DebugMarkerSetObjectNameEXT_ptr: DebugMarkerSetObjectNameEXT_panic,
+      CmdDebugMarkerBeginEXT_ptr: CmdDebugMarkerBeginEXT_panic,
+      CmdDebugMarkerEndEXT_ptr: CmdDebugMarkerEndEXT_panic,
+      CmdDebugMarkerInsertEXT_ptr: CmdDebugMarkerInsertEXT_panic,
+      CmdBindTransformFeedbackBuffersEXT_ptr: CmdBindTransformFeedbackBuffersEXT_panic,
+      CmdBeginTransformFeedbackEXT_ptr: CmdBeginTransformFeedbackEXT_panic,
+      CmdEndTransformFeedbackEXT_ptr: CmdEndTransformFeedbackEXT_panic,
+      CmdBeginQueryIndexedEXT_ptr: CmdBeginQueryIndexedEXT_panic,
+      CmdEndQueryIndexedEXT_ptr: CmdEndQueryIndexedEXT_panic,
+      CmdDrawIndirectByteCountEXT_ptr: CmdDrawIndirectByteCountEXT_panic,
+      CmdDrawIndirectCountAMD_ptr: CmdDrawIndirectCountAMD_panic,
+      CmdDrawIndexedIndirectCountAMD_ptr: CmdDrawIndexedIndirectCountAMD_panic,
+      GetShaderInfoAMD_ptr: GetShaderInfoAMD_panic,
+      GetMemoryWin32HandleNV_ptr: GetMemoryWin32HandleNV_panic,
+      GetMemoryWin32HandleKHR_ptr: GetMemoryWin32HandleKHR_panic,
+      GetMemoryWin32HandlePropertiesKHR_ptr: GetMemoryWin32HandlePropertiesKHR_panic,
+      GetMemoryFdKHR_ptr: GetMemoryFdKHR_panic,
+      GetMemoryFdPropertiesKHR_ptr: GetMemoryFdPropertiesKHR_panic,
+      ImportSemaphoreWin32HandleKHR_ptr: ImportSemaphoreWin32HandleKHR_panic,
+      GetSemaphoreWin32HandleKHR_ptr: GetSemaphoreWin32HandleKHR_panic,
+      ImportSemaphoreFdKHR_ptr: ImportSemaphoreFdKHR_panic,
+      GetSemaphoreFdKHR_ptr: GetSemaphoreFdKHR_panic,
+      CmdPushDescriptorSetKHR_ptr: CmdPushDescriptorSetKHR_panic,
+      CmdPushDescriptorSetWithTemplateKHR_ptr: CmdPushDescriptorSetWithTemplateKHR_panic,
+      CmdBeginConditionalRenderingEXT_ptr: CmdBeginConditionalRenderingEXT_panic,
+      CmdEndConditionalRenderingEXT_ptr: CmdEndConditionalRenderingEXT_panic,
+      CmdProcessCommandsNVX_ptr: CmdProcessCommandsNVX_panic,
+      CmdReserveSpaceForCommandsNVX_ptr: CmdReserveSpaceForCommandsNVX_panic,
+      CreateIndirectCommandsLayoutNVX_ptr: CreateIndirectCommandsLayoutNVX_panic,
+      DestroyIndirectCommandsLayoutNVX_ptr: DestroyIndirectCommandsLayoutNVX_panic,
+      CreateObjectTableNVX_ptr: CreateObjectTableNVX_panic,
+      DestroyObjectTableNVX_ptr: DestroyObjectTableNVX_panic,
+      RegisterObjectsNVX_ptr: RegisterObjectsNVX_panic,
+      UnregisterObjectsNVX_ptr: UnregisterObjectsNVX_panic,
+      GetPhysicalDeviceGeneratedCommandsPropertiesNVX_ptr: GetPhysicalDeviceGeneratedCommandsPropertiesNVX_panic,
+      CmdSetViewportWScalingNV_ptr: CmdSetViewportWScalingNV_panic,
+      DisplayPowerControlEXT_ptr: DisplayPowerControlEXT_panic,
+      RegisterDeviceEventEXT_ptr: RegisterDeviceEventEXT_panic,
+      RegisterDisplayEventEXT_ptr: RegisterDisplayEventEXT_panic,
+      GetSwapchainCounterEXT_ptr: GetSwapchainCounterEXT_panic,
+      GetRefreshCycleDurationGOOGLE_ptr: GetRefreshCycleDurationGOOGLE_panic,
+      GetPastPresentationTimingGOOGLE_ptr: GetPastPresentationTimingGOOGLE_panic,
+      CmdSetDiscardRectangleEXT_ptr: CmdSetDiscardRectangleEXT_panic,
+      SetHdrMetadataEXT_ptr: SetHdrMetadataEXT_panic,
+      CreateRenderPass2KHR_ptr: CreateRenderPass2KHR_panic,
+      CmdBeginRenderPass2KHR_ptr: CmdBeginRenderPass2KHR_panic,
+      CmdNextSubpass2KHR_ptr: CmdNextSubpass2KHR_panic,
+      CmdEndRenderPass2KHR_ptr: CmdEndRenderPass2KHR_panic,
+      GetSwapchainStatusKHR_ptr: GetSwapchainStatusKHR_panic,
+      ImportFenceWin32HandleKHR_ptr: ImportFenceWin32HandleKHR_panic,
+      GetFenceWin32HandleKHR_ptr: GetFenceWin32HandleKHR_panic,
+      ImportFenceFdKHR_ptr: ImportFenceFdKHR_panic,
+      GetFenceFdKHR_ptr: GetFenceFdKHR_panic,
+      GetAndroidHardwareBufferPropertiesANDROID_ptr: GetAndroidHardwareBufferPropertiesANDROID_panic,
+      GetMemoryAndroidHardwareBufferANDROID_ptr: GetMemoryAndroidHardwareBufferANDROID_panic,
+      CmdSetSampleLocationsEXT_ptr: CmdSetSampleLocationsEXT_panic,
+      GetPhysicalDeviceMultisamplePropertiesEXT_ptr: GetPhysicalDeviceMultisamplePropertiesEXT_panic,
+      GetImageDrmFormatModifierPropertiesEXT_ptr: GetImageDrmFormatModifierPropertiesEXT_panic,
+      CreateValidationCacheEXT_ptr: CreateValidationCacheEXT_panic,
+      DestroyValidationCacheEXT_ptr: DestroyValidationCacheEXT_panic,
+      MergeValidationCachesEXT_ptr: MergeValidationCachesEXT_panic,
+      GetValidationCacheDataEXT_ptr: GetValidationCacheDataEXT_panic,
+      CmdBindShadingRateImageNV_ptr: CmdBindShadingRateImageNV_panic,
+      CmdSetViewportShadingRatePaletteNV_ptr: CmdSetViewportShadingRatePaletteNV_panic,
+      CmdSetCoarseSampleOrderNV_ptr: CmdSetCoarseSampleOrderNV_panic,
+      CreateAccelerationStructureNV_ptr: CreateAccelerationStructureNV_panic,
+      DestroyAccelerationStructureNV_ptr: DestroyAccelerationStructureNV_panic,
+      GetAccelerationStructureMemoryRequirementsNV_ptr: GetAccelerationStructureMemoryRequirementsNV_panic,
+      BindAccelerationStructureMemoryNV_ptr: BindAccelerationStructureMemoryNV_panic,
+      CmdBuildAccelerationStructureNV_ptr: CmdBuildAccelerationStructureNV_panic,
+      CmdCopyAccelerationStructureNV_ptr: CmdCopyAccelerationStructureNV_panic,
+      CmdTraceRaysNV_ptr: CmdTraceRaysNV_panic,
+      CreateRayTracingPipelinesNV_ptr: CreateRayTracingPipelinesNV_panic,
+      GetRayTracingShaderGroupHandlesNV_ptr: GetRayTracingShaderGroupHandlesNV_panic,
+      GetAccelerationStructureHandleNV_ptr: GetAccelerationStructureHandleNV_panic,
+      CmdWriteAccelerationStructuresPropertiesNV_ptr: CmdWriteAccelerationStructuresPropertiesNV_panic,
+      CompileDeferredNV_ptr: CompileDeferredNV_panic,
+      CmdDrawIndirectCountKHR_ptr: CmdDrawIndirectCountKHR_panic,
+      CmdDrawIndexedIndirectCountKHR_ptr: CmdDrawIndexedIndirectCountKHR_panic,
+      GetMemoryHostPointerPropertiesEXT_ptr: GetMemoryHostPointerPropertiesEXT_panic,
+      CmdWriteBufferMarkerAMD_ptr: CmdWriteBufferMarkerAMD_panic,
+      GetPhysicalDeviceCalibrateableTimeDomainsEXT_ptr: GetPhysicalDeviceCalibrateableTimeDomainsEXT_panic,
+      GetCalibratedTimestampsEXT_ptr: GetCalibratedTimestampsEXT_panic,
+      CmdDrawMeshTasksNV_ptr: CmdDrawMeshTasksNV_panic,
+      CmdDrawMeshTasksIndirectNV_ptr: CmdDrawMeshTasksIndirectNV_panic,
+      CmdDrawMeshTasksIndirectCountNV_ptr: CmdDrawMeshTasksIndirectCountNV_panic,
+      CmdSetExclusiveScissorNV_ptr: CmdSetExclusiveScissorNV_panic,
+      CmdSetCheckpointNV_ptr: CmdSetCheckpointNV_panic,
+      GetQueueCheckpointDataNV_ptr: GetQueueCheckpointDataNV_panic,
     }
   }
 }
 
 
-impl Core {
-  /// Initialized core commands for the newest available vulkan version
+impl VkLib {
+  /// Initializes commands for the newest available vulkan version
   /// 
   /// ```
-  /// let vk_lib = nobs_vk::Core::new();
+  /// let vk_lib = nobs_vk::VkLib::new();
   /// ```
   /// is the same as
   /// ```
-  /// let vk_lib = nobs_vk::Core::with_feature(nobs_vk::VERSION_1_1);
+  /// let vk_lib = nobs_vk::VkLib::with_feature(nobs_vk::VERSION_1_1);
   /// ```
-  pub fn new() -> std::boxed::Box<Core> {
+  pub fn new() -> std::boxed::Box<VkLib> {
     Self::with_feature(VERSION_1_1)
   }
-  /// Initialized core commands for the specified vulkan feature
+  /// Initializes commands for the specified vulkan feature
   /// 
   /// Select a feature either with the predefined constants `VERSION_x_x`,
   /// or use the [make_version](macro.make_version.html) macro
-  pub fn with_feature(feature: u32) -> std::boxed::Box<Core> {
+  pub fn with_feature(feature: u32) -> std::boxed::Box<VkLib> {
     #[cfg(windows)]
     fn open_lib() -> shared_library::dynamic_library::DynamicLibrary {
       shared_library::dynamic_library::DynamicLibrary::open(Some(std::path::Path::new("vulkan-1.dll"))).expect("vulkan not found");
@@ -7373,832 +8442,1732 @@ impl Core {
 
     unsafe { 
         let CreateInstance_ptr = if feature < VERSION_1_0 {
-          CreateInstance_panic as extern "system" fn (pCreateInfo: *const InstanceCreateInfo, pAllocator: *const AllocationCallbacks, pInstance: *mut Instance) -> Result
+          CreateInstance_panic as PFN_vkCreateInstance
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkCreateInstance").expect("could not find symbol for vkCreateInstance"))
         };
         let DestroyInstance_ptr = if feature < VERSION_1_0 {
-          DestroyInstance_panic as extern "system" fn (instance: Instance, pAllocator: *const AllocationCallbacks)
+          DestroyInstance_panic as PFN_vkDestroyInstance
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkDestroyInstance").expect("could not find symbol for vkDestroyInstance"))
         };
         let EnumeratePhysicalDevices_ptr = if feature < VERSION_1_0 {
-          EnumeratePhysicalDevices_panic as extern "system" fn (instance: Instance, pPhysicalDeviceCount: *mut u32, pPhysicalDevices: *mut PhysicalDevice) -> Result
+          EnumeratePhysicalDevices_panic as PFN_vkEnumeratePhysicalDevices
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkEnumeratePhysicalDevices").expect("could not find symbol for vkEnumeratePhysicalDevices"))
         };
         let GetPhysicalDeviceFeatures_ptr = if feature < VERSION_1_0 {
-          GetPhysicalDeviceFeatures_panic as extern "system" fn (physicalDevice: PhysicalDevice, pFeatures: *mut PhysicalDeviceFeatures)
+          GetPhysicalDeviceFeatures_panic as PFN_vkGetPhysicalDeviceFeatures
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkGetPhysicalDeviceFeatures").expect("could not find symbol for vkGetPhysicalDeviceFeatures"))
         };
         let GetPhysicalDeviceFormatProperties_ptr = if feature < VERSION_1_0 {
-          GetPhysicalDeviceFormatProperties_panic as extern "system" fn (physicalDevice: PhysicalDevice, format: Format, pFormatProperties: *mut FormatProperties)
+          GetPhysicalDeviceFormatProperties_panic as PFN_vkGetPhysicalDeviceFormatProperties
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkGetPhysicalDeviceFormatProperties").expect("could not find symbol for vkGetPhysicalDeviceFormatProperties"))
         };
         let GetPhysicalDeviceImageFormatProperties_ptr = if feature < VERSION_1_0 {
-          GetPhysicalDeviceImageFormatProperties_panic as extern "system" fn (physicalDevice: PhysicalDevice, format: Format, typ: ImageType, tiling: ImageTiling, usage: ImageUsageFlags, flags: ImageCreateFlags, pImageFormatProperties: *mut ImageFormatProperties) -> Result
+          GetPhysicalDeviceImageFormatProperties_panic as PFN_vkGetPhysicalDeviceImageFormatProperties
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkGetPhysicalDeviceImageFormatProperties").expect("could not find symbol for vkGetPhysicalDeviceImageFormatProperties"))
         };
         let GetPhysicalDeviceProperties_ptr = if feature < VERSION_1_0 {
-          GetPhysicalDeviceProperties_panic as extern "system" fn (physicalDevice: PhysicalDevice, pProperties: *mut PhysicalDeviceProperties)
+          GetPhysicalDeviceProperties_panic as PFN_vkGetPhysicalDeviceProperties
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkGetPhysicalDeviceProperties").expect("could not find symbol for vkGetPhysicalDeviceProperties"))
         };
         let GetPhysicalDeviceQueueFamilyProperties_ptr = if feature < VERSION_1_0 {
-          GetPhysicalDeviceQueueFamilyProperties_panic as extern "system" fn (physicalDevice: PhysicalDevice, pQueueFamilyPropertyCount: *mut u32, pQueueFamilyProperties: *mut QueueFamilyProperties)
+          GetPhysicalDeviceQueueFamilyProperties_panic as PFN_vkGetPhysicalDeviceQueueFamilyProperties
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkGetPhysicalDeviceQueueFamilyProperties").expect("could not find symbol for vkGetPhysicalDeviceQueueFamilyProperties"))
         };
         let GetPhysicalDeviceMemoryProperties_ptr = if feature < VERSION_1_0 {
-          GetPhysicalDeviceMemoryProperties_panic as extern "system" fn (physicalDevice: PhysicalDevice, pMemoryProperties: *mut PhysicalDeviceMemoryProperties)
+          GetPhysicalDeviceMemoryProperties_panic as PFN_vkGetPhysicalDeviceMemoryProperties
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkGetPhysicalDeviceMemoryProperties").expect("could not find symbol for vkGetPhysicalDeviceMemoryProperties"))
         };
         let GetInstanceProcAddr_ptr = if feature < VERSION_1_0 {
-          GetInstanceProcAddr_panic as extern "system" fn (instance: Instance, pName: *const c_char) -> PFN_vkVoidFunction
+          GetInstanceProcAddr_panic as PFN_vkGetInstanceProcAddr
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkGetInstanceProcAddr").expect("could not find symbol for vkGetInstanceProcAddr"))
         };
         let GetDeviceProcAddr_ptr = if feature < VERSION_1_0 {
-          GetDeviceProcAddr_panic as extern "system" fn (device: Device, pName: *const c_char) -> PFN_vkVoidFunction
+          GetDeviceProcAddr_panic as PFN_vkGetDeviceProcAddr
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkGetDeviceProcAddr").expect("could not find symbol for vkGetDeviceProcAddr"))
         };
         let CreateDevice_ptr = if feature < VERSION_1_0 {
-          CreateDevice_panic as extern "system" fn (physicalDevice: PhysicalDevice, pCreateInfo: *const DeviceCreateInfo, pAllocator: *const AllocationCallbacks, pDevice: *mut Device) -> Result
+          CreateDevice_panic as PFN_vkCreateDevice
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkCreateDevice").expect("could not find symbol for vkCreateDevice"))
         };
         let DestroyDevice_ptr = if feature < VERSION_1_0 {
-          DestroyDevice_panic as extern "system" fn (device: Device, pAllocator: *const AllocationCallbacks)
+          DestroyDevice_panic as PFN_vkDestroyDevice
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkDestroyDevice").expect("could not find symbol for vkDestroyDevice"))
         };
         let EnumerateInstanceExtensionProperties_ptr = if feature < VERSION_1_0 {
-          EnumerateInstanceExtensionProperties_panic as extern "system" fn (pLayerName: *const c_char, pPropertyCount: *mut u32, pProperties: *mut ExtensionProperties) -> Result
+          EnumerateInstanceExtensionProperties_panic as PFN_vkEnumerateInstanceExtensionProperties
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkEnumerateInstanceExtensionProperties").expect("could not find symbol for vkEnumerateInstanceExtensionProperties"))
         };
         let EnumerateDeviceExtensionProperties_ptr = if feature < VERSION_1_0 {
-          EnumerateDeviceExtensionProperties_panic as extern "system" fn (physicalDevice: PhysicalDevice, pLayerName: *const c_char, pPropertyCount: *mut u32, pProperties: *mut ExtensionProperties) -> Result
+          EnumerateDeviceExtensionProperties_panic as PFN_vkEnumerateDeviceExtensionProperties
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkEnumerateDeviceExtensionProperties").expect("could not find symbol for vkEnumerateDeviceExtensionProperties"))
         };
         let EnumerateInstanceLayerProperties_ptr = if feature < VERSION_1_0 {
-          EnumerateInstanceLayerProperties_panic as extern "system" fn (pPropertyCount: *mut u32, pProperties: *mut LayerProperties) -> Result
+          EnumerateInstanceLayerProperties_panic as PFN_vkEnumerateInstanceLayerProperties
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkEnumerateInstanceLayerProperties").expect("could not find symbol for vkEnumerateInstanceLayerProperties"))
         };
         let EnumerateDeviceLayerProperties_ptr = if feature < VERSION_1_0 {
-          EnumerateDeviceLayerProperties_panic as extern "system" fn (physicalDevice: PhysicalDevice, pPropertyCount: *mut u32, pProperties: *mut LayerProperties) -> Result
+          EnumerateDeviceLayerProperties_panic as PFN_vkEnumerateDeviceLayerProperties
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkEnumerateDeviceLayerProperties").expect("could not find symbol for vkEnumerateDeviceLayerProperties"))
         };
         let GetDeviceQueue_ptr = if feature < VERSION_1_0 {
-          GetDeviceQueue_panic as extern "system" fn (device: Device, queueFamilyIndex: u32, queueIndex: u32, pQueue: *mut Queue)
+          GetDeviceQueue_panic as PFN_vkGetDeviceQueue
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkGetDeviceQueue").expect("could not find symbol for vkGetDeviceQueue"))
         };
         let QueueSubmit_ptr = if feature < VERSION_1_0 {
-          QueueSubmit_panic as extern "system" fn (queue: Queue, submitCount: u32, pSubmits: *const SubmitInfo, fence: Fence) -> Result
+          QueueSubmit_panic as PFN_vkQueueSubmit
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkQueueSubmit").expect("could not find symbol for vkQueueSubmit"))
         };
         let QueueWaitIdle_ptr = if feature < VERSION_1_0 {
-          QueueWaitIdle_panic as extern "system" fn (queue: Queue) -> Result
+          QueueWaitIdle_panic as PFN_vkQueueWaitIdle
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkQueueWaitIdle").expect("could not find symbol for vkQueueWaitIdle"))
         };
         let DeviceWaitIdle_ptr = if feature < VERSION_1_0 {
-          DeviceWaitIdle_panic as extern "system" fn (device: Device) -> Result
+          DeviceWaitIdle_panic as PFN_vkDeviceWaitIdle
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkDeviceWaitIdle").expect("could not find symbol for vkDeviceWaitIdle"))
         };
         let AllocateMemory_ptr = if feature < VERSION_1_0 {
-          AllocateMemory_panic as extern "system" fn (device: Device, pAllocateInfo: *const MemoryAllocateInfo, pAllocator: *const AllocationCallbacks, pMemory: *mut DeviceMemory) -> Result
+          AllocateMemory_panic as PFN_vkAllocateMemory
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkAllocateMemory").expect("could not find symbol for vkAllocateMemory"))
         };
         let FreeMemory_ptr = if feature < VERSION_1_0 {
-          FreeMemory_panic as extern "system" fn (device: Device, memory: DeviceMemory, pAllocator: *const AllocationCallbacks)
+          FreeMemory_panic as PFN_vkFreeMemory
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkFreeMemory").expect("could not find symbol for vkFreeMemory"))
         };
         let MapMemory_ptr = if feature < VERSION_1_0 {
-          MapMemory_panic as extern "system" fn (device: Device, memory: DeviceMemory, offset: DeviceSize, size: DeviceSize, flags: MemoryMapFlags, ppData: *mut *mut c_void) -> Result
+          MapMemory_panic as PFN_vkMapMemory
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkMapMemory").expect("could not find symbol for vkMapMemory"))
         };
         let UnmapMemory_ptr = if feature < VERSION_1_0 {
-          UnmapMemory_panic as extern "system" fn (device: Device, memory: DeviceMemory)
+          UnmapMemory_panic as PFN_vkUnmapMemory
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkUnmapMemory").expect("could not find symbol for vkUnmapMemory"))
         };
         let FlushMappedMemoryRanges_ptr = if feature < VERSION_1_0 {
-          FlushMappedMemoryRanges_panic as extern "system" fn (device: Device, memoryRangeCount: u32, pMemoryRanges: *const MappedMemoryRange) -> Result
+          FlushMappedMemoryRanges_panic as PFN_vkFlushMappedMemoryRanges
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkFlushMappedMemoryRanges").expect("could not find symbol for vkFlushMappedMemoryRanges"))
         };
         let InvalidateMappedMemoryRanges_ptr = if feature < VERSION_1_0 {
-          InvalidateMappedMemoryRanges_panic as extern "system" fn (device: Device, memoryRangeCount: u32, pMemoryRanges: *const MappedMemoryRange) -> Result
+          InvalidateMappedMemoryRanges_panic as PFN_vkInvalidateMappedMemoryRanges
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkInvalidateMappedMemoryRanges").expect("could not find symbol for vkInvalidateMappedMemoryRanges"))
         };
         let GetDeviceMemoryCommitment_ptr = if feature < VERSION_1_0 {
-          GetDeviceMemoryCommitment_panic as extern "system" fn (device: Device, memory: DeviceMemory, pCommittedMemoryInBytes: *mut DeviceSize)
+          GetDeviceMemoryCommitment_panic as PFN_vkGetDeviceMemoryCommitment
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkGetDeviceMemoryCommitment").expect("could not find symbol for vkGetDeviceMemoryCommitment"))
         };
         let BindBufferMemory_ptr = if feature < VERSION_1_0 {
-          BindBufferMemory_panic as extern "system" fn (device: Device, buffer: Buffer, memory: DeviceMemory, memoryOffset: DeviceSize) -> Result
+          BindBufferMemory_panic as PFN_vkBindBufferMemory
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkBindBufferMemory").expect("could not find symbol for vkBindBufferMemory"))
         };
         let BindImageMemory_ptr = if feature < VERSION_1_0 {
-          BindImageMemory_panic as extern "system" fn (device: Device, image: Image, memory: DeviceMemory, memoryOffset: DeviceSize) -> Result
+          BindImageMemory_panic as PFN_vkBindImageMemory
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkBindImageMemory").expect("could not find symbol for vkBindImageMemory"))
         };
         let GetBufferMemoryRequirements_ptr = if feature < VERSION_1_0 {
-          GetBufferMemoryRequirements_panic as extern "system" fn (device: Device, buffer: Buffer, pMemoryRequirements: *mut MemoryRequirements)
+          GetBufferMemoryRequirements_panic as PFN_vkGetBufferMemoryRequirements
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkGetBufferMemoryRequirements").expect("could not find symbol for vkGetBufferMemoryRequirements"))
         };
         let GetImageMemoryRequirements_ptr = if feature < VERSION_1_0 {
-          GetImageMemoryRequirements_panic as extern "system" fn (device: Device, image: Image, pMemoryRequirements: *mut MemoryRequirements)
+          GetImageMemoryRequirements_panic as PFN_vkGetImageMemoryRequirements
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkGetImageMemoryRequirements").expect("could not find symbol for vkGetImageMemoryRequirements"))
         };
         let GetImageSparseMemoryRequirements_ptr = if feature < VERSION_1_0 {
-          GetImageSparseMemoryRequirements_panic as extern "system" fn (device: Device, image: Image, pSparseMemoryRequirementCount: *mut u32, pSparseMemoryRequirements: *mut SparseImageMemoryRequirements)
+          GetImageSparseMemoryRequirements_panic as PFN_vkGetImageSparseMemoryRequirements
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkGetImageSparseMemoryRequirements").expect("could not find symbol for vkGetImageSparseMemoryRequirements"))
         };
         let GetPhysicalDeviceSparseImageFormatProperties_ptr = if feature < VERSION_1_0 {
-          GetPhysicalDeviceSparseImageFormatProperties_panic as extern "system" fn (physicalDevice: PhysicalDevice, format: Format, typ: ImageType, samples: SampleCountFlagBits, usage: ImageUsageFlags, tiling: ImageTiling, pPropertyCount: *mut u32, pProperties: *mut SparseImageFormatProperties)
+          GetPhysicalDeviceSparseImageFormatProperties_panic as PFN_vkGetPhysicalDeviceSparseImageFormatProperties
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkGetPhysicalDeviceSparseImageFormatProperties").expect("could not find symbol for vkGetPhysicalDeviceSparseImageFormatProperties"))
         };
         let QueueBindSparse_ptr = if feature < VERSION_1_0 {
-          QueueBindSparse_panic as extern "system" fn (queue: Queue, bindInfoCount: u32, pBindInfo: *const BindSparseInfo, fence: Fence) -> Result
+          QueueBindSparse_panic as PFN_vkQueueBindSparse
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkQueueBindSparse").expect("could not find symbol for vkQueueBindSparse"))
         };
         let CreateFence_ptr = if feature < VERSION_1_0 {
-          CreateFence_panic as extern "system" fn (device: Device, pCreateInfo: *const FenceCreateInfo, pAllocator: *const AllocationCallbacks, pFence: *mut Fence) -> Result
+          CreateFence_panic as PFN_vkCreateFence
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkCreateFence").expect("could not find symbol for vkCreateFence"))
         };
         let DestroyFence_ptr = if feature < VERSION_1_0 {
-          DestroyFence_panic as extern "system" fn (device: Device, fence: Fence, pAllocator: *const AllocationCallbacks)
+          DestroyFence_panic as PFN_vkDestroyFence
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkDestroyFence").expect("could not find symbol for vkDestroyFence"))
         };
         let ResetFences_ptr = if feature < VERSION_1_0 {
-          ResetFences_panic as extern "system" fn (device: Device, fenceCount: u32, pFences: *const Fence) -> Result
+          ResetFences_panic as PFN_vkResetFences
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkResetFences").expect("could not find symbol for vkResetFences"))
         };
         let GetFenceStatus_ptr = if feature < VERSION_1_0 {
-          GetFenceStatus_panic as extern "system" fn (device: Device, fence: Fence) -> Result
+          GetFenceStatus_panic as PFN_vkGetFenceStatus
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkGetFenceStatus").expect("could not find symbol for vkGetFenceStatus"))
         };
         let WaitForFences_ptr = if feature < VERSION_1_0 {
-          WaitForFences_panic as extern "system" fn (device: Device, fenceCount: u32, pFences: *const Fence, waitAll: Bool32, timeout: u64) -> Result
+          WaitForFences_panic as PFN_vkWaitForFences
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkWaitForFences").expect("could not find symbol for vkWaitForFences"))
         };
         let CreateSemaphore_ptr = if feature < VERSION_1_0 {
-          CreateSemaphore_panic as extern "system" fn (device: Device, pCreateInfo: *const SemaphoreCreateInfo, pAllocator: *const AllocationCallbacks, pSemaphore: *mut Semaphore) -> Result
+          CreateSemaphore_panic as PFN_vkCreateSemaphore
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkCreateSemaphore").expect("could not find symbol for vkCreateSemaphore"))
         };
         let DestroySemaphore_ptr = if feature < VERSION_1_0 {
-          DestroySemaphore_panic as extern "system" fn (device: Device, semaphore: Semaphore, pAllocator: *const AllocationCallbacks)
+          DestroySemaphore_panic as PFN_vkDestroySemaphore
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkDestroySemaphore").expect("could not find symbol for vkDestroySemaphore"))
         };
         let CreateEvent_ptr = if feature < VERSION_1_0 {
-          CreateEvent_panic as extern "system" fn (device: Device, pCreateInfo: *const EventCreateInfo, pAllocator: *const AllocationCallbacks, pEvent: *mut Event) -> Result
+          CreateEvent_panic as PFN_vkCreateEvent
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkCreateEvent").expect("could not find symbol for vkCreateEvent"))
         };
         let DestroyEvent_ptr = if feature < VERSION_1_0 {
-          DestroyEvent_panic as extern "system" fn (device: Device, event: Event, pAllocator: *const AllocationCallbacks)
+          DestroyEvent_panic as PFN_vkDestroyEvent
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkDestroyEvent").expect("could not find symbol for vkDestroyEvent"))
         };
         let GetEventStatus_ptr = if feature < VERSION_1_0 {
-          GetEventStatus_panic as extern "system" fn (device: Device, event: Event) -> Result
+          GetEventStatus_panic as PFN_vkGetEventStatus
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkGetEventStatus").expect("could not find symbol for vkGetEventStatus"))
         };
         let SetEvent_ptr = if feature < VERSION_1_0 {
-          SetEvent_panic as extern "system" fn (device: Device, event: Event) -> Result
+          SetEvent_panic as PFN_vkSetEvent
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkSetEvent").expect("could not find symbol for vkSetEvent"))
         };
         let ResetEvent_ptr = if feature < VERSION_1_0 {
-          ResetEvent_panic as extern "system" fn (device: Device, event: Event) -> Result
+          ResetEvent_panic as PFN_vkResetEvent
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkResetEvent").expect("could not find symbol for vkResetEvent"))
         };
         let CreateQueryPool_ptr = if feature < VERSION_1_0 {
-          CreateQueryPool_panic as extern "system" fn (device: Device, pCreateInfo: *const QueryPoolCreateInfo, pAllocator: *const AllocationCallbacks, pQueryPool: *mut QueryPool) -> Result
+          CreateQueryPool_panic as PFN_vkCreateQueryPool
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkCreateQueryPool").expect("could not find symbol for vkCreateQueryPool"))
         };
         let DestroyQueryPool_ptr = if feature < VERSION_1_0 {
-          DestroyQueryPool_panic as extern "system" fn (device: Device, queryPool: QueryPool, pAllocator: *const AllocationCallbacks)
+          DestroyQueryPool_panic as PFN_vkDestroyQueryPool
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkDestroyQueryPool").expect("could not find symbol for vkDestroyQueryPool"))
         };
         let GetQueryPoolResults_ptr = if feature < VERSION_1_0 {
-          GetQueryPoolResults_panic as extern "system" fn (device: Device, queryPool: QueryPool, firstQuery: u32, queryCount: u32, dataSize: usize, pData: *mut c_void, stride: DeviceSize, flags: QueryResultFlags) -> Result
+          GetQueryPoolResults_panic as PFN_vkGetQueryPoolResults
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkGetQueryPoolResults").expect("could not find symbol for vkGetQueryPoolResults"))
         };
         let CreateBuffer_ptr = if feature < VERSION_1_0 {
-          CreateBuffer_panic as extern "system" fn (device: Device, pCreateInfo: *const BufferCreateInfo, pAllocator: *const AllocationCallbacks, pBuffer: *mut Buffer) -> Result
+          CreateBuffer_panic as PFN_vkCreateBuffer
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkCreateBuffer").expect("could not find symbol for vkCreateBuffer"))
         };
         let DestroyBuffer_ptr = if feature < VERSION_1_0 {
-          DestroyBuffer_panic as extern "system" fn (device: Device, buffer: Buffer, pAllocator: *const AllocationCallbacks)
+          DestroyBuffer_panic as PFN_vkDestroyBuffer
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkDestroyBuffer").expect("could not find symbol for vkDestroyBuffer"))
         };
         let CreateBufferView_ptr = if feature < VERSION_1_0 {
-          CreateBufferView_panic as extern "system" fn (device: Device, pCreateInfo: *const BufferViewCreateInfo, pAllocator: *const AllocationCallbacks, pView: *mut BufferView) -> Result
+          CreateBufferView_panic as PFN_vkCreateBufferView
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkCreateBufferView").expect("could not find symbol for vkCreateBufferView"))
         };
         let DestroyBufferView_ptr = if feature < VERSION_1_0 {
-          DestroyBufferView_panic as extern "system" fn (device: Device, bufferView: BufferView, pAllocator: *const AllocationCallbacks)
+          DestroyBufferView_panic as PFN_vkDestroyBufferView
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkDestroyBufferView").expect("could not find symbol for vkDestroyBufferView"))
         };
         let CreateImage_ptr = if feature < VERSION_1_0 {
-          CreateImage_panic as extern "system" fn (device: Device, pCreateInfo: *const ImageCreateInfo, pAllocator: *const AllocationCallbacks, pImage: *mut Image) -> Result
+          CreateImage_panic as PFN_vkCreateImage
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkCreateImage").expect("could not find symbol for vkCreateImage"))
         };
         let DestroyImage_ptr = if feature < VERSION_1_0 {
-          DestroyImage_panic as extern "system" fn (device: Device, image: Image, pAllocator: *const AllocationCallbacks)
+          DestroyImage_panic as PFN_vkDestroyImage
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkDestroyImage").expect("could not find symbol for vkDestroyImage"))
         };
         let GetImageSubresourceLayout_ptr = if feature < VERSION_1_0 {
-          GetImageSubresourceLayout_panic as extern "system" fn (device: Device, image: Image, pSubresource: *const ImageSubresource, pLayout: *mut SubresourceLayout)
+          GetImageSubresourceLayout_panic as PFN_vkGetImageSubresourceLayout
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkGetImageSubresourceLayout").expect("could not find symbol for vkGetImageSubresourceLayout"))
         };
         let CreateImageView_ptr = if feature < VERSION_1_0 {
-          CreateImageView_panic as extern "system" fn (device: Device, pCreateInfo: *const ImageViewCreateInfo, pAllocator: *const AllocationCallbacks, pView: *mut ImageView) -> Result
+          CreateImageView_panic as PFN_vkCreateImageView
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkCreateImageView").expect("could not find symbol for vkCreateImageView"))
         };
         let DestroyImageView_ptr = if feature < VERSION_1_0 {
-          DestroyImageView_panic as extern "system" fn (device: Device, imageView: ImageView, pAllocator: *const AllocationCallbacks)
+          DestroyImageView_panic as PFN_vkDestroyImageView
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkDestroyImageView").expect("could not find symbol for vkDestroyImageView"))
         };
         let CreateShaderModule_ptr = if feature < VERSION_1_0 {
-          CreateShaderModule_panic as extern "system" fn (device: Device, pCreateInfo: *const ShaderModuleCreateInfo, pAllocator: *const AllocationCallbacks, pShaderModule: *mut ShaderModule) -> Result
+          CreateShaderModule_panic as PFN_vkCreateShaderModule
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkCreateShaderModule").expect("could not find symbol for vkCreateShaderModule"))
         };
         let DestroyShaderModule_ptr = if feature < VERSION_1_0 {
-          DestroyShaderModule_panic as extern "system" fn (device: Device, shaderModule: ShaderModule, pAllocator: *const AllocationCallbacks)
+          DestroyShaderModule_panic as PFN_vkDestroyShaderModule
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkDestroyShaderModule").expect("could not find symbol for vkDestroyShaderModule"))
         };
         let CreatePipelineCache_ptr = if feature < VERSION_1_0 {
-          CreatePipelineCache_panic as extern "system" fn (device: Device, pCreateInfo: *const PipelineCacheCreateInfo, pAllocator: *const AllocationCallbacks, pPipelineCache: *mut PipelineCache) -> Result
+          CreatePipelineCache_panic as PFN_vkCreatePipelineCache
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkCreatePipelineCache").expect("could not find symbol for vkCreatePipelineCache"))
         };
         let DestroyPipelineCache_ptr = if feature < VERSION_1_0 {
-          DestroyPipelineCache_panic as extern "system" fn (device: Device, pipelineCache: PipelineCache, pAllocator: *const AllocationCallbacks)
+          DestroyPipelineCache_panic as PFN_vkDestroyPipelineCache
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkDestroyPipelineCache").expect("could not find symbol for vkDestroyPipelineCache"))
         };
         let GetPipelineCacheData_ptr = if feature < VERSION_1_0 {
-          GetPipelineCacheData_panic as extern "system" fn (device: Device, pipelineCache: PipelineCache, pDataSize: *mut usize, pData: *mut c_void) -> Result
+          GetPipelineCacheData_panic as PFN_vkGetPipelineCacheData
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkGetPipelineCacheData").expect("could not find symbol for vkGetPipelineCacheData"))
         };
         let MergePipelineCaches_ptr = if feature < VERSION_1_0 {
-          MergePipelineCaches_panic as extern "system" fn (device: Device, dstCache: PipelineCache, srcCacheCount: u32, pSrcCaches: *const PipelineCache) -> Result
+          MergePipelineCaches_panic as PFN_vkMergePipelineCaches
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkMergePipelineCaches").expect("could not find symbol for vkMergePipelineCaches"))
         };
         let CreateGraphicsPipelines_ptr = if feature < VERSION_1_0 {
-          CreateGraphicsPipelines_panic as extern "system" fn (device: Device, pipelineCache: PipelineCache, createInfoCount: u32, pCreateInfos: *const GraphicsPipelineCreateInfo, pAllocator: *const AllocationCallbacks, pPipelines: *mut Pipeline) -> Result
+          CreateGraphicsPipelines_panic as PFN_vkCreateGraphicsPipelines
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkCreateGraphicsPipelines").expect("could not find symbol for vkCreateGraphicsPipelines"))
         };
         let CreateComputePipelines_ptr = if feature < VERSION_1_0 {
-          CreateComputePipelines_panic as extern "system" fn (device: Device, pipelineCache: PipelineCache, createInfoCount: u32, pCreateInfos: *const ComputePipelineCreateInfo, pAllocator: *const AllocationCallbacks, pPipelines: *mut Pipeline) -> Result
+          CreateComputePipelines_panic as PFN_vkCreateComputePipelines
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkCreateComputePipelines").expect("could not find symbol for vkCreateComputePipelines"))
         };
         let DestroyPipeline_ptr = if feature < VERSION_1_0 {
-          DestroyPipeline_panic as extern "system" fn (device: Device, pipeline: Pipeline, pAllocator: *const AllocationCallbacks)
+          DestroyPipeline_panic as PFN_vkDestroyPipeline
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkDestroyPipeline").expect("could not find symbol for vkDestroyPipeline"))
         };
         let CreatePipelineLayout_ptr = if feature < VERSION_1_0 {
-          CreatePipelineLayout_panic as extern "system" fn (device: Device, pCreateInfo: *const PipelineLayoutCreateInfo, pAllocator: *const AllocationCallbacks, pPipelineLayout: *mut PipelineLayout) -> Result
+          CreatePipelineLayout_panic as PFN_vkCreatePipelineLayout
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkCreatePipelineLayout").expect("could not find symbol for vkCreatePipelineLayout"))
         };
         let DestroyPipelineLayout_ptr = if feature < VERSION_1_0 {
-          DestroyPipelineLayout_panic as extern "system" fn (device: Device, pipelineLayout: PipelineLayout, pAllocator: *const AllocationCallbacks)
+          DestroyPipelineLayout_panic as PFN_vkDestroyPipelineLayout
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkDestroyPipelineLayout").expect("could not find symbol for vkDestroyPipelineLayout"))
         };
         let CreateSampler_ptr = if feature < VERSION_1_0 {
-          CreateSampler_panic as extern "system" fn (device: Device, pCreateInfo: *const SamplerCreateInfo, pAllocator: *const AllocationCallbacks, pSampler: *mut Sampler) -> Result
+          CreateSampler_panic as PFN_vkCreateSampler
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkCreateSampler").expect("could not find symbol for vkCreateSampler"))
         };
         let DestroySampler_ptr = if feature < VERSION_1_0 {
-          DestroySampler_panic as extern "system" fn (device: Device, sampler: Sampler, pAllocator: *const AllocationCallbacks)
+          DestroySampler_panic as PFN_vkDestroySampler
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkDestroySampler").expect("could not find symbol for vkDestroySampler"))
         };
         let CreateDescriptorSetLayout_ptr = if feature < VERSION_1_0 {
-          CreateDescriptorSetLayout_panic as extern "system" fn (device: Device, pCreateInfo: *const DescriptorSetLayoutCreateInfo, pAllocator: *const AllocationCallbacks, pSetLayout: *mut DescriptorSetLayout) -> Result
+          CreateDescriptorSetLayout_panic as PFN_vkCreateDescriptorSetLayout
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkCreateDescriptorSetLayout").expect("could not find symbol for vkCreateDescriptorSetLayout"))
         };
         let DestroyDescriptorSetLayout_ptr = if feature < VERSION_1_0 {
-          DestroyDescriptorSetLayout_panic as extern "system" fn (device: Device, descriptorSetLayout: DescriptorSetLayout, pAllocator: *const AllocationCallbacks)
+          DestroyDescriptorSetLayout_panic as PFN_vkDestroyDescriptorSetLayout
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkDestroyDescriptorSetLayout").expect("could not find symbol for vkDestroyDescriptorSetLayout"))
         };
         let CreateDescriptorPool_ptr = if feature < VERSION_1_0 {
-          CreateDescriptorPool_panic as extern "system" fn (device: Device, pCreateInfo: *const DescriptorPoolCreateInfo, pAllocator: *const AllocationCallbacks, pDescriptorPool: *mut DescriptorPool) -> Result
+          CreateDescriptorPool_panic as PFN_vkCreateDescriptorPool
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkCreateDescriptorPool").expect("could not find symbol for vkCreateDescriptorPool"))
         };
         let DestroyDescriptorPool_ptr = if feature < VERSION_1_0 {
-          DestroyDescriptorPool_panic as extern "system" fn (device: Device, descriptorPool: DescriptorPool, pAllocator: *const AllocationCallbacks)
+          DestroyDescriptorPool_panic as PFN_vkDestroyDescriptorPool
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkDestroyDescriptorPool").expect("could not find symbol for vkDestroyDescriptorPool"))
         };
         let ResetDescriptorPool_ptr = if feature < VERSION_1_0 {
-          ResetDescriptorPool_panic as extern "system" fn (device: Device, descriptorPool: DescriptorPool, flags: DescriptorPoolResetFlags) -> Result
+          ResetDescriptorPool_panic as PFN_vkResetDescriptorPool
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkResetDescriptorPool").expect("could not find symbol for vkResetDescriptorPool"))
         };
         let AllocateDescriptorSets_ptr = if feature < VERSION_1_0 {
-          AllocateDescriptorSets_panic as extern "system" fn (device: Device, pAllocateInfo: *const DescriptorSetAllocateInfo, pDescriptorSets: *mut DescriptorSet) -> Result
+          AllocateDescriptorSets_panic as PFN_vkAllocateDescriptorSets
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkAllocateDescriptorSets").expect("could not find symbol for vkAllocateDescriptorSets"))
         };
         let FreeDescriptorSets_ptr = if feature < VERSION_1_0 {
-          FreeDescriptorSets_panic as extern "system" fn (device: Device, descriptorPool: DescriptorPool, descriptorSetCount: u32, pDescriptorSets: *const DescriptorSet) -> Result
+          FreeDescriptorSets_panic as PFN_vkFreeDescriptorSets
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkFreeDescriptorSets").expect("could not find symbol for vkFreeDescriptorSets"))
         };
         let UpdateDescriptorSets_ptr = if feature < VERSION_1_0 {
-          UpdateDescriptorSets_panic as extern "system" fn (device: Device, descriptorWriteCount: u32, pDescriptorWrites: *const WriteDescriptorSet, descriptorCopyCount: u32, pDescriptorCopies: *const CopyDescriptorSet)
+          UpdateDescriptorSets_panic as PFN_vkUpdateDescriptorSets
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkUpdateDescriptorSets").expect("could not find symbol for vkUpdateDescriptorSets"))
         };
         let CreateFramebuffer_ptr = if feature < VERSION_1_0 {
-          CreateFramebuffer_panic as extern "system" fn (device: Device, pCreateInfo: *const FramebufferCreateInfo, pAllocator: *const AllocationCallbacks, pFramebuffer: *mut Framebuffer) -> Result
+          CreateFramebuffer_panic as PFN_vkCreateFramebuffer
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkCreateFramebuffer").expect("could not find symbol for vkCreateFramebuffer"))
         };
         let DestroyFramebuffer_ptr = if feature < VERSION_1_0 {
-          DestroyFramebuffer_panic as extern "system" fn (device: Device, framebuffer: Framebuffer, pAllocator: *const AllocationCallbacks)
+          DestroyFramebuffer_panic as PFN_vkDestroyFramebuffer
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkDestroyFramebuffer").expect("could not find symbol for vkDestroyFramebuffer"))
         };
         let CreateRenderPass_ptr = if feature < VERSION_1_0 {
-          CreateRenderPass_panic as extern "system" fn (device: Device, pCreateInfo: *const RenderPassCreateInfo, pAllocator: *const AllocationCallbacks, pRenderPass: *mut RenderPass) -> Result
+          CreateRenderPass_panic as PFN_vkCreateRenderPass
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkCreateRenderPass").expect("could not find symbol for vkCreateRenderPass"))
         };
         let DestroyRenderPass_ptr = if feature < VERSION_1_0 {
-          DestroyRenderPass_panic as extern "system" fn (device: Device, renderPass: RenderPass, pAllocator: *const AllocationCallbacks)
+          DestroyRenderPass_panic as PFN_vkDestroyRenderPass
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkDestroyRenderPass").expect("could not find symbol for vkDestroyRenderPass"))
         };
         let GetRenderAreaGranularity_ptr = if feature < VERSION_1_0 {
-          GetRenderAreaGranularity_panic as extern "system" fn (device: Device, renderPass: RenderPass, pGranularity: *mut Extent2D)
+          GetRenderAreaGranularity_panic as PFN_vkGetRenderAreaGranularity
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkGetRenderAreaGranularity").expect("could not find symbol for vkGetRenderAreaGranularity"))
         };
         let CreateCommandPool_ptr = if feature < VERSION_1_0 {
-          CreateCommandPool_panic as extern "system" fn (device: Device, pCreateInfo: *const CommandPoolCreateInfo, pAllocator: *const AllocationCallbacks, pCommandPool: *mut CommandPool) -> Result
+          CreateCommandPool_panic as PFN_vkCreateCommandPool
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkCreateCommandPool").expect("could not find symbol for vkCreateCommandPool"))
         };
         let DestroyCommandPool_ptr = if feature < VERSION_1_0 {
-          DestroyCommandPool_panic as extern "system" fn (device: Device, commandPool: CommandPool, pAllocator: *const AllocationCallbacks)
+          DestroyCommandPool_panic as PFN_vkDestroyCommandPool
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkDestroyCommandPool").expect("could not find symbol for vkDestroyCommandPool"))
         };
         let ResetCommandPool_ptr = if feature < VERSION_1_0 {
-          ResetCommandPool_panic as extern "system" fn (device: Device, commandPool: CommandPool, flags: CommandPoolResetFlags) -> Result
+          ResetCommandPool_panic as PFN_vkResetCommandPool
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkResetCommandPool").expect("could not find symbol for vkResetCommandPool"))
         };
         let AllocateCommandBuffers_ptr = if feature < VERSION_1_0 {
-          AllocateCommandBuffers_panic as extern "system" fn (device: Device, pAllocateInfo: *const CommandBufferAllocateInfo, pCommandBuffers: *mut CommandBuffer) -> Result
+          AllocateCommandBuffers_panic as PFN_vkAllocateCommandBuffers
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkAllocateCommandBuffers").expect("could not find symbol for vkAllocateCommandBuffers"))
         };
         let FreeCommandBuffers_ptr = if feature < VERSION_1_0 {
-          FreeCommandBuffers_panic as extern "system" fn (device: Device, commandPool: CommandPool, commandBufferCount: u32, pCommandBuffers: *const CommandBuffer)
+          FreeCommandBuffers_panic as PFN_vkFreeCommandBuffers
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkFreeCommandBuffers").expect("could not find symbol for vkFreeCommandBuffers"))
         };
         let BeginCommandBuffer_ptr = if feature < VERSION_1_0 {
-          BeginCommandBuffer_panic as extern "system" fn (commandBuffer: CommandBuffer, pBeginInfo: *const CommandBufferBeginInfo) -> Result
+          BeginCommandBuffer_panic as PFN_vkBeginCommandBuffer
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkBeginCommandBuffer").expect("could not find symbol for vkBeginCommandBuffer"))
         };
         let EndCommandBuffer_ptr = if feature < VERSION_1_0 {
-          EndCommandBuffer_panic as extern "system" fn (commandBuffer: CommandBuffer) -> Result
+          EndCommandBuffer_panic as PFN_vkEndCommandBuffer
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkEndCommandBuffer").expect("could not find symbol for vkEndCommandBuffer"))
         };
         let ResetCommandBuffer_ptr = if feature < VERSION_1_0 {
-          ResetCommandBuffer_panic as extern "system" fn (commandBuffer: CommandBuffer, flags: CommandBufferResetFlags) -> Result
+          ResetCommandBuffer_panic as PFN_vkResetCommandBuffer
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkResetCommandBuffer").expect("could not find symbol for vkResetCommandBuffer"))
         };
         let CmdBindPipeline_ptr = if feature < VERSION_1_0 {
-          CmdBindPipeline_panic as extern "system" fn (commandBuffer: CommandBuffer, pipelineBindPoint: PipelineBindPoint, pipeline: Pipeline)
+          CmdBindPipeline_panic as PFN_vkCmdBindPipeline
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkCmdBindPipeline").expect("could not find symbol for vkCmdBindPipeline"))
         };
         let CmdSetViewport_ptr = if feature < VERSION_1_0 {
-          CmdSetViewport_panic as extern "system" fn (commandBuffer: CommandBuffer, firstViewport: u32, viewportCount: u32, pViewports: *const Viewport)
+          CmdSetViewport_panic as PFN_vkCmdSetViewport
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkCmdSetViewport").expect("could not find symbol for vkCmdSetViewport"))
         };
         let CmdSetScissor_ptr = if feature < VERSION_1_0 {
-          CmdSetScissor_panic as extern "system" fn (commandBuffer: CommandBuffer, firstScissor: u32, scissorCount: u32, pScissors: *const Rect2D)
+          CmdSetScissor_panic as PFN_vkCmdSetScissor
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkCmdSetScissor").expect("could not find symbol for vkCmdSetScissor"))
         };
         let CmdSetLineWidth_ptr = if feature < VERSION_1_0 {
-          CmdSetLineWidth_panic as extern "system" fn (commandBuffer: CommandBuffer, lineWidth: f32)
+          CmdSetLineWidth_panic as PFN_vkCmdSetLineWidth
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkCmdSetLineWidth").expect("could not find symbol for vkCmdSetLineWidth"))
         };
         let CmdSetDepthBias_ptr = if feature < VERSION_1_0 {
-          CmdSetDepthBias_panic as extern "system" fn (commandBuffer: CommandBuffer, depthBiasConstantFactor: f32, depthBiasClamp: f32, depthBiasSlopeFactor: f32)
+          CmdSetDepthBias_panic as PFN_vkCmdSetDepthBias
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkCmdSetDepthBias").expect("could not find symbol for vkCmdSetDepthBias"))
         };
         let CmdSetBlendConstants_ptr = if feature < VERSION_1_0 {
-          CmdSetBlendConstants_panic as extern "system" fn (commandBuffer: CommandBuffer, blendConstants: [f32; 4])
+          CmdSetBlendConstants_panic as PFN_vkCmdSetBlendConstants
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkCmdSetBlendConstants").expect("could not find symbol for vkCmdSetBlendConstants"))
         };
         let CmdSetDepthBounds_ptr = if feature < VERSION_1_0 {
-          CmdSetDepthBounds_panic as extern "system" fn (commandBuffer: CommandBuffer, minDepthBounds: f32, maxDepthBounds: f32)
+          CmdSetDepthBounds_panic as PFN_vkCmdSetDepthBounds
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkCmdSetDepthBounds").expect("could not find symbol for vkCmdSetDepthBounds"))
         };
         let CmdSetStencilCompareMask_ptr = if feature < VERSION_1_0 {
-          CmdSetStencilCompareMask_panic as extern "system" fn (commandBuffer: CommandBuffer, faceMask: StencilFaceFlags, compareMask: u32)
+          CmdSetStencilCompareMask_panic as PFN_vkCmdSetStencilCompareMask
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkCmdSetStencilCompareMask").expect("could not find symbol for vkCmdSetStencilCompareMask"))
         };
         let CmdSetStencilWriteMask_ptr = if feature < VERSION_1_0 {
-          CmdSetStencilWriteMask_panic as extern "system" fn (commandBuffer: CommandBuffer, faceMask: StencilFaceFlags, writeMask: u32)
+          CmdSetStencilWriteMask_panic as PFN_vkCmdSetStencilWriteMask
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkCmdSetStencilWriteMask").expect("could not find symbol for vkCmdSetStencilWriteMask"))
         };
         let CmdSetStencilReference_ptr = if feature < VERSION_1_0 {
-          CmdSetStencilReference_panic as extern "system" fn (commandBuffer: CommandBuffer, faceMask: StencilFaceFlags, reference: u32)
+          CmdSetStencilReference_panic as PFN_vkCmdSetStencilReference
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkCmdSetStencilReference").expect("could not find symbol for vkCmdSetStencilReference"))
         };
         let CmdBindDescriptorSets_ptr = if feature < VERSION_1_0 {
-          CmdBindDescriptorSets_panic as extern "system" fn (commandBuffer: CommandBuffer, pipelineBindPoint: PipelineBindPoint, layout: PipelineLayout, firstSet: u32, descriptorSetCount: u32, pDescriptorSets: *const DescriptorSet, dynamicOffsetCount: u32, pDynamicOffsets: *const u32)
+          CmdBindDescriptorSets_panic as PFN_vkCmdBindDescriptorSets
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkCmdBindDescriptorSets").expect("could not find symbol for vkCmdBindDescriptorSets"))
         };
         let CmdBindIndexBuffer_ptr = if feature < VERSION_1_0 {
-          CmdBindIndexBuffer_panic as extern "system" fn (commandBuffer: CommandBuffer, buffer: Buffer, offset: DeviceSize, indexType: IndexType)
+          CmdBindIndexBuffer_panic as PFN_vkCmdBindIndexBuffer
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkCmdBindIndexBuffer").expect("could not find symbol for vkCmdBindIndexBuffer"))
         };
         let CmdBindVertexBuffers_ptr = if feature < VERSION_1_0 {
-          CmdBindVertexBuffers_panic as extern "system" fn (commandBuffer: CommandBuffer, firstBinding: u32, bindingCount: u32, pBuffers: *const Buffer, pOffsets: *const DeviceSize)
+          CmdBindVertexBuffers_panic as PFN_vkCmdBindVertexBuffers
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkCmdBindVertexBuffers").expect("could not find symbol for vkCmdBindVertexBuffers"))
         };
         let CmdDraw_ptr = if feature < VERSION_1_0 {
-          CmdDraw_panic as extern "system" fn (commandBuffer: CommandBuffer, vertexCount: u32, instanceCount: u32, firstVertex: u32, firstInstance: u32)
+          CmdDraw_panic as PFN_vkCmdDraw
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkCmdDraw").expect("could not find symbol for vkCmdDraw"))
         };
         let CmdDrawIndexed_ptr = if feature < VERSION_1_0 {
-          CmdDrawIndexed_panic as extern "system" fn (commandBuffer: CommandBuffer, indexCount: u32, instanceCount: u32, firstIndex: u32, vertexOffset: i32, firstInstance: u32)
+          CmdDrawIndexed_panic as PFN_vkCmdDrawIndexed
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkCmdDrawIndexed").expect("could not find symbol for vkCmdDrawIndexed"))
         };
         let CmdDrawIndirect_ptr = if feature < VERSION_1_0 {
-          CmdDrawIndirect_panic as extern "system" fn (commandBuffer: CommandBuffer, buffer: Buffer, offset: DeviceSize, drawCount: u32, stride: u32)
+          CmdDrawIndirect_panic as PFN_vkCmdDrawIndirect
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkCmdDrawIndirect").expect("could not find symbol for vkCmdDrawIndirect"))
         };
         let CmdDrawIndexedIndirect_ptr = if feature < VERSION_1_0 {
-          CmdDrawIndexedIndirect_panic as extern "system" fn (commandBuffer: CommandBuffer, buffer: Buffer, offset: DeviceSize, drawCount: u32, stride: u32)
+          CmdDrawIndexedIndirect_panic as PFN_vkCmdDrawIndexedIndirect
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkCmdDrawIndexedIndirect").expect("could not find symbol for vkCmdDrawIndexedIndirect"))
         };
         let CmdDispatch_ptr = if feature < VERSION_1_0 {
-          CmdDispatch_panic as extern "system" fn (commandBuffer: CommandBuffer, groupCountX: u32, groupCountY: u32, groupCountZ: u32)
+          CmdDispatch_panic as PFN_vkCmdDispatch
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkCmdDispatch").expect("could not find symbol for vkCmdDispatch"))
         };
         let CmdDispatchIndirect_ptr = if feature < VERSION_1_0 {
-          CmdDispatchIndirect_panic as extern "system" fn (commandBuffer: CommandBuffer, buffer: Buffer, offset: DeviceSize)
+          CmdDispatchIndirect_panic as PFN_vkCmdDispatchIndirect
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkCmdDispatchIndirect").expect("could not find symbol for vkCmdDispatchIndirect"))
         };
         let CmdCopyBuffer_ptr = if feature < VERSION_1_0 {
-          CmdCopyBuffer_panic as extern "system" fn (commandBuffer: CommandBuffer, srcBuffer: Buffer, dstBuffer: Buffer, regionCount: u32, pRegions: *const BufferCopy)
+          CmdCopyBuffer_panic as PFN_vkCmdCopyBuffer
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkCmdCopyBuffer").expect("could not find symbol for vkCmdCopyBuffer"))
         };
         let CmdCopyImage_ptr = if feature < VERSION_1_0 {
-          CmdCopyImage_panic as extern "system" fn (commandBuffer: CommandBuffer, srcImage: Image, srcImageLayout: ImageLayout, dstImage: Image, dstImageLayout: ImageLayout, regionCount: u32, pRegions: *const ImageCopy)
+          CmdCopyImage_panic as PFN_vkCmdCopyImage
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkCmdCopyImage").expect("could not find symbol for vkCmdCopyImage"))
         };
         let CmdBlitImage_ptr = if feature < VERSION_1_0 {
-          CmdBlitImage_panic as extern "system" fn (commandBuffer: CommandBuffer, srcImage: Image, srcImageLayout: ImageLayout, dstImage: Image, dstImageLayout: ImageLayout, regionCount: u32, pRegions: *const ImageBlit, filter: Filter)
+          CmdBlitImage_panic as PFN_vkCmdBlitImage
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkCmdBlitImage").expect("could not find symbol for vkCmdBlitImage"))
         };
         let CmdCopyBufferToImage_ptr = if feature < VERSION_1_0 {
-          CmdCopyBufferToImage_panic as extern "system" fn (commandBuffer: CommandBuffer, srcBuffer: Buffer, dstImage: Image, dstImageLayout: ImageLayout, regionCount: u32, pRegions: *const BufferImageCopy)
+          CmdCopyBufferToImage_panic as PFN_vkCmdCopyBufferToImage
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkCmdCopyBufferToImage").expect("could not find symbol for vkCmdCopyBufferToImage"))
         };
         let CmdCopyImageToBuffer_ptr = if feature < VERSION_1_0 {
-          CmdCopyImageToBuffer_panic as extern "system" fn (commandBuffer: CommandBuffer, srcImage: Image, srcImageLayout: ImageLayout, dstBuffer: Buffer, regionCount: u32, pRegions: *const BufferImageCopy)
+          CmdCopyImageToBuffer_panic as PFN_vkCmdCopyImageToBuffer
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkCmdCopyImageToBuffer").expect("could not find symbol for vkCmdCopyImageToBuffer"))
         };
         let CmdUpdateBuffer_ptr = if feature < VERSION_1_0 {
-          CmdUpdateBuffer_panic as extern "system" fn (commandBuffer: CommandBuffer, dstBuffer: Buffer, dstOffset: DeviceSize, dataSize: DeviceSize, pData: *const c_void)
+          CmdUpdateBuffer_panic as PFN_vkCmdUpdateBuffer
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkCmdUpdateBuffer").expect("could not find symbol for vkCmdUpdateBuffer"))
         };
         let CmdFillBuffer_ptr = if feature < VERSION_1_0 {
-          CmdFillBuffer_panic as extern "system" fn (commandBuffer: CommandBuffer, dstBuffer: Buffer, dstOffset: DeviceSize, size: DeviceSize, data: u32)
+          CmdFillBuffer_panic as PFN_vkCmdFillBuffer
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkCmdFillBuffer").expect("could not find symbol for vkCmdFillBuffer"))
         };
         let CmdClearColorImage_ptr = if feature < VERSION_1_0 {
-          CmdClearColorImage_panic as extern "system" fn (commandBuffer: CommandBuffer, image: Image, imageLayout: ImageLayout, pColor: *const ClearColorValue, rangeCount: u32, pRanges: *const ImageSubresourceRange)
+          CmdClearColorImage_panic as PFN_vkCmdClearColorImage
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkCmdClearColorImage").expect("could not find symbol for vkCmdClearColorImage"))
         };
         let CmdClearDepthStencilImage_ptr = if feature < VERSION_1_0 {
-          CmdClearDepthStencilImage_panic as extern "system" fn (commandBuffer: CommandBuffer, image: Image, imageLayout: ImageLayout, pDepthStencil: *const ClearDepthStencilValue, rangeCount: u32, pRanges: *const ImageSubresourceRange)
+          CmdClearDepthStencilImage_panic as PFN_vkCmdClearDepthStencilImage
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkCmdClearDepthStencilImage").expect("could not find symbol for vkCmdClearDepthStencilImage"))
         };
         let CmdClearAttachments_ptr = if feature < VERSION_1_0 {
-          CmdClearAttachments_panic as extern "system" fn (commandBuffer: CommandBuffer, attachmentCount: u32, pAttachments: *const ClearAttachment, rectCount: u32, pRects: *const ClearRect)
+          CmdClearAttachments_panic as PFN_vkCmdClearAttachments
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkCmdClearAttachments").expect("could not find symbol for vkCmdClearAttachments"))
         };
         let CmdResolveImage_ptr = if feature < VERSION_1_0 {
-          CmdResolveImage_panic as extern "system" fn (commandBuffer: CommandBuffer, srcImage: Image, srcImageLayout: ImageLayout, dstImage: Image, dstImageLayout: ImageLayout, regionCount: u32, pRegions: *const ImageResolve)
+          CmdResolveImage_panic as PFN_vkCmdResolveImage
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkCmdResolveImage").expect("could not find symbol for vkCmdResolveImage"))
         };
         let CmdSetEvent_ptr = if feature < VERSION_1_0 {
-          CmdSetEvent_panic as extern "system" fn (commandBuffer: CommandBuffer, event: Event, stageMask: PipelineStageFlags)
+          CmdSetEvent_panic as PFN_vkCmdSetEvent
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkCmdSetEvent").expect("could not find symbol for vkCmdSetEvent"))
         };
         let CmdResetEvent_ptr = if feature < VERSION_1_0 {
-          CmdResetEvent_panic as extern "system" fn (commandBuffer: CommandBuffer, event: Event, stageMask: PipelineStageFlags)
+          CmdResetEvent_panic as PFN_vkCmdResetEvent
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkCmdResetEvent").expect("could not find symbol for vkCmdResetEvent"))
         };
         let CmdWaitEvents_ptr = if feature < VERSION_1_0 {
-          CmdWaitEvents_panic as extern "system" fn (commandBuffer: CommandBuffer, eventCount: u32, pEvents: *const Event, srcStageMask: PipelineStageFlags, dstStageMask: PipelineStageFlags, memoryBarrierCount: u32, pMemoryBarriers: *const MemoryBarrier, bufferMemoryBarrierCount: u32, pBufferMemoryBarriers: *const BufferMemoryBarrier, imageMemoryBarrierCount: u32, pImageMemoryBarriers: *const ImageMemoryBarrier)
+          CmdWaitEvents_panic as PFN_vkCmdWaitEvents
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkCmdWaitEvents").expect("could not find symbol for vkCmdWaitEvents"))
         };
         let CmdPipelineBarrier_ptr = if feature < VERSION_1_0 {
-          CmdPipelineBarrier_panic as extern "system" fn (commandBuffer: CommandBuffer, srcStageMask: PipelineStageFlags, dstStageMask: PipelineStageFlags, dependencyFlags: DependencyFlags, memoryBarrierCount: u32, pMemoryBarriers: *const MemoryBarrier, bufferMemoryBarrierCount: u32, pBufferMemoryBarriers: *const BufferMemoryBarrier, imageMemoryBarrierCount: u32, pImageMemoryBarriers: *const ImageMemoryBarrier)
+          CmdPipelineBarrier_panic as PFN_vkCmdPipelineBarrier
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkCmdPipelineBarrier").expect("could not find symbol for vkCmdPipelineBarrier"))
         };
         let CmdBeginQuery_ptr = if feature < VERSION_1_0 {
-          CmdBeginQuery_panic as extern "system" fn (commandBuffer: CommandBuffer, queryPool: QueryPool, query: u32, flags: QueryControlFlags)
+          CmdBeginQuery_panic as PFN_vkCmdBeginQuery
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkCmdBeginQuery").expect("could not find symbol for vkCmdBeginQuery"))
         };
         let CmdEndQuery_ptr = if feature < VERSION_1_0 {
-          CmdEndQuery_panic as extern "system" fn (commandBuffer: CommandBuffer, queryPool: QueryPool, query: u32)
+          CmdEndQuery_panic as PFN_vkCmdEndQuery
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkCmdEndQuery").expect("could not find symbol for vkCmdEndQuery"))
         };
         let CmdResetQueryPool_ptr = if feature < VERSION_1_0 {
-          CmdResetQueryPool_panic as extern "system" fn (commandBuffer: CommandBuffer, queryPool: QueryPool, firstQuery: u32, queryCount: u32)
+          CmdResetQueryPool_panic as PFN_vkCmdResetQueryPool
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkCmdResetQueryPool").expect("could not find symbol for vkCmdResetQueryPool"))
         };
         let CmdWriteTimestamp_ptr = if feature < VERSION_1_0 {
-          CmdWriteTimestamp_panic as extern "system" fn (commandBuffer: CommandBuffer, pipelineStage: PipelineStageFlagBits, queryPool: QueryPool, query: u32)
+          CmdWriteTimestamp_panic as PFN_vkCmdWriteTimestamp
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkCmdWriteTimestamp").expect("could not find symbol for vkCmdWriteTimestamp"))
         };
         let CmdCopyQueryPoolResults_ptr = if feature < VERSION_1_0 {
-          CmdCopyQueryPoolResults_panic as extern "system" fn (commandBuffer: CommandBuffer, queryPool: QueryPool, firstQuery: u32, queryCount: u32, dstBuffer: Buffer, dstOffset: DeviceSize, stride: DeviceSize, flags: QueryResultFlags)
+          CmdCopyQueryPoolResults_panic as PFN_vkCmdCopyQueryPoolResults
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkCmdCopyQueryPoolResults").expect("could not find symbol for vkCmdCopyQueryPoolResults"))
         };
         let CmdPushConstants_ptr = if feature < VERSION_1_0 {
-          CmdPushConstants_panic as extern "system" fn (commandBuffer: CommandBuffer, layout: PipelineLayout, stageFlags: ShaderStageFlags, offset: u32, size: u32, pValues: *const c_void)
+          CmdPushConstants_panic as PFN_vkCmdPushConstants
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkCmdPushConstants").expect("could not find symbol for vkCmdPushConstants"))
         };
         let CmdBeginRenderPass_ptr = if feature < VERSION_1_0 {
-          CmdBeginRenderPass_panic as extern "system" fn (commandBuffer: CommandBuffer, pRenderPassBegin: *const RenderPassBeginInfo, contents: SubpassContents)
+          CmdBeginRenderPass_panic as PFN_vkCmdBeginRenderPass
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkCmdBeginRenderPass").expect("could not find symbol for vkCmdBeginRenderPass"))
         };
         let CmdNextSubpass_ptr = if feature < VERSION_1_0 {
-          CmdNextSubpass_panic as extern "system" fn (commandBuffer: CommandBuffer, contents: SubpassContents)
+          CmdNextSubpass_panic as PFN_vkCmdNextSubpass
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkCmdNextSubpass").expect("could not find symbol for vkCmdNextSubpass"))
         };
         let CmdEndRenderPass_ptr = if feature < VERSION_1_0 {
-          CmdEndRenderPass_panic as extern "system" fn (commandBuffer: CommandBuffer)
+          CmdEndRenderPass_panic as PFN_vkCmdEndRenderPass
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkCmdEndRenderPass").expect("could not find symbol for vkCmdEndRenderPass"))
         };
         let CmdExecuteCommands_ptr = if feature < VERSION_1_0 {
-          CmdExecuteCommands_panic as extern "system" fn (commandBuffer: CommandBuffer, commandBufferCount: u32, pCommandBuffers: *const CommandBuffer)
+          CmdExecuteCommands_panic as PFN_vkCmdExecuteCommands
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkCmdExecuteCommands").expect("could not find symbol for vkCmdExecuteCommands"))
         };
         let EnumerateInstanceVersion_ptr = if feature < VERSION_1_1 {
-          EnumerateInstanceVersion_panic as extern "system" fn (pApiVersion: *mut u32) -> Result
+          EnumerateInstanceVersion_panic as PFN_vkEnumerateInstanceVersion
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkEnumerateInstanceVersion").expect("could not find symbol for vkEnumerateInstanceVersion"))
         };
         let BindBufferMemory2_ptr = if feature < VERSION_1_1 {
-          BindBufferMemory2_panic as extern "system" fn (device: Device, bindInfoCount: u32, pBindInfos: *const BindBufferMemoryInfo) -> Result
+          BindBufferMemory2_panic as PFN_vkBindBufferMemory2
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkBindBufferMemory2").expect("could not find symbol for vkBindBufferMemory2"))
         };
         let BindImageMemory2_ptr = if feature < VERSION_1_1 {
-          BindImageMemory2_panic as extern "system" fn (device: Device, bindInfoCount: u32, pBindInfos: *const BindImageMemoryInfo) -> Result
+          BindImageMemory2_panic as PFN_vkBindImageMemory2
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkBindImageMemory2").expect("could not find symbol for vkBindImageMemory2"))
         };
         let GetDeviceGroupPeerMemoryFeatures_ptr = if feature < VERSION_1_1 {
-          GetDeviceGroupPeerMemoryFeatures_panic as extern "system" fn (device: Device, heapIndex: u32, localDeviceIndex: u32, remoteDeviceIndex: u32, pPeerMemoryFeatures: *mut PeerMemoryFeatureFlags)
+          GetDeviceGroupPeerMemoryFeatures_panic as PFN_vkGetDeviceGroupPeerMemoryFeatures
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkGetDeviceGroupPeerMemoryFeatures").expect("could not find symbol for vkGetDeviceGroupPeerMemoryFeatures"))
         };
         let CmdSetDeviceMask_ptr = if feature < VERSION_1_1 {
-          CmdSetDeviceMask_panic as extern "system" fn (commandBuffer: CommandBuffer, deviceMask: u32)
+          CmdSetDeviceMask_panic as PFN_vkCmdSetDeviceMask
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkCmdSetDeviceMask").expect("could not find symbol for vkCmdSetDeviceMask"))
         };
         let CmdDispatchBase_ptr = if feature < VERSION_1_1 {
-          CmdDispatchBase_panic as extern "system" fn (commandBuffer: CommandBuffer, baseGroupX: u32, baseGroupY: u32, baseGroupZ: u32, groupCountX: u32, groupCountY: u32, groupCountZ: u32)
+          CmdDispatchBase_panic as PFN_vkCmdDispatchBase
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkCmdDispatchBase").expect("could not find symbol for vkCmdDispatchBase"))
         };
         let EnumeratePhysicalDeviceGroups_ptr = if feature < VERSION_1_1 {
-          EnumeratePhysicalDeviceGroups_panic as extern "system" fn (instance: Instance, pPhysicalDeviceGroupCount: *mut u32, pPhysicalDeviceGroupProperties: *mut PhysicalDeviceGroupProperties) -> Result
+          EnumeratePhysicalDeviceGroups_panic as PFN_vkEnumeratePhysicalDeviceGroups
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkEnumeratePhysicalDeviceGroups").expect("could not find symbol for vkEnumeratePhysicalDeviceGroups"))
         };
         let GetImageMemoryRequirements2_ptr = if feature < VERSION_1_1 {
-          GetImageMemoryRequirements2_panic as extern "system" fn (device: Device, pInfo: *const ImageMemoryRequirementsInfo2, pMemoryRequirements: *mut MemoryRequirements2)
+          GetImageMemoryRequirements2_panic as PFN_vkGetImageMemoryRequirements2
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkGetImageMemoryRequirements2").expect("could not find symbol for vkGetImageMemoryRequirements2"))
         };
         let GetBufferMemoryRequirements2_ptr = if feature < VERSION_1_1 {
-          GetBufferMemoryRequirements2_panic as extern "system" fn (device: Device, pInfo: *const BufferMemoryRequirementsInfo2, pMemoryRequirements: *mut MemoryRequirements2)
+          GetBufferMemoryRequirements2_panic as PFN_vkGetBufferMemoryRequirements2
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkGetBufferMemoryRequirements2").expect("could not find symbol for vkGetBufferMemoryRequirements2"))
         };
         let GetImageSparseMemoryRequirements2_ptr = if feature < VERSION_1_1 {
-          GetImageSparseMemoryRequirements2_panic as extern "system" fn (device: Device, pInfo: *const ImageSparseMemoryRequirementsInfo2, pSparseMemoryRequirementCount: *mut u32, pSparseMemoryRequirements: *mut SparseImageMemoryRequirements2)
+          GetImageSparseMemoryRequirements2_panic as PFN_vkGetImageSparseMemoryRequirements2
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkGetImageSparseMemoryRequirements2").expect("could not find symbol for vkGetImageSparseMemoryRequirements2"))
         };
         let GetPhysicalDeviceFeatures2_ptr = if feature < VERSION_1_1 {
-          GetPhysicalDeviceFeatures2_panic as extern "system" fn (physicalDevice: PhysicalDevice, pFeatures: *mut PhysicalDeviceFeatures2)
+          GetPhysicalDeviceFeatures2_panic as PFN_vkGetPhysicalDeviceFeatures2
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkGetPhysicalDeviceFeatures2").expect("could not find symbol for vkGetPhysicalDeviceFeatures2"))
         };
         let GetPhysicalDeviceProperties2_ptr = if feature < VERSION_1_1 {
-          GetPhysicalDeviceProperties2_panic as extern "system" fn (physicalDevice: PhysicalDevice, pProperties: *mut PhysicalDeviceProperties2)
+          GetPhysicalDeviceProperties2_panic as PFN_vkGetPhysicalDeviceProperties2
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkGetPhysicalDeviceProperties2").expect("could not find symbol for vkGetPhysicalDeviceProperties2"))
         };
         let GetPhysicalDeviceFormatProperties2_ptr = if feature < VERSION_1_1 {
-          GetPhysicalDeviceFormatProperties2_panic as extern "system" fn (physicalDevice: PhysicalDevice, format: Format, pFormatProperties: *mut FormatProperties2)
+          GetPhysicalDeviceFormatProperties2_panic as PFN_vkGetPhysicalDeviceFormatProperties2
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkGetPhysicalDeviceFormatProperties2").expect("could not find symbol for vkGetPhysicalDeviceFormatProperties2"))
         };
         let GetPhysicalDeviceImageFormatProperties2_ptr = if feature < VERSION_1_1 {
-          GetPhysicalDeviceImageFormatProperties2_panic as extern "system" fn (physicalDevice: PhysicalDevice, pImageFormatInfo: *const PhysicalDeviceImageFormatInfo2, pImageFormatProperties: *mut ImageFormatProperties2) -> Result
+          GetPhysicalDeviceImageFormatProperties2_panic as PFN_vkGetPhysicalDeviceImageFormatProperties2
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkGetPhysicalDeviceImageFormatProperties2").expect("could not find symbol for vkGetPhysicalDeviceImageFormatProperties2"))
         };
         let GetPhysicalDeviceQueueFamilyProperties2_ptr = if feature < VERSION_1_1 {
-          GetPhysicalDeviceQueueFamilyProperties2_panic as extern "system" fn (physicalDevice: PhysicalDevice, pQueueFamilyPropertyCount: *mut u32, pQueueFamilyProperties: *mut QueueFamilyProperties2)
+          GetPhysicalDeviceQueueFamilyProperties2_panic as PFN_vkGetPhysicalDeviceQueueFamilyProperties2
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkGetPhysicalDeviceQueueFamilyProperties2").expect("could not find symbol for vkGetPhysicalDeviceQueueFamilyProperties2"))
         };
         let GetPhysicalDeviceMemoryProperties2_ptr = if feature < VERSION_1_1 {
-          GetPhysicalDeviceMemoryProperties2_panic as extern "system" fn (physicalDevice: PhysicalDevice, pMemoryProperties: *mut PhysicalDeviceMemoryProperties2)
+          GetPhysicalDeviceMemoryProperties2_panic as PFN_vkGetPhysicalDeviceMemoryProperties2
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkGetPhysicalDeviceMemoryProperties2").expect("could not find symbol for vkGetPhysicalDeviceMemoryProperties2"))
         };
         let GetPhysicalDeviceSparseImageFormatProperties2_ptr = if feature < VERSION_1_1 {
-          GetPhysicalDeviceSparseImageFormatProperties2_panic as extern "system" fn (physicalDevice: PhysicalDevice, pFormatInfo: *const PhysicalDeviceSparseImageFormatInfo2, pPropertyCount: *mut u32, pProperties: *mut SparseImageFormatProperties2)
+          GetPhysicalDeviceSparseImageFormatProperties2_panic as PFN_vkGetPhysicalDeviceSparseImageFormatProperties2
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkGetPhysicalDeviceSparseImageFormatProperties2").expect("could not find symbol for vkGetPhysicalDeviceSparseImageFormatProperties2"))
         };
         let TrimCommandPool_ptr = if feature < VERSION_1_1 {
-          TrimCommandPool_panic as extern "system" fn (device: Device, commandPool: CommandPool, flags: CommandPoolTrimFlags)
+          TrimCommandPool_panic as PFN_vkTrimCommandPool
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkTrimCommandPool").expect("could not find symbol for vkTrimCommandPool"))
         };
         let GetDeviceQueue2_ptr = if feature < VERSION_1_1 {
-          GetDeviceQueue2_panic as extern "system" fn (device: Device, pQueueInfo: *const DeviceQueueInfo2, pQueue: *mut Queue)
+          GetDeviceQueue2_panic as PFN_vkGetDeviceQueue2
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkGetDeviceQueue2").expect("could not find symbol for vkGetDeviceQueue2"))
         };
         let CreateSamplerYcbcrConversion_ptr = if feature < VERSION_1_1 {
-          CreateSamplerYcbcrConversion_panic as extern "system" fn (device: Device, pCreateInfo: *const SamplerYcbcrConversionCreateInfo, pAllocator: *const AllocationCallbacks, pYcbcrConversion: *mut SamplerYcbcrConversion) -> Result
+          CreateSamplerYcbcrConversion_panic as PFN_vkCreateSamplerYcbcrConversion
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkCreateSamplerYcbcrConversion").expect("could not find symbol for vkCreateSamplerYcbcrConversion"))
         };
         let DestroySamplerYcbcrConversion_ptr = if feature < VERSION_1_1 {
-          DestroySamplerYcbcrConversion_panic as extern "system" fn (device: Device, ycbcrConversion: SamplerYcbcrConversion, pAllocator: *const AllocationCallbacks)
+          DestroySamplerYcbcrConversion_panic as PFN_vkDestroySamplerYcbcrConversion
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkDestroySamplerYcbcrConversion").expect("could not find symbol for vkDestroySamplerYcbcrConversion"))
         };
         let CreateDescriptorUpdateTemplate_ptr = if feature < VERSION_1_1 {
-          CreateDescriptorUpdateTemplate_panic as extern "system" fn (device: Device, pCreateInfo: *const DescriptorUpdateTemplateCreateInfo, pAllocator: *const AllocationCallbacks, pDescriptorUpdateTemplate: *mut DescriptorUpdateTemplate) -> Result
+          CreateDescriptorUpdateTemplate_panic as PFN_vkCreateDescriptorUpdateTemplate
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkCreateDescriptorUpdateTemplate").expect("could not find symbol for vkCreateDescriptorUpdateTemplate"))
         };
         let DestroyDescriptorUpdateTemplate_ptr = if feature < VERSION_1_1 {
-          DestroyDescriptorUpdateTemplate_panic as extern "system" fn (device: Device, descriptorUpdateTemplate: DescriptorUpdateTemplate, pAllocator: *const AllocationCallbacks)
+          DestroyDescriptorUpdateTemplate_panic as PFN_vkDestroyDescriptorUpdateTemplate
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkDestroyDescriptorUpdateTemplate").expect("could not find symbol for vkDestroyDescriptorUpdateTemplate"))
         };
         let UpdateDescriptorSetWithTemplate_ptr = if feature < VERSION_1_1 {
-          UpdateDescriptorSetWithTemplate_panic as extern "system" fn (device: Device, descriptorSet: DescriptorSet, descriptorUpdateTemplate: DescriptorUpdateTemplate, pData: *const c_void)
+          UpdateDescriptorSetWithTemplate_panic as PFN_vkUpdateDescriptorSetWithTemplate
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkUpdateDescriptorSetWithTemplate").expect("could not find symbol for vkUpdateDescriptorSetWithTemplate"))
         };
         let GetPhysicalDeviceExternalBufferProperties_ptr = if feature < VERSION_1_1 {
-          GetPhysicalDeviceExternalBufferProperties_panic as extern "system" fn (physicalDevice: PhysicalDevice, pExternalBufferInfo: *const PhysicalDeviceExternalBufferInfo, pExternalBufferProperties: *mut ExternalBufferProperties)
+          GetPhysicalDeviceExternalBufferProperties_panic as PFN_vkGetPhysicalDeviceExternalBufferProperties
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkGetPhysicalDeviceExternalBufferProperties").expect("could not find symbol for vkGetPhysicalDeviceExternalBufferProperties"))
         };
         let GetPhysicalDeviceExternalFenceProperties_ptr = if feature < VERSION_1_1 {
-          GetPhysicalDeviceExternalFenceProperties_panic as extern "system" fn (physicalDevice: PhysicalDevice, pExternalFenceInfo: *const PhysicalDeviceExternalFenceInfo, pExternalFenceProperties: *mut ExternalFenceProperties)
+          GetPhysicalDeviceExternalFenceProperties_panic as PFN_vkGetPhysicalDeviceExternalFenceProperties
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkGetPhysicalDeviceExternalFenceProperties").expect("could not find symbol for vkGetPhysicalDeviceExternalFenceProperties"))
         };
         let GetPhysicalDeviceExternalSemaphoreProperties_ptr = if feature < VERSION_1_1 {
-          GetPhysicalDeviceExternalSemaphoreProperties_panic as extern "system" fn (physicalDevice: PhysicalDevice, pExternalSemaphoreInfo: *const PhysicalDeviceExternalSemaphoreInfo, pExternalSemaphoreProperties: *mut ExternalSemaphoreProperties)
+          GetPhysicalDeviceExternalSemaphoreProperties_panic as PFN_vkGetPhysicalDeviceExternalSemaphoreProperties
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkGetPhysicalDeviceExternalSemaphoreProperties").expect("could not find symbol for vkGetPhysicalDeviceExternalSemaphoreProperties"))
         };
         let GetDescriptorSetLayoutSupport_ptr = if feature < VERSION_1_1 {
-          GetDescriptorSetLayoutSupport_panic as extern "system" fn (device: Device, pCreateInfo: *const DescriptorSetLayoutCreateInfo, pSupport: *mut DescriptorSetLayoutSupport)
+          GetDescriptorSetLayoutSupport_panic as PFN_vkGetDescriptorSetLayoutSupport
         } else {
           mem::transmute(vk_dl.symbol::<c_void>("vkGetDescriptorSetLayoutSupport").expect("could not find symbol for vkGetDescriptorSetLayoutSupport"))
         };
+        let mut DestroySurfaceKHR_ptr = DestroySurfaceKHR_panic as PFN_vkDestroySurfaceKHR;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkDestroySurfaceKHR") {
+            DestroySurfaceKHR_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut GetPhysicalDeviceSurfaceSupportKHR_ptr = GetPhysicalDeviceSurfaceSupportKHR_panic as PFN_vkGetPhysicalDeviceSurfaceSupportKHR;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkGetPhysicalDeviceSurfaceSupportKHR") {
+            GetPhysicalDeviceSurfaceSupportKHR_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut GetPhysicalDeviceSurfaceCapabilitiesKHR_ptr = GetPhysicalDeviceSurfaceCapabilitiesKHR_panic as PFN_vkGetPhysicalDeviceSurfaceCapabilitiesKHR;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkGetPhysicalDeviceSurfaceCapabilitiesKHR") {
+            GetPhysicalDeviceSurfaceCapabilitiesKHR_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut GetPhysicalDeviceSurfaceFormatsKHR_ptr = GetPhysicalDeviceSurfaceFormatsKHR_panic as PFN_vkGetPhysicalDeviceSurfaceFormatsKHR;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkGetPhysicalDeviceSurfaceFormatsKHR") {
+            GetPhysicalDeviceSurfaceFormatsKHR_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut GetPhysicalDeviceSurfacePresentModesKHR_ptr = GetPhysicalDeviceSurfacePresentModesKHR_panic as PFN_vkGetPhysicalDeviceSurfacePresentModesKHR;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkGetPhysicalDeviceSurfacePresentModesKHR") {
+            GetPhysicalDeviceSurfacePresentModesKHR_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut GetPhysicalDeviceDisplayPropertiesKHR_ptr = GetPhysicalDeviceDisplayPropertiesKHR_panic as PFN_vkGetPhysicalDeviceDisplayPropertiesKHR;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkGetPhysicalDeviceDisplayPropertiesKHR") {
+            GetPhysicalDeviceDisplayPropertiesKHR_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut GetPhysicalDeviceDisplayPlanePropertiesKHR_ptr = GetPhysicalDeviceDisplayPlanePropertiesKHR_panic as PFN_vkGetPhysicalDeviceDisplayPlanePropertiesKHR;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkGetPhysicalDeviceDisplayPlanePropertiesKHR") {
+            GetPhysicalDeviceDisplayPlanePropertiesKHR_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut GetDisplayPlaneSupportedDisplaysKHR_ptr = GetDisplayPlaneSupportedDisplaysKHR_panic as PFN_vkGetDisplayPlaneSupportedDisplaysKHR;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkGetDisplayPlaneSupportedDisplaysKHR") {
+            GetDisplayPlaneSupportedDisplaysKHR_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut GetDisplayModePropertiesKHR_ptr = GetDisplayModePropertiesKHR_panic as PFN_vkGetDisplayModePropertiesKHR;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkGetDisplayModePropertiesKHR") {
+            GetDisplayModePropertiesKHR_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut CreateDisplayModeKHR_ptr = CreateDisplayModeKHR_panic as PFN_vkCreateDisplayModeKHR;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkCreateDisplayModeKHR") {
+            CreateDisplayModeKHR_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut GetDisplayPlaneCapabilitiesKHR_ptr = GetDisplayPlaneCapabilitiesKHR_panic as PFN_vkGetDisplayPlaneCapabilitiesKHR;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkGetDisplayPlaneCapabilitiesKHR") {
+            GetDisplayPlaneCapabilitiesKHR_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut CreateDisplayPlaneSurfaceKHR_ptr = CreateDisplayPlaneSurfaceKHR_panic as PFN_vkCreateDisplayPlaneSurfaceKHR;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkCreateDisplayPlaneSurfaceKHR") {
+            CreateDisplayPlaneSurfaceKHR_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut CreateXlibSurfaceKHR_ptr = CreateXlibSurfaceKHR_panic as PFN_vkCreateXlibSurfaceKHR;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkCreateXlibSurfaceKHR") {
+            CreateXlibSurfaceKHR_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut GetPhysicalDeviceXlibPresentationSupportKHR_ptr = GetPhysicalDeviceXlibPresentationSupportKHR_panic as PFN_vkGetPhysicalDeviceXlibPresentationSupportKHR;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkGetPhysicalDeviceXlibPresentationSupportKHR") {
+            GetPhysicalDeviceXlibPresentationSupportKHR_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut CreateXcbSurfaceKHR_ptr = CreateXcbSurfaceKHR_panic as PFN_vkCreateXcbSurfaceKHR;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkCreateXcbSurfaceKHR") {
+            CreateXcbSurfaceKHR_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut GetPhysicalDeviceXcbPresentationSupportKHR_ptr = GetPhysicalDeviceXcbPresentationSupportKHR_panic as PFN_vkGetPhysicalDeviceXcbPresentationSupportKHR;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkGetPhysicalDeviceXcbPresentationSupportKHR") {
+            GetPhysicalDeviceXcbPresentationSupportKHR_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut CreateWaylandSurfaceKHR_ptr = CreateWaylandSurfaceKHR_panic as PFN_vkCreateWaylandSurfaceKHR;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkCreateWaylandSurfaceKHR") {
+            CreateWaylandSurfaceKHR_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut GetPhysicalDeviceWaylandPresentationSupportKHR_ptr = GetPhysicalDeviceWaylandPresentationSupportKHR_panic as PFN_vkGetPhysicalDeviceWaylandPresentationSupportKHR;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkGetPhysicalDeviceWaylandPresentationSupportKHR") {
+            GetPhysicalDeviceWaylandPresentationSupportKHR_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut CreateAndroidSurfaceKHR_ptr = CreateAndroidSurfaceKHR_panic as PFN_vkCreateAndroidSurfaceKHR;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkCreateAndroidSurfaceKHR") {
+            CreateAndroidSurfaceKHR_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut CreateWin32SurfaceKHR_ptr = CreateWin32SurfaceKHR_panic as PFN_vkCreateWin32SurfaceKHR;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkCreateWin32SurfaceKHR") {
+            CreateWin32SurfaceKHR_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut GetPhysicalDeviceWin32PresentationSupportKHR_ptr = GetPhysicalDeviceWin32PresentationSupportKHR_panic as PFN_vkGetPhysicalDeviceWin32PresentationSupportKHR;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkGetPhysicalDeviceWin32PresentationSupportKHR") {
+            GetPhysicalDeviceWin32PresentationSupportKHR_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut CreateDebugReportCallbackEXT_ptr = CreateDebugReportCallbackEXT_panic as PFN_vkCreateDebugReportCallbackEXT;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkCreateDebugReportCallbackEXT") {
+            CreateDebugReportCallbackEXT_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut DestroyDebugReportCallbackEXT_ptr = DestroyDebugReportCallbackEXT_panic as PFN_vkDestroyDebugReportCallbackEXT;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkDestroyDebugReportCallbackEXT") {
+            DestroyDebugReportCallbackEXT_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut DebugReportMessageEXT_ptr = DebugReportMessageEXT_panic as PFN_vkDebugReportMessageEXT;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkDebugReportMessageEXT") {
+            DebugReportMessageEXT_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut GetPhysicalDeviceExternalImageFormatPropertiesNV_ptr = GetPhysicalDeviceExternalImageFormatPropertiesNV_panic as PFN_vkGetPhysicalDeviceExternalImageFormatPropertiesNV;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkGetPhysicalDeviceExternalImageFormatPropertiesNV") {
+            GetPhysicalDeviceExternalImageFormatPropertiesNV_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut CreateViSurfaceNN_ptr = CreateViSurfaceNN_panic as PFN_vkCreateViSurfaceNN;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkCreateViSurfaceNN") {
+            CreateViSurfaceNN_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut ReleaseDisplayEXT_ptr = ReleaseDisplayEXT_panic as PFN_vkReleaseDisplayEXT;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkReleaseDisplayEXT") {
+            ReleaseDisplayEXT_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut AcquireXlibDisplayEXT_ptr = AcquireXlibDisplayEXT_panic as PFN_vkAcquireXlibDisplayEXT;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkAcquireXlibDisplayEXT") {
+            AcquireXlibDisplayEXT_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut GetRandROutputDisplayEXT_ptr = GetRandROutputDisplayEXT_panic as PFN_vkGetRandROutputDisplayEXT;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkGetRandROutputDisplayEXT") {
+            GetRandROutputDisplayEXT_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut GetPhysicalDeviceSurfaceCapabilities2EXT_ptr = GetPhysicalDeviceSurfaceCapabilities2EXT_panic as PFN_vkGetPhysicalDeviceSurfaceCapabilities2EXT;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkGetPhysicalDeviceSurfaceCapabilities2EXT") {
+            GetPhysicalDeviceSurfaceCapabilities2EXT_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut GetPhysicalDeviceSurfaceCapabilities2KHR_ptr = GetPhysicalDeviceSurfaceCapabilities2KHR_panic as PFN_vkGetPhysicalDeviceSurfaceCapabilities2KHR;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkGetPhysicalDeviceSurfaceCapabilities2KHR") {
+            GetPhysicalDeviceSurfaceCapabilities2KHR_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut GetPhysicalDeviceSurfaceFormats2KHR_ptr = GetPhysicalDeviceSurfaceFormats2KHR_panic as PFN_vkGetPhysicalDeviceSurfaceFormats2KHR;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkGetPhysicalDeviceSurfaceFormats2KHR") {
+            GetPhysicalDeviceSurfaceFormats2KHR_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut GetPhysicalDeviceDisplayProperties2KHR_ptr = GetPhysicalDeviceDisplayProperties2KHR_panic as PFN_vkGetPhysicalDeviceDisplayProperties2KHR;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkGetPhysicalDeviceDisplayProperties2KHR") {
+            GetPhysicalDeviceDisplayProperties2KHR_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut GetPhysicalDeviceDisplayPlaneProperties2KHR_ptr = GetPhysicalDeviceDisplayPlaneProperties2KHR_panic as PFN_vkGetPhysicalDeviceDisplayPlaneProperties2KHR;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkGetPhysicalDeviceDisplayPlaneProperties2KHR") {
+            GetPhysicalDeviceDisplayPlaneProperties2KHR_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut GetDisplayModeProperties2KHR_ptr = GetDisplayModeProperties2KHR_panic as PFN_vkGetDisplayModeProperties2KHR;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkGetDisplayModeProperties2KHR") {
+            GetDisplayModeProperties2KHR_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut GetDisplayPlaneCapabilities2KHR_ptr = GetDisplayPlaneCapabilities2KHR_panic as PFN_vkGetDisplayPlaneCapabilities2KHR;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkGetDisplayPlaneCapabilities2KHR") {
+            GetDisplayPlaneCapabilities2KHR_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut CreateIOSSurfaceMVK_ptr = CreateIOSSurfaceMVK_panic as PFN_vkCreateIOSSurfaceMVK;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkCreateIOSSurfaceMVK") {
+            CreateIOSSurfaceMVK_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut CreateMacOSSurfaceMVK_ptr = CreateMacOSSurfaceMVK_panic as PFN_vkCreateMacOSSurfaceMVK;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkCreateMacOSSurfaceMVK") {
+            CreateMacOSSurfaceMVK_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut SetDebugUtilsObjectNameEXT_ptr = SetDebugUtilsObjectNameEXT_panic as PFN_vkSetDebugUtilsObjectNameEXT;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkSetDebugUtilsObjectNameEXT") {
+            SetDebugUtilsObjectNameEXT_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut SetDebugUtilsObjectTagEXT_ptr = SetDebugUtilsObjectTagEXT_panic as PFN_vkSetDebugUtilsObjectTagEXT;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkSetDebugUtilsObjectTagEXT") {
+            SetDebugUtilsObjectTagEXT_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut QueueBeginDebugUtilsLabelEXT_ptr = QueueBeginDebugUtilsLabelEXT_panic as PFN_vkQueueBeginDebugUtilsLabelEXT;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkQueueBeginDebugUtilsLabelEXT") {
+            QueueBeginDebugUtilsLabelEXT_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut QueueEndDebugUtilsLabelEXT_ptr = QueueEndDebugUtilsLabelEXT_panic as PFN_vkQueueEndDebugUtilsLabelEXT;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkQueueEndDebugUtilsLabelEXT") {
+            QueueEndDebugUtilsLabelEXT_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut QueueInsertDebugUtilsLabelEXT_ptr = QueueInsertDebugUtilsLabelEXT_panic as PFN_vkQueueInsertDebugUtilsLabelEXT;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkQueueInsertDebugUtilsLabelEXT") {
+            QueueInsertDebugUtilsLabelEXT_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut CmdBeginDebugUtilsLabelEXT_ptr = CmdBeginDebugUtilsLabelEXT_panic as PFN_vkCmdBeginDebugUtilsLabelEXT;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkCmdBeginDebugUtilsLabelEXT") {
+            CmdBeginDebugUtilsLabelEXT_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut CmdEndDebugUtilsLabelEXT_ptr = CmdEndDebugUtilsLabelEXT_panic as PFN_vkCmdEndDebugUtilsLabelEXT;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkCmdEndDebugUtilsLabelEXT") {
+            CmdEndDebugUtilsLabelEXT_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut CmdInsertDebugUtilsLabelEXT_ptr = CmdInsertDebugUtilsLabelEXT_panic as PFN_vkCmdInsertDebugUtilsLabelEXT;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkCmdInsertDebugUtilsLabelEXT") {
+            CmdInsertDebugUtilsLabelEXT_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut CreateDebugUtilsMessengerEXT_ptr = CreateDebugUtilsMessengerEXT_panic as PFN_vkCreateDebugUtilsMessengerEXT;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkCreateDebugUtilsMessengerEXT") {
+            CreateDebugUtilsMessengerEXT_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut DestroyDebugUtilsMessengerEXT_ptr = DestroyDebugUtilsMessengerEXT_panic as PFN_vkDestroyDebugUtilsMessengerEXT;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkDestroyDebugUtilsMessengerEXT") {
+            DestroyDebugUtilsMessengerEXT_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut SubmitDebugUtilsMessageEXT_ptr = SubmitDebugUtilsMessageEXT_panic as PFN_vkSubmitDebugUtilsMessageEXT;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkSubmitDebugUtilsMessageEXT") {
+            SubmitDebugUtilsMessageEXT_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut CreateImagePipeSurfaceFUCHSIA_ptr = CreateImagePipeSurfaceFUCHSIA_panic as PFN_vkCreateImagePipeSurfaceFUCHSIA;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkCreateImagePipeSurfaceFUCHSIA") {
+            CreateImagePipeSurfaceFUCHSIA_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut CreateSwapchainKHR_ptr = CreateSwapchainKHR_panic as PFN_vkCreateSwapchainKHR;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkCreateSwapchainKHR") {
+            CreateSwapchainKHR_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut DestroySwapchainKHR_ptr = DestroySwapchainKHR_panic as PFN_vkDestroySwapchainKHR;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkDestroySwapchainKHR") {
+            DestroySwapchainKHR_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut GetSwapchainImagesKHR_ptr = GetSwapchainImagesKHR_panic as PFN_vkGetSwapchainImagesKHR;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkGetSwapchainImagesKHR") {
+            GetSwapchainImagesKHR_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut AcquireNextImageKHR_ptr = AcquireNextImageKHR_panic as PFN_vkAcquireNextImageKHR;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkAcquireNextImageKHR") {
+            AcquireNextImageKHR_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut QueuePresentKHR_ptr = QueuePresentKHR_panic as PFN_vkQueuePresentKHR;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkQueuePresentKHR") {
+            QueuePresentKHR_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut GetDeviceGroupPresentCapabilitiesKHR_ptr = GetDeviceGroupPresentCapabilitiesKHR_panic as PFN_vkGetDeviceGroupPresentCapabilitiesKHR;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkGetDeviceGroupPresentCapabilitiesKHR") {
+            GetDeviceGroupPresentCapabilitiesKHR_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut GetDeviceGroupSurfacePresentModesKHR_ptr = GetDeviceGroupSurfacePresentModesKHR_panic as PFN_vkGetDeviceGroupSurfacePresentModesKHR;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkGetDeviceGroupSurfacePresentModesKHR") {
+            GetDeviceGroupSurfacePresentModesKHR_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut GetPhysicalDevicePresentRectanglesKHR_ptr = GetPhysicalDevicePresentRectanglesKHR_panic as PFN_vkGetPhysicalDevicePresentRectanglesKHR;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkGetPhysicalDevicePresentRectanglesKHR") {
+            GetPhysicalDevicePresentRectanglesKHR_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut AcquireNextImage2KHR_ptr = AcquireNextImage2KHR_panic as PFN_vkAcquireNextImage2KHR;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkAcquireNextImage2KHR") {
+            AcquireNextImage2KHR_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut CreateSharedSwapchainsKHR_ptr = CreateSharedSwapchainsKHR_panic as PFN_vkCreateSharedSwapchainsKHR;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkCreateSharedSwapchainsKHR") {
+            CreateSharedSwapchainsKHR_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut DebugMarkerSetObjectTagEXT_ptr = DebugMarkerSetObjectTagEXT_panic as PFN_vkDebugMarkerSetObjectTagEXT;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkDebugMarkerSetObjectTagEXT") {
+            DebugMarkerSetObjectTagEXT_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut DebugMarkerSetObjectNameEXT_ptr = DebugMarkerSetObjectNameEXT_panic as PFN_vkDebugMarkerSetObjectNameEXT;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkDebugMarkerSetObjectNameEXT") {
+            DebugMarkerSetObjectNameEXT_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut CmdDebugMarkerBeginEXT_ptr = CmdDebugMarkerBeginEXT_panic as PFN_vkCmdDebugMarkerBeginEXT;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkCmdDebugMarkerBeginEXT") {
+            CmdDebugMarkerBeginEXT_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut CmdDebugMarkerEndEXT_ptr = CmdDebugMarkerEndEXT_panic as PFN_vkCmdDebugMarkerEndEXT;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkCmdDebugMarkerEndEXT") {
+            CmdDebugMarkerEndEXT_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut CmdDebugMarkerInsertEXT_ptr = CmdDebugMarkerInsertEXT_panic as PFN_vkCmdDebugMarkerInsertEXT;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkCmdDebugMarkerInsertEXT") {
+            CmdDebugMarkerInsertEXT_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut CmdBindTransformFeedbackBuffersEXT_ptr = CmdBindTransformFeedbackBuffersEXT_panic as PFN_vkCmdBindTransformFeedbackBuffersEXT;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkCmdBindTransformFeedbackBuffersEXT") {
+            CmdBindTransformFeedbackBuffersEXT_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut CmdBeginTransformFeedbackEXT_ptr = CmdBeginTransformFeedbackEXT_panic as PFN_vkCmdBeginTransformFeedbackEXT;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkCmdBeginTransformFeedbackEXT") {
+            CmdBeginTransformFeedbackEXT_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut CmdEndTransformFeedbackEXT_ptr = CmdEndTransformFeedbackEXT_panic as PFN_vkCmdEndTransformFeedbackEXT;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkCmdEndTransformFeedbackEXT") {
+            CmdEndTransformFeedbackEXT_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut CmdBeginQueryIndexedEXT_ptr = CmdBeginQueryIndexedEXT_panic as PFN_vkCmdBeginQueryIndexedEXT;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkCmdBeginQueryIndexedEXT") {
+            CmdBeginQueryIndexedEXT_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut CmdEndQueryIndexedEXT_ptr = CmdEndQueryIndexedEXT_panic as PFN_vkCmdEndQueryIndexedEXT;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkCmdEndQueryIndexedEXT") {
+            CmdEndQueryIndexedEXT_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut CmdDrawIndirectByteCountEXT_ptr = CmdDrawIndirectByteCountEXT_panic as PFN_vkCmdDrawIndirectByteCountEXT;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkCmdDrawIndirectByteCountEXT") {
+            CmdDrawIndirectByteCountEXT_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut CmdDrawIndirectCountAMD_ptr = CmdDrawIndirectCountAMD_panic as PFN_vkCmdDrawIndirectCountAMD;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkCmdDrawIndirectCountAMD") {
+            CmdDrawIndirectCountAMD_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut CmdDrawIndexedIndirectCountAMD_ptr = CmdDrawIndexedIndirectCountAMD_panic as PFN_vkCmdDrawIndexedIndirectCountAMD;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkCmdDrawIndexedIndirectCountAMD") {
+            CmdDrawIndexedIndirectCountAMD_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut GetShaderInfoAMD_ptr = GetShaderInfoAMD_panic as PFN_vkGetShaderInfoAMD;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkGetShaderInfoAMD") {
+            GetShaderInfoAMD_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut GetMemoryWin32HandleNV_ptr = GetMemoryWin32HandleNV_panic as PFN_vkGetMemoryWin32HandleNV;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkGetMemoryWin32HandleNV") {
+            GetMemoryWin32HandleNV_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut GetMemoryWin32HandleKHR_ptr = GetMemoryWin32HandleKHR_panic as PFN_vkGetMemoryWin32HandleKHR;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkGetMemoryWin32HandleKHR") {
+            GetMemoryWin32HandleKHR_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut GetMemoryWin32HandlePropertiesKHR_ptr = GetMemoryWin32HandlePropertiesKHR_panic as PFN_vkGetMemoryWin32HandlePropertiesKHR;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkGetMemoryWin32HandlePropertiesKHR") {
+            GetMemoryWin32HandlePropertiesKHR_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut GetMemoryFdKHR_ptr = GetMemoryFdKHR_panic as PFN_vkGetMemoryFdKHR;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkGetMemoryFdKHR") {
+            GetMemoryFdKHR_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut GetMemoryFdPropertiesKHR_ptr = GetMemoryFdPropertiesKHR_panic as PFN_vkGetMemoryFdPropertiesKHR;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkGetMemoryFdPropertiesKHR") {
+            GetMemoryFdPropertiesKHR_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut ImportSemaphoreWin32HandleKHR_ptr = ImportSemaphoreWin32HandleKHR_panic as PFN_vkImportSemaphoreWin32HandleKHR;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkImportSemaphoreWin32HandleKHR") {
+            ImportSemaphoreWin32HandleKHR_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut GetSemaphoreWin32HandleKHR_ptr = GetSemaphoreWin32HandleKHR_panic as PFN_vkGetSemaphoreWin32HandleKHR;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkGetSemaphoreWin32HandleKHR") {
+            GetSemaphoreWin32HandleKHR_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut ImportSemaphoreFdKHR_ptr = ImportSemaphoreFdKHR_panic as PFN_vkImportSemaphoreFdKHR;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkImportSemaphoreFdKHR") {
+            ImportSemaphoreFdKHR_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut GetSemaphoreFdKHR_ptr = GetSemaphoreFdKHR_panic as PFN_vkGetSemaphoreFdKHR;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkGetSemaphoreFdKHR") {
+            GetSemaphoreFdKHR_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut CmdPushDescriptorSetKHR_ptr = CmdPushDescriptorSetKHR_panic as PFN_vkCmdPushDescriptorSetKHR;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkCmdPushDescriptorSetKHR") {
+            CmdPushDescriptorSetKHR_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut CmdPushDescriptorSetWithTemplateKHR_ptr = CmdPushDescriptorSetWithTemplateKHR_panic as PFN_vkCmdPushDescriptorSetWithTemplateKHR;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkCmdPushDescriptorSetWithTemplateKHR") {
+            CmdPushDescriptorSetWithTemplateKHR_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut CmdBeginConditionalRenderingEXT_ptr = CmdBeginConditionalRenderingEXT_panic as PFN_vkCmdBeginConditionalRenderingEXT;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkCmdBeginConditionalRenderingEXT") {
+            CmdBeginConditionalRenderingEXT_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut CmdEndConditionalRenderingEXT_ptr = CmdEndConditionalRenderingEXT_panic as PFN_vkCmdEndConditionalRenderingEXT;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkCmdEndConditionalRenderingEXT") {
+            CmdEndConditionalRenderingEXT_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut CmdProcessCommandsNVX_ptr = CmdProcessCommandsNVX_panic as PFN_vkCmdProcessCommandsNVX;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkCmdProcessCommandsNVX") {
+            CmdProcessCommandsNVX_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut CmdReserveSpaceForCommandsNVX_ptr = CmdReserveSpaceForCommandsNVX_panic as PFN_vkCmdReserveSpaceForCommandsNVX;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkCmdReserveSpaceForCommandsNVX") {
+            CmdReserveSpaceForCommandsNVX_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut CreateIndirectCommandsLayoutNVX_ptr = CreateIndirectCommandsLayoutNVX_panic as PFN_vkCreateIndirectCommandsLayoutNVX;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkCreateIndirectCommandsLayoutNVX") {
+            CreateIndirectCommandsLayoutNVX_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut DestroyIndirectCommandsLayoutNVX_ptr = DestroyIndirectCommandsLayoutNVX_panic as PFN_vkDestroyIndirectCommandsLayoutNVX;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkDestroyIndirectCommandsLayoutNVX") {
+            DestroyIndirectCommandsLayoutNVX_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut CreateObjectTableNVX_ptr = CreateObjectTableNVX_panic as PFN_vkCreateObjectTableNVX;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkCreateObjectTableNVX") {
+            CreateObjectTableNVX_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut DestroyObjectTableNVX_ptr = DestroyObjectTableNVX_panic as PFN_vkDestroyObjectTableNVX;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkDestroyObjectTableNVX") {
+            DestroyObjectTableNVX_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut RegisterObjectsNVX_ptr = RegisterObjectsNVX_panic as PFN_vkRegisterObjectsNVX;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkRegisterObjectsNVX") {
+            RegisterObjectsNVX_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut UnregisterObjectsNVX_ptr = UnregisterObjectsNVX_panic as PFN_vkUnregisterObjectsNVX;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkUnregisterObjectsNVX") {
+            UnregisterObjectsNVX_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut GetPhysicalDeviceGeneratedCommandsPropertiesNVX_ptr = GetPhysicalDeviceGeneratedCommandsPropertiesNVX_panic as PFN_vkGetPhysicalDeviceGeneratedCommandsPropertiesNVX;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkGetPhysicalDeviceGeneratedCommandsPropertiesNVX") {
+            GetPhysicalDeviceGeneratedCommandsPropertiesNVX_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut CmdSetViewportWScalingNV_ptr = CmdSetViewportWScalingNV_panic as PFN_vkCmdSetViewportWScalingNV;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkCmdSetViewportWScalingNV") {
+            CmdSetViewportWScalingNV_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut DisplayPowerControlEXT_ptr = DisplayPowerControlEXT_panic as PFN_vkDisplayPowerControlEXT;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkDisplayPowerControlEXT") {
+            DisplayPowerControlEXT_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut RegisterDeviceEventEXT_ptr = RegisterDeviceEventEXT_panic as PFN_vkRegisterDeviceEventEXT;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkRegisterDeviceEventEXT") {
+            RegisterDeviceEventEXT_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut RegisterDisplayEventEXT_ptr = RegisterDisplayEventEXT_panic as PFN_vkRegisterDisplayEventEXT;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkRegisterDisplayEventEXT") {
+            RegisterDisplayEventEXT_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut GetSwapchainCounterEXT_ptr = GetSwapchainCounterEXT_panic as PFN_vkGetSwapchainCounterEXT;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkGetSwapchainCounterEXT") {
+            GetSwapchainCounterEXT_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut GetRefreshCycleDurationGOOGLE_ptr = GetRefreshCycleDurationGOOGLE_panic as PFN_vkGetRefreshCycleDurationGOOGLE;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkGetRefreshCycleDurationGOOGLE") {
+            GetRefreshCycleDurationGOOGLE_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut GetPastPresentationTimingGOOGLE_ptr = GetPastPresentationTimingGOOGLE_panic as PFN_vkGetPastPresentationTimingGOOGLE;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkGetPastPresentationTimingGOOGLE") {
+            GetPastPresentationTimingGOOGLE_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut CmdSetDiscardRectangleEXT_ptr = CmdSetDiscardRectangleEXT_panic as PFN_vkCmdSetDiscardRectangleEXT;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkCmdSetDiscardRectangleEXT") {
+            CmdSetDiscardRectangleEXT_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut SetHdrMetadataEXT_ptr = SetHdrMetadataEXT_panic as PFN_vkSetHdrMetadataEXT;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkSetHdrMetadataEXT") {
+            SetHdrMetadataEXT_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut CreateRenderPass2KHR_ptr = CreateRenderPass2KHR_panic as PFN_vkCreateRenderPass2KHR;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkCreateRenderPass2KHR") {
+            CreateRenderPass2KHR_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut CmdBeginRenderPass2KHR_ptr = CmdBeginRenderPass2KHR_panic as PFN_vkCmdBeginRenderPass2KHR;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkCmdBeginRenderPass2KHR") {
+            CmdBeginRenderPass2KHR_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut CmdNextSubpass2KHR_ptr = CmdNextSubpass2KHR_panic as PFN_vkCmdNextSubpass2KHR;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkCmdNextSubpass2KHR") {
+            CmdNextSubpass2KHR_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut CmdEndRenderPass2KHR_ptr = CmdEndRenderPass2KHR_panic as PFN_vkCmdEndRenderPass2KHR;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkCmdEndRenderPass2KHR") {
+            CmdEndRenderPass2KHR_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut GetSwapchainStatusKHR_ptr = GetSwapchainStatusKHR_panic as PFN_vkGetSwapchainStatusKHR;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkGetSwapchainStatusKHR") {
+            GetSwapchainStatusKHR_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut ImportFenceWin32HandleKHR_ptr = ImportFenceWin32HandleKHR_panic as PFN_vkImportFenceWin32HandleKHR;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkImportFenceWin32HandleKHR") {
+            ImportFenceWin32HandleKHR_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut GetFenceWin32HandleKHR_ptr = GetFenceWin32HandleKHR_panic as PFN_vkGetFenceWin32HandleKHR;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkGetFenceWin32HandleKHR") {
+            GetFenceWin32HandleKHR_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut ImportFenceFdKHR_ptr = ImportFenceFdKHR_panic as PFN_vkImportFenceFdKHR;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkImportFenceFdKHR") {
+            ImportFenceFdKHR_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut GetFenceFdKHR_ptr = GetFenceFdKHR_panic as PFN_vkGetFenceFdKHR;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkGetFenceFdKHR") {
+            GetFenceFdKHR_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut GetAndroidHardwareBufferPropertiesANDROID_ptr = GetAndroidHardwareBufferPropertiesANDROID_panic as PFN_vkGetAndroidHardwareBufferPropertiesANDROID;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkGetAndroidHardwareBufferPropertiesANDROID") {
+            GetAndroidHardwareBufferPropertiesANDROID_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut GetMemoryAndroidHardwareBufferANDROID_ptr = GetMemoryAndroidHardwareBufferANDROID_panic as PFN_vkGetMemoryAndroidHardwareBufferANDROID;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkGetMemoryAndroidHardwareBufferANDROID") {
+            GetMemoryAndroidHardwareBufferANDROID_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut CmdSetSampleLocationsEXT_ptr = CmdSetSampleLocationsEXT_panic as PFN_vkCmdSetSampleLocationsEXT;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkCmdSetSampleLocationsEXT") {
+            CmdSetSampleLocationsEXT_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut GetPhysicalDeviceMultisamplePropertiesEXT_ptr = GetPhysicalDeviceMultisamplePropertiesEXT_panic as PFN_vkGetPhysicalDeviceMultisamplePropertiesEXT;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkGetPhysicalDeviceMultisamplePropertiesEXT") {
+            GetPhysicalDeviceMultisamplePropertiesEXT_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut GetImageDrmFormatModifierPropertiesEXT_ptr = GetImageDrmFormatModifierPropertiesEXT_panic as PFN_vkGetImageDrmFormatModifierPropertiesEXT;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkGetImageDrmFormatModifierPropertiesEXT") {
+            GetImageDrmFormatModifierPropertiesEXT_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut CreateValidationCacheEXT_ptr = CreateValidationCacheEXT_panic as PFN_vkCreateValidationCacheEXT;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkCreateValidationCacheEXT") {
+            CreateValidationCacheEXT_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut DestroyValidationCacheEXT_ptr = DestroyValidationCacheEXT_panic as PFN_vkDestroyValidationCacheEXT;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkDestroyValidationCacheEXT") {
+            DestroyValidationCacheEXT_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut MergeValidationCachesEXT_ptr = MergeValidationCachesEXT_panic as PFN_vkMergeValidationCachesEXT;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkMergeValidationCachesEXT") {
+            MergeValidationCachesEXT_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut GetValidationCacheDataEXT_ptr = GetValidationCacheDataEXT_panic as PFN_vkGetValidationCacheDataEXT;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkGetValidationCacheDataEXT") {
+            GetValidationCacheDataEXT_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut CmdBindShadingRateImageNV_ptr = CmdBindShadingRateImageNV_panic as PFN_vkCmdBindShadingRateImageNV;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkCmdBindShadingRateImageNV") {
+            CmdBindShadingRateImageNV_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut CmdSetViewportShadingRatePaletteNV_ptr = CmdSetViewportShadingRatePaletteNV_panic as PFN_vkCmdSetViewportShadingRatePaletteNV;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkCmdSetViewportShadingRatePaletteNV") {
+            CmdSetViewportShadingRatePaletteNV_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut CmdSetCoarseSampleOrderNV_ptr = CmdSetCoarseSampleOrderNV_panic as PFN_vkCmdSetCoarseSampleOrderNV;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkCmdSetCoarseSampleOrderNV") {
+            CmdSetCoarseSampleOrderNV_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut CreateAccelerationStructureNV_ptr = CreateAccelerationStructureNV_panic as PFN_vkCreateAccelerationStructureNV;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkCreateAccelerationStructureNV") {
+            CreateAccelerationStructureNV_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut DestroyAccelerationStructureNV_ptr = DestroyAccelerationStructureNV_panic as PFN_vkDestroyAccelerationStructureNV;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkDestroyAccelerationStructureNV") {
+            DestroyAccelerationStructureNV_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut GetAccelerationStructureMemoryRequirementsNV_ptr = GetAccelerationStructureMemoryRequirementsNV_panic as PFN_vkGetAccelerationStructureMemoryRequirementsNV;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkGetAccelerationStructureMemoryRequirementsNV") {
+            GetAccelerationStructureMemoryRequirementsNV_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut BindAccelerationStructureMemoryNV_ptr = BindAccelerationStructureMemoryNV_panic as PFN_vkBindAccelerationStructureMemoryNV;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkBindAccelerationStructureMemoryNV") {
+            BindAccelerationStructureMemoryNV_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut CmdBuildAccelerationStructureNV_ptr = CmdBuildAccelerationStructureNV_panic as PFN_vkCmdBuildAccelerationStructureNV;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkCmdBuildAccelerationStructureNV") {
+            CmdBuildAccelerationStructureNV_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut CmdCopyAccelerationStructureNV_ptr = CmdCopyAccelerationStructureNV_panic as PFN_vkCmdCopyAccelerationStructureNV;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkCmdCopyAccelerationStructureNV") {
+            CmdCopyAccelerationStructureNV_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut CmdTraceRaysNV_ptr = CmdTraceRaysNV_panic as PFN_vkCmdTraceRaysNV;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkCmdTraceRaysNV") {
+            CmdTraceRaysNV_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut CreateRayTracingPipelinesNV_ptr = CreateRayTracingPipelinesNV_panic as PFN_vkCreateRayTracingPipelinesNV;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkCreateRayTracingPipelinesNV") {
+            CreateRayTracingPipelinesNV_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut GetRayTracingShaderGroupHandlesNV_ptr = GetRayTracingShaderGroupHandlesNV_panic as PFN_vkGetRayTracingShaderGroupHandlesNV;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkGetRayTracingShaderGroupHandlesNV") {
+            GetRayTracingShaderGroupHandlesNV_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut GetAccelerationStructureHandleNV_ptr = GetAccelerationStructureHandleNV_panic as PFN_vkGetAccelerationStructureHandleNV;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkGetAccelerationStructureHandleNV") {
+            GetAccelerationStructureHandleNV_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut CmdWriteAccelerationStructuresPropertiesNV_ptr = CmdWriteAccelerationStructuresPropertiesNV_panic as PFN_vkCmdWriteAccelerationStructuresPropertiesNV;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkCmdWriteAccelerationStructuresPropertiesNV") {
+            CmdWriteAccelerationStructuresPropertiesNV_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut CompileDeferredNV_ptr = CompileDeferredNV_panic as PFN_vkCompileDeferredNV;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkCompileDeferredNV") {
+            CompileDeferredNV_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut CmdDrawIndirectCountKHR_ptr = CmdDrawIndirectCountKHR_panic as PFN_vkCmdDrawIndirectCountKHR;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkCmdDrawIndirectCountKHR") {
+            CmdDrawIndirectCountKHR_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut CmdDrawIndexedIndirectCountKHR_ptr = CmdDrawIndexedIndirectCountKHR_panic as PFN_vkCmdDrawIndexedIndirectCountKHR;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkCmdDrawIndexedIndirectCountKHR") {
+            CmdDrawIndexedIndirectCountKHR_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut GetMemoryHostPointerPropertiesEXT_ptr = GetMemoryHostPointerPropertiesEXT_panic as PFN_vkGetMemoryHostPointerPropertiesEXT;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkGetMemoryHostPointerPropertiesEXT") {
+            GetMemoryHostPointerPropertiesEXT_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut CmdWriteBufferMarkerAMD_ptr = CmdWriteBufferMarkerAMD_panic as PFN_vkCmdWriteBufferMarkerAMD;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkCmdWriteBufferMarkerAMD") {
+            CmdWriteBufferMarkerAMD_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut GetPhysicalDeviceCalibrateableTimeDomainsEXT_ptr = GetPhysicalDeviceCalibrateableTimeDomainsEXT_panic as PFN_vkGetPhysicalDeviceCalibrateableTimeDomainsEXT;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkGetPhysicalDeviceCalibrateableTimeDomainsEXT") {
+            GetPhysicalDeviceCalibrateableTimeDomainsEXT_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut GetCalibratedTimestampsEXT_ptr = GetCalibratedTimestampsEXT_panic as PFN_vkGetCalibratedTimestampsEXT;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkGetCalibratedTimestampsEXT") {
+            GetCalibratedTimestampsEXT_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut CmdDrawMeshTasksNV_ptr = CmdDrawMeshTasksNV_panic as PFN_vkCmdDrawMeshTasksNV;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkCmdDrawMeshTasksNV") {
+            CmdDrawMeshTasksNV_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut CmdDrawMeshTasksIndirectNV_ptr = CmdDrawMeshTasksIndirectNV_panic as PFN_vkCmdDrawMeshTasksIndirectNV;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkCmdDrawMeshTasksIndirectNV") {
+            CmdDrawMeshTasksIndirectNV_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut CmdDrawMeshTasksIndirectCountNV_ptr = CmdDrawMeshTasksIndirectCountNV_panic as PFN_vkCmdDrawMeshTasksIndirectCountNV;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkCmdDrawMeshTasksIndirectCountNV") {
+            CmdDrawMeshTasksIndirectCountNV_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut CmdSetExclusiveScissorNV_ptr = CmdSetExclusiveScissorNV_panic as PFN_vkCmdSetExclusiveScissorNV;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkCmdSetExclusiveScissorNV") {
+            CmdSetExclusiveScissorNV_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut CmdSetCheckpointNV_ptr = CmdSetCheckpointNV_panic as PFN_vkCmdSetCheckpointNV;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkCmdSetCheckpointNV") {
+            CmdSetCheckpointNV_ptr = mem::transmute(fnptr);
+          }
+        }
+        let mut GetQueueCheckpointDataNV_ptr = GetQueueCheckpointDataNV_panic as PFN_vkGetQueueCheckpointDataNV;
+        if feature >= VERSION_1_0 {
+          if let Ok(fnptr) = vk_dl.symbol::<c_void>("vkGetQueueCheckpointDataNV") {
+            GetQueueCheckpointDataNV_ptr = mem::transmute(fnptr);
+          }
+        }
 
-      let c = Core {
+      let c = VkLib {
         lib: vk_dl,
         feature,
         CreateInstance_ptr,
@@ -8366,10 +10335,160 @@ impl Core {
         GetPhysicalDeviceExternalFenceProperties_ptr,
         GetPhysicalDeviceExternalSemaphoreProperties_ptr,
         GetDescriptorSetLayoutSupport_ptr,
+        DestroySurfaceKHR_ptr,
+        GetPhysicalDeviceSurfaceSupportKHR_ptr,
+        GetPhysicalDeviceSurfaceCapabilitiesKHR_ptr,
+        GetPhysicalDeviceSurfaceFormatsKHR_ptr,
+        GetPhysicalDeviceSurfacePresentModesKHR_ptr,
+        GetPhysicalDeviceDisplayPropertiesKHR_ptr,
+        GetPhysicalDeviceDisplayPlanePropertiesKHR_ptr,
+        GetDisplayPlaneSupportedDisplaysKHR_ptr,
+        GetDisplayModePropertiesKHR_ptr,
+        CreateDisplayModeKHR_ptr,
+        GetDisplayPlaneCapabilitiesKHR_ptr,
+        CreateDisplayPlaneSurfaceKHR_ptr,
+        CreateXlibSurfaceKHR_ptr,
+        GetPhysicalDeviceXlibPresentationSupportKHR_ptr,
+        CreateXcbSurfaceKHR_ptr,
+        GetPhysicalDeviceXcbPresentationSupportKHR_ptr,
+        CreateWaylandSurfaceKHR_ptr,
+        GetPhysicalDeviceWaylandPresentationSupportKHR_ptr,
+        CreateAndroidSurfaceKHR_ptr,
+        CreateWin32SurfaceKHR_ptr,
+        GetPhysicalDeviceWin32PresentationSupportKHR_ptr,
+        CreateDebugReportCallbackEXT_ptr,
+        DestroyDebugReportCallbackEXT_ptr,
+        DebugReportMessageEXT_ptr,
+        GetPhysicalDeviceExternalImageFormatPropertiesNV_ptr,
+        CreateViSurfaceNN_ptr,
+        ReleaseDisplayEXT_ptr,
+        AcquireXlibDisplayEXT_ptr,
+        GetRandROutputDisplayEXT_ptr,
+        GetPhysicalDeviceSurfaceCapabilities2EXT_ptr,
+        GetPhysicalDeviceSurfaceCapabilities2KHR_ptr,
+        GetPhysicalDeviceSurfaceFormats2KHR_ptr,
+        GetPhysicalDeviceDisplayProperties2KHR_ptr,
+        GetPhysicalDeviceDisplayPlaneProperties2KHR_ptr,
+        GetDisplayModeProperties2KHR_ptr,
+        GetDisplayPlaneCapabilities2KHR_ptr,
+        CreateIOSSurfaceMVK_ptr,
+        CreateMacOSSurfaceMVK_ptr,
+        SetDebugUtilsObjectNameEXT_ptr,
+        SetDebugUtilsObjectTagEXT_ptr,
+        QueueBeginDebugUtilsLabelEXT_ptr,
+        QueueEndDebugUtilsLabelEXT_ptr,
+        QueueInsertDebugUtilsLabelEXT_ptr,
+        CmdBeginDebugUtilsLabelEXT_ptr,
+        CmdEndDebugUtilsLabelEXT_ptr,
+        CmdInsertDebugUtilsLabelEXT_ptr,
+        CreateDebugUtilsMessengerEXT_ptr,
+        DestroyDebugUtilsMessengerEXT_ptr,
+        SubmitDebugUtilsMessageEXT_ptr,
+        CreateImagePipeSurfaceFUCHSIA_ptr,
+        CreateSwapchainKHR_ptr,
+        DestroySwapchainKHR_ptr,
+        GetSwapchainImagesKHR_ptr,
+        AcquireNextImageKHR_ptr,
+        QueuePresentKHR_ptr,
+        GetDeviceGroupPresentCapabilitiesKHR_ptr,
+        GetDeviceGroupSurfacePresentModesKHR_ptr,
+        GetPhysicalDevicePresentRectanglesKHR_ptr,
+        AcquireNextImage2KHR_ptr,
+        CreateSharedSwapchainsKHR_ptr,
+        DebugMarkerSetObjectTagEXT_ptr,
+        DebugMarkerSetObjectNameEXT_ptr,
+        CmdDebugMarkerBeginEXT_ptr,
+        CmdDebugMarkerEndEXT_ptr,
+        CmdDebugMarkerInsertEXT_ptr,
+        CmdBindTransformFeedbackBuffersEXT_ptr,
+        CmdBeginTransformFeedbackEXT_ptr,
+        CmdEndTransformFeedbackEXT_ptr,
+        CmdBeginQueryIndexedEXT_ptr,
+        CmdEndQueryIndexedEXT_ptr,
+        CmdDrawIndirectByteCountEXT_ptr,
+        CmdDrawIndirectCountAMD_ptr,
+        CmdDrawIndexedIndirectCountAMD_ptr,
+        GetShaderInfoAMD_ptr,
+        GetMemoryWin32HandleNV_ptr,
+        GetMemoryWin32HandleKHR_ptr,
+        GetMemoryWin32HandlePropertiesKHR_ptr,
+        GetMemoryFdKHR_ptr,
+        GetMemoryFdPropertiesKHR_ptr,
+        ImportSemaphoreWin32HandleKHR_ptr,
+        GetSemaphoreWin32HandleKHR_ptr,
+        ImportSemaphoreFdKHR_ptr,
+        GetSemaphoreFdKHR_ptr,
+        CmdPushDescriptorSetKHR_ptr,
+        CmdPushDescriptorSetWithTemplateKHR_ptr,
+        CmdBeginConditionalRenderingEXT_ptr,
+        CmdEndConditionalRenderingEXT_ptr,
+        CmdProcessCommandsNVX_ptr,
+        CmdReserveSpaceForCommandsNVX_ptr,
+        CreateIndirectCommandsLayoutNVX_ptr,
+        DestroyIndirectCommandsLayoutNVX_ptr,
+        CreateObjectTableNVX_ptr,
+        DestroyObjectTableNVX_ptr,
+        RegisterObjectsNVX_ptr,
+        UnregisterObjectsNVX_ptr,
+        GetPhysicalDeviceGeneratedCommandsPropertiesNVX_ptr,
+        CmdSetViewportWScalingNV_ptr,
+        DisplayPowerControlEXT_ptr,
+        RegisterDeviceEventEXT_ptr,
+        RegisterDisplayEventEXT_ptr,
+        GetSwapchainCounterEXT_ptr,
+        GetRefreshCycleDurationGOOGLE_ptr,
+        GetPastPresentationTimingGOOGLE_ptr,
+        CmdSetDiscardRectangleEXT_ptr,
+        SetHdrMetadataEXT_ptr,
+        CreateRenderPass2KHR_ptr,
+        CmdBeginRenderPass2KHR_ptr,
+        CmdNextSubpass2KHR_ptr,
+        CmdEndRenderPass2KHR_ptr,
+        GetSwapchainStatusKHR_ptr,
+        ImportFenceWin32HandleKHR_ptr,
+        GetFenceWin32HandleKHR_ptr,
+        ImportFenceFdKHR_ptr,
+        GetFenceFdKHR_ptr,
+        GetAndroidHardwareBufferPropertiesANDROID_ptr,
+        GetMemoryAndroidHardwareBufferANDROID_ptr,
+        CmdSetSampleLocationsEXT_ptr,
+        GetPhysicalDeviceMultisamplePropertiesEXT_ptr,
+        GetImageDrmFormatModifierPropertiesEXT_ptr,
+        CreateValidationCacheEXT_ptr,
+        DestroyValidationCacheEXT_ptr,
+        MergeValidationCachesEXT_ptr,
+        GetValidationCacheDataEXT_ptr,
+        CmdBindShadingRateImageNV_ptr,
+        CmdSetViewportShadingRatePaletteNV_ptr,
+        CmdSetCoarseSampleOrderNV_ptr,
+        CreateAccelerationStructureNV_ptr,
+        DestroyAccelerationStructureNV_ptr,
+        GetAccelerationStructureMemoryRequirementsNV_ptr,
+        BindAccelerationStructureMemoryNV_ptr,
+        CmdBuildAccelerationStructureNV_ptr,
+        CmdCopyAccelerationStructureNV_ptr,
+        CmdTraceRaysNV_ptr,
+        CreateRayTracingPipelinesNV_ptr,
+        GetRayTracingShaderGroupHandlesNV_ptr,
+        GetAccelerationStructureHandleNV_ptr,
+        CmdWriteAccelerationStructuresPropertiesNV_ptr,
+        CompileDeferredNV_ptr,
+        CmdDrawIndirectCountKHR_ptr,
+        CmdDrawIndexedIndirectCountKHR_ptr,
+        GetMemoryHostPointerPropertiesEXT_ptr,
+        CmdWriteBufferMarkerAMD_ptr,
+        GetPhysicalDeviceCalibrateableTimeDomainsEXT_ptr,
+        GetCalibratedTimestampsEXT_ptr,
+        CmdDrawMeshTasksNV_ptr,
+        CmdDrawMeshTasksIndirectNV_ptr,
+        CmdDrawMeshTasksIndirectCountNV_ptr,
+        CmdSetExclusiveScissorNV_ptr,
+        CmdSetCheckpointNV_ptr,
+        GetQueueCheckpointDataNV_ptr,
       };
 
-      core = Some(std::boxed::Box::into_raw(std::boxed::Box::new(c)));
-      std::boxed::Box::from_raw(core.unwrap())    }
+      vklib = Some(std::boxed::Box::into_raw(std::boxed::Box::new(c)));
+      std::boxed::Box::from_raw(vklib.unwrap())    }
   }
 
 
@@ -8875,1956 +10994,6 @@ impl Core {
   #[doc(hidden)] pub fn GetDescriptorSetLayoutSupport(&self, device: Device, pCreateInfo: *const DescriptorSetLayoutCreateInfo, pSupport: *mut DescriptorSetLayoutSupport){
     (self.GetDescriptorSetLayoutSupport_ptr)(device, pCreateInfo, pSupport)
   }
-}
-impl Drop for Core {
-  fn drop(&mut self) {
-    unsafe {
-      core = None;
-    }
-  }
-}
-
-
-static mut core: Option<*mut Core> = None;
-
-#[doc(hidden)] pub fn CreateInstance(pCreateInfo: *const InstanceCreateInfo, pAllocator: *const AllocationCallbacks, pInstance: *mut Instance) -> Result{
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).CreateInstance_ptr)(pCreateInfo, pAllocator, pInstance)
-  }
-}
-#[doc(hidden)] pub fn DestroyInstance(instance: Instance, pAllocator: *const AllocationCallbacks){
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).DestroyInstance_ptr)(instance, pAllocator)
-  }
-}
-#[doc(hidden)] pub fn EnumeratePhysicalDevices(instance: Instance, pPhysicalDeviceCount: *mut u32, pPhysicalDevices: *mut PhysicalDevice) -> Result{
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).EnumeratePhysicalDevices_ptr)(instance, pPhysicalDeviceCount, pPhysicalDevices)
-  }
-}
-#[doc(hidden)] pub fn GetPhysicalDeviceFeatures(physicalDevice: PhysicalDevice, pFeatures: *mut PhysicalDeviceFeatures){
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).GetPhysicalDeviceFeatures_ptr)(physicalDevice, pFeatures)
-  }
-}
-#[doc(hidden)] pub fn GetPhysicalDeviceFormatProperties(physicalDevice: PhysicalDevice, format: Format, pFormatProperties: *mut FormatProperties){
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).GetPhysicalDeviceFormatProperties_ptr)(physicalDevice, format, pFormatProperties)
-  }
-}
-#[doc(hidden)] pub fn GetPhysicalDeviceImageFormatProperties(physicalDevice: PhysicalDevice, format: Format, typ: ImageType, tiling: ImageTiling, usage: ImageUsageFlags, flags: ImageCreateFlags, pImageFormatProperties: *mut ImageFormatProperties) -> Result{
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).GetPhysicalDeviceImageFormatProperties_ptr)(physicalDevice, format, typ, tiling, usage, flags, pImageFormatProperties)
-  }
-}
-#[doc(hidden)] pub fn GetPhysicalDeviceProperties(physicalDevice: PhysicalDevice, pProperties: *mut PhysicalDeviceProperties){
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).GetPhysicalDeviceProperties_ptr)(physicalDevice, pProperties)
-  }
-}
-#[doc(hidden)] pub fn GetPhysicalDeviceQueueFamilyProperties(physicalDevice: PhysicalDevice, pQueueFamilyPropertyCount: *mut u32, pQueueFamilyProperties: *mut QueueFamilyProperties){
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).GetPhysicalDeviceQueueFamilyProperties_ptr)(physicalDevice, pQueueFamilyPropertyCount, pQueueFamilyProperties)
-  }
-}
-#[doc(hidden)] pub fn GetPhysicalDeviceMemoryProperties(physicalDevice: PhysicalDevice, pMemoryProperties: *mut PhysicalDeviceMemoryProperties){
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).GetPhysicalDeviceMemoryProperties_ptr)(physicalDevice, pMemoryProperties)
-  }
-}
-#[doc(hidden)] pub fn GetInstanceProcAddr(instance: Instance, pName: *const c_char) -> PFN_vkVoidFunction{
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).GetInstanceProcAddr_ptr)(instance, pName)
-  }
-}
-#[doc(hidden)] pub fn GetDeviceProcAddr(device: Device, pName: *const c_char) -> PFN_vkVoidFunction{
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).GetDeviceProcAddr_ptr)(device, pName)
-  }
-}
-#[doc(hidden)] pub fn CreateDevice(physicalDevice: PhysicalDevice, pCreateInfo: *const DeviceCreateInfo, pAllocator: *const AllocationCallbacks, pDevice: *mut Device) -> Result{
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).CreateDevice_ptr)(physicalDevice, pCreateInfo, pAllocator, pDevice)
-  }
-}
-#[doc(hidden)] pub fn DestroyDevice(device: Device, pAllocator: *const AllocationCallbacks){
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).DestroyDevice_ptr)(device, pAllocator)
-  }
-}
-#[doc(hidden)] pub fn EnumerateInstanceExtensionProperties(pLayerName: *const c_char, pPropertyCount: *mut u32, pProperties: *mut ExtensionProperties) -> Result{
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).EnumerateInstanceExtensionProperties_ptr)(pLayerName, pPropertyCount, pProperties)
-  }
-}
-#[doc(hidden)] pub fn EnumerateDeviceExtensionProperties(physicalDevice: PhysicalDevice, pLayerName: *const c_char, pPropertyCount: *mut u32, pProperties: *mut ExtensionProperties) -> Result{
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).EnumerateDeviceExtensionProperties_ptr)(physicalDevice, pLayerName, pPropertyCount, pProperties)
-  }
-}
-#[doc(hidden)] pub fn EnumerateInstanceLayerProperties(pPropertyCount: *mut u32, pProperties: *mut LayerProperties) -> Result{
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).EnumerateInstanceLayerProperties_ptr)(pPropertyCount, pProperties)
-  }
-}
-#[doc(hidden)] pub fn EnumerateDeviceLayerProperties(physicalDevice: PhysicalDevice, pPropertyCount: *mut u32, pProperties: *mut LayerProperties) -> Result{
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).EnumerateDeviceLayerProperties_ptr)(physicalDevice, pPropertyCount, pProperties)
-  }
-}
-#[doc(hidden)] pub fn GetDeviceQueue(device: Device, queueFamilyIndex: u32, queueIndex: u32, pQueue: *mut Queue){
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).GetDeviceQueue_ptr)(device, queueFamilyIndex, queueIndex, pQueue)
-  }
-}
-#[doc(hidden)] pub fn QueueSubmit(queue: Queue, submitCount: u32, pSubmits: *const SubmitInfo, fence: Fence) -> Result{
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).QueueSubmit_ptr)(queue, submitCount, pSubmits, fence)
-  }
-}
-#[doc(hidden)] pub fn QueueWaitIdle(queue: Queue) -> Result{
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).QueueWaitIdle_ptr)(queue)
-  }
-}
-#[doc(hidden)] pub fn DeviceWaitIdle(device: Device) -> Result{
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).DeviceWaitIdle_ptr)(device)
-  }
-}
-#[doc(hidden)] pub fn AllocateMemory(device: Device, pAllocateInfo: *const MemoryAllocateInfo, pAllocator: *const AllocationCallbacks, pMemory: *mut DeviceMemory) -> Result{
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).AllocateMemory_ptr)(device, pAllocateInfo, pAllocator, pMemory)
-  }
-}
-#[doc(hidden)] pub fn FreeMemory(device: Device, memory: DeviceMemory, pAllocator: *const AllocationCallbacks){
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).FreeMemory_ptr)(device, memory, pAllocator)
-  }
-}
-#[doc(hidden)] pub fn MapMemory(device: Device, memory: DeviceMemory, offset: DeviceSize, size: DeviceSize, flags: MemoryMapFlags, ppData: *mut *mut c_void) -> Result{
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).MapMemory_ptr)(device, memory, offset, size, flags, ppData)
-  }
-}
-#[doc(hidden)] pub fn UnmapMemory(device: Device, memory: DeviceMemory){
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).UnmapMemory_ptr)(device, memory)
-  }
-}
-#[doc(hidden)] pub fn FlushMappedMemoryRanges(device: Device, memoryRangeCount: u32, pMemoryRanges: *const MappedMemoryRange) -> Result{
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).FlushMappedMemoryRanges_ptr)(device, memoryRangeCount, pMemoryRanges)
-  }
-}
-#[doc(hidden)] pub fn InvalidateMappedMemoryRanges(device: Device, memoryRangeCount: u32, pMemoryRanges: *const MappedMemoryRange) -> Result{
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).InvalidateMappedMemoryRanges_ptr)(device, memoryRangeCount, pMemoryRanges)
-  }
-}
-#[doc(hidden)] pub fn GetDeviceMemoryCommitment(device: Device, memory: DeviceMemory, pCommittedMemoryInBytes: *mut DeviceSize){
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).GetDeviceMemoryCommitment_ptr)(device, memory, pCommittedMemoryInBytes)
-  }
-}
-#[doc(hidden)] pub fn BindBufferMemory(device: Device, buffer: Buffer, memory: DeviceMemory, memoryOffset: DeviceSize) -> Result{
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).BindBufferMemory_ptr)(device, buffer, memory, memoryOffset)
-  }
-}
-#[doc(hidden)] pub fn BindImageMemory(device: Device, image: Image, memory: DeviceMemory, memoryOffset: DeviceSize) -> Result{
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).BindImageMemory_ptr)(device, image, memory, memoryOffset)
-  }
-}
-#[doc(hidden)] pub fn GetBufferMemoryRequirements(device: Device, buffer: Buffer, pMemoryRequirements: *mut MemoryRequirements){
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).GetBufferMemoryRequirements_ptr)(device, buffer, pMemoryRequirements)
-  }
-}
-#[doc(hidden)] pub fn GetImageMemoryRequirements(device: Device, image: Image, pMemoryRequirements: *mut MemoryRequirements){
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).GetImageMemoryRequirements_ptr)(device, image, pMemoryRequirements)
-  }
-}
-#[doc(hidden)] pub fn GetImageSparseMemoryRequirements(device: Device, image: Image, pSparseMemoryRequirementCount: *mut u32, pSparseMemoryRequirements: *mut SparseImageMemoryRequirements){
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).GetImageSparseMemoryRequirements_ptr)(device, image, pSparseMemoryRequirementCount, pSparseMemoryRequirements)
-  }
-}
-#[doc(hidden)] pub fn GetPhysicalDeviceSparseImageFormatProperties(physicalDevice: PhysicalDevice, format: Format, typ: ImageType, samples: SampleCountFlagBits, usage: ImageUsageFlags, tiling: ImageTiling, pPropertyCount: *mut u32, pProperties: *mut SparseImageFormatProperties){
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).GetPhysicalDeviceSparseImageFormatProperties_ptr)(physicalDevice, format, typ, samples, usage, tiling, pPropertyCount, pProperties)
-  }
-}
-#[doc(hidden)] pub fn QueueBindSparse(queue: Queue, bindInfoCount: u32, pBindInfo: *const BindSparseInfo, fence: Fence) -> Result{
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).QueueBindSparse_ptr)(queue, bindInfoCount, pBindInfo, fence)
-  }
-}
-#[doc(hidden)] pub fn CreateFence(device: Device, pCreateInfo: *const FenceCreateInfo, pAllocator: *const AllocationCallbacks, pFence: *mut Fence) -> Result{
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).CreateFence_ptr)(device, pCreateInfo, pAllocator, pFence)
-  }
-}
-#[doc(hidden)] pub fn DestroyFence(device: Device, fence: Fence, pAllocator: *const AllocationCallbacks){
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).DestroyFence_ptr)(device, fence, pAllocator)
-  }
-}
-#[doc(hidden)] pub fn ResetFences(device: Device, fenceCount: u32, pFences: *const Fence) -> Result{
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).ResetFences_ptr)(device, fenceCount, pFences)
-  }
-}
-#[doc(hidden)] pub fn GetFenceStatus(device: Device, fence: Fence) -> Result{
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).GetFenceStatus_ptr)(device, fence)
-  }
-}
-#[doc(hidden)] pub fn WaitForFences(device: Device, fenceCount: u32, pFences: *const Fence, waitAll: Bool32, timeout: u64) -> Result{
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).WaitForFences_ptr)(device, fenceCount, pFences, waitAll, timeout)
-  }
-}
-#[doc(hidden)] pub fn CreateSemaphore(device: Device, pCreateInfo: *const SemaphoreCreateInfo, pAllocator: *const AllocationCallbacks, pSemaphore: *mut Semaphore) -> Result{
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).CreateSemaphore_ptr)(device, pCreateInfo, pAllocator, pSemaphore)
-  }
-}
-#[doc(hidden)] pub fn DestroySemaphore(device: Device, semaphore: Semaphore, pAllocator: *const AllocationCallbacks){
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).DestroySemaphore_ptr)(device, semaphore, pAllocator)
-  }
-}
-#[doc(hidden)] pub fn CreateEvent(device: Device, pCreateInfo: *const EventCreateInfo, pAllocator: *const AllocationCallbacks, pEvent: *mut Event) -> Result{
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).CreateEvent_ptr)(device, pCreateInfo, pAllocator, pEvent)
-  }
-}
-#[doc(hidden)] pub fn DestroyEvent(device: Device, event: Event, pAllocator: *const AllocationCallbacks){
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).DestroyEvent_ptr)(device, event, pAllocator)
-  }
-}
-#[doc(hidden)] pub fn GetEventStatus(device: Device, event: Event) -> Result{
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).GetEventStatus_ptr)(device, event)
-  }
-}
-#[doc(hidden)] pub fn SetEvent(device: Device, event: Event) -> Result{
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).SetEvent_ptr)(device, event)
-  }
-}
-#[doc(hidden)] pub fn ResetEvent(device: Device, event: Event) -> Result{
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).ResetEvent_ptr)(device, event)
-  }
-}
-#[doc(hidden)] pub fn CreateQueryPool(device: Device, pCreateInfo: *const QueryPoolCreateInfo, pAllocator: *const AllocationCallbacks, pQueryPool: *mut QueryPool) -> Result{
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).CreateQueryPool_ptr)(device, pCreateInfo, pAllocator, pQueryPool)
-  }
-}
-#[doc(hidden)] pub fn DestroyQueryPool(device: Device, queryPool: QueryPool, pAllocator: *const AllocationCallbacks){
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).DestroyQueryPool_ptr)(device, queryPool, pAllocator)
-  }
-}
-#[doc(hidden)] pub fn GetQueryPoolResults(device: Device, queryPool: QueryPool, firstQuery: u32, queryCount: u32, dataSize: usize, pData: *mut c_void, stride: DeviceSize, flags: QueryResultFlags) -> Result{
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).GetQueryPoolResults_ptr)(device, queryPool, firstQuery, queryCount, dataSize, pData, stride, flags)
-  }
-}
-#[doc(hidden)] pub fn CreateBuffer(device: Device, pCreateInfo: *const BufferCreateInfo, pAllocator: *const AllocationCallbacks, pBuffer: *mut Buffer) -> Result{
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).CreateBuffer_ptr)(device, pCreateInfo, pAllocator, pBuffer)
-  }
-}
-#[doc(hidden)] pub fn DestroyBuffer(device: Device, buffer: Buffer, pAllocator: *const AllocationCallbacks){
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).DestroyBuffer_ptr)(device, buffer, pAllocator)
-  }
-}
-#[doc(hidden)] pub fn CreateBufferView(device: Device, pCreateInfo: *const BufferViewCreateInfo, pAllocator: *const AllocationCallbacks, pView: *mut BufferView) -> Result{
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).CreateBufferView_ptr)(device, pCreateInfo, pAllocator, pView)
-  }
-}
-#[doc(hidden)] pub fn DestroyBufferView(device: Device, bufferView: BufferView, pAllocator: *const AllocationCallbacks){
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).DestroyBufferView_ptr)(device, bufferView, pAllocator)
-  }
-}
-#[doc(hidden)] pub fn CreateImage(device: Device, pCreateInfo: *const ImageCreateInfo, pAllocator: *const AllocationCallbacks, pImage: *mut Image) -> Result{
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).CreateImage_ptr)(device, pCreateInfo, pAllocator, pImage)
-  }
-}
-#[doc(hidden)] pub fn DestroyImage(device: Device, image: Image, pAllocator: *const AllocationCallbacks){
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).DestroyImage_ptr)(device, image, pAllocator)
-  }
-}
-#[doc(hidden)] pub fn GetImageSubresourceLayout(device: Device, image: Image, pSubresource: *const ImageSubresource, pLayout: *mut SubresourceLayout){
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).GetImageSubresourceLayout_ptr)(device, image, pSubresource, pLayout)
-  }
-}
-#[doc(hidden)] pub fn CreateImageView(device: Device, pCreateInfo: *const ImageViewCreateInfo, pAllocator: *const AllocationCallbacks, pView: *mut ImageView) -> Result{
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).CreateImageView_ptr)(device, pCreateInfo, pAllocator, pView)
-  }
-}
-#[doc(hidden)] pub fn DestroyImageView(device: Device, imageView: ImageView, pAllocator: *const AllocationCallbacks){
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).DestroyImageView_ptr)(device, imageView, pAllocator)
-  }
-}
-#[doc(hidden)] pub fn CreateShaderModule(device: Device, pCreateInfo: *const ShaderModuleCreateInfo, pAllocator: *const AllocationCallbacks, pShaderModule: *mut ShaderModule) -> Result{
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).CreateShaderModule_ptr)(device, pCreateInfo, pAllocator, pShaderModule)
-  }
-}
-#[doc(hidden)] pub fn DestroyShaderModule(device: Device, shaderModule: ShaderModule, pAllocator: *const AllocationCallbacks){
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).DestroyShaderModule_ptr)(device, shaderModule, pAllocator)
-  }
-}
-#[doc(hidden)] pub fn CreatePipelineCache(device: Device, pCreateInfo: *const PipelineCacheCreateInfo, pAllocator: *const AllocationCallbacks, pPipelineCache: *mut PipelineCache) -> Result{
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).CreatePipelineCache_ptr)(device, pCreateInfo, pAllocator, pPipelineCache)
-  }
-}
-#[doc(hidden)] pub fn DestroyPipelineCache(device: Device, pipelineCache: PipelineCache, pAllocator: *const AllocationCallbacks){
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).DestroyPipelineCache_ptr)(device, pipelineCache, pAllocator)
-  }
-}
-#[doc(hidden)] pub fn GetPipelineCacheData(device: Device, pipelineCache: PipelineCache, pDataSize: *mut usize, pData: *mut c_void) -> Result{
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).GetPipelineCacheData_ptr)(device, pipelineCache, pDataSize, pData)
-  }
-}
-#[doc(hidden)] pub fn MergePipelineCaches(device: Device, dstCache: PipelineCache, srcCacheCount: u32, pSrcCaches: *const PipelineCache) -> Result{
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).MergePipelineCaches_ptr)(device, dstCache, srcCacheCount, pSrcCaches)
-  }
-}
-#[doc(hidden)] pub fn CreateGraphicsPipelines(device: Device, pipelineCache: PipelineCache, createInfoCount: u32, pCreateInfos: *const GraphicsPipelineCreateInfo, pAllocator: *const AllocationCallbacks, pPipelines: *mut Pipeline) -> Result{
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).CreateGraphicsPipelines_ptr)(device, pipelineCache, createInfoCount, pCreateInfos, pAllocator, pPipelines)
-  }
-}
-#[doc(hidden)] pub fn CreateComputePipelines(device: Device, pipelineCache: PipelineCache, createInfoCount: u32, pCreateInfos: *const ComputePipelineCreateInfo, pAllocator: *const AllocationCallbacks, pPipelines: *mut Pipeline) -> Result{
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).CreateComputePipelines_ptr)(device, pipelineCache, createInfoCount, pCreateInfos, pAllocator, pPipelines)
-  }
-}
-#[doc(hidden)] pub fn DestroyPipeline(device: Device, pipeline: Pipeline, pAllocator: *const AllocationCallbacks){
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).DestroyPipeline_ptr)(device, pipeline, pAllocator)
-  }
-}
-#[doc(hidden)] pub fn CreatePipelineLayout(device: Device, pCreateInfo: *const PipelineLayoutCreateInfo, pAllocator: *const AllocationCallbacks, pPipelineLayout: *mut PipelineLayout) -> Result{
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).CreatePipelineLayout_ptr)(device, pCreateInfo, pAllocator, pPipelineLayout)
-  }
-}
-#[doc(hidden)] pub fn DestroyPipelineLayout(device: Device, pipelineLayout: PipelineLayout, pAllocator: *const AllocationCallbacks){
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).DestroyPipelineLayout_ptr)(device, pipelineLayout, pAllocator)
-  }
-}
-#[doc(hidden)] pub fn CreateSampler(device: Device, pCreateInfo: *const SamplerCreateInfo, pAllocator: *const AllocationCallbacks, pSampler: *mut Sampler) -> Result{
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).CreateSampler_ptr)(device, pCreateInfo, pAllocator, pSampler)
-  }
-}
-#[doc(hidden)] pub fn DestroySampler(device: Device, sampler: Sampler, pAllocator: *const AllocationCallbacks){
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).DestroySampler_ptr)(device, sampler, pAllocator)
-  }
-}
-#[doc(hidden)] pub fn CreateDescriptorSetLayout(device: Device, pCreateInfo: *const DescriptorSetLayoutCreateInfo, pAllocator: *const AllocationCallbacks, pSetLayout: *mut DescriptorSetLayout) -> Result{
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).CreateDescriptorSetLayout_ptr)(device, pCreateInfo, pAllocator, pSetLayout)
-  }
-}
-#[doc(hidden)] pub fn DestroyDescriptorSetLayout(device: Device, descriptorSetLayout: DescriptorSetLayout, pAllocator: *const AllocationCallbacks){
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).DestroyDescriptorSetLayout_ptr)(device, descriptorSetLayout, pAllocator)
-  }
-}
-#[doc(hidden)] pub fn CreateDescriptorPool(device: Device, pCreateInfo: *const DescriptorPoolCreateInfo, pAllocator: *const AllocationCallbacks, pDescriptorPool: *mut DescriptorPool) -> Result{
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).CreateDescriptorPool_ptr)(device, pCreateInfo, pAllocator, pDescriptorPool)
-  }
-}
-#[doc(hidden)] pub fn DestroyDescriptorPool(device: Device, descriptorPool: DescriptorPool, pAllocator: *const AllocationCallbacks){
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).DestroyDescriptorPool_ptr)(device, descriptorPool, pAllocator)
-  }
-}
-#[doc(hidden)] pub fn ResetDescriptorPool(device: Device, descriptorPool: DescriptorPool, flags: DescriptorPoolResetFlags) -> Result{
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).ResetDescriptorPool_ptr)(device, descriptorPool, flags)
-  }
-}
-#[doc(hidden)] pub fn AllocateDescriptorSets(device: Device, pAllocateInfo: *const DescriptorSetAllocateInfo, pDescriptorSets: *mut DescriptorSet) -> Result{
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).AllocateDescriptorSets_ptr)(device, pAllocateInfo, pDescriptorSets)
-  }
-}
-#[doc(hidden)] pub fn FreeDescriptorSets(device: Device, descriptorPool: DescriptorPool, descriptorSetCount: u32, pDescriptorSets: *const DescriptorSet) -> Result{
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).FreeDescriptorSets_ptr)(device, descriptorPool, descriptorSetCount, pDescriptorSets)
-  }
-}
-#[doc(hidden)] pub fn UpdateDescriptorSets(device: Device, descriptorWriteCount: u32, pDescriptorWrites: *const WriteDescriptorSet, descriptorCopyCount: u32, pDescriptorCopies: *const CopyDescriptorSet){
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).UpdateDescriptorSets_ptr)(device, descriptorWriteCount, pDescriptorWrites, descriptorCopyCount, pDescriptorCopies)
-  }
-}
-#[doc(hidden)] pub fn CreateFramebuffer(device: Device, pCreateInfo: *const FramebufferCreateInfo, pAllocator: *const AllocationCallbacks, pFramebuffer: *mut Framebuffer) -> Result{
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).CreateFramebuffer_ptr)(device, pCreateInfo, pAllocator, pFramebuffer)
-  }
-}
-#[doc(hidden)] pub fn DestroyFramebuffer(device: Device, framebuffer: Framebuffer, pAllocator: *const AllocationCallbacks){
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).DestroyFramebuffer_ptr)(device, framebuffer, pAllocator)
-  }
-}
-#[doc(hidden)] pub fn CreateRenderPass(device: Device, pCreateInfo: *const RenderPassCreateInfo, pAllocator: *const AllocationCallbacks, pRenderPass: *mut RenderPass) -> Result{
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).CreateRenderPass_ptr)(device, pCreateInfo, pAllocator, pRenderPass)
-  }
-}
-#[doc(hidden)] pub fn DestroyRenderPass(device: Device, renderPass: RenderPass, pAllocator: *const AllocationCallbacks){
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).DestroyRenderPass_ptr)(device, renderPass, pAllocator)
-  }
-}
-#[doc(hidden)] pub fn GetRenderAreaGranularity(device: Device, renderPass: RenderPass, pGranularity: *mut Extent2D){
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).GetRenderAreaGranularity_ptr)(device, renderPass, pGranularity)
-  }
-}
-#[doc(hidden)] pub fn CreateCommandPool(device: Device, pCreateInfo: *const CommandPoolCreateInfo, pAllocator: *const AllocationCallbacks, pCommandPool: *mut CommandPool) -> Result{
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).CreateCommandPool_ptr)(device, pCreateInfo, pAllocator, pCommandPool)
-  }
-}
-#[doc(hidden)] pub fn DestroyCommandPool(device: Device, commandPool: CommandPool, pAllocator: *const AllocationCallbacks){
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).DestroyCommandPool_ptr)(device, commandPool, pAllocator)
-  }
-}
-#[doc(hidden)] pub fn ResetCommandPool(device: Device, commandPool: CommandPool, flags: CommandPoolResetFlags) -> Result{
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).ResetCommandPool_ptr)(device, commandPool, flags)
-  }
-}
-#[doc(hidden)] pub fn AllocateCommandBuffers(device: Device, pAllocateInfo: *const CommandBufferAllocateInfo, pCommandBuffers: *mut CommandBuffer) -> Result{
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).AllocateCommandBuffers_ptr)(device, pAllocateInfo, pCommandBuffers)
-  }
-}
-#[doc(hidden)] pub fn FreeCommandBuffers(device: Device, commandPool: CommandPool, commandBufferCount: u32, pCommandBuffers: *const CommandBuffer){
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).FreeCommandBuffers_ptr)(device, commandPool, commandBufferCount, pCommandBuffers)
-  }
-}
-#[doc(hidden)] pub fn BeginCommandBuffer(commandBuffer: CommandBuffer, pBeginInfo: *const CommandBufferBeginInfo) -> Result{
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).BeginCommandBuffer_ptr)(commandBuffer, pBeginInfo)
-  }
-}
-#[doc(hidden)] pub fn EndCommandBuffer(commandBuffer: CommandBuffer) -> Result{
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).EndCommandBuffer_ptr)(commandBuffer)
-  }
-}
-#[doc(hidden)] pub fn ResetCommandBuffer(commandBuffer: CommandBuffer, flags: CommandBufferResetFlags) -> Result{
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).ResetCommandBuffer_ptr)(commandBuffer, flags)
-  }
-}
-#[doc(hidden)] pub fn CmdBindPipeline(commandBuffer: CommandBuffer, pipelineBindPoint: PipelineBindPoint, pipeline: Pipeline){
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).CmdBindPipeline_ptr)(commandBuffer, pipelineBindPoint, pipeline)
-  }
-}
-#[doc(hidden)] pub fn CmdSetViewport(commandBuffer: CommandBuffer, firstViewport: u32, viewportCount: u32, pViewports: *const Viewport){
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).CmdSetViewport_ptr)(commandBuffer, firstViewport, viewportCount, pViewports)
-  }
-}
-#[doc(hidden)] pub fn CmdSetScissor(commandBuffer: CommandBuffer, firstScissor: u32, scissorCount: u32, pScissors: *const Rect2D){
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).CmdSetScissor_ptr)(commandBuffer, firstScissor, scissorCount, pScissors)
-  }
-}
-#[doc(hidden)] pub fn CmdSetLineWidth(commandBuffer: CommandBuffer, lineWidth: f32){
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).CmdSetLineWidth_ptr)(commandBuffer, lineWidth)
-  }
-}
-#[doc(hidden)] pub fn CmdSetDepthBias(commandBuffer: CommandBuffer, depthBiasConstantFactor: f32, depthBiasClamp: f32, depthBiasSlopeFactor: f32){
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).CmdSetDepthBias_ptr)(commandBuffer, depthBiasConstantFactor, depthBiasClamp, depthBiasSlopeFactor)
-  }
-}
-#[doc(hidden)] pub fn CmdSetBlendConstants(commandBuffer: CommandBuffer, blendConstants: [f32; 4]){
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).CmdSetBlendConstants_ptr)(commandBuffer, blendConstants)
-  }
-}
-#[doc(hidden)] pub fn CmdSetDepthBounds(commandBuffer: CommandBuffer, minDepthBounds: f32, maxDepthBounds: f32){
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).CmdSetDepthBounds_ptr)(commandBuffer, minDepthBounds, maxDepthBounds)
-  }
-}
-#[doc(hidden)] pub fn CmdSetStencilCompareMask(commandBuffer: CommandBuffer, faceMask: StencilFaceFlags, compareMask: u32){
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).CmdSetStencilCompareMask_ptr)(commandBuffer, faceMask, compareMask)
-  }
-}
-#[doc(hidden)] pub fn CmdSetStencilWriteMask(commandBuffer: CommandBuffer, faceMask: StencilFaceFlags, writeMask: u32){
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).CmdSetStencilWriteMask_ptr)(commandBuffer, faceMask, writeMask)
-  }
-}
-#[doc(hidden)] pub fn CmdSetStencilReference(commandBuffer: CommandBuffer, faceMask: StencilFaceFlags, reference: u32){
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).CmdSetStencilReference_ptr)(commandBuffer, faceMask, reference)
-  }
-}
-#[doc(hidden)] pub fn CmdBindDescriptorSets(commandBuffer: CommandBuffer, pipelineBindPoint: PipelineBindPoint, layout: PipelineLayout, firstSet: u32, descriptorSetCount: u32, pDescriptorSets: *const DescriptorSet, dynamicOffsetCount: u32, pDynamicOffsets: *const u32){
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).CmdBindDescriptorSets_ptr)(commandBuffer, pipelineBindPoint, layout, firstSet, descriptorSetCount, pDescriptorSets, dynamicOffsetCount, pDynamicOffsets)
-  }
-}
-#[doc(hidden)] pub fn CmdBindIndexBuffer(commandBuffer: CommandBuffer, buffer: Buffer, offset: DeviceSize, indexType: IndexType){
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).CmdBindIndexBuffer_ptr)(commandBuffer, buffer, offset, indexType)
-  }
-}
-#[doc(hidden)] pub fn CmdBindVertexBuffers(commandBuffer: CommandBuffer, firstBinding: u32, bindingCount: u32, pBuffers: *const Buffer, pOffsets: *const DeviceSize){
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).CmdBindVertexBuffers_ptr)(commandBuffer, firstBinding, bindingCount, pBuffers, pOffsets)
-  }
-}
-#[doc(hidden)] pub fn CmdDraw(commandBuffer: CommandBuffer, vertexCount: u32, instanceCount: u32, firstVertex: u32, firstInstance: u32){
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).CmdDraw_ptr)(commandBuffer, vertexCount, instanceCount, firstVertex, firstInstance)
-  }
-}
-#[doc(hidden)] pub fn CmdDrawIndexed(commandBuffer: CommandBuffer, indexCount: u32, instanceCount: u32, firstIndex: u32, vertexOffset: i32, firstInstance: u32){
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).CmdDrawIndexed_ptr)(commandBuffer, indexCount, instanceCount, firstIndex, vertexOffset, firstInstance)
-  }
-}
-#[doc(hidden)] pub fn CmdDrawIndirect(commandBuffer: CommandBuffer, buffer: Buffer, offset: DeviceSize, drawCount: u32, stride: u32){
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).CmdDrawIndirect_ptr)(commandBuffer, buffer, offset, drawCount, stride)
-  }
-}
-#[doc(hidden)] pub fn CmdDrawIndexedIndirect(commandBuffer: CommandBuffer, buffer: Buffer, offset: DeviceSize, drawCount: u32, stride: u32){
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).CmdDrawIndexedIndirect_ptr)(commandBuffer, buffer, offset, drawCount, stride)
-  }
-}
-#[doc(hidden)] pub fn CmdDispatch(commandBuffer: CommandBuffer, groupCountX: u32, groupCountY: u32, groupCountZ: u32){
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).CmdDispatch_ptr)(commandBuffer, groupCountX, groupCountY, groupCountZ)
-  }
-}
-#[doc(hidden)] pub fn CmdDispatchIndirect(commandBuffer: CommandBuffer, buffer: Buffer, offset: DeviceSize){
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).CmdDispatchIndirect_ptr)(commandBuffer, buffer, offset)
-  }
-}
-#[doc(hidden)] pub fn CmdCopyBuffer(commandBuffer: CommandBuffer, srcBuffer: Buffer, dstBuffer: Buffer, regionCount: u32, pRegions: *const BufferCopy){
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).CmdCopyBuffer_ptr)(commandBuffer, srcBuffer, dstBuffer, regionCount, pRegions)
-  }
-}
-#[doc(hidden)] pub fn CmdCopyImage(commandBuffer: CommandBuffer, srcImage: Image, srcImageLayout: ImageLayout, dstImage: Image, dstImageLayout: ImageLayout, regionCount: u32, pRegions: *const ImageCopy){
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).CmdCopyImage_ptr)(commandBuffer, srcImage, srcImageLayout, dstImage, dstImageLayout, regionCount, pRegions)
-  }
-}
-#[doc(hidden)] pub fn CmdBlitImage(commandBuffer: CommandBuffer, srcImage: Image, srcImageLayout: ImageLayout, dstImage: Image, dstImageLayout: ImageLayout, regionCount: u32, pRegions: *const ImageBlit, filter: Filter){
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).CmdBlitImage_ptr)(commandBuffer, srcImage, srcImageLayout, dstImage, dstImageLayout, regionCount, pRegions, filter)
-  }
-}
-#[doc(hidden)] pub fn CmdCopyBufferToImage(commandBuffer: CommandBuffer, srcBuffer: Buffer, dstImage: Image, dstImageLayout: ImageLayout, regionCount: u32, pRegions: *const BufferImageCopy){
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).CmdCopyBufferToImage_ptr)(commandBuffer, srcBuffer, dstImage, dstImageLayout, regionCount, pRegions)
-  }
-}
-#[doc(hidden)] pub fn CmdCopyImageToBuffer(commandBuffer: CommandBuffer, srcImage: Image, srcImageLayout: ImageLayout, dstBuffer: Buffer, regionCount: u32, pRegions: *const BufferImageCopy){
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).CmdCopyImageToBuffer_ptr)(commandBuffer, srcImage, srcImageLayout, dstBuffer, regionCount, pRegions)
-  }
-}
-#[doc(hidden)] pub fn CmdUpdateBuffer(commandBuffer: CommandBuffer, dstBuffer: Buffer, dstOffset: DeviceSize, dataSize: DeviceSize, pData: *const c_void){
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).CmdUpdateBuffer_ptr)(commandBuffer, dstBuffer, dstOffset, dataSize, pData)
-  }
-}
-#[doc(hidden)] pub fn CmdFillBuffer(commandBuffer: CommandBuffer, dstBuffer: Buffer, dstOffset: DeviceSize, size: DeviceSize, data: u32){
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).CmdFillBuffer_ptr)(commandBuffer, dstBuffer, dstOffset, size, data)
-  }
-}
-#[doc(hidden)] pub fn CmdClearColorImage(commandBuffer: CommandBuffer, image: Image, imageLayout: ImageLayout, pColor: *const ClearColorValue, rangeCount: u32, pRanges: *const ImageSubresourceRange){
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).CmdClearColorImage_ptr)(commandBuffer, image, imageLayout, pColor, rangeCount, pRanges)
-  }
-}
-#[doc(hidden)] pub fn CmdClearDepthStencilImage(commandBuffer: CommandBuffer, image: Image, imageLayout: ImageLayout, pDepthStencil: *const ClearDepthStencilValue, rangeCount: u32, pRanges: *const ImageSubresourceRange){
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).CmdClearDepthStencilImage_ptr)(commandBuffer, image, imageLayout, pDepthStencil, rangeCount, pRanges)
-  }
-}
-#[doc(hidden)] pub fn CmdClearAttachments(commandBuffer: CommandBuffer, attachmentCount: u32, pAttachments: *const ClearAttachment, rectCount: u32, pRects: *const ClearRect){
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).CmdClearAttachments_ptr)(commandBuffer, attachmentCount, pAttachments, rectCount, pRects)
-  }
-}
-#[doc(hidden)] pub fn CmdResolveImage(commandBuffer: CommandBuffer, srcImage: Image, srcImageLayout: ImageLayout, dstImage: Image, dstImageLayout: ImageLayout, regionCount: u32, pRegions: *const ImageResolve){
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).CmdResolveImage_ptr)(commandBuffer, srcImage, srcImageLayout, dstImage, dstImageLayout, regionCount, pRegions)
-  }
-}
-#[doc(hidden)] pub fn CmdSetEvent(commandBuffer: CommandBuffer, event: Event, stageMask: PipelineStageFlags){
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).CmdSetEvent_ptr)(commandBuffer, event, stageMask)
-  }
-}
-#[doc(hidden)] pub fn CmdResetEvent(commandBuffer: CommandBuffer, event: Event, stageMask: PipelineStageFlags){
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).CmdResetEvent_ptr)(commandBuffer, event, stageMask)
-  }
-}
-#[doc(hidden)] pub fn CmdWaitEvents(commandBuffer: CommandBuffer, eventCount: u32, pEvents: *const Event, srcStageMask: PipelineStageFlags, dstStageMask: PipelineStageFlags, memoryBarrierCount: u32, pMemoryBarriers: *const MemoryBarrier, bufferMemoryBarrierCount: u32, pBufferMemoryBarriers: *const BufferMemoryBarrier, imageMemoryBarrierCount: u32, pImageMemoryBarriers: *const ImageMemoryBarrier){
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).CmdWaitEvents_ptr)(commandBuffer, eventCount, pEvents, srcStageMask, dstStageMask, memoryBarrierCount, pMemoryBarriers, bufferMemoryBarrierCount, pBufferMemoryBarriers, imageMemoryBarrierCount, pImageMemoryBarriers)
-  }
-}
-#[doc(hidden)] pub fn CmdPipelineBarrier(commandBuffer: CommandBuffer, srcStageMask: PipelineStageFlags, dstStageMask: PipelineStageFlags, dependencyFlags: DependencyFlags, memoryBarrierCount: u32, pMemoryBarriers: *const MemoryBarrier, bufferMemoryBarrierCount: u32, pBufferMemoryBarriers: *const BufferMemoryBarrier, imageMemoryBarrierCount: u32, pImageMemoryBarriers: *const ImageMemoryBarrier){
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).CmdPipelineBarrier_ptr)(commandBuffer, srcStageMask, dstStageMask, dependencyFlags, memoryBarrierCount, pMemoryBarriers, bufferMemoryBarrierCount, pBufferMemoryBarriers, imageMemoryBarrierCount, pImageMemoryBarriers)
-  }
-}
-#[doc(hidden)] pub fn CmdBeginQuery(commandBuffer: CommandBuffer, queryPool: QueryPool, query: u32, flags: QueryControlFlags){
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).CmdBeginQuery_ptr)(commandBuffer, queryPool, query, flags)
-  }
-}
-#[doc(hidden)] pub fn CmdEndQuery(commandBuffer: CommandBuffer, queryPool: QueryPool, query: u32){
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).CmdEndQuery_ptr)(commandBuffer, queryPool, query)
-  }
-}
-#[doc(hidden)] pub fn CmdResetQueryPool(commandBuffer: CommandBuffer, queryPool: QueryPool, firstQuery: u32, queryCount: u32){
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).CmdResetQueryPool_ptr)(commandBuffer, queryPool, firstQuery, queryCount)
-  }
-}
-#[doc(hidden)] pub fn CmdWriteTimestamp(commandBuffer: CommandBuffer, pipelineStage: PipelineStageFlagBits, queryPool: QueryPool, query: u32){
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).CmdWriteTimestamp_ptr)(commandBuffer, pipelineStage, queryPool, query)
-  }
-}
-#[doc(hidden)] pub fn CmdCopyQueryPoolResults(commandBuffer: CommandBuffer, queryPool: QueryPool, firstQuery: u32, queryCount: u32, dstBuffer: Buffer, dstOffset: DeviceSize, stride: DeviceSize, flags: QueryResultFlags){
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).CmdCopyQueryPoolResults_ptr)(commandBuffer, queryPool, firstQuery, queryCount, dstBuffer, dstOffset, stride, flags)
-  }
-}
-#[doc(hidden)] pub fn CmdPushConstants(commandBuffer: CommandBuffer, layout: PipelineLayout, stageFlags: ShaderStageFlags, offset: u32, size: u32, pValues: *const c_void){
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).CmdPushConstants_ptr)(commandBuffer, layout, stageFlags, offset, size, pValues)
-  }
-}
-#[doc(hidden)] pub fn CmdBeginRenderPass(commandBuffer: CommandBuffer, pRenderPassBegin: *const RenderPassBeginInfo, contents: SubpassContents){
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).CmdBeginRenderPass_ptr)(commandBuffer, pRenderPassBegin, contents)
-  }
-}
-#[doc(hidden)] pub fn CmdNextSubpass(commandBuffer: CommandBuffer, contents: SubpassContents){
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).CmdNextSubpass_ptr)(commandBuffer, contents)
-  }
-}
-#[doc(hidden)] pub fn CmdEndRenderPass(commandBuffer: CommandBuffer){
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).CmdEndRenderPass_ptr)(commandBuffer)
-  }
-}
-#[doc(hidden)] pub fn CmdExecuteCommands(commandBuffer: CommandBuffer, commandBufferCount: u32, pCommandBuffers: *const CommandBuffer){
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).CmdExecuteCommands_ptr)(commandBuffer, commandBufferCount, pCommandBuffers)
-  }
-}
-#[doc(hidden)] pub fn EnumerateInstanceVersion(pApiVersion: *mut u32) -> Result{
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).EnumerateInstanceVersion_ptr)(pApiVersion)
-  }
-}
-#[doc(hidden)] pub fn BindBufferMemory2(device: Device, bindInfoCount: u32, pBindInfos: *const BindBufferMemoryInfo) -> Result{
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).BindBufferMemory2_ptr)(device, bindInfoCount, pBindInfos)
-  }
-}
-#[doc(hidden)] pub fn BindImageMemory2(device: Device, bindInfoCount: u32, pBindInfos: *const BindImageMemoryInfo) -> Result{
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).BindImageMemory2_ptr)(device, bindInfoCount, pBindInfos)
-  }
-}
-#[doc(hidden)] pub fn GetDeviceGroupPeerMemoryFeatures(device: Device, heapIndex: u32, localDeviceIndex: u32, remoteDeviceIndex: u32, pPeerMemoryFeatures: *mut PeerMemoryFeatureFlags){
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).GetDeviceGroupPeerMemoryFeatures_ptr)(device, heapIndex, localDeviceIndex, remoteDeviceIndex, pPeerMemoryFeatures)
-  }
-}
-#[doc(hidden)] pub fn CmdSetDeviceMask(commandBuffer: CommandBuffer, deviceMask: u32){
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).CmdSetDeviceMask_ptr)(commandBuffer, deviceMask)
-  }
-}
-#[doc(hidden)] pub fn CmdDispatchBase(commandBuffer: CommandBuffer, baseGroupX: u32, baseGroupY: u32, baseGroupZ: u32, groupCountX: u32, groupCountY: u32, groupCountZ: u32){
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).CmdDispatchBase_ptr)(commandBuffer, baseGroupX, baseGroupY, baseGroupZ, groupCountX, groupCountY, groupCountZ)
-  }
-}
-#[doc(hidden)] pub fn EnumeratePhysicalDeviceGroups(instance: Instance, pPhysicalDeviceGroupCount: *mut u32, pPhysicalDeviceGroupProperties: *mut PhysicalDeviceGroupProperties) -> Result{
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).EnumeratePhysicalDeviceGroups_ptr)(instance, pPhysicalDeviceGroupCount, pPhysicalDeviceGroupProperties)
-  }
-}
-#[doc(hidden)] pub fn GetImageMemoryRequirements2(device: Device, pInfo: *const ImageMemoryRequirementsInfo2, pMemoryRequirements: *mut MemoryRequirements2){
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).GetImageMemoryRequirements2_ptr)(device, pInfo, pMemoryRequirements)
-  }
-}
-#[doc(hidden)] pub fn GetBufferMemoryRequirements2(device: Device, pInfo: *const BufferMemoryRequirementsInfo2, pMemoryRequirements: *mut MemoryRequirements2){
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).GetBufferMemoryRequirements2_ptr)(device, pInfo, pMemoryRequirements)
-  }
-}
-#[doc(hidden)] pub fn GetImageSparseMemoryRequirements2(device: Device, pInfo: *const ImageSparseMemoryRequirementsInfo2, pSparseMemoryRequirementCount: *mut u32, pSparseMemoryRequirements: *mut SparseImageMemoryRequirements2){
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).GetImageSparseMemoryRequirements2_ptr)(device, pInfo, pSparseMemoryRequirementCount, pSparseMemoryRequirements)
-  }
-}
-#[doc(hidden)] pub fn GetPhysicalDeviceFeatures2(physicalDevice: PhysicalDevice, pFeatures: *mut PhysicalDeviceFeatures2){
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).GetPhysicalDeviceFeatures2_ptr)(physicalDevice, pFeatures)
-  }
-}
-#[doc(hidden)] pub fn GetPhysicalDeviceProperties2(physicalDevice: PhysicalDevice, pProperties: *mut PhysicalDeviceProperties2){
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).GetPhysicalDeviceProperties2_ptr)(physicalDevice, pProperties)
-  }
-}
-#[doc(hidden)] pub fn GetPhysicalDeviceFormatProperties2(physicalDevice: PhysicalDevice, format: Format, pFormatProperties: *mut FormatProperties2){
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).GetPhysicalDeviceFormatProperties2_ptr)(physicalDevice, format, pFormatProperties)
-  }
-}
-#[doc(hidden)] pub fn GetPhysicalDeviceImageFormatProperties2(physicalDevice: PhysicalDevice, pImageFormatInfo: *const PhysicalDeviceImageFormatInfo2, pImageFormatProperties: *mut ImageFormatProperties2) -> Result{
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).GetPhysicalDeviceImageFormatProperties2_ptr)(physicalDevice, pImageFormatInfo, pImageFormatProperties)
-  }
-}
-#[doc(hidden)] pub fn GetPhysicalDeviceQueueFamilyProperties2(physicalDevice: PhysicalDevice, pQueueFamilyPropertyCount: *mut u32, pQueueFamilyProperties: *mut QueueFamilyProperties2){
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).GetPhysicalDeviceQueueFamilyProperties2_ptr)(physicalDevice, pQueueFamilyPropertyCount, pQueueFamilyProperties)
-  }
-}
-#[doc(hidden)] pub fn GetPhysicalDeviceMemoryProperties2(physicalDevice: PhysicalDevice, pMemoryProperties: *mut PhysicalDeviceMemoryProperties2){
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).GetPhysicalDeviceMemoryProperties2_ptr)(physicalDevice, pMemoryProperties)
-  }
-}
-#[doc(hidden)] pub fn GetPhysicalDeviceSparseImageFormatProperties2(physicalDevice: PhysicalDevice, pFormatInfo: *const PhysicalDeviceSparseImageFormatInfo2, pPropertyCount: *mut u32, pProperties: *mut SparseImageFormatProperties2){
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).GetPhysicalDeviceSparseImageFormatProperties2_ptr)(physicalDevice, pFormatInfo, pPropertyCount, pProperties)
-  }
-}
-#[doc(hidden)] pub fn TrimCommandPool(device: Device, commandPool: CommandPool, flags: CommandPoolTrimFlags){
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).TrimCommandPool_ptr)(device, commandPool, flags)
-  }
-}
-#[doc(hidden)] pub fn GetDeviceQueue2(device: Device, pQueueInfo: *const DeviceQueueInfo2, pQueue: *mut Queue){
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).GetDeviceQueue2_ptr)(device, pQueueInfo, pQueue)
-  }
-}
-#[doc(hidden)] pub fn CreateSamplerYcbcrConversion(device: Device, pCreateInfo: *const SamplerYcbcrConversionCreateInfo, pAllocator: *const AllocationCallbacks, pYcbcrConversion: *mut SamplerYcbcrConversion) -> Result{
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).CreateSamplerYcbcrConversion_ptr)(device, pCreateInfo, pAllocator, pYcbcrConversion)
-  }
-}
-#[doc(hidden)] pub fn DestroySamplerYcbcrConversion(device: Device, ycbcrConversion: SamplerYcbcrConversion, pAllocator: *const AllocationCallbacks){
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).DestroySamplerYcbcrConversion_ptr)(device, ycbcrConversion, pAllocator)
-  }
-}
-#[doc(hidden)] pub fn CreateDescriptorUpdateTemplate(device: Device, pCreateInfo: *const DescriptorUpdateTemplateCreateInfo, pAllocator: *const AllocationCallbacks, pDescriptorUpdateTemplate: *mut DescriptorUpdateTemplate) -> Result{
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).CreateDescriptorUpdateTemplate_ptr)(device, pCreateInfo, pAllocator, pDescriptorUpdateTemplate)
-  }
-}
-#[doc(hidden)] pub fn DestroyDescriptorUpdateTemplate(device: Device, descriptorUpdateTemplate: DescriptorUpdateTemplate, pAllocator: *const AllocationCallbacks){
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).DestroyDescriptorUpdateTemplate_ptr)(device, descriptorUpdateTemplate, pAllocator)
-  }
-}
-#[doc(hidden)] pub fn UpdateDescriptorSetWithTemplate(device: Device, descriptorSet: DescriptorSet, descriptorUpdateTemplate: DescriptorUpdateTemplate, pData: *const c_void){
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).UpdateDescriptorSetWithTemplate_ptr)(device, descriptorSet, descriptorUpdateTemplate, pData)
-  }
-}
-#[doc(hidden)] pub fn GetPhysicalDeviceExternalBufferProperties(physicalDevice: PhysicalDevice, pExternalBufferInfo: *const PhysicalDeviceExternalBufferInfo, pExternalBufferProperties: *mut ExternalBufferProperties){
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).GetPhysicalDeviceExternalBufferProperties_ptr)(physicalDevice, pExternalBufferInfo, pExternalBufferProperties)
-  }
-}
-#[doc(hidden)] pub fn GetPhysicalDeviceExternalFenceProperties(physicalDevice: PhysicalDevice, pExternalFenceInfo: *const PhysicalDeviceExternalFenceInfo, pExternalFenceProperties: *mut ExternalFenceProperties){
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).GetPhysicalDeviceExternalFenceProperties_ptr)(physicalDevice, pExternalFenceInfo, pExternalFenceProperties)
-  }
-}
-#[doc(hidden)] pub fn GetPhysicalDeviceExternalSemaphoreProperties(physicalDevice: PhysicalDevice, pExternalSemaphoreInfo: *const PhysicalDeviceExternalSemaphoreInfo, pExternalSemaphoreProperties: *mut ExternalSemaphoreProperties){
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).GetPhysicalDeviceExternalSemaphoreProperties_ptr)(physicalDevice, pExternalSemaphoreInfo, pExternalSemaphoreProperties)
-  }
-}
-#[doc(hidden)] pub fn GetDescriptorSetLayoutSupport(device: Device, pCreateInfo: *const DescriptorSetLayoutCreateInfo, pSupport: *mut DescriptorSetLayoutSupport){
-  unsafe {
-    let ptr = core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core");
-    ((*ptr).GetDescriptorSetLayoutSupport_ptr)(device, pCreateInfo, pSupport)
-  }
-}
-
-
-/// Vulkan instance extensions
-///
-/// This struct is used to initialize vulkan instance extensions and holds function pointers to them.
-/// Function pointers are initialized during construction.
-#[derive(Clone,Copy)]pub struct InstanceExtensions {
-  #[allow(dead_code)]
-  hinstance: Instance,
-  DestroySurfaceKHR_ptr: extern "system" fn (instance: Instance, surface: SurfaceKHR, pAllocator: *const AllocationCallbacks),
-  GetPhysicalDeviceSurfaceSupportKHR_ptr: extern "system" fn (physicalDevice: PhysicalDevice, queueFamilyIndex: u32, surface: SurfaceKHR, pSupported: *mut Bool32) -> Result,
-  GetPhysicalDeviceSurfaceCapabilitiesKHR_ptr: extern "system" fn (physicalDevice: PhysicalDevice, surface: SurfaceKHR, pSurfaceCapabilities: *mut SurfaceCapabilitiesKHR) -> Result,
-  GetPhysicalDeviceSurfaceFormatsKHR_ptr: extern "system" fn (physicalDevice: PhysicalDevice, surface: SurfaceKHR, pSurfaceFormatCount: *mut u32, pSurfaceFormats: *mut SurfaceFormatKHR) -> Result,
-  GetPhysicalDeviceSurfacePresentModesKHR_ptr: extern "system" fn (physicalDevice: PhysicalDevice, surface: SurfaceKHR, pPresentModeCount: *mut u32, pPresentModes: *mut PresentModeKHR) -> Result,
-  GetPhysicalDeviceDisplayPropertiesKHR_ptr: extern "system" fn (physicalDevice: PhysicalDevice, pPropertyCount: *mut u32, pProperties: *mut DisplayPropertiesKHR) -> Result,
-  GetPhysicalDeviceDisplayPlanePropertiesKHR_ptr: extern "system" fn (physicalDevice: PhysicalDevice, pPropertyCount: *mut u32, pProperties: *mut DisplayPlanePropertiesKHR) -> Result,
-  GetDisplayPlaneSupportedDisplaysKHR_ptr: extern "system" fn (physicalDevice: PhysicalDevice, planeIndex: u32, pDisplayCount: *mut u32, pDisplays: *mut DisplayKHR) -> Result,
-  GetDisplayModePropertiesKHR_ptr: extern "system" fn (physicalDevice: PhysicalDevice, display: DisplayKHR, pPropertyCount: *mut u32, pProperties: *mut DisplayModePropertiesKHR) -> Result,
-  CreateDisplayModeKHR_ptr: extern "system" fn (physicalDevice: PhysicalDevice, display: DisplayKHR, pCreateInfo: *const DisplayModeCreateInfoKHR, pAllocator: *const AllocationCallbacks, pMode: *mut DisplayModeKHR) -> Result,
-  GetDisplayPlaneCapabilitiesKHR_ptr: extern "system" fn (physicalDevice: PhysicalDevice, mode: DisplayModeKHR, planeIndex: u32, pCapabilities: *mut DisplayPlaneCapabilitiesKHR) -> Result,
-  CreateDisplayPlaneSurfaceKHR_ptr: extern "system" fn (instance: Instance, pCreateInfo: *const DisplaySurfaceCreateInfoKHR, pAllocator: *const AllocationCallbacks, pSurface: *mut SurfaceKHR) -> Result,
-  CreateXlibSurfaceKHR_ptr: extern "system" fn (instance: Instance, pCreateInfo: *const XlibSurfaceCreateInfoKHR, pAllocator: *const AllocationCallbacks, pSurface: *mut SurfaceKHR) -> Result,
-  GetPhysicalDeviceXlibPresentationSupportKHR_ptr: extern "system" fn (physicalDevice: PhysicalDevice, queueFamilyIndex: u32, dpy: *mut Display, visualID: VisualID) -> Bool32,
-  CreateXcbSurfaceKHR_ptr: extern "system" fn (instance: Instance, pCreateInfo: *const XcbSurfaceCreateInfoKHR, pAllocator: *const AllocationCallbacks, pSurface: *mut SurfaceKHR) -> Result,
-  GetPhysicalDeviceXcbPresentationSupportKHR_ptr: extern "system" fn (physicalDevice: PhysicalDevice, queueFamilyIndex: u32, connection: *mut xcb_connection_t, visual_id: xcb_visualid_t) -> Bool32,
-  CreateWaylandSurfaceKHR_ptr: extern "system" fn (instance: Instance, pCreateInfo: *const WaylandSurfaceCreateInfoKHR, pAllocator: *const AllocationCallbacks, pSurface: *mut SurfaceKHR) -> Result,
-  GetPhysicalDeviceWaylandPresentationSupportKHR_ptr: extern "system" fn (physicalDevice: PhysicalDevice, queueFamilyIndex: u32, display: *mut wl_display) -> Bool32,
-  CreateAndroidSurfaceKHR_ptr: extern "system" fn (instance: Instance, pCreateInfo: *const AndroidSurfaceCreateInfoKHR, pAllocator: *const AllocationCallbacks, pSurface: *mut SurfaceKHR) -> Result,
-  CreateWin32SurfaceKHR_ptr: extern "system" fn (instance: Instance, pCreateInfo: *const Win32SurfaceCreateInfoKHR, pAllocator: *const AllocationCallbacks, pSurface: *mut SurfaceKHR) -> Result,
-  GetPhysicalDeviceWin32PresentationSupportKHR_ptr: extern "system" fn (physicalDevice: PhysicalDevice, queueFamilyIndex: u32) -> Bool32,
-  CreateDebugReportCallbackEXT_ptr: extern "system" fn (instance: Instance, pCreateInfo: *const DebugReportCallbackCreateInfoEXT, pAllocator: *const AllocationCallbacks, pCallback: *mut DebugReportCallbackEXT) -> Result,
-  DestroyDebugReportCallbackEXT_ptr: extern "system" fn (instance: Instance, callback: DebugReportCallbackEXT, pAllocator: *const AllocationCallbacks),
-  DebugReportMessageEXT_ptr: extern "system" fn (instance: Instance, flags: DebugReportFlagsEXT, objectType: DebugReportObjectTypeEXT, object: u64, location: usize, messageCode: i32, pLayerPrefix: *const c_char, pMessage: *const c_char),
-  GetPhysicalDeviceExternalImageFormatPropertiesNV_ptr: extern "system" fn (physicalDevice: PhysicalDevice, format: Format, typ: ImageType, tiling: ImageTiling, usage: ImageUsageFlags, flags: ImageCreateFlags, externalHandleType: ExternalMemoryHandleTypeFlagsNV, pExternalImageFormatProperties: *mut ExternalImageFormatPropertiesNV) -> Result,
-  CreateViSurfaceNN_ptr: extern "system" fn (instance: Instance, pCreateInfo: *const ViSurfaceCreateInfoNN, pAllocator: *const AllocationCallbacks, pSurface: *mut SurfaceKHR) -> Result,
-  ReleaseDisplayEXT_ptr: extern "system" fn (physicalDevice: PhysicalDevice, display: DisplayKHR) -> Result,
-  AcquireXlibDisplayEXT_ptr: extern "system" fn (physicalDevice: PhysicalDevice, dpy: *mut Display, display: DisplayKHR) -> Result,
-  GetRandROutputDisplayEXT_ptr: extern "system" fn (physicalDevice: PhysicalDevice, dpy: *mut Display, rrOutput: RROutput, pDisplay: *mut DisplayKHR) -> Result,
-  GetPhysicalDeviceSurfaceCapabilities2EXT_ptr: extern "system" fn (physicalDevice: PhysicalDevice, surface: SurfaceKHR, pSurfaceCapabilities: *mut SurfaceCapabilities2EXT) -> Result,
-  GetPhysicalDeviceSurfaceCapabilities2KHR_ptr: extern "system" fn (physicalDevice: PhysicalDevice, pSurfaceInfo: *const PhysicalDeviceSurfaceInfo2KHR, pSurfaceCapabilities: *mut SurfaceCapabilities2KHR) -> Result,
-  GetPhysicalDeviceSurfaceFormats2KHR_ptr: extern "system" fn (physicalDevice: PhysicalDevice, pSurfaceInfo: *const PhysicalDeviceSurfaceInfo2KHR, pSurfaceFormatCount: *mut u32, pSurfaceFormats: *mut SurfaceFormat2KHR) -> Result,
-  GetPhysicalDeviceDisplayProperties2KHR_ptr: extern "system" fn (physicalDevice: PhysicalDevice, pPropertyCount: *mut u32, pProperties: *mut DisplayProperties2KHR) -> Result,
-  GetPhysicalDeviceDisplayPlaneProperties2KHR_ptr: extern "system" fn (physicalDevice: PhysicalDevice, pPropertyCount: *mut u32, pProperties: *mut DisplayPlaneProperties2KHR) -> Result,
-  GetDisplayModeProperties2KHR_ptr: extern "system" fn (physicalDevice: PhysicalDevice, display: DisplayKHR, pPropertyCount: *mut u32, pProperties: *mut DisplayModeProperties2KHR) -> Result,
-  GetDisplayPlaneCapabilities2KHR_ptr: extern "system" fn (physicalDevice: PhysicalDevice, pDisplayPlaneInfo: *const DisplayPlaneInfo2KHR, pCapabilities: *mut DisplayPlaneCapabilities2KHR) -> Result,
-  CreateIOSSurfaceMVK_ptr: extern "system" fn (instance: Instance, pCreateInfo: *const IOSSurfaceCreateInfoMVK, pAllocator: *const AllocationCallbacks, pSurface: *mut SurfaceKHR) -> Result,
-  CreateMacOSSurfaceMVK_ptr: extern "system" fn (instance: Instance, pCreateInfo: *const MacOSSurfaceCreateInfoMVK, pAllocator: *const AllocationCallbacks, pSurface: *mut SurfaceKHR) -> Result,
-  SetDebugUtilsObjectNameEXT_ptr: extern "system" fn (device: Device, pNameInfo: *const DebugUtilsObjectNameInfoEXT) -> Result,
-  SetDebugUtilsObjectTagEXT_ptr: extern "system" fn (device: Device, pTagInfo: *const DebugUtilsObjectTagInfoEXT) -> Result,
-  QueueBeginDebugUtilsLabelEXT_ptr: extern "system" fn (queue: Queue, pLabelInfo: *const DebugUtilsLabelEXT),
-  QueueEndDebugUtilsLabelEXT_ptr: extern "system" fn (queue: Queue),
-  QueueInsertDebugUtilsLabelEXT_ptr: extern "system" fn (queue: Queue, pLabelInfo: *const DebugUtilsLabelEXT),
-  CmdBeginDebugUtilsLabelEXT_ptr: extern "system" fn (commandBuffer: CommandBuffer, pLabelInfo: *const DebugUtilsLabelEXT),
-  CmdEndDebugUtilsLabelEXT_ptr: extern "system" fn (commandBuffer: CommandBuffer),
-  CmdInsertDebugUtilsLabelEXT_ptr: extern "system" fn (commandBuffer: CommandBuffer, pLabelInfo: *const DebugUtilsLabelEXT),
-  CreateDebugUtilsMessengerEXT_ptr: extern "system" fn (instance: Instance, pCreateInfo: *const DebugUtilsMessengerCreateInfoEXT, pAllocator: *const AllocationCallbacks, pMessenger: *mut DebugUtilsMessengerEXT) -> Result,
-  DestroyDebugUtilsMessengerEXT_ptr: extern "system" fn (instance: Instance, messenger: DebugUtilsMessengerEXT, pAllocator: *const AllocationCallbacks),
-  SubmitDebugUtilsMessageEXT_ptr: extern "system" fn (instance: Instance, messageSeverity: DebugUtilsMessageSeverityFlagBitsEXT, messageTypes: DebugUtilsMessageTypeFlagsEXT, pCallbackData: *const DebugUtilsMessengerCallbackDataEXT),
-  CreateImagePipeSurfaceFUCHSIA_ptr: extern "system" fn (instance: Instance, pCreateInfo: *const ImagePipeSurfaceCreateInfoFUCHSIA, pAllocator: *const AllocationCallbacks, pSurface: *mut SurfaceKHR) -> Result,
-}
-
-
-extern "system" fn DestroySurfaceKHR_panic(_instance: Instance, _surface: SurfaceKHR, _pAllocator: *const AllocationCallbacks){
-    panic!("extension vkDestroySurfaceKHR not loaded")
-}
-extern "system" fn GetPhysicalDeviceSurfaceSupportKHR_panic(_physicalDevice: PhysicalDevice, _queueFamilyIndex: u32, _surface: SurfaceKHR, _pSupported: *mut Bool32) -> Result{
-    panic!("extension vkGetPhysicalDeviceSurfaceSupportKHR not loaded")
-}
-extern "system" fn GetPhysicalDeviceSurfaceCapabilitiesKHR_panic(_physicalDevice: PhysicalDevice, _surface: SurfaceKHR, _pSurfaceCapabilities: *mut SurfaceCapabilitiesKHR) -> Result{
-    panic!("extension vkGetPhysicalDeviceSurfaceCapabilitiesKHR not loaded")
-}
-extern "system" fn GetPhysicalDeviceSurfaceFormatsKHR_panic(_physicalDevice: PhysicalDevice, _surface: SurfaceKHR, _pSurfaceFormatCount: *mut u32, _pSurfaceFormats: *mut SurfaceFormatKHR) -> Result{
-    panic!("extension vkGetPhysicalDeviceSurfaceFormatsKHR not loaded")
-}
-extern "system" fn GetPhysicalDeviceSurfacePresentModesKHR_panic(_physicalDevice: PhysicalDevice, _surface: SurfaceKHR, _pPresentModeCount: *mut u32, _pPresentModes: *mut PresentModeKHR) -> Result{
-    panic!("extension vkGetPhysicalDeviceSurfacePresentModesKHR not loaded")
-}
-extern "system" fn GetPhysicalDeviceDisplayPropertiesKHR_panic(_physicalDevice: PhysicalDevice, _pPropertyCount: *mut u32, _pProperties: *mut DisplayPropertiesKHR) -> Result{
-    panic!("extension vkGetPhysicalDeviceDisplayPropertiesKHR not loaded")
-}
-extern "system" fn GetPhysicalDeviceDisplayPlanePropertiesKHR_panic(_physicalDevice: PhysicalDevice, _pPropertyCount: *mut u32, _pProperties: *mut DisplayPlanePropertiesKHR) -> Result{
-    panic!("extension vkGetPhysicalDeviceDisplayPlanePropertiesKHR not loaded")
-}
-extern "system" fn GetDisplayPlaneSupportedDisplaysKHR_panic(_physicalDevice: PhysicalDevice, _planeIndex: u32, _pDisplayCount: *mut u32, _pDisplays: *mut DisplayKHR) -> Result{
-    panic!("extension vkGetDisplayPlaneSupportedDisplaysKHR not loaded")
-}
-extern "system" fn GetDisplayModePropertiesKHR_panic(_physicalDevice: PhysicalDevice, _display: DisplayKHR, _pPropertyCount: *mut u32, _pProperties: *mut DisplayModePropertiesKHR) -> Result{
-    panic!("extension vkGetDisplayModePropertiesKHR not loaded")
-}
-extern "system" fn CreateDisplayModeKHR_panic(_physicalDevice: PhysicalDevice, _display: DisplayKHR, _pCreateInfo: *const DisplayModeCreateInfoKHR, _pAllocator: *const AllocationCallbacks, _pMode: *mut DisplayModeKHR) -> Result{
-    panic!("extension vkCreateDisplayModeKHR not loaded")
-}
-extern "system" fn GetDisplayPlaneCapabilitiesKHR_panic(_physicalDevice: PhysicalDevice, _mode: DisplayModeKHR, _planeIndex: u32, _pCapabilities: *mut DisplayPlaneCapabilitiesKHR) -> Result{
-    panic!("extension vkGetDisplayPlaneCapabilitiesKHR not loaded")
-}
-extern "system" fn CreateDisplayPlaneSurfaceKHR_panic(_instance: Instance, _pCreateInfo: *const DisplaySurfaceCreateInfoKHR, _pAllocator: *const AllocationCallbacks, _pSurface: *mut SurfaceKHR) -> Result{
-    panic!("extension vkCreateDisplayPlaneSurfaceKHR not loaded")
-}
-extern "system" fn CreateXlibSurfaceKHR_panic(_instance: Instance, _pCreateInfo: *const XlibSurfaceCreateInfoKHR, _pAllocator: *const AllocationCallbacks, _pSurface: *mut SurfaceKHR) -> Result{
-    panic!("extension vkCreateXlibSurfaceKHR not loaded")
-}
-extern "system" fn GetPhysicalDeviceXlibPresentationSupportKHR_panic(_physicalDevice: PhysicalDevice, _queueFamilyIndex: u32, _dpy: *mut Display, _visualID: VisualID) -> Bool32{
-    panic!("extension vkGetPhysicalDeviceXlibPresentationSupportKHR not loaded")
-}
-extern "system" fn CreateXcbSurfaceKHR_panic(_instance: Instance, _pCreateInfo: *const XcbSurfaceCreateInfoKHR, _pAllocator: *const AllocationCallbacks, _pSurface: *mut SurfaceKHR) -> Result{
-    panic!("extension vkCreateXcbSurfaceKHR not loaded")
-}
-extern "system" fn GetPhysicalDeviceXcbPresentationSupportKHR_panic(_physicalDevice: PhysicalDevice, _queueFamilyIndex: u32, _connection: *mut xcb_connection_t, _visual_id: xcb_visualid_t) -> Bool32{
-    panic!("extension vkGetPhysicalDeviceXcbPresentationSupportKHR not loaded")
-}
-extern "system" fn CreateWaylandSurfaceKHR_panic(_instance: Instance, _pCreateInfo: *const WaylandSurfaceCreateInfoKHR, _pAllocator: *const AllocationCallbacks, _pSurface: *mut SurfaceKHR) -> Result{
-    panic!("extension vkCreateWaylandSurfaceKHR not loaded")
-}
-extern "system" fn GetPhysicalDeviceWaylandPresentationSupportKHR_panic(_physicalDevice: PhysicalDevice, _queueFamilyIndex: u32, _display: *mut wl_display) -> Bool32{
-    panic!("extension vkGetPhysicalDeviceWaylandPresentationSupportKHR not loaded")
-}
-extern "system" fn CreateAndroidSurfaceKHR_panic(_instance: Instance, _pCreateInfo: *const AndroidSurfaceCreateInfoKHR, _pAllocator: *const AllocationCallbacks, _pSurface: *mut SurfaceKHR) -> Result{
-    panic!("extension vkCreateAndroidSurfaceKHR not loaded")
-}
-extern "system" fn CreateWin32SurfaceKHR_panic(_instance: Instance, _pCreateInfo: *const Win32SurfaceCreateInfoKHR, _pAllocator: *const AllocationCallbacks, _pSurface: *mut SurfaceKHR) -> Result{
-    panic!("extension vkCreateWin32SurfaceKHR not loaded")
-}
-extern "system" fn GetPhysicalDeviceWin32PresentationSupportKHR_panic(_physicalDevice: PhysicalDevice, _queueFamilyIndex: u32) -> Bool32{
-    panic!("extension vkGetPhysicalDeviceWin32PresentationSupportKHR not loaded")
-}
-extern "system" fn CreateDebugReportCallbackEXT_panic(_instance: Instance, _pCreateInfo: *const DebugReportCallbackCreateInfoEXT, _pAllocator: *const AllocationCallbacks, _pCallback: *mut DebugReportCallbackEXT) -> Result{
-    panic!("extension vkCreateDebugReportCallbackEXT not loaded")
-}
-extern "system" fn DestroyDebugReportCallbackEXT_panic(_instance: Instance, _callback: DebugReportCallbackEXT, _pAllocator: *const AllocationCallbacks){
-    panic!("extension vkDestroyDebugReportCallbackEXT not loaded")
-}
-extern "system" fn DebugReportMessageEXT_panic(_instance: Instance, _flags: DebugReportFlagsEXT, _objectType: DebugReportObjectTypeEXT, _object: u64, _location: usize, _messageCode: i32, _pLayerPrefix: *const c_char, _pMessage: *const c_char){
-    panic!("extension vkDebugReportMessageEXT not loaded")
-}
-extern "system" fn GetPhysicalDeviceExternalImageFormatPropertiesNV_panic(_physicalDevice: PhysicalDevice, _format: Format, _typ: ImageType, _tiling: ImageTiling, _usage: ImageUsageFlags, _flags: ImageCreateFlags, _externalHandleType: ExternalMemoryHandleTypeFlagsNV, _pExternalImageFormatProperties: *mut ExternalImageFormatPropertiesNV) -> Result{
-    panic!("extension vkGetPhysicalDeviceExternalImageFormatPropertiesNV not loaded")
-}
-extern "system" fn CreateViSurfaceNN_panic(_instance: Instance, _pCreateInfo: *const ViSurfaceCreateInfoNN, _pAllocator: *const AllocationCallbacks, _pSurface: *mut SurfaceKHR) -> Result{
-    panic!("extension vkCreateViSurfaceNN not loaded")
-}
-extern "system" fn ReleaseDisplayEXT_panic(_physicalDevice: PhysicalDevice, _display: DisplayKHR) -> Result{
-    panic!("extension vkReleaseDisplayEXT not loaded")
-}
-extern "system" fn AcquireXlibDisplayEXT_panic(_physicalDevice: PhysicalDevice, _dpy: *mut Display, _display: DisplayKHR) -> Result{
-    panic!("extension vkAcquireXlibDisplayEXT not loaded")
-}
-extern "system" fn GetRandROutputDisplayEXT_panic(_physicalDevice: PhysicalDevice, _dpy: *mut Display, _rrOutput: RROutput, _pDisplay: *mut DisplayKHR) -> Result{
-    panic!("extension vkGetRandROutputDisplayEXT not loaded")
-}
-extern "system" fn GetPhysicalDeviceSurfaceCapabilities2EXT_panic(_physicalDevice: PhysicalDevice, _surface: SurfaceKHR, _pSurfaceCapabilities: *mut SurfaceCapabilities2EXT) -> Result{
-    panic!("extension vkGetPhysicalDeviceSurfaceCapabilities2EXT not loaded")
-}
-extern "system" fn GetPhysicalDeviceSurfaceCapabilities2KHR_panic(_physicalDevice: PhysicalDevice, _pSurfaceInfo: *const PhysicalDeviceSurfaceInfo2KHR, _pSurfaceCapabilities: *mut SurfaceCapabilities2KHR) -> Result{
-    panic!("extension vkGetPhysicalDeviceSurfaceCapabilities2KHR not loaded")
-}
-extern "system" fn GetPhysicalDeviceSurfaceFormats2KHR_panic(_physicalDevice: PhysicalDevice, _pSurfaceInfo: *const PhysicalDeviceSurfaceInfo2KHR, _pSurfaceFormatCount: *mut u32, _pSurfaceFormats: *mut SurfaceFormat2KHR) -> Result{
-    panic!("extension vkGetPhysicalDeviceSurfaceFormats2KHR not loaded")
-}
-extern "system" fn GetPhysicalDeviceDisplayProperties2KHR_panic(_physicalDevice: PhysicalDevice, _pPropertyCount: *mut u32, _pProperties: *mut DisplayProperties2KHR) -> Result{
-    panic!("extension vkGetPhysicalDeviceDisplayProperties2KHR not loaded")
-}
-extern "system" fn GetPhysicalDeviceDisplayPlaneProperties2KHR_panic(_physicalDevice: PhysicalDevice, _pPropertyCount: *mut u32, _pProperties: *mut DisplayPlaneProperties2KHR) -> Result{
-    panic!("extension vkGetPhysicalDeviceDisplayPlaneProperties2KHR not loaded")
-}
-extern "system" fn GetDisplayModeProperties2KHR_panic(_physicalDevice: PhysicalDevice, _display: DisplayKHR, _pPropertyCount: *mut u32, _pProperties: *mut DisplayModeProperties2KHR) -> Result{
-    panic!("extension vkGetDisplayModeProperties2KHR not loaded")
-}
-extern "system" fn GetDisplayPlaneCapabilities2KHR_panic(_physicalDevice: PhysicalDevice, _pDisplayPlaneInfo: *const DisplayPlaneInfo2KHR, _pCapabilities: *mut DisplayPlaneCapabilities2KHR) -> Result{
-    panic!("extension vkGetDisplayPlaneCapabilities2KHR not loaded")
-}
-extern "system" fn CreateIOSSurfaceMVK_panic(_instance: Instance, _pCreateInfo: *const IOSSurfaceCreateInfoMVK, _pAllocator: *const AllocationCallbacks, _pSurface: *mut SurfaceKHR) -> Result{
-    panic!("extension vkCreateIOSSurfaceMVK not loaded")
-}
-extern "system" fn CreateMacOSSurfaceMVK_panic(_instance: Instance, _pCreateInfo: *const MacOSSurfaceCreateInfoMVK, _pAllocator: *const AllocationCallbacks, _pSurface: *mut SurfaceKHR) -> Result{
-    panic!("extension vkCreateMacOSSurfaceMVK not loaded")
-}
-extern "system" fn SetDebugUtilsObjectNameEXT_panic(_device: Device, _pNameInfo: *const DebugUtilsObjectNameInfoEXT) -> Result{
-    panic!("extension vkSetDebugUtilsObjectNameEXT not loaded")
-}
-extern "system" fn SetDebugUtilsObjectTagEXT_panic(_device: Device, _pTagInfo: *const DebugUtilsObjectTagInfoEXT) -> Result{
-    panic!("extension vkSetDebugUtilsObjectTagEXT not loaded")
-}
-extern "system" fn QueueBeginDebugUtilsLabelEXT_panic(_queue: Queue, _pLabelInfo: *const DebugUtilsLabelEXT){
-    panic!("extension vkQueueBeginDebugUtilsLabelEXT not loaded")
-}
-extern "system" fn QueueEndDebugUtilsLabelEXT_panic(_queue: Queue){
-    panic!("extension vkQueueEndDebugUtilsLabelEXT not loaded")
-}
-extern "system" fn QueueInsertDebugUtilsLabelEXT_panic(_queue: Queue, _pLabelInfo: *const DebugUtilsLabelEXT){
-    panic!("extension vkQueueInsertDebugUtilsLabelEXT not loaded")
-}
-extern "system" fn CmdBeginDebugUtilsLabelEXT_panic(_commandBuffer: CommandBuffer, _pLabelInfo: *const DebugUtilsLabelEXT){
-    panic!("extension vkCmdBeginDebugUtilsLabelEXT not loaded")
-}
-extern "system" fn CmdEndDebugUtilsLabelEXT_panic(_commandBuffer: CommandBuffer){
-    panic!("extension vkCmdEndDebugUtilsLabelEXT not loaded")
-}
-extern "system" fn CmdInsertDebugUtilsLabelEXT_panic(_commandBuffer: CommandBuffer, _pLabelInfo: *const DebugUtilsLabelEXT){
-    panic!("extension vkCmdInsertDebugUtilsLabelEXT not loaded")
-}
-extern "system" fn CreateDebugUtilsMessengerEXT_panic(_instance: Instance, _pCreateInfo: *const DebugUtilsMessengerCreateInfoEXT, _pAllocator: *const AllocationCallbacks, _pMessenger: *mut DebugUtilsMessengerEXT) -> Result{
-    panic!("extension vkCreateDebugUtilsMessengerEXT not loaded")
-}
-extern "system" fn DestroyDebugUtilsMessengerEXT_panic(_instance: Instance, _messenger: DebugUtilsMessengerEXT, _pAllocator: *const AllocationCallbacks){
-    panic!("extension vkDestroyDebugUtilsMessengerEXT not loaded")
-}
-extern "system" fn SubmitDebugUtilsMessageEXT_panic(_instance: Instance, _messageSeverity: DebugUtilsMessageSeverityFlagBitsEXT, _messageTypes: DebugUtilsMessageTypeFlagsEXT, _pCallbackData: *const DebugUtilsMessengerCallbackDataEXT){
-    panic!("extension vkSubmitDebugUtilsMessageEXT not loaded")
-}
-extern "system" fn CreateImagePipeSurfaceFUCHSIA_panic(_instance: Instance, _pCreateInfo: *const ImagePipeSurfaceCreateInfoFUCHSIA, _pAllocator: *const AllocationCallbacks, _pSurface: *mut SurfaceKHR) -> Result{
-    panic!("extension vkCreateImagePipeSurfaceFUCHSIA not loaded")
-}
-
-
-impl Default for InstanceExtensions {
-  /// Initializes all function pointers to functions that immediately panic.
-  fn default() -> InstanceExtensions {
-    InstanceExtensions {
-      hinstance: NULL_HANDLE,
-      DestroySurfaceKHR_ptr: DestroySurfaceKHR_panic,
-      GetPhysicalDeviceSurfaceSupportKHR_ptr: GetPhysicalDeviceSurfaceSupportKHR_panic,
-      GetPhysicalDeviceSurfaceCapabilitiesKHR_ptr: GetPhysicalDeviceSurfaceCapabilitiesKHR_panic,
-      GetPhysicalDeviceSurfaceFormatsKHR_ptr: GetPhysicalDeviceSurfaceFormatsKHR_panic,
-      GetPhysicalDeviceSurfacePresentModesKHR_ptr: GetPhysicalDeviceSurfacePresentModesKHR_panic,
-      GetPhysicalDeviceDisplayPropertiesKHR_ptr: GetPhysicalDeviceDisplayPropertiesKHR_panic,
-      GetPhysicalDeviceDisplayPlanePropertiesKHR_ptr: GetPhysicalDeviceDisplayPlanePropertiesKHR_panic,
-      GetDisplayPlaneSupportedDisplaysKHR_ptr: GetDisplayPlaneSupportedDisplaysKHR_panic,
-      GetDisplayModePropertiesKHR_ptr: GetDisplayModePropertiesKHR_panic,
-      CreateDisplayModeKHR_ptr: CreateDisplayModeKHR_panic,
-      GetDisplayPlaneCapabilitiesKHR_ptr: GetDisplayPlaneCapabilitiesKHR_panic,
-      CreateDisplayPlaneSurfaceKHR_ptr: CreateDisplayPlaneSurfaceKHR_panic,
-      CreateXlibSurfaceKHR_ptr: CreateXlibSurfaceKHR_panic,
-      GetPhysicalDeviceXlibPresentationSupportKHR_ptr: GetPhysicalDeviceXlibPresentationSupportKHR_panic,
-      CreateXcbSurfaceKHR_ptr: CreateXcbSurfaceKHR_panic,
-      GetPhysicalDeviceXcbPresentationSupportKHR_ptr: GetPhysicalDeviceXcbPresentationSupportKHR_panic,
-      CreateWaylandSurfaceKHR_ptr: CreateWaylandSurfaceKHR_panic,
-      GetPhysicalDeviceWaylandPresentationSupportKHR_ptr: GetPhysicalDeviceWaylandPresentationSupportKHR_panic,
-      CreateAndroidSurfaceKHR_ptr: CreateAndroidSurfaceKHR_panic,
-      CreateWin32SurfaceKHR_ptr: CreateWin32SurfaceKHR_panic,
-      GetPhysicalDeviceWin32PresentationSupportKHR_ptr: GetPhysicalDeviceWin32PresentationSupportKHR_panic,
-      CreateDebugReportCallbackEXT_ptr: CreateDebugReportCallbackEXT_panic,
-      DestroyDebugReportCallbackEXT_ptr: DestroyDebugReportCallbackEXT_panic,
-      DebugReportMessageEXT_ptr: DebugReportMessageEXT_panic,
-      GetPhysicalDeviceExternalImageFormatPropertiesNV_ptr: GetPhysicalDeviceExternalImageFormatPropertiesNV_panic,
-      CreateViSurfaceNN_ptr: CreateViSurfaceNN_panic,
-      ReleaseDisplayEXT_ptr: ReleaseDisplayEXT_panic,
-      AcquireXlibDisplayEXT_ptr: AcquireXlibDisplayEXT_panic,
-      GetRandROutputDisplayEXT_ptr: GetRandROutputDisplayEXT_panic,
-      GetPhysicalDeviceSurfaceCapabilities2EXT_ptr: GetPhysicalDeviceSurfaceCapabilities2EXT_panic,
-      GetPhysicalDeviceSurfaceCapabilities2KHR_ptr: GetPhysicalDeviceSurfaceCapabilities2KHR_panic,
-      GetPhysicalDeviceSurfaceFormats2KHR_ptr: GetPhysicalDeviceSurfaceFormats2KHR_panic,
-      GetPhysicalDeviceDisplayProperties2KHR_ptr: GetPhysicalDeviceDisplayProperties2KHR_panic,
-      GetPhysicalDeviceDisplayPlaneProperties2KHR_ptr: GetPhysicalDeviceDisplayPlaneProperties2KHR_panic,
-      GetDisplayModeProperties2KHR_ptr: GetDisplayModeProperties2KHR_panic,
-      GetDisplayPlaneCapabilities2KHR_ptr: GetDisplayPlaneCapabilities2KHR_panic,
-      CreateIOSSurfaceMVK_ptr: CreateIOSSurfaceMVK_panic,
-      CreateMacOSSurfaceMVK_ptr: CreateMacOSSurfaceMVK_panic,
-      SetDebugUtilsObjectNameEXT_ptr: SetDebugUtilsObjectNameEXT_panic,
-      SetDebugUtilsObjectTagEXT_ptr: SetDebugUtilsObjectTagEXT_panic,
-      QueueBeginDebugUtilsLabelEXT_ptr: QueueBeginDebugUtilsLabelEXT_panic,
-      QueueEndDebugUtilsLabelEXT_ptr: QueueEndDebugUtilsLabelEXT_panic,
-      QueueInsertDebugUtilsLabelEXT_ptr: QueueInsertDebugUtilsLabelEXT_panic,
-      CmdBeginDebugUtilsLabelEXT_ptr: CmdBeginDebugUtilsLabelEXT_panic,
-      CmdEndDebugUtilsLabelEXT_ptr: CmdEndDebugUtilsLabelEXT_panic,
-      CmdInsertDebugUtilsLabelEXT_ptr: CmdInsertDebugUtilsLabelEXT_panic,
-      CreateDebugUtilsMessengerEXT_ptr: CreateDebugUtilsMessengerEXT_panic,
-      DestroyDebugUtilsMessengerEXT_ptr: DestroyDebugUtilsMessengerEXT_panic,
-      SubmitDebugUtilsMessageEXT_ptr: SubmitDebugUtilsMessageEXT_panic,
-      CreateImagePipeSurfaceFUCHSIA_ptr: CreateImagePipeSurfaceFUCHSIA_panic,
-    }
-  }
-}
-
-
-impl InstanceExtensions {
-  /// Initialized instance extensions
-  /// 
-  /// A valid instance of [Core](struct.Core.html) is needen to successfully initialize extensions.
-  /// The vulkan feature level is picked up through the current Core instance.
-  pub fn new(hinstance: Instance) -> InstanceExtensions {
-    let mut name;
-    let mut ptr;
-
-    unsafe { 
-      let feature = (*core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core")).feature;
-        name = std::ffi::CString::new("vkDestroySurfaceKHR").unwrap();
-        let DestroySurfaceKHR_ptr = if feature < VERSION_1_0 {
-          DestroySurfaceKHR_panic as extern "system" fn (instance: Instance, surface: SurfaceKHR, pAllocator: *const AllocationCallbacks)
-        } else {
-          ptr = GetInstanceProcAddr(hinstance, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            DestroySurfaceKHR_panic as extern "system" fn (instance: Instance, surface: SurfaceKHR, pAllocator: *const AllocationCallbacks)
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkGetPhysicalDeviceSurfaceSupportKHR").unwrap();
-        let GetPhysicalDeviceSurfaceSupportKHR_ptr = if feature < VERSION_1_0 {
-          GetPhysicalDeviceSurfaceSupportKHR_panic as extern "system" fn (physicalDevice: PhysicalDevice, queueFamilyIndex: u32, surface: SurfaceKHR, pSupported: *mut Bool32) -> Result
-        } else {
-          ptr = GetInstanceProcAddr(hinstance, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            GetPhysicalDeviceSurfaceSupportKHR_panic as extern "system" fn (physicalDevice: PhysicalDevice, queueFamilyIndex: u32, surface: SurfaceKHR, pSupported: *mut Bool32) -> Result
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkGetPhysicalDeviceSurfaceCapabilitiesKHR").unwrap();
-        let GetPhysicalDeviceSurfaceCapabilitiesKHR_ptr = if feature < VERSION_1_0 {
-          GetPhysicalDeviceSurfaceCapabilitiesKHR_panic as extern "system" fn (physicalDevice: PhysicalDevice, surface: SurfaceKHR, pSurfaceCapabilities: *mut SurfaceCapabilitiesKHR) -> Result
-        } else {
-          ptr = GetInstanceProcAddr(hinstance, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            GetPhysicalDeviceSurfaceCapabilitiesKHR_panic as extern "system" fn (physicalDevice: PhysicalDevice, surface: SurfaceKHR, pSurfaceCapabilities: *mut SurfaceCapabilitiesKHR) -> Result
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkGetPhysicalDeviceSurfaceFormatsKHR").unwrap();
-        let GetPhysicalDeviceSurfaceFormatsKHR_ptr = if feature < VERSION_1_0 {
-          GetPhysicalDeviceSurfaceFormatsKHR_panic as extern "system" fn (physicalDevice: PhysicalDevice, surface: SurfaceKHR, pSurfaceFormatCount: *mut u32, pSurfaceFormats: *mut SurfaceFormatKHR) -> Result
-        } else {
-          ptr = GetInstanceProcAddr(hinstance, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            GetPhysicalDeviceSurfaceFormatsKHR_panic as extern "system" fn (physicalDevice: PhysicalDevice, surface: SurfaceKHR, pSurfaceFormatCount: *mut u32, pSurfaceFormats: *mut SurfaceFormatKHR) -> Result
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkGetPhysicalDeviceSurfacePresentModesKHR").unwrap();
-        let GetPhysicalDeviceSurfacePresentModesKHR_ptr = if feature < VERSION_1_0 {
-          GetPhysicalDeviceSurfacePresentModesKHR_panic as extern "system" fn (physicalDevice: PhysicalDevice, surface: SurfaceKHR, pPresentModeCount: *mut u32, pPresentModes: *mut PresentModeKHR) -> Result
-        } else {
-          ptr = GetInstanceProcAddr(hinstance, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            GetPhysicalDeviceSurfacePresentModesKHR_panic as extern "system" fn (physicalDevice: PhysicalDevice, surface: SurfaceKHR, pPresentModeCount: *mut u32, pPresentModes: *mut PresentModeKHR) -> Result
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkGetPhysicalDeviceDisplayPropertiesKHR").unwrap();
-        let GetPhysicalDeviceDisplayPropertiesKHR_ptr = if feature < VERSION_1_0 {
-          GetPhysicalDeviceDisplayPropertiesKHR_panic as extern "system" fn (physicalDevice: PhysicalDevice, pPropertyCount: *mut u32, pProperties: *mut DisplayPropertiesKHR) -> Result
-        } else {
-          ptr = GetInstanceProcAddr(hinstance, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            GetPhysicalDeviceDisplayPropertiesKHR_panic as extern "system" fn (physicalDevice: PhysicalDevice, pPropertyCount: *mut u32, pProperties: *mut DisplayPropertiesKHR) -> Result
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkGetPhysicalDeviceDisplayPlanePropertiesKHR").unwrap();
-        let GetPhysicalDeviceDisplayPlanePropertiesKHR_ptr = if feature < VERSION_1_0 {
-          GetPhysicalDeviceDisplayPlanePropertiesKHR_panic as extern "system" fn (physicalDevice: PhysicalDevice, pPropertyCount: *mut u32, pProperties: *mut DisplayPlanePropertiesKHR) -> Result
-        } else {
-          ptr = GetInstanceProcAddr(hinstance, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            GetPhysicalDeviceDisplayPlanePropertiesKHR_panic as extern "system" fn (physicalDevice: PhysicalDevice, pPropertyCount: *mut u32, pProperties: *mut DisplayPlanePropertiesKHR) -> Result
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkGetDisplayPlaneSupportedDisplaysKHR").unwrap();
-        let GetDisplayPlaneSupportedDisplaysKHR_ptr = if feature < VERSION_1_0 {
-          GetDisplayPlaneSupportedDisplaysKHR_panic as extern "system" fn (physicalDevice: PhysicalDevice, planeIndex: u32, pDisplayCount: *mut u32, pDisplays: *mut DisplayKHR) -> Result
-        } else {
-          ptr = GetInstanceProcAddr(hinstance, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            GetDisplayPlaneSupportedDisplaysKHR_panic as extern "system" fn (physicalDevice: PhysicalDevice, planeIndex: u32, pDisplayCount: *mut u32, pDisplays: *mut DisplayKHR) -> Result
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkGetDisplayModePropertiesKHR").unwrap();
-        let GetDisplayModePropertiesKHR_ptr = if feature < VERSION_1_0 {
-          GetDisplayModePropertiesKHR_panic as extern "system" fn (physicalDevice: PhysicalDevice, display: DisplayKHR, pPropertyCount: *mut u32, pProperties: *mut DisplayModePropertiesKHR) -> Result
-        } else {
-          ptr = GetInstanceProcAddr(hinstance, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            GetDisplayModePropertiesKHR_panic as extern "system" fn (physicalDevice: PhysicalDevice, display: DisplayKHR, pPropertyCount: *mut u32, pProperties: *mut DisplayModePropertiesKHR) -> Result
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkCreateDisplayModeKHR").unwrap();
-        let CreateDisplayModeKHR_ptr = if feature < VERSION_1_0 {
-          CreateDisplayModeKHR_panic as extern "system" fn (physicalDevice: PhysicalDevice, display: DisplayKHR, pCreateInfo: *const DisplayModeCreateInfoKHR, pAllocator: *const AllocationCallbacks, pMode: *mut DisplayModeKHR) -> Result
-        } else {
-          ptr = GetInstanceProcAddr(hinstance, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            CreateDisplayModeKHR_panic as extern "system" fn (physicalDevice: PhysicalDevice, display: DisplayKHR, pCreateInfo: *const DisplayModeCreateInfoKHR, pAllocator: *const AllocationCallbacks, pMode: *mut DisplayModeKHR) -> Result
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkGetDisplayPlaneCapabilitiesKHR").unwrap();
-        let GetDisplayPlaneCapabilitiesKHR_ptr = if feature < VERSION_1_0 {
-          GetDisplayPlaneCapabilitiesKHR_panic as extern "system" fn (physicalDevice: PhysicalDevice, mode: DisplayModeKHR, planeIndex: u32, pCapabilities: *mut DisplayPlaneCapabilitiesKHR) -> Result
-        } else {
-          ptr = GetInstanceProcAddr(hinstance, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            GetDisplayPlaneCapabilitiesKHR_panic as extern "system" fn (physicalDevice: PhysicalDevice, mode: DisplayModeKHR, planeIndex: u32, pCapabilities: *mut DisplayPlaneCapabilitiesKHR) -> Result
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkCreateDisplayPlaneSurfaceKHR").unwrap();
-        let CreateDisplayPlaneSurfaceKHR_ptr = if feature < VERSION_1_0 {
-          CreateDisplayPlaneSurfaceKHR_panic as extern "system" fn (instance: Instance, pCreateInfo: *const DisplaySurfaceCreateInfoKHR, pAllocator: *const AllocationCallbacks, pSurface: *mut SurfaceKHR) -> Result
-        } else {
-          ptr = GetInstanceProcAddr(hinstance, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            CreateDisplayPlaneSurfaceKHR_panic as extern "system" fn (instance: Instance, pCreateInfo: *const DisplaySurfaceCreateInfoKHR, pAllocator: *const AllocationCallbacks, pSurface: *mut SurfaceKHR) -> Result
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkCreateXlibSurfaceKHR").unwrap();
-        let CreateXlibSurfaceKHR_ptr = if feature < VERSION_1_0 {
-          CreateXlibSurfaceKHR_panic as extern "system" fn (instance: Instance, pCreateInfo: *const XlibSurfaceCreateInfoKHR, pAllocator: *const AllocationCallbacks, pSurface: *mut SurfaceKHR) -> Result
-        } else {
-          ptr = GetInstanceProcAddr(hinstance, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            CreateXlibSurfaceKHR_panic as extern "system" fn (instance: Instance, pCreateInfo: *const XlibSurfaceCreateInfoKHR, pAllocator: *const AllocationCallbacks, pSurface: *mut SurfaceKHR) -> Result
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkGetPhysicalDeviceXlibPresentationSupportKHR").unwrap();
-        let GetPhysicalDeviceXlibPresentationSupportKHR_ptr = if feature < VERSION_1_0 {
-          GetPhysicalDeviceXlibPresentationSupportKHR_panic as extern "system" fn (physicalDevice: PhysicalDevice, queueFamilyIndex: u32, dpy: *mut Display, visualID: VisualID) -> Bool32
-        } else {
-          ptr = GetInstanceProcAddr(hinstance, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            GetPhysicalDeviceXlibPresentationSupportKHR_panic as extern "system" fn (physicalDevice: PhysicalDevice, queueFamilyIndex: u32, dpy: *mut Display, visualID: VisualID) -> Bool32
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkCreateXcbSurfaceKHR").unwrap();
-        let CreateXcbSurfaceKHR_ptr = if feature < VERSION_1_0 {
-          CreateXcbSurfaceKHR_panic as extern "system" fn (instance: Instance, pCreateInfo: *const XcbSurfaceCreateInfoKHR, pAllocator: *const AllocationCallbacks, pSurface: *mut SurfaceKHR) -> Result
-        } else {
-          ptr = GetInstanceProcAddr(hinstance, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            CreateXcbSurfaceKHR_panic as extern "system" fn (instance: Instance, pCreateInfo: *const XcbSurfaceCreateInfoKHR, pAllocator: *const AllocationCallbacks, pSurface: *mut SurfaceKHR) -> Result
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkGetPhysicalDeviceXcbPresentationSupportKHR").unwrap();
-        let GetPhysicalDeviceXcbPresentationSupportKHR_ptr = if feature < VERSION_1_0 {
-          GetPhysicalDeviceXcbPresentationSupportKHR_panic as extern "system" fn (physicalDevice: PhysicalDevice, queueFamilyIndex: u32, connection: *mut xcb_connection_t, visual_id: xcb_visualid_t) -> Bool32
-        } else {
-          ptr = GetInstanceProcAddr(hinstance, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            GetPhysicalDeviceXcbPresentationSupportKHR_panic as extern "system" fn (physicalDevice: PhysicalDevice, queueFamilyIndex: u32, connection: *mut xcb_connection_t, visual_id: xcb_visualid_t) -> Bool32
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkCreateWaylandSurfaceKHR").unwrap();
-        let CreateWaylandSurfaceKHR_ptr = if feature < VERSION_1_0 {
-          CreateWaylandSurfaceKHR_panic as extern "system" fn (instance: Instance, pCreateInfo: *const WaylandSurfaceCreateInfoKHR, pAllocator: *const AllocationCallbacks, pSurface: *mut SurfaceKHR) -> Result
-        } else {
-          ptr = GetInstanceProcAddr(hinstance, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            CreateWaylandSurfaceKHR_panic as extern "system" fn (instance: Instance, pCreateInfo: *const WaylandSurfaceCreateInfoKHR, pAllocator: *const AllocationCallbacks, pSurface: *mut SurfaceKHR) -> Result
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkGetPhysicalDeviceWaylandPresentationSupportKHR").unwrap();
-        let GetPhysicalDeviceWaylandPresentationSupportKHR_ptr = if feature < VERSION_1_0 {
-          GetPhysicalDeviceWaylandPresentationSupportKHR_panic as extern "system" fn (physicalDevice: PhysicalDevice, queueFamilyIndex: u32, display: *mut wl_display) -> Bool32
-        } else {
-          ptr = GetInstanceProcAddr(hinstance, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            GetPhysicalDeviceWaylandPresentationSupportKHR_panic as extern "system" fn (physicalDevice: PhysicalDevice, queueFamilyIndex: u32, display: *mut wl_display) -> Bool32
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkCreateAndroidSurfaceKHR").unwrap();
-        let CreateAndroidSurfaceKHR_ptr = if feature < VERSION_1_0 {
-          CreateAndroidSurfaceKHR_panic as extern "system" fn (instance: Instance, pCreateInfo: *const AndroidSurfaceCreateInfoKHR, pAllocator: *const AllocationCallbacks, pSurface: *mut SurfaceKHR) -> Result
-        } else {
-          ptr = GetInstanceProcAddr(hinstance, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            CreateAndroidSurfaceKHR_panic as extern "system" fn (instance: Instance, pCreateInfo: *const AndroidSurfaceCreateInfoKHR, pAllocator: *const AllocationCallbacks, pSurface: *mut SurfaceKHR) -> Result
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkCreateWin32SurfaceKHR").unwrap();
-        let CreateWin32SurfaceKHR_ptr = if feature < VERSION_1_0 {
-          CreateWin32SurfaceKHR_panic as extern "system" fn (instance: Instance, pCreateInfo: *const Win32SurfaceCreateInfoKHR, pAllocator: *const AllocationCallbacks, pSurface: *mut SurfaceKHR) -> Result
-        } else {
-          ptr = GetInstanceProcAddr(hinstance, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            CreateWin32SurfaceKHR_panic as extern "system" fn (instance: Instance, pCreateInfo: *const Win32SurfaceCreateInfoKHR, pAllocator: *const AllocationCallbacks, pSurface: *mut SurfaceKHR) -> Result
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkGetPhysicalDeviceWin32PresentationSupportKHR").unwrap();
-        let GetPhysicalDeviceWin32PresentationSupportKHR_ptr = if feature < VERSION_1_0 {
-          GetPhysicalDeviceWin32PresentationSupportKHR_panic as extern "system" fn (physicalDevice: PhysicalDevice, queueFamilyIndex: u32) -> Bool32
-        } else {
-          ptr = GetInstanceProcAddr(hinstance, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            GetPhysicalDeviceWin32PresentationSupportKHR_panic as extern "system" fn (physicalDevice: PhysicalDevice, queueFamilyIndex: u32) -> Bool32
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkCreateDebugReportCallbackEXT").unwrap();
-        let CreateDebugReportCallbackEXT_ptr = if feature < VERSION_1_0 {
-          CreateDebugReportCallbackEXT_panic as extern "system" fn (instance: Instance, pCreateInfo: *const DebugReportCallbackCreateInfoEXT, pAllocator: *const AllocationCallbacks, pCallback: *mut DebugReportCallbackEXT) -> Result
-        } else {
-          ptr = GetInstanceProcAddr(hinstance, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            CreateDebugReportCallbackEXT_panic as extern "system" fn (instance: Instance, pCreateInfo: *const DebugReportCallbackCreateInfoEXT, pAllocator: *const AllocationCallbacks, pCallback: *mut DebugReportCallbackEXT) -> Result
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkDestroyDebugReportCallbackEXT").unwrap();
-        let DestroyDebugReportCallbackEXT_ptr = if feature < VERSION_1_0 {
-          DestroyDebugReportCallbackEXT_panic as extern "system" fn (instance: Instance, callback: DebugReportCallbackEXT, pAllocator: *const AllocationCallbacks)
-        } else {
-          ptr = GetInstanceProcAddr(hinstance, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            DestroyDebugReportCallbackEXT_panic as extern "system" fn (instance: Instance, callback: DebugReportCallbackEXT, pAllocator: *const AllocationCallbacks)
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkDebugReportMessageEXT").unwrap();
-        let DebugReportMessageEXT_ptr = if feature < VERSION_1_0 {
-          DebugReportMessageEXT_panic as extern "system" fn (instance: Instance, flags: DebugReportFlagsEXT, objectType: DebugReportObjectTypeEXT, object: u64, location: usize, messageCode: i32, pLayerPrefix: *const c_char, pMessage: *const c_char)
-        } else {
-          ptr = GetInstanceProcAddr(hinstance, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            DebugReportMessageEXT_panic as extern "system" fn (instance: Instance, flags: DebugReportFlagsEXT, objectType: DebugReportObjectTypeEXT, object: u64, location: usize, messageCode: i32, pLayerPrefix: *const c_char, pMessage: *const c_char)
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkGetPhysicalDeviceExternalImageFormatPropertiesNV").unwrap();
-        let GetPhysicalDeviceExternalImageFormatPropertiesNV_ptr = if feature < VERSION_1_0 {
-          GetPhysicalDeviceExternalImageFormatPropertiesNV_panic as extern "system" fn (physicalDevice: PhysicalDevice, format: Format, typ: ImageType, tiling: ImageTiling, usage: ImageUsageFlags, flags: ImageCreateFlags, externalHandleType: ExternalMemoryHandleTypeFlagsNV, pExternalImageFormatProperties: *mut ExternalImageFormatPropertiesNV) -> Result
-        } else {
-          ptr = GetInstanceProcAddr(hinstance, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            GetPhysicalDeviceExternalImageFormatPropertiesNV_panic as extern "system" fn (physicalDevice: PhysicalDevice, format: Format, typ: ImageType, tiling: ImageTiling, usage: ImageUsageFlags, flags: ImageCreateFlags, externalHandleType: ExternalMemoryHandleTypeFlagsNV, pExternalImageFormatProperties: *mut ExternalImageFormatPropertiesNV) -> Result
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkCreateViSurfaceNN").unwrap();
-        let CreateViSurfaceNN_ptr = if feature < VERSION_1_0 {
-          CreateViSurfaceNN_panic as extern "system" fn (instance: Instance, pCreateInfo: *const ViSurfaceCreateInfoNN, pAllocator: *const AllocationCallbacks, pSurface: *mut SurfaceKHR) -> Result
-        } else {
-          ptr = GetInstanceProcAddr(hinstance, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            CreateViSurfaceNN_panic as extern "system" fn (instance: Instance, pCreateInfo: *const ViSurfaceCreateInfoNN, pAllocator: *const AllocationCallbacks, pSurface: *mut SurfaceKHR) -> Result
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkReleaseDisplayEXT").unwrap();
-        let ReleaseDisplayEXT_ptr = if feature < VERSION_1_0 {
-          ReleaseDisplayEXT_panic as extern "system" fn (physicalDevice: PhysicalDevice, display: DisplayKHR) -> Result
-        } else {
-          ptr = GetInstanceProcAddr(hinstance, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            ReleaseDisplayEXT_panic as extern "system" fn (physicalDevice: PhysicalDevice, display: DisplayKHR) -> Result
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkAcquireXlibDisplayEXT").unwrap();
-        let AcquireXlibDisplayEXT_ptr = if feature < VERSION_1_0 {
-          AcquireXlibDisplayEXT_panic as extern "system" fn (physicalDevice: PhysicalDevice, dpy: *mut Display, display: DisplayKHR) -> Result
-        } else {
-          ptr = GetInstanceProcAddr(hinstance, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            AcquireXlibDisplayEXT_panic as extern "system" fn (physicalDevice: PhysicalDevice, dpy: *mut Display, display: DisplayKHR) -> Result
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkGetRandROutputDisplayEXT").unwrap();
-        let GetRandROutputDisplayEXT_ptr = if feature < VERSION_1_0 {
-          GetRandROutputDisplayEXT_panic as extern "system" fn (physicalDevice: PhysicalDevice, dpy: *mut Display, rrOutput: RROutput, pDisplay: *mut DisplayKHR) -> Result
-        } else {
-          ptr = GetInstanceProcAddr(hinstance, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            GetRandROutputDisplayEXT_panic as extern "system" fn (physicalDevice: PhysicalDevice, dpy: *mut Display, rrOutput: RROutput, pDisplay: *mut DisplayKHR) -> Result
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkGetPhysicalDeviceSurfaceCapabilities2EXT").unwrap();
-        let GetPhysicalDeviceSurfaceCapabilities2EXT_ptr = if feature < VERSION_1_0 {
-          GetPhysicalDeviceSurfaceCapabilities2EXT_panic as extern "system" fn (physicalDevice: PhysicalDevice, surface: SurfaceKHR, pSurfaceCapabilities: *mut SurfaceCapabilities2EXT) -> Result
-        } else {
-          ptr = GetInstanceProcAddr(hinstance, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            GetPhysicalDeviceSurfaceCapabilities2EXT_panic as extern "system" fn (physicalDevice: PhysicalDevice, surface: SurfaceKHR, pSurfaceCapabilities: *mut SurfaceCapabilities2EXT) -> Result
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkGetPhysicalDeviceSurfaceCapabilities2KHR").unwrap();
-        let GetPhysicalDeviceSurfaceCapabilities2KHR_ptr = if feature < VERSION_1_0 {
-          GetPhysicalDeviceSurfaceCapabilities2KHR_panic as extern "system" fn (physicalDevice: PhysicalDevice, pSurfaceInfo: *const PhysicalDeviceSurfaceInfo2KHR, pSurfaceCapabilities: *mut SurfaceCapabilities2KHR) -> Result
-        } else {
-          ptr = GetInstanceProcAddr(hinstance, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            GetPhysicalDeviceSurfaceCapabilities2KHR_panic as extern "system" fn (physicalDevice: PhysicalDevice, pSurfaceInfo: *const PhysicalDeviceSurfaceInfo2KHR, pSurfaceCapabilities: *mut SurfaceCapabilities2KHR) -> Result
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkGetPhysicalDeviceSurfaceFormats2KHR").unwrap();
-        let GetPhysicalDeviceSurfaceFormats2KHR_ptr = if feature < VERSION_1_0 {
-          GetPhysicalDeviceSurfaceFormats2KHR_panic as extern "system" fn (physicalDevice: PhysicalDevice, pSurfaceInfo: *const PhysicalDeviceSurfaceInfo2KHR, pSurfaceFormatCount: *mut u32, pSurfaceFormats: *mut SurfaceFormat2KHR) -> Result
-        } else {
-          ptr = GetInstanceProcAddr(hinstance, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            GetPhysicalDeviceSurfaceFormats2KHR_panic as extern "system" fn (physicalDevice: PhysicalDevice, pSurfaceInfo: *const PhysicalDeviceSurfaceInfo2KHR, pSurfaceFormatCount: *mut u32, pSurfaceFormats: *mut SurfaceFormat2KHR) -> Result
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkGetPhysicalDeviceDisplayProperties2KHR").unwrap();
-        let GetPhysicalDeviceDisplayProperties2KHR_ptr = if feature < VERSION_1_0 {
-          GetPhysicalDeviceDisplayProperties2KHR_panic as extern "system" fn (physicalDevice: PhysicalDevice, pPropertyCount: *mut u32, pProperties: *mut DisplayProperties2KHR) -> Result
-        } else {
-          ptr = GetInstanceProcAddr(hinstance, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            GetPhysicalDeviceDisplayProperties2KHR_panic as extern "system" fn (physicalDevice: PhysicalDevice, pPropertyCount: *mut u32, pProperties: *mut DisplayProperties2KHR) -> Result
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkGetPhysicalDeviceDisplayPlaneProperties2KHR").unwrap();
-        let GetPhysicalDeviceDisplayPlaneProperties2KHR_ptr = if feature < VERSION_1_0 {
-          GetPhysicalDeviceDisplayPlaneProperties2KHR_panic as extern "system" fn (physicalDevice: PhysicalDevice, pPropertyCount: *mut u32, pProperties: *mut DisplayPlaneProperties2KHR) -> Result
-        } else {
-          ptr = GetInstanceProcAddr(hinstance, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            GetPhysicalDeviceDisplayPlaneProperties2KHR_panic as extern "system" fn (physicalDevice: PhysicalDevice, pPropertyCount: *mut u32, pProperties: *mut DisplayPlaneProperties2KHR) -> Result
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkGetDisplayModeProperties2KHR").unwrap();
-        let GetDisplayModeProperties2KHR_ptr = if feature < VERSION_1_0 {
-          GetDisplayModeProperties2KHR_panic as extern "system" fn (physicalDevice: PhysicalDevice, display: DisplayKHR, pPropertyCount: *mut u32, pProperties: *mut DisplayModeProperties2KHR) -> Result
-        } else {
-          ptr = GetInstanceProcAddr(hinstance, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            GetDisplayModeProperties2KHR_panic as extern "system" fn (physicalDevice: PhysicalDevice, display: DisplayKHR, pPropertyCount: *mut u32, pProperties: *mut DisplayModeProperties2KHR) -> Result
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkGetDisplayPlaneCapabilities2KHR").unwrap();
-        let GetDisplayPlaneCapabilities2KHR_ptr = if feature < VERSION_1_0 {
-          GetDisplayPlaneCapabilities2KHR_panic as extern "system" fn (physicalDevice: PhysicalDevice, pDisplayPlaneInfo: *const DisplayPlaneInfo2KHR, pCapabilities: *mut DisplayPlaneCapabilities2KHR) -> Result
-        } else {
-          ptr = GetInstanceProcAddr(hinstance, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            GetDisplayPlaneCapabilities2KHR_panic as extern "system" fn (physicalDevice: PhysicalDevice, pDisplayPlaneInfo: *const DisplayPlaneInfo2KHR, pCapabilities: *mut DisplayPlaneCapabilities2KHR) -> Result
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkCreateIOSSurfaceMVK").unwrap();
-        let CreateIOSSurfaceMVK_ptr = if feature < VERSION_1_0 {
-          CreateIOSSurfaceMVK_panic as extern "system" fn (instance: Instance, pCreateInfo: *const IOSSurfaceCreateInfoMVK, pAllocator: *const AllocationCallbacks, pSurface: *mut SurfaceKHR) -> Result
-        } else {
-          ptr = GetInstanceProcAddr(hinstance, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            CreateIOSSurfaceMVK_panic as extern "system" fn (instance: Instance, pCreateInfo: *const IOSSurfaceCreateInfoMVK, pAllocator: *const AllocationCallbacks, pSurface: *mut SurfaceKHR) -> Result
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkCreateMacOSSurfaceMVK").unwrap();
-        let CreateMacOSSurfaceMVK_ptr = if feature < VERSION_1_0 {
-          CreateMacOSSurfaceMVK_panic as extern "system" fn (instance: Instance, pCreateInfo: *const MacOSSurfaceCreateInfoMVK, pAllocator: *const AllocationCallbacks, pSurface: *mut SurfaceKHR) -> Result
-        } else {
-          ptr = GetInstanceProcAddr(hinstance, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            CreateMacOSSurfaceMVK_panic as extern "system" fn (instance: Instance, pCreateInfo: *const MacOSSurfaceCreateInfoMVK, pAllocator: *const AllocationCallbacks, pSurface: *mut SurfaceKHR) -> Result
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkSetDebugUtilsObjectNameEXT").unwrap();
-        let SetDebugUtilsObjectNameEXT_ptr = if feature < VERSION_1_0 {
-          SetDebugUtilsObjectNameEXT_panic as extern "system" fn (device: Device, pNameInfo: *const DebugUtilsObjectNameInfoEXT) -> Result
-        } else {
-          ptr = GetInstanceProcAddr(hinstance, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            SetDebugUtilsObjectNameEXT_panic as extern "system" fn (device: Device, pNameInfo: *const DebugUtilsObjectNameInfoEXT) -> Result
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkSetDebugUtilsObjectTagEXT").unwrap();
-        let SetDebugUtilsObjectTagEXT_ptr = if feature < VERSION_1_0 {
-          SetDebugUtilsObjectTagEXT_panic as extern "system" fn (device: Device, pTagInfo: *const DebugUtilsObjectTagInfoEXT) -> Result
-        } else {
-          ptr = GetInstanceProcAddr(hinstance, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            SetDebugUtilsObjectTagEXT_panic as extern "system" fn (device: Device, pTagInfo: *const DebugUtilsObjectTagInfoEXT) -> Result
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkQueueBeginDebugUtilsLabelEXT").unwrap();
-        let QueueBeginDebugUtilsLabelEXT_ptr = if feature < VERSION_1_0 {
-          QueueBeginDebugUtilsLabelEXT_panic as extern "system" fn (queue: Queue, pLabelInfo: *const DebugUtilsLabelEXT)
-        } else {
-          ptr = GetInstanceProcAddr(hinstance, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            QueueBeginDebugUtilsLabelEXT_panic as extern "system" fn (queue: Queue, pLabelInfo: *const DebugUtilsLabelEXT)
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkQueueEndDebugUtilsLabelEXT").unwrap();
-        let QueueEndDebugUtilsLabelEXT_ptr = if feature < VERSION_1_0 {
-          QueueEndDebugUtilsLabelEXT_panic as extern "system" fn (queue: Queue)
-        } else {
-          ptr = GetInstanceProcAddr(hinstance, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            QueueEndDebugUtilsLabelEXT_panic as extern "system" fn (queue: Queue)
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkQueueInsertDebugUtilsLabelEXT").unwrap();
-        let QueueInsertDebugUtilsLabelEXT_ptr = if feature < VERSION_1_0 {
-          QueueInsertDebugUtilsLabelEXT_panic as extern "system" fn (queue: Queue, pLabelInfo: *const DebugUtilsLabelEXT)
-        } else {
-          ptr = GetInstanceProcAddr(hinstance, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            QueueInsertDebugUtilsLabelEXT_panic as extern "system" fn (queue: Queue, pLabelInfo: *const DebugUtilsLabelEXT)
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkCmdBeginDebugUtilsLabelEXT").unwrap();
-        let CmdBeginDebugUtilsLabelEXT_ptr = if feature < VERSION_1_0 {
-          CmdBeginDebugUtilsLabelEXT_panic as extern "system" fn (commandBuffer: CommandBuffer, pLabelInfo: *const DebugUtilsLabelEXT)
-        } else {
-          ptr = GetInstanceProcAddr(hinstance, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            CmdBeginDebugUtilsLabelEXT_panic as extern "system" fn (commandBuffer: CommandBuffer, pLabelInfo: *const DebugUtilsLabelEXT)
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkCmdEndDebugUtilsLabelEXT").unwrap();
-        let CmdEndDebugUtilsLabelEXT_ptr = if feature < VERSION_1_0 {
-          CmdEndDebugUtilsLabelEXT_panic as extern "system" fn (commandBuffer: CommandBuffer)
-        } else {
-          ptr = GetInstanceProcAddr(hinstance, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            CmdEndDebugUtilsLabelEXT_panic as extern "system" fn (commandBuffer: CommandBuffer)
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkCmdInsertDebugUtilsLabelEXT").unwrap();
-        let CmdInsertDebugUtilsLabelEXT_ptr = if feature < VERSION_1_0 {
-          CmdInsertDebugUtilsLabelEXT_panic as extern "system" fn (commandBuffer: CommandBuffer, pLabelInfo: *const DebugUtilsLabelEXT)
-        } else {
-          ptr = GetInstanceProcAddr(hinstance, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            CmdInsertDebugUtilsLabelEXT_panic as extern "system" fn (commandBuffer: CommandBuffer, pLabelInfo: *const DebugUtilsLabelEXT)
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkCreateDebugUtilsMessengerEXT").unwrap();
-        let CreateDebugUtilsMessengerEXT_ptr = if feature < VERSION_1_0 {
-          CreateDebugUtilsMessengerEXT_panic as extern "system" fn (instance: Instance, pCreateInfo: *const DebugUtilsMessengerCreateInfoEXT, pAllocator: *const AllocationCallbacks, pMessenger: *mut DebugUtilsMessengerEXT) -> Result
-        } else {
-          ptr = GetInstanceProcAddr(hinstance, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            CreateDebugUtilsMessengerEXT_panic as extern "system" fn (instance: Instance, pCreateInfo: *const DebugUtilsMessengerCreateInfoEXT, pAllocator: *const AllocationCallbacks, pMessenger: *mut DebugUtilsMessengerEXT) -> Result
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkDestroyDebugUtilsMessengerEXT").unwrap();
-        let DestroyDebugUtilsMessengerEXT_ptr = if feature < VERSION_1_0 {
-          DestroyDebugUtilsMessengerEXT_panic as extern "system" fn (instance: Instance, messenger: DebugUtilsMessengerEXT, pAllocator: *const AllocationCallbacks)
-        } else {
-          ptr = GetInstanceProcAddr(hinstance, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            DestroyDebugUtilsMessengerEXT_panic as extern "system" fn (instance: Instance, messenger: DebugUtilsMessengerEXT, pAllocator: *const AllocationCallbacks)
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkSubmitDebugUtilsMessageEXT").unwrap();
-        let SubmitDebugUtilsMessageEXT_ptr = if feature < VERSION_1_0 {
-          SubmitDebugUtilsMessageEXT_panic as extern "system" fn (instance: Instance, messageSeverity: DebugUtilsMessageSeverityFlagBitsEXT, messageTypes: DebugUtilsMessageTypeFlagsEXT, pCallbackData: *const DebugUtilsMessengerCallbackDataEXT)
-        } else {
-          ptr = GetInstanceProcAddr(hinstance, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            SubmitDebugUtilsMessageEXT_panic as extern "system" fn (instance: Instance, messageSeverity: DebugUtilsMessageSeverityFlagBitsEXT, messageTypes: DebugUtilsMessageTypeFlagsEXT, pCallbackData: *const DebugUtilsMessengerCallbackDataEXT)
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkCreateImagePipeSurfaceFUCHSIA").unwrap();
-        let CreateImagePipeSurfaceFUCHSIA_ptr = if feature < VERSION_1_0 {
-          CreateImagePipeSurfaceFUCHSIA_panic as extern "system" fn (instance: Instance, pCreateInfo: *const ImagePipeSurfaceCreateInfoFUCHSIA, pAllocator: *const AllocationCallbacks, pSurface: *mut SurfaceKHR) -> Result
-        } else {
-          ptr = GetInstanceProcAddr(hinstance, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            CreateImagePipeSurfaceFUCHSIA_panic as extern "system" fn (instance: Instance, pCreateInfo: *const ImagePipeSurfaceCreateInfoFUCHSIA, pAllocator: *const AllocationCallbacks, pSurface: *mut SurfaceKHR) -> Result
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-
-      InstanceExtensions {
-        hinstance,
-        DestroySurfaceKHR_ptr,
-        GetPhysicalDeviceSurfaceSupportKHR_ptr,
-        GetPhysicalDeviceSurfaceCapabilitiesKHR_ptr,
-        GetPhysicalDeviceSurfaceFormatsKHR_ptr,
-        GetPhysicalDeviceSurfacePresentModesKHR_ptr,
-        GetPhysicalDeviceDisplayPropertiesKHR_ptr,
-        GetPhysicalDeviceDisplayPlanePropertiesKHR_ptr,
-        GetDisplayPlaneSupportedDisplaysKHR_ptr,
-        GetDisplayModePropertiesKHR_ptr,
-        CreateDisplayModeKHR_ptr,
-        GetDisplayPlaneCapabilitiesKHR_ptr,
-        CreateDisplayPlaneSurfaceKHR_ptr,
-        CreateXlibSurfaceKHR_ptr,
-        GetPhysicalDeviceXlibPresentationSupportKHR_ptr,
-        CreateXcbSurfaceKHR_ptr,
-        GetPhysicalDeviceXcbPresentationSupportKHR_ptr,
-        CreateWaylandSurfaceKHR_ptr,
-        GetPhysicalDeviceWaylandPresentationSupportKHR_ptr,
-        CreateAndroidSurfaceKHR_ptr,
-        CreateWin32SurfaceKHR_ptr,
-        GetPhysicalDeviceWin32PresentationSupportKHR_ptr,
-        CreateDebugReportCallbackEXT_ptr,
-        DestroyDebugReportCallbackEXT_ptr,
-        DebugReportMessageEXT_ptr,
-        GetPhysicalDeviceExternalImageFormatPropertiesNV_ptr,
-        CreateViSurfaceNN_ptr,
-        ReleaseDisplayEXT_ptr,
-        AcquireXlibDisplayEXT_ptr,
-        GetRandROutputDisplayEXT_ptr,
-        GetPhysicalDeviceSurfaceCapabilities2EXT_ptr,
-        GetPhysicalDeviceSurfaceCapabilities2KHR_ptr,
-        GetPhysicalDeviceSurfaceFormats2KHR_ptr,
-        GetPhysicalDeviceDisplayProperties2KHR_ptr,
-        GetPhysicalDeviceDisplayPlaneProperties2KHR_ptr,
-        GetDisplayModeProperties2KHR_ptr,
-        GetDisplayPlaneCapabilities2KHR_ptr,
-        CreateIOSSurfaceMVK_ptr,
-        CreateMacOSSurfaceMVK_ptr,
-        SetDebugUtilsObjectNameEXT_ptr,
-        SetDebugUtilsObjectTagEXT_ptr,
-        QueueBeginDebugUtilsLabelEXT_ptr,
-        QueueEndDebugUtilsLabelEXT_ptr,
-        QueueInsertDebugUtilsLabelEXT_ptr,
-        CmdBeginDebugUtilsLabelEXT_ptr,
-        CmdEndDebugUtilsLabelEXT_ptr,
-        CmdInsertDebugUtilsLabelEXT_ptr,
-        CreateDebugUtilsMessengerEXT_ptr,
-        DestroyDebugUtilsMessengerEXT_ptr,
-        SubmitDebugUtilsMessageEXT_ptr,
-        CreateImagePipeSurfaceFUCHSIA_ptr,
-      }
-    }
-  }
-
-
-  /// Retrieve the vulkan handle of the InstanceExtensions
-  pub fn get_handle(&self) -> Instance {
-    self.hinstance
-  }
-
   #[doc(hidden)] pub fn DestroySurfaceKHR(&self, instance: Instance, surface: SurfaceKHR, pAllocator: *const AllocationCallbacks){
     (self.DestroySurfaceKHR_ptr)(instance, surface, pAllocator)
   }
@@ -10975,1855 +11144,6 @@ impl InstanceExtensions {
   #[doc(hidden)] pub fn CreateImagePipeSurfaceFUCHSIA(&self, instance: Instance, pCreateInfo: *const ImagePipeSurfaceCreateInfoFUCHSIA, pAllocator: *const AllocationCallbacks, pSurface: *mut SurfaceKHR) -> Result{
     (self.CreateImagePipeSurfaceFUCHSIA_ptr)(instance, pCreateInfo, pAllocator, pSurface)
   }
-}
-
-
-/// Vulkan device extensions
-///
-/// This struct is used to initialize vulkan device extensions and holds function pointers to them.
-/// Function pointers are initialized during construction.
-#[derive(Clone,Copy)]pub struct DeviceExtensions {
-  #[allow(dead_code)]
-  hdevice: Device,
-  CreateSwapchainKHR_ptr: extern "system" fn (device: Device, pCreateInfo: *const SwapchainCreateInfoKHR, pAllocator: *const AllocationCallbacks, pSwapchain: *mut SwapchainKHR) -> Result,
-  DestroySwapchainKHR_ptr: extern "system" fn (device: Device, swapchain: SwapchainKHR, pAllocator: *const AllocationCallbacks),
-  GetSwapchainImagesKHR_ptr: extern "system" fn (device: Device, swapchain: SwapchainKHR, pSwapchainImageCount: *mut u32, pSwapchainImages: *mut Image) -> Result,
-  AcquireNextImageKHR_ptr: extern "system" fn (device: Device, swapchain: SwapchainKHR, timeout: u64, semaphore: Semaphore, fence: Fence, pImageIndex: *mut u32) -> Result,
-  QueuePresentKHR_ptr: extern "system" fn (queue: Queue, pPresentInfo: *const PresentInfoKHR) -> Result,
-  GetDeviceGroupPresentCapabilitiesKHR_ptr: extern "system" fn (device: Device, pDeviceGroupPresentCapabilities: *mut DeviceGroupPresentCapabilitiesKHR) -> Result,
-  GetDeviceGroupSurfacePresentModesKHR_ptr: extern "system" fn (device: Device, surface: SurfaceKHR, pModes: *mut DeviceGroupPresentModeFlagsKHR) -> Result,
-  GetPhysicalDevicePresentRectanglesKHR_ptr: extern "system" fn (physicalDevice: PhysicalDevice, surface: SurfaceKHR, pRectCount: *mut u32, pRects: *mut Rect2D) -> Result,
-  AcquireNextImage2KHR_ptr: extern "system" fn (device: Device, pAcquireInfo: *const AcquireNextImageInfoKHR, pImageIndex: *mut u32) -> Result,
-  CreateSharedSwapchainsKHR_ptr: extern "system" fn (device: Device, swapchainCount: u32, pCreateInfos: *const SwapchainCreateInfoKHR, pAllocator: *const AllocationCallbacks, pSwapchains: *mut SwapchainKHR) -> Result,
-  DebugMarkerSetObjectTagEXT_ptr: extern "system" fn (device: Device, pTagInfo: *const DebugMarkerObjectTagInfoEXT) -> Result,
-  DebugMarkerSetObjectNameEXT_ptr: extern "system" fn (device: Device, pNameInfo: *const DebugMarkerObjectNameInfoEXT) -> Result,
-  CmdDebugMarkerBeginEXT_ptr: extern "system" fn (commandBuffer: CommandBuffer, pMarkerInfo: *const DebugMarkerMarkerInfoEXT),
-  CmdDebugMarkerEndEXT_ptr: extern "system" fn (commandBuffer: CommandBuffer),
-  CmdDebugMarkerInsertEXT_ptr: extern "system" fn (commandBuffer: CommandBuffer, pMarkerInfo: *const DebugMarkerMarkerInfoEXT),
-  CmdBindTransformFeedbackBuffersEXT_ptr: extern "system" fn (commandBuffer: CommandBuffer, firstBinding: u32, bindingCount: u32, pBuffers: *const Buffer, pOffsets: *const DeviceSize, pSizes: *const DeviceSize),
-  CmdBeginTransformFeedbackEXT_ptr: extern "system" fn (commandBuffer: CommandBuffer, firstCounterBuffer: u32, counterBufferCount: u32, pCounterBuffers: *const Buffer, pCounterBufferOffsets: *const DeviceSize),
-  CmdEndTransformFeedbackEXT_ptr: extern "system" fn (commandBuffer: CommandBuffer, firstCounterBuffer: u32, counterBufferCount: u32, pCounterBuffers: *const Buffer, pCounterBufferOffsets: *const DeviceSize),
-  CmdBeginQueryIndexedEXT_ptr: extern "system" fn (commandBuffer: CommandBuffer, queryPool: QueryPool, query: u32, flags: QueryControlFlags, index: u32),
-  CmdEndQueryIndexedEXT_ptr: extern "system" fn (commandBuffer: CommandBuffer, queryPool: QueryPool, query: u32, index: u32),
-  CmdDrawIndirectByteCountEXT_ptr: extern "system" fn (commandBuffer: CommandBuffer, instanceCount: u32, firstInstance: u32, counterBuffer: Buffer, counterBufferOffset: DeviceSize, counterOffset: u32, vertexStride: u32),
-  CmdDrawIndirectCountAMD_ptr: extern "system" fn (commandBuffer: CommandBuffer, buffer: Buffer, offset: DeviceSize, countBuffer: Buffer, countBufferOffset: DeviceSize, maxDrawCount: u32, stride: u32),
-  CmdDrawIndexedIndirectCountAMD_ptr: extern "system" fn (commandBuffer: CommandBuffer, buffer: Buffer, offset: DeviceSize, countBuffer: Buffer, countBufferOffset: DeviceSize, maxDrawCount: u32, stride: u32),
-  GetShaderInfoAMD_ptr: extern "system" fn (device: Device, pipeline: Pipeline, shaderStage: ShaderStageFlagBits, infoType: ShaderInfoTypeAMD, pInfoSize: *mut usize, pInfo: *mut c_void) -> Result,
-  GetMemoryWin32HandleNV_ptr: extern "system" fn (device: Device, memory: DeviceMemory, handleType: ExternalMemoryHandleTypeFlagsNV, pHandle: *mut HANDLE) -> Result,
-  GetMemoryWin32HandleKHR_ptr: extern "system" fn (device: Device, pGetWin32HandleInfo: *const MemoryGetWin32HandleInfoKHR, pHandle: *mut HANDLE) -> Result,
-  GetMemoryWin32HandlePropertiesKHR_ptr: extern "system" fn (device: Device, handleType: ExternalMemoryHandleTypeFlagBits, handle: HANDLE, pMemoryWin32HandleProperties: *mut MemoryWin32HandlePropertiesKHR) -> Result,
-  GetMemoryFdKHR_ptr: extern "system" fn (device: Device, pGetFdInfo: *const MemoryGetFdInfoKHR, pFd: *mut i32) -> Result,
-  GetMemoryFdPropertiesKHR_ptr: extern "system" fn (device: Device, handleType: ExternalMemoryHandleTypeFlagBits, fd: i32, pMemoryFdProperties: *mut MemoryFdPropertiesKHR) -> Result,
-  ImportSemaphoreWin32HandleKHR_ptr: extern "system" fn (device: Device, pImportSemaphoreWin32HandleInfo: *const ImportSemaphoreWin32HandleInfoKHR) -> Result,
-  GetSemaphoreWin32HandleKHR_ptr: extern "system" fn (device: Device, pGetWin32HandleInfo: *const SemaphoreGetWin32HandleInfoKHR, pHandle: *mut HANDLE) -> Result,
-  ImportSemaphoreFdKHR_ptr: extern "system" fn (device: Device, pImportSemaphoreFdInfo: *const ImportSemaphoreFdInfoKHR) -> Result,
-  GetSemaphoreFdKHR_ptr: extern "system" fn (device: Device, pGetFdInfo: *const SemaphoreGetFdInfoKHR, pFd: *mut i32) -> Result,
-  CmdPushDescriptorSetKHR_ptr: extern "system" fn (commandBuffer: CommandBuffer, pipelineBindPoint: PipelineBindPoint, layout: PipelineLayout, set: u32, descriptorWriteCount: u32, pDescriptorWrites: *const WriteDescriptorSet),
-  CmdPushDescriptorSetWithTemplateKHR_ptr: extern "system" fn (commandBuffer: CommandBuffer, descriptorUpdateTemplate: DescriptorUpdateTemplate, layout: PipelineLayout, set: u32, pData: *const c_void),
-  CmdBeginConditionalRenderingEXT_ptr: extern "system" fn (commandBuffer: CommandBuffer, pConditionalRenderingBegin: *const ConditionalRenderingBeginInfoEXT),
-  CmdEndConditionalRenderingEXT_ptr: extern "system" fn (commandBuffer: CommandBuffer),
-  CmdProcessCommandsNVX_ptr: extern "system" fn (commandBuffer: CommandBuffer, pProcessCommandsInfo: *const CmdProcessCommandsInfoNVX),
-  CmdReserveSpaceForCommandsNVX_ptr: extern "system" fn (commandBuffer: CommandBuffer, pReserveSpaceInfo: *const CmdReserveSpaceForCommandsInfoNVX),
-  CreateIndirectCommandsLayoutNVX_ptr: extern "system" fn (device: Device, pCreateInfo: *const IndirectCommandsLayoutCreateInfoNVX, pAllocator: *const AllocationCallbacks, pIndirectCommandsLayout: *mut IndirectCommandsLayoutNVX) -> Result,
-  DestroyIndirectCommandsLayoutNVX_ptr: extern "system" fn (device: Device, indirectCommandsLayout: IndirectCommandsLayoutNVX, pAllocator: *const AllocationCallbacks),
-  CreateObjectTableNVX_ptr: extern "system" fn (device: Device, pCreateInfo: *const ObjectTableCreateInfoNVX, pAllocator: *const AllocationCallbacks, pObjectTable: *mut ObjectTableNVX) -> Result,
-  DestroyObjectTableNVX_ptr: extern "system" fn (device: Device, objectTable: ObjectTableNVX, pAllocator: *const AllocationCallbacks),
-  RegisterObjectsNVX_ptr: extern "system" fn (device: Device, objectTable: ObjectTableNVX, objectCount: u32, ppObjectTableEntries: *const *const ObjectTableEntryNVX, pObjectIndices: *const u32) -> Result,
-  UnregisterObjectsNVX_ptr: extern "system" fn (device: Device, objectTable: ObjectTableNVX, objectCount: u32, pObjectEntryTypes: *const ObjectEntryTypeNVX, pObjectIndices: *const u32) -> Result,
-  GetPhysicalDeviceGeneratedCommandsPropertiesNVX_ptr: extern "system" fn (physicalDevice: PhysicalDevice, pFeatures: *mut DeviceGeneratedCommandsFeaturesNVX, pLimits: *mut DeviceGeneratedCommandsLimitsNVX),
-  CmdSetViewportWScalingNV_ptr: extern "system" fn (commandBuffer: CommandBuffer, firstViewport: u32, viewportCount: u32, pViewportWScalings: *const ViewportWScalingNV),
-  DisplayPowerControlEXT_ptr: extern "system" fn (device: Device, display: DisplayKHR, pDisplayPowerInfo: *const DisplayPowerInfoEXT) -> Result,
-  RegisterDeviceEventEXT_ptr: extern "system" fn (device: Device, pDeviceEventInfo: *const DeviceEventInfoEXT, pAllocator: *const AllocationCallbacks, pFence: *mut Fence) -> Result,
-  RegisterDisplayEventEXT_ptr: extern "system" fn (device: Device, display: DisplayKHR, pDisplayEventInfo: *const DisplayEventInfoEXT, pAllocator: *const AllocationCallbacks, pFence: *mut Fence) -> Result,
-  GetSwapchainCounterEXT_ptr: extern "system" fn (device: Device, swapchain: SwapchainKHR, counter: SurfaceCounterFlagBitsEXT, pCounterValue: *mut u64) -> Result,
-  GetRefreshCycleDurationGOOGLE_ptr: extern "system" fn (device: Device, swapchain: SwapchainKHR, pDisplayTimingProperties: *mut RefreshCycleDurationGOOGLE) -> Result,
-  GetPastPresentationTimingGOOGLE_ptr: extern "system" fn (device: Device, swapchain: SwapchainKHR, pPresentationTimingCount: *mut u32, pPresentationTimings: *mut PastPresentationTimingGOOGLE) -> Result,
-  CmdSetDiscardRectangleEXT_ptr: extern "system" fn (commandBuffer: CommandBuffer, firstDiscardRectangle: u32, discardRectangleCount: u32, pDiscardRectangles: *const Rect2D),
-  SetHdrMetadataEXT_ptr: extern "system" fn (device: Device, swapchainCount: u32, pSwapchains: *const SwapchainKHR, pMetadata: *const HdrMetadataEXT),
-  CreateRenderPass2KHR_ptr: extern "system" fn (device: Device, pCreateInfo: *const RenderPassCreateInfo2KHR, pAllocator: *const AllocationCallbacks, pRenderPass: *mut RenderPass) -> Result,
-  CmdBeginRenderPass2KHR_ptr: extern "system" fn (commandBuffer: CommandBuffer, pRenderPassBegin: *const RenderPassBeginInfo, pSubpassBeginInfo: *const SubpassBeginInfoKHR),
-  CmdNextSubpass2KHR_ptr: extern "system" fn (commandBuffer: CommandBuffer, pSubpassBeginInfo: *const SubpassBeginInfoKHR, pSubpassEndInfo: *const SubpassEndInfoKHR),
-  CmdEndRenderPass2KHR_ptr: extern "system" fn (commandBuffer: CommandBuffer, pSubpassEndInfo: *const SubpassEndInfoKHR),
-  GetSwapchainStatusKHR_ptr: extern "system" fn (device: Device, swapchain: SwapchainKHR) -> Result,
-  ImportFenceWin32HandleKHR_ptr: extern "system" fn (device: Device, pImportFenceWin32HandleInfo: *const ImportFenceWin32HandleInfoKHR) -> Result,
-  GetFenceWin32HandleKHR_ptr: extern "system" fn (device: Device, pGetWin32HandleInfo: *const FenceGetWin32HandleInfoKHR, pHandle: *mut HANDLE) -> Result,
-  ImportFenceFdKHR_ptr: extern "system" fn (device: Device, pImportFenceFdInfo: *const ImportFenceFdInfoKHR) -> Result,
-  GetFenceFdKHR_ptr: extern "system" fn (device: Device, pGetFdInfo: *const FenceGetFdInfoKHR, pFd: *mut i32) -> Result,
-  GetAndroidHardwareBufferPropertiesANDROID_ptr: extern "system" fn (device: Device, buffer: *const AHardwareBuffer, pProperties: *mut AndroidHardwareBufferPropertiesANDROID) -> Result,
-  GetMemoryAndroidHardwareBufferANDROID_ptr: extern "system" fn (device: Device, pInfo: *const MemoryGetAndroidHardwareBufferInfoANDROID, pBuffer: *mut *mut AHardwareBuffer) -> Result,
-  CmdSetSampleLocationsEXT_ptr: extern "system" fn (commandBuffer: CommandBuffer, pSampleLocationsInfo: *const SampleLocationsInfoEXT),
-  GetPhysicalDeviceMultisamplePropertiesEXT_ptr: extern "system" fn (physicalDevice: PhysicalDevice, samples: SampleCountFlagBits, pMultisampleProperties: *mut MultisamplePropertiesEXT),
-  GetImageDrmFormatModifierPropertiesEXT_ptr: extern "system" fn (device: Device, image: Image, pProperties: *mut ImageDrmFormatModifierPropertiesEXT) -> Result,
-  CreateValidationCacheEXT_ptr: extern "system" fn (device: Device, pCreateInfo: *const ValidationCacheCreateInfoEXT, pAllocator: *const AllocationCallbacks, pValidationCache: *mut ValidationCacheEXT) -> Result,
-  DestroyValidationCacheEXT_ptr: extern "system" fn (device: Device, validationCache: ValidationCacheEXT, pAllocator: *const AllocationCallbacks),
-  MergeValidationCachesEXT_ptr: extern "system" fn (device: Device, dstCache: ValidationCacheEXT, srcCacheCount: u32, pSrcCaches: *const ValidationCacheEXT) -> Result,
-  GetValidationCacheDataEXT_ptr: extern "system" fn (device: Device, validationCache: ValidationCacheEXT, pDataSize: *mut usize, pData: *mut c_void) -> Result,
-  CmdBindShadingRateImageNV_ptr: extern "system" fn (commandBuffer: CommandBuffer, imageView: ImageView, imageLayout: ImageLayout),
-  CmdSetViewportShadingRatePaletteNV_ptr: extern "system" fn (commandBuffer: CommandBuffer, firstViewport: u32, viewportCount: u32, pShadingRatePalettes: *const ShadingRatePaletteNV),
-  CmdSetCoarseSampleOrderNV_ptr: extern "system" fn (commandBuffer: CommandBuffer, sampleOrderType: CoarseSampleOrderTypeNV, customSampleOrderCount: u32, pCustomSampleOrders: *const CoarseSampleOrderCustomNV),
-  CreateAccelerationStructureNV_ptr: extern "system" fn (device: Device, pCreateInfo: *const AccelerationStructureCreateInfoNV, pAllocator: *const AllocationCallbacks, pAccelerationStructure: *mut AccelerationStructureNV) -> Result,
-  DestroyAccelerationStructureNV_ptr: extern "system" fn (device: Device, accelerationStructure: AccelerationStructureNV, pAllocator: *const AllocationCallbacks),
-  GetAccelerationStructureMemoryRequirementsNV_ptr: extern "system" fn (device: Device, pInfo: *const AccelerationStructureMemoryRequirementsInfoNV, pMemoryRequirements: *mut MemoryRequirements2),
-  BindAccelerationStructureMemoryNV_ptr: extern "system" fn (device: Device, bindInfoCount: u32, pBindInfos: *const BindAccelerationStructureMemoryInfoNV) -> Result,
-  CmdBuildAccelerationStructureNV_ptr: extern "system" fn (commandBuffer: CommandBuffer, pInfo: *const AccelerationStructureInfoNV, instanceData: Buffer, instanceOffset: DeviceSize, update: Bool32, dst: AccelerationStructureNV, src: AccelerationStructureNV, scratch: Buffer, scratchOffset: DeviceSize),
-  CmdCopyAccelerationStructureNV_ptr: extern "system" fn (commandBuffer: CommandBuffer, dst: AccelerationStructureNV, src: AccelerationStructureNV, mode: CopyAccelerationStructureModeNV),
-  CmdTraceRaysNV_ptr: extern "system" fn (commandBuffer: CommandBuffer, raygenShaderBindingTableBuffer: Buffer, raygenShaderBindingOffset: DeviceSize, missShaderBindingTableBuffer: Buffer, missShaderBindingOffset: DeviceSize, missShaderBindingStride: DeviceSize, hitShaderBindingTableBuffer: Buffer, hitShaderBindingOffset: DeviceSize, hitShaderBindingStride: DeviceSize, callableShaderBindingTableBuffer: Buffer, callableShaderBindingOffset: DeviceSize, callableShaderBindingStride: DeviceSize, width: u32, height: u32, depth: u32),
-  CreateRayTracingPipelinesNV_ptr: extern "system" fn (device: Device, pipelineCache: PipelineCache, createInfoCount: u32, pCreateInfos: *const RayTracingPipelineCreateInfoNV, pAllocator: *const AllocationCallbacks, pPipelines: *mut Pipeline) -> Result,
-  GetRayTracingShaderGroupHandlesNV_ptr: extern "system" fn (device: Device, pipeline: Pipeline, firstGroup: u32, groupCount: u32, dataSize: usize, pData: *mut c_void) -> Result,
-  GetAccelerationStructureHandleNV_ptr: extern "system" fn (device: Device, accelerationStructure: AccelerationStructureNV, dataSize: usize, pData: *mut c_void) -> Result,
-  CmdWriteAccelerationStructuresPropertiesNV_ptr: extern "system" fn (commandBuffer: CommandBuffer, accelerationStructureCount: u32, pAccelerationStructures: *const AccelerationStructureNV, queryType: QueryType, queryPool: QueryPool, firstQuery: u32),
-  CompileDeferredNV_ptr: extern "system" fn (device: Device, pipeline: Pipeline, shader: u32) -> Result,
-  CmdDrawIndirectCountKHR_ptr: extern "system" fn (commandBuffer: CommandBuffer, buffer: Buffer, offset: DeviceSize, countBuffer: Buffer, countBufferOffset: DeviceSize, maxDrawCount: u32, stride: u32),
-  CmdDrawIndexedIndirectCountKHR_ptr: extern "system" fn (commandBuffer: CommandBuffer, buffer: Buffer, offset: DeviceSize, countBuffer: Buffer, countBufferOffset: DeviceSize, maxDrawCount: u32, stride: u32),
-  GetMemoryHostPointerPropertiesEXT_ptr: extern "system" fn (device: Device, handleType: ExternalMemoryHandleTypeFlagBits, pHostPointer: *const c_void, pMemoryHostPointerProperties: *mut MemoryHostPointerPropertiesEXT) -> Result,
-  CmdWriteBufferMarkerAMD_ptr: extern "system" fn (commandBuffer: CommandBuffer, pipelineStage: PipelineStageFlagBits, dstBuffer: Buffer, dstOffset: DeviceSize, marker: u32),
-  GetPhysicalDeviceCalibrateableTimeDomainsEXT_ptr: extern "system" fn (physicalDevice: PhysicalDevice, pTimeDomainCount: *mut u32, pTimeDomains: *mut TimeDomainEXT) -> Result,
-  GetCalibratedTimestampsEXT_ptr: extern "system" fn (device: Device, timestampCount: u32, pTimestampInfos: *const CalibratedTimestampInfoEXT, pTimestamps: *mut u64, pMaxDeviation: *mut u64) -> Result,
-  CmdDrawMeshTasksNV_ptr: extern "system" fn (commandBuffer: CommandBuffer, taskCount: u32, firstTask: u32),
-  CmdDrawMeshTasksIndirectNV_ptr: extern "system" fn (commandBuffer: CommandBuffer, buffer: Buffer, offset: DeviceSize, drawCount: u32, stride: u32),
-  CmdDrawMeshTasksIndirectCountNV_ptr: extern "system" fn (commandBuffer: CommandBuffer, buffer: Buffer, offset: DeviceSize, countBuffer: Buffer, countBufferOffset: DeviceSize, maxDrawCount: u32, stride: u32),
-  CmdSetExclusiveScissorNV_ptr: extern "system" fn (commandBuffer: CommandBuffer, firstExclusiveScissor: u32, exclusiveScissorCount: u32, pExclusiveScissors: *const Rect2D),
-  CmdSetCheckpointNV_ptr: extern "system" fn (commandBuffer: CommandBuffer, pCheckpointMarker: *const c_void),
-  GetQueueCheckpointDataNV_ptr: extern "system" fn (queue: Queue, pCheckpointDataCount: *mut u32, pCheckpointData: *mut CheckpointDataNV),
-}
-
-
-extern "system" fn CreateSwapchainKHR_panic(_device: Device, _pCreateInfo: *const SwapchainCreateInfoKHR, _pAllocator: *const AllocationCallbacks, _pSwapchain: *mut SwapchainKHR) -> Result{
-    panic!("extension vkCreateSwapchainKHR not loaded")
-}
-extern "system" fn DestroySwapchainKHR_panic(_device: Device, _swapchain: SwapchainKHR, _pAllocator: *const AllocationCallbacks){
-    panic!("extension vkDestroySwapchainKHR not loaded")
-}
-extern "system" fn GetSwapchainImagesKHR_panic(_device: Device, _swapchain: SwapchainKHR, _pSwapchainImageCount: *mut u32, _pSwapchainImages: *mut Image) -> Result{
-    panic!("extension vkGetSwapchainImagesKHR not loaded")
-}
-extern "system" fn AcquireNextImageKHR_panic(_device: Device, _swapchain: SwapchainKHR, _timeout: u64, _semaphore: Semaphore, _fence: Fence, _pImageIndex: *mut u32) -> Result{
-    panic!("extension vkAcquireNextImageKHR not loaded")
-}
-extern "system" fn QueuePresentKHR_panic(_queue: Queue, _pPresentInfo: *const PresentInfoKHR) -> Result{
-    panic!("extension vkQueuePresentKHR not loaded")
-}
-extern "system" fn GetDeviceGroupPresentCapabilitiesKHR_panic(_device: Device, _pDeviceGroupPresentCapabilities: *mut DeviceGroupPresentCapabilitiesKHR) -> Result{
-    panic!("extension vkGetDeviceGroupPresentCapabilitiesKHR not loaded")
-}
-extern "system" fn GetDeviceGroupSurfacePresentModesKHR_panic(_device: Device, _surface: SurfaceKHR, _pModes: *mut DeviceGroupPresentModeFlagsKHR) -> Result{
-    panic!("extension vkGetDeviceGroupSurfacePresentModesKHR not loaded")
-}
-extern "system" fn GetPhysicalDevicePresentRectanglesKHR_panic(_physicalDevice: PhysicalDevice, _surface: SurfaceKHR, _pRectCount: *mut u32, _pRects: *mut Rect2D) -> Result{
-    panic!("extension vkGetPhysicalDevicePresentRectanglesKHR not loaded")
-}
-extern "system" fn AcquireNextImage2KHR_panic(_device: Device, _pAcquireInfo: *const AcquireNextImageInfoKHR, _pImageIndex: *mut u32) -> Result{
-    panic!("extension vkAcquireNextImage2KHR not loaded")
-}
-extern "system" fn CreateSharedSwapchainsKHR_panic(_device: Device, _swapchainCount: u32, _pCreateInfos: *const SwapchainCreateInfoKHR, _pAllocator: *const AllocationCallbacks, _pSwapchains: *mut SwapchainKHR) -> Result{
-    panic!("extension vkCreateSharedSwapchainsKHR not loaded")
-}
-extern "system" fn DebugMarkerSetObjectTagEXT_panic(_device: Device, _pTagInfo: *const DebugMarkerObjectTagInfoEXT) -> Result{
-    panic!("extension vkDebugMarkerSetObjectTagEXT not loaded")
-}
-extern "system" fn DebugMarkerSetObjectNameEXT_panic(_device: Device, _pNameInfo: *const DebugMarkerObjectNameInfoEXT) -> Result{
-    panic!("extension vkDebugMarkerSetObjectNameEXT not loaded")
-}
-extern "system" fn CmdDebugMarkerBeginEXT_panic(_commandBuffer: CommandBuffer, _pMarkerInfo: *const DebugMarkerMarkerInfoEXT){
-    panic!("extension vkCmdDebugMarkerBeginEXT not loaded")
-}
-extern "system" fn CmdDebugMarkerEndEXT_panic(_commandBuffer: CommandBuffer){
-    panic!("extension vkCmdDebugMarkerEndEXT not loaded")
-}
-extern "system" fn CmdDebugMarkerInsertEXT_panic(_commandBuffer: CommandBuffer, _pMarkerInfo: *const DebugMarkerMarkerInfoEXT){
-    panic!("extension vkCmdDebugMarkerInsertEXT not loaded")
-}
-extern "system" fn CmdBindTransformFeedbackBuffersEXT_panic(_commandBuffer: CommandBuffer, _firstBinding: u32, _bindingCount: u32, _pBuffers: *const Buffer, _pOffsets: *const DeviceSize, _pSizes: *const DeviceSize){
-    panic!("extension vkCmdBindTransformFeedbackBuffersEXT not loaded")
-}
-extern "system" fn CmdBeginTransformFeedbackEXT_panic(_commandBuffer: CommandBuffer, _firstCounterBuffer: u32, _counterBufferCount: u32, _pCounterBuffers: *const Buffer, _pCounterBufferOffsets: *const DeviceSize){
-    panic!("extension vkCmdBeginTransformFeedbackEXT not loaded")
-}
-extern "system" fn CmdEndTransformFeedbackEXT_panic(_commandBuffer: CommandBuffer, _firstCounterBuffer: u32, _counterBufferCount: u32, _pCounterBuffers: *const Buffer, _pCounterBufferOffsets: *const DeviceSize){
-    panic!("extension vkCmdEndTransformFeedbackEXT not loaded")
-}
-extern "system" fn CmdBeginQueryIndexedEXT_panic(_commandBuffer: CommandBuffer, _queryPool: QueryPool, _query: u32, _flags: QueryControlFlags, _index: u32){
-    panic!("extension vkCmdBeginQueryIndexedEXT not loaded")
-}
-extern "system" fn CmdEndQueryIndexedEXT_panic(_commandBuffer: CommandBuffer, _queryPool: QueryPool, _query: u32, _index: u32){
-    panic!("extension vkCmdEndQueryIndexedEXT not loaded")
-}
-extern "system" fn CmdDrawIndirectByteCountEXT_panic(_commandBuffer: CommandBuffer, _instanceCount: u32, _firstInstance: u32, _counterBuffer: Buffer, _counterBufferOffset: DeviceSize, _counterOffset: u32, _vertexStride: u32){
-    panic!("extension vkCmdDrawIndirectByteCountEXT not loaded")
-}
-extern "system" fn CmdDrawIndirectCountAMD_panic(_commandBuffer: CommandBuffer, _buffer: Buffer, _offset: DeviceSize, _countBuffer: Buffer, _countBufferOffset: DeviceSize, _maxDrawCount: u32, _stride: u32){
-    panic!("extension vkCmdDrawIndirectCountAMD not loaded")
-}
-extern "system" fn CmdDrawIndexedIndirectCountAMD_panic(_commandBuffer: CommandBuffer, _buffer: Buffer, _offset: DeviceSize, _countBuffer: Buffer, _countBufferOffset: DeviceSize, _maxDrawCount: u32, _stride: u32){
-    panic!("extension vkCmdDrawIndexedIndirectCountAMD not loaded")
-}
-extern "system" fn GetShaderInfoAMD_panic(_device: Device, _pipeline: Pipeline, _shaderStage: ShaderStageFlagBits, _infoType: ShaderInfoTypeAMD, _pInfoSize: *mut usize, _pInfo: *mut c_void) -> Result{
-    panic!("extension vkGetShaderInfoAMD not loaded")
-}
-extern "system" fn GetMemoryWin32HandleNV_panic(_device: Device, _memory: DeviceMemory, _handleType: ExternalMemoryHandleTypeFlagsNV, _pHandle: *mut HANDLE) -> Result{
-    panic!("extension vkGetMemoryWin32HandleNV not loaded")
-}
-extern "system" fn GetMemoryWin32HandleKHR_panic(_device: Device, _pGetWin32HandleInfo: *const MemoryGetWin32HandleInfoKHR, _pHandle: *mut HANDLE) -> Result{
-    panic!("extension vkGetMemoryWin32HandleKHR not loaded")
-}
-extern "system" fn GetMemoryWin32HandlePropertiesKHR_panic(_device: Device, _handleType: ExternalMemoryHandleTypeFlagBits, _handle: HANDLE, _pMemoryWin32HandleProperties: *mut MemoryWin32HandlePropertiesKHR) -> Result{
-    panic!("extension vkGetMemoryWin32HandlePropertiesKHR not loaded")
-}
-extern "system" fn GetMemoryFdKHR_panic(_device: Device, _pGetFdInfo: *const MemoryGetFdInfoKHR, _pFd: *mut i32) -> Result{
-    panic!("extension vkGetMemoryFdKHR not loaded")
-}
-extern "system" fn GetMemoryFdPropertiesKHR_panic(_device: Device, _handleType: ExternalMemoryHandleTypeFlagBits, _fd: i32, _pMemoryFdProperties: *mut MemoryFdPropertiesKHR) -> Result{
-    panic!("extension vkGetMemoryFdPropertiesKHR not loaded")
-}
-extern "system" fn ImportSemaphoreWin32HandleKHR_panic(_device: Device, _pImportSemaphoreWin32HandleInfo: *const ImportSemaphoreWin32HandleInfoKHR) -> Result{
-    panic!("extension vkImportSemaphoreWin32HandleKHR not loaded")
-}
-extern "system" fn GetSemaphoreWin32HandleKHR_panic(_device: Device, _pGetWin32HandleInfo: *const SemaphoreGetWin32HandleInfoKHR, _pHandle: *mut HANDLE) -> Result{
-    panic!("extension vkGetSemaphoreWin32HandleKHR not loaded")
-}
-extern "system" fn ImportSemaphoreFdKHR_panic(_device: Device, _pImportSemaphoreFdInfo: *const ImportSemaphoreFdInfoKHR) -> Result{
-    panic!("extension vkImportSemaphoreFdKHR not loaded")
-}
-extern "system" fn GetSemaphoreFdKHR_panic(_device: Device, _pGetFdInfo: *const SemaphoreGetFdInfoKHR, _pFd: *mut i32) -> Result{
-    panic!("extension vkGetSemaphoreFdKHR not loaded")
-}
-extern "system" fn CmdPushDescriptorSetKHR_panic(_commandBuffer: CommandBuffer, _pipelineBindPoint: PipelineBindPoint, _layout: PipelineLayout, _set: u32, _descriptorWriteCount: u32, _pDescriptorWrites: *const WriteDescriptorSet){
-    panic!("extension vkCmdPushDescriptorSetKHR not loaded")
-}
-extern "system" fn CmdPushDescriptorSetWithTemplateKHR_panic(_commandBuffer: CommandBuffer, _descriptorUpdateTemplate: DescriptorUpdateTemplate, _layout: PipelineLayout, _set: u32, _pData: *const c_void){
-    panic!("extension vkCmdPushDescriptorSetWithTemplateKHR not loaded")
-}
-extern "system" fn CmdBeginConditionalRenderingEXT_panic(_commandBuffer: CommandBuffer, _pConditionalRenderingBegin: *const ConditionalRenderingBeginInfoEXT){
-    panic!("extension vkCmdBeginConditionalRenderingEXT not loaded")
-}
-extern "system" fn CmdEndConditionalRenderingEXT_panic(_commandBuffer: CommandBuffer){
-    panic!("extension vkCmdEndConditionalRenderingEXT not loaded")
-}
-extern "system" fn CmdProcessCommandsNVX_panic(_commandBuffer: CommandBuffer, _pProcessCommandsInfo: *const CmdProcessCommandsInfoNVX){
-    panic!("extension vkCmdProcessCommandsNVX not loaded")
-}
-extern "system" fn CmdReserveSpaceForCommandsNVX_panic(_commandBuffer: CommandBuffer, _pReserveSpaceInfo: *const CmdReserveSpaceForCommandsInfoNVX){
-    panic!("extension vkCmdReserveSpaceForCommandsNVX not loaded")
-}
-extern "system" fn CreateIndirectCommandsLayoutNVX_panic(_device: Device, _pCreateInfo: *const IndirectCommandsLayoutCreateInfoNVX, _pAllocator: *const AllocationCallbacks, _pIndirectCommandsLayout: *mut IndirectCommandsLayoutNVX) -> Result{
-    panic!("extension vkCreateIndirectCommandsLayoutNVX not loaded")
-}
-extern "system" fn DestroyIndirectCommandsLayoutNVX_panic(_device: Device, _indirectCommandsLayout: IndirectCommandsLayoutNVX, _pAllocator: *const AllocationCallbacks){
-    panic!("extension vkDestroyIndirectCommandsLayoutNVX not loaded")
-}
-extern "system" fn CreateObjectTableNVX_panic(_device: Device, _pCreateInfo: *const ObjectTableCreateInfoNVX, _pAllocator: *const AllocationCallbacks, _pObjectTable: *mut ObjectTableNVX) -> Result{
-    panic!("extension vkCreateObjectTableNVX not loaded")
-}
-extern "system" fn DestroyObjectTableNVX_panic(_device: Device, _objectTable: ObjectTableNVX, _pAllocator: *const AllocationCallbacks){
-    panic!("extension vkDestroyObjectTableNVX not loaded")
-}
-extern "system" fn RegisterObjectsNVX_panic(_device: Device, _objectTable: ObjectTableNVX, _objectCount: u32, _ppObjectTableEntries: *const *const ObjectTableEntryNVX, _pObjectIndices: *const u32) -> Result{
-    panic!("extension vkRegisterObjectsNVX not loaded")
-}
-extern "system" fn UnregisterObjectsNVX_panic(_device: Device, _objectTable: ObjectTableNVX, _objectCount: u32, _pObjectEntryTypes: *const ObjectEntryTypeNVX, _pObjectIndices: *const u32) -> Result{
-    panic!("extension vkUnregisterObjectsNVX not loaded")
-}
-extern "system" fn GetPhysicalDeviceGeneratedCommandsPropertiesNVX_panic(_physicalDevice: PhysicalDevice, _pFeatures: *mut DeviceGeneratedCommandsFeaturesNVX, _pLimits: *mut DeviceGeneratedCommandsLimitsNVX){
-    panic!("extension vkGetPhysicalDeviceGeneratedCommandsPropertiesNVX not loaded")
-}
-extern "system" fn CmdSetViewportWScalingNV_panic(_commandBuffer: CommandBuffer, _firstViewport: u32, _viewportCount: u32, _pViewportWScalings: *const ViewportWScalingNV){
-    panic!("extension vkCmdSetViewportWScalingNV not loaded")
-}
-extern "system" fn DisplayPowerControlEXT_panic(_device: Device, _display: DisplayKHR, _pDisplayPowerInfo: *const DisplayPowerInfoEXT) -> Result{
-    panic!("extension vkDisplayPowerControlEXT not loaded")
-}
-extern "system" fn RegisterDeviceEventEXT_panic(_device: Device, _pDeviceEventInfo: *const DeviceEventInfoEXT, _pAllocator: *const AllocationCallbacks, _pFence: *mut Fence) -> Result{
-    panic!("extension vkRegisterDeviceEventEXT not loaded")
-}
-extern "system" fn RegisterDisplayEventEXT_panic(_device: Device, _display: DisplayKHR, _pDisplayEventInfo: *const DisplayEventInfoEXT, _pAllocator: *const AllocationCallbacks, _pFence: *mut Fence) -> Result{
-    panic!("extension vkRegisterDisplayEventEXT not loaded")
-}
-extern "system" fn GetSwapchainCounterEXT_panic(_device: Device, _swapchain: SwapchainKHR, _counter: SurfaceCounterFlagBitsEXT, _pCounterValue: *mut u64) -> Result{
-    panic!("extension vkGetSwapchainCounterEXT not loaded")
-}
-extern "system" fn GetRefreshCycleDurationGOOGLE_panic(_device: Device, _swapchain: SwapchainKHR, _pDisplayTimingProperties: *mut RefreshCycleDurationGOOGLE) -> Result{
-    panic!("extension vkGetRefreshCycleDurationGOOGLE not loaded")
-}
-extern "system" fn GetPastPresentationTimingGOOGLE_panic(_device: Device, _swapchain: SwapchainKHR, _pPresentationTimingCount: *mut u32, _pPresentationTimings: *mut PastPresentationTimingGOOGLE) -> Result{
-    panic!("extension vkGetPastPresentationTimingGOOGLE not loaded")
-}
-extern "system" fn CmdSetDiscardRectangleEXT_panic(_commandBuffer: CommandBuffer, _firstDiscardRectangle: u32, _discardRectangleCount: u32, _pDiscardRectangles: *const Rect2D){
-    panic!("extension vkCmdSetDiscardRectangleEXT not loaded")
-}
-extern "system" fn SetHdrMetadataEXT_panic(_device: Device, _swapchainCount: u32, _pSwapchains: *const SwapchainKHR, _pMetadata: *const HdrMetadataEXT){
-    panic!("extension vkSetHdrMetadataEXT not loaded")
-}
-extern "system" fn CreateRenderPass2KHR_panic(_device: Device, _pCreateInfo: *const RenderPassCreateInfo2KHR, _pAllocator: *const AllocationCallbacks, _pRenderPass: *mut RenderPass) -> Result{
-    panic!("extension vkCreateRenderPass2KHR not loaded")
-}
-extern "system" fn CmdBeginRenderPass2KHR_panic(_commandBuffer: CommandBuffer, _pRenderPassBegin: *const RenderPassBeginInfo, _pSubpassBeginInfo: *const SubpassBeginInfoKHR){
-    panic!("extension vkCmdBeginRenderPass2KHR not loaded")
-}
-extern "system" fn CmdNextSubpass2KHR_panic(_commandBuffer: CommandBuffer, _pSubpassBeginInfo: *const SubpassBeginInfoKHR, _pSubpassEndInfo: *const SubpassEndInfoKHR){
-    panic!("extension vkCmdNextSubpass2KHR not loaded")
-}
-extern "system" fn CmdEndRenderPass2KHR_panic(_commandBuffer: CommandBuffer, _pSubpassEndInfo: *const SubpassEndInfoKHR){
-    panic!("extension vkCmdEndRenderPass2KHR not loaded")
-}
-extern "system" fn GetSwapchainStatusKHR_panic(_device: Device, _swapchain: SwapchainKHR) -> Result{
-    panic!("extension vkGetSwapchainStatusKHR not loaded")
-}
-extern "system" fn ImportFenceWin32HandleKHR_panic(_device: Device, _pImportFenceWin32HandleInfo: *const ImportFenceWin32HandleInfoKHR) -> Result{
-    panic!("extension vkImportFenceWin32HandleKHR not loaded")
-}
-extern "system" fn GetFenceWin32HandleKHR_panic(_device: Device, _pGetWin32HandleInfo: *const FenceGetWin32HandleInfoKHR, _pHandle: *mut HANDLE) -> Result{
-    panic!("extension vkGetFenceWin32HandleKHR not loaded")
-}
-extern "system" fn ImportFenceFdKHR_panic(_device: Device, _pImportFenceFdInfo: *const ImportFenceFdInfoKHR) -> Result{
-    panic!("extension vkImportFenceFdKHR not loaded")
-}
-extern "system" fn GetFenceFdKHR_panic(_device: Device, _pGetFdInfo: *const FenceGetFdInfoKHR, _pFd: *mut i32) -> Result{
-    panic!("extension vkGetFenceFdKHR not loaded")
-}
-extern "system" fn GetAndroidHardwareBufferPropertiesANDROID_panic(_device: Device, _buffer: *const AHardwareBuffer, _pProperties: *mut AndroidHardwareBufferPropertiesANDROID) -> Result{
-    panic!("extension vkGetAndroidHardwareBufferPropertiesANDROID not loaded")
-}
-extern "system" fn GetMemoryAndroidHardwareBufferANDROID_panic(_device: Device, _pInfo: *const MemoryGetAndroidHardwareBufferInfoANDROID, _pBuffer: *mut *mut AHardwareBuffer) -> Result{
-    panic!("extension vkGetMemoryAndroidHardwareBufferANDROID not loaded")
-}
-extern "system" fn CmdSetSampleLocationsEXT_panic(_commandBuffer: CommandBuffer, _pSampleLocationsInfo: *const SampleLocationsInfoEXT){
-    panic!("extension vkCmdSetSampleLocationsEXT not loaded")
-}
-extern "system" fn GetPhysicalDeviceMultisamplePropertiesEXT_panic(_physicalDevice: PhysicalDevice, _samples: SampleCountFlagBits, _pMultisampleProperties: *mut MultisamplePropertiesEXT){
-    panic!("extension vkGetPhysicalDeviceMultisamplePropertiesEXT not loaded")
-}
-extern "system" fn GetImageDrmFormatModifierPropertiesEXT_panic(_device: Device, _image: Image, _pProperties: *mut ImageDrmFormatModifierPropertiesEXT) -> Result{
-    panic!("extension vkGetImageDrmFormatModifierPropertiesEXT not loaded")
-}
-extern "system" fn CreateValidationCacheEXT_panic(_device: Device, _pCreateInfo: *const ValidationCacheCreateInfoEXT, _pAllocator: *const AllocationCallbacks, _pValidationCache: *mut ValidationCacheEXT) -> Result{
-    panic!("extension vkCreateValidationCacheEXT not loaded")
-}
-extern "system" fn DestroyValidationCacheEXT_panic(_device: Device, _validationCache: ValidationCacheEXT, _pAllocator: *const AllocationCallbacks){
-    panic!("extension vkDestroyValidationCacheEXT not loaded")
-}
-extern "system" fn MergeValidationCachesEXT_panic(_device: Device, _dstCache: ValidationCacheEXT, _srcCacheCount: u32, _pSrcCaches: *const ValidationCacheEXT) -> Result{
-    panic!("extension vkMergeValidationCachesEXT not loaded")
-}
-extern "system" fn GetValidationCacheDataEXT_panic(_device: Device, _validationCache: ValidationCacheEXT, _pDataSize: *mut usize, _pData: *mut c_void) -> Result{
-    panic!("extension vkGetValidationCacheDataEXT not loaded")
-}
-extern "system" fn CmdBindShadingRateImageNV_panic(_commandBuffer: CommandBuffer, _imageView: ImageView, _imageLayout: ImageLayout){
-    panic!("extension vkCmdBindShadingRateImageNV not loaded")
-}
-extern "system" fn CmdSetViewportShadingRatePaletteNV_panic(_commandBuffer: CommandBuffer, _firstViewport: u32, _viewportCount: u32, _pShadingRatePalettes: *const ShadingRatePaletteNV){
-    panic!("extension vkCmdSetViewportShadingRatePaletteNV not loaded")
-}
-extern "system" fn CmdSetCoarseSampleOrderNV_panic(_commandBuffer: CommandBuffer, _sampleOrderType: CoarseSampleOrderTypeNV, _customSampleOrderCount: u32, _pCustomSampleOrders: *const CoarseSampleOrderCustomNV){
-    panic!("extension vkCmdSetCoarseSampleOrderNV not loaded")
-}
-extern "system" fn CreateAccelerationStructureNV_panic(_device: Device, _pCreateInfo: *const AccelerationStructureCreateInfoNV, _pAllocator: *const AllocationCallbacks, _pAccelerationStructure: *mut AccelerationStructureNV) -> Result{
-    panic!("extension vkCreateAccelerationStructureNV not loaded")
-}
-extern "system" fn DestroyAccelerationStructureNV_panic(_device: Device, _accelerationStructure: AccelerationStructureNV, _pAllocator: *const AllocationCallbacks){
-    panic!("extension vkDestroyAccelerationStructureNV not loaded")
-}
-extern "system" fn GetAccelerationStructureMemoryRequirementsNV_panic(_device: Device, _pInfo: *const AccelerationStructureMemoryRequirementsInfoNV, _pMemoryRequirements: *mut MemoryRequirements2){
-    panic!("extension vkGetAccelerationStructureMemoryRequirementsNV not loaded")
-}
-extern "system" fn BindAccelerationStructureMemoryNV_panic(_device: Device, _bindInfoCount: u32, _pBindInfos: *const BindAccelerationStructureMemoryInfoNV) -> Result{
-    panic!("extension vkBindAccelerationStructureMemoryNV not loaded")
-}
-extern "system" fn CmdBuildAccelerationStructureNV_panic(_commandBuffer: CommandBuffer, _pInfo: *const AccelerationStructureInfoNV, _instanceData: Buffer, _instanceOffset: DeviceSize, _update: Bool32, _dst: AccelerationStructureNV, _src: AccelerationStructureNV, _scratch: Buffer, _scratchOffset: DeviceSize){
-    panic!("extension vkCmdBuildAccelerationStructureNV not loaded")
-}
-extern "system" fn CmdCopyAccelerationStructureNV_panic(_commandBuffer: CommandBuffer, _dst: AccelerationStructureNV, _src: AccelerationStructureNV, _mode: CopyAccelerationStructureModeNV){
-    panic!("extension vkCmdCopyAccelerationStructureNV not loaded")
-}
-extern "system" fn CmdTraceRaysNV_panic(_commandBuffer: CommandBuffer, _raygenShaderBindingTableBuffer: Buffer, _raygenShaderBindingOffset: DeviceSize, _missShaderBindingTableBuffer: Buffer, _missShaderBindingOffset: DeviceSize, _missShaderBindingStride: DeviceSize, _hitShaderBindingTableBuffer: Buffer, _hitShaderBindingOffset: DeviceSize, _hitShaderBindingStride: DeviceSize, _callableShaderBindingTableBuffer: Buffer, _callableShaderBindingOffset: DeviceSize, _callableShaderBindingStride: DeviceSize, _width: u32, _height: u32, _depth: u32){
-    panic!("extension vkCmdTraceRaysNV not loaded")
-}
-extern "system" fn CreateRayTracingPipelinesNV_panic(_device: Device, _pipelineCache: PipelineCache, _createInfoCount: u32, _pCreateInfos: *const RayTracingPipelineCreateInfoNV, _pAllocator: *const AllocationCallbacks, _pPipelines: *mut Pipeline) -> Result{
-    panic!("extension vkCreateRayTracingPipelinesNV not loaded")
-}
-extern "system" fn GetRayTracingShaderGroupHandlesNV_panic(_device: Device, _pipeline: Pipeline, _firstGroup: u32, _groupCount: u32, _dataSize: usize, _pData: *mut c_void) -> Result{
-    panic!("extension vkGetRayTracingShaderGroupHandlesNV not loaded")
-}
-extern "system" fn GetAccelerationStructureHandleNV_panic(_device: Device, _accelerationStructure: AccelerationStructureNV, _dataSize: usize, _pData: *mut c_void) -> Result{
-    panic!("extension vkGetAccelerationStructureHandleNV not loaded")
-}
-extern "system" fn CmdWriteAccelerationStructuresPropertiesNV_panic(_commandBuffer: CommandBuffer, _accelerationStructureCount: u32, _pAccelerationStructures: *const AccelerationStructureNV, _queryType: QueryType, _queryPool: QueryPool, _firstQuery: u32){
-    panic!("extension vkCmdWriteAccelerationStructuresPropertiesNV not loaded")
-}
-extern "system" fn CompileDeferredNV_panic(_device: Device, _pipeline: Pipeline, _shader: u32) -> Result{
-    panic!("extension vkCompileDeferredNV not loaded")
-}
-extern "system" fn CmdDrawIndirectCountKHR_panic(_commandBuffer: CommandBuffer, _buffer: Buffer, _offset: DeviceSize, _countBuffer: Buffer, _countBufferOffset: DeviceSize, _maxDrawCount: u32, _stride: u32){
-    panic!("extension vkCmdDrawIndirectCountKHR not loaded")
-}
-extern "system" fn CmdDrawIndexedIndirectCountKHR_panic(_commandBuffer: CommandBuffer, _buffer: Buffer, _offset: DeviceSize, _countBuffer: Buffer, _countBufferOffset: DeviceSize, _maxDrawCount: u32, _stride: u32){
-    panic!("extension vkCmdDrawIndexedIndirectCountKHR not loaded")
-}
-extern "system" fn GetMemoryHostPointerPropertiesEXT_panic(_device: Device, _handleType: ExternalMemoryHandleTypeFlagBits, _pHostPointer: *const c_void, _pMemoryHostPointerProperties: *mut MemoryHostPointerPropertiesEXT) -> Result{
-    panic!("extension vkGetMemoryHostPointerPropertiesEXT not loaded")
-}
-extern "system" fn CmdWriteBufferMarkerAMD_panic(_commandBuffer: CommandBuffer, _pipelineStage: PipelineStageFlagBits, _dstBuffer: Buffer, _dstOffset: DeviceSize, _marker: u32){
-    panic!("extension vkCmdWriteBufferMarkerAMD not loaded")
-}
-extern "system" fn GetPhysicalDeviceCalibrateableTimeDomainsEXT_panic(_physicalDevice: PhysicalDevice, _pTimeDomainCount: *mut u32, _pTimeDomains: *mut TimeDomainEXT) -> Result{
-    panic!("extension vkGetPhysicalDeviceCalibrateableTimeDomainsEXT not loaded")
-}
-extern "system" fn GetCalibratedTimestampsEXT_panic(_device: Device, _timestampCount: u32, _pTimestampInfos: *const CalibratedTimestampInfoEXT, _pTimestamps: *mut u64, _pMaxDeviation: *mut u64) -> Result{
-    panic!("extension vkGetCalibratedTimestampsEXT not loaded")
-}
-extern "system" fn CmdDrawMeshTasksNV_panic(_commandBuffer: CommandBuffer, _taskCount: u32, _firstTask: u32){
-    panic!("extension vkCmdDrawMeshTasksNV not loaded")
-}
-extern "system" fn CmdDrawMeshTasksIndirectNV_panic(_commandBuffer: CommandBuffer, _buffer: Buffer, _offset: DeviceSize, _drawCount: u32, _stride: u32){
-    panic!("extension vkCmdDrawMeshTasksIndirectNV not loaded")
-}
-extern "system" fn CmdDrawMeshTasksIndirectCountNV_panic(_commandBuffer: CommandBuffer, _buffer: Buffer, _offset: DeviceSize, _countBuffer: Buffer, _countBufferOffset: DeviceSize, _maxDrawCount: u32, _stride: u32){
-    panic!("extension vkCmdDrawMeshTasksIndirectCountNV not loaded")
-}
-extern "system" fn CmdSetExclusiveScissorNV_panic(_commandBuffer: CommandBuffer, _firstExclusiveScissor: u32, _exclusiveScissorCount: u32, _pExclusiveScissors: *const Rect2D){
-    panic!("extension vkCmdSetExclusiveScissorNV not loaded")
-}
-extern "system" fn CmdSetCheckpointNV_panic(_commandBuffer: CommandBuffer, _pCheckpointMarker: *const c_void){
-    panic!("extension vkCmdSetCheckpointNV not loaded")
-}
-extern "system" fn GetQueueCheckpointDataNV_panic(_queue: Queue, _pCheckpointDataCount: *mut u32, _pCheckpointData: *mut CheckpointDataNV){
-    panic!("extension vkGetQueueCheckpointDataNV not loaded")
-}
-
-
-impl Default for DeviceExtensions {
-  /// Initializes all function pointers to functions that immediately panic.
-  fn default() -> DeviceExtensions {
-    DeviceExtensions {
-      hdevice: NULL_HANDLE,
-      CreateSwapchainKHR_ptr: CreateSwapchainKHR_panic,
-      DestroySwapchainKHR_ptr: DestroySwapchainKHR_panic,
-      GetSwapchainImagesKHR_ptr: GetSwapchainImagesKHR_panic,
-      AcquireNextImageKHR_ptr: AcquireNextImageKHR_panic,
-      QueuePresentKHR_ptr: QueuePresentKHR_panic,
-      GetDeviceGroupPresentCapabilitiesKHR_ptr: GetDeviceGroupPresentCapabilitiesKHR_panic,
-      GetDeviceGroupSurfacePresentModesKHR_ptr: GetDeviceGroupSurfacePresentModesKHR_panic,
-      GetPhysicalDevicePresentRectanglesKHR_ptr: GetPhysicalDevicePresentRectanglesKHR_panic,
-      AcquireNextImage2KHR_ptr: AcquireNextImage2KHR_panic,
-      CreateSharedSwapchainsKHR_ptr: CreateSharedSwapchainsKHR_panic,
-      DebugMarkerSetObjectTagEXT_ptr: DebugMarkerSetObjectTagEXT_panic,
-      DebugMarkerSetObjectNameEXT_ptr: DebugMarkerSetObjectNameEXT_panic,
-      CmdDebugMarkerBeginEXT_ptr: CmdDebugMarkerBeginEXT_panic,
-      CmdDebugMarkerEndEXT_ptr: CmdDebugMarkerEndEXT_panic,
-      CmdDebugMarkerInsertEXT_ptr: CmdDebugMarkerInsertEXT_panic,
-      CmdBindTransformFeedbackBuffersEXT_ptr: CmdBindTransformFeedbackBuffersEXT_panic,
-      CmdBeginTransformFeedbackEXT_ptr: CmdBeginTransformFeedbackEXT_panic,
-      CmdEndTransformFeedbackEXT_ptr: CmdEndTransformFeedbackEXT_panic,
-      CmdBeginQueryIndexedEXT_ptr: CmdBeginQueryIndexedEXT_panic,
-      CmdEndQueryIndexedEXT_ptr: CmdEndQueryIndexedEXT_panic,
-      CmdDrawIndirectByteCountEXT_ptr: CmdDrawIndirectByteCountEXT_panic,
-      CmdDrawIndirectCountAMD_ptr: CmdDrawIndirectCountAMD_panic,
-      CmdDrawIndexedIndirectCountAMD_ptr: CmdDrawIndexedIndirectCountAMD_panic,
-      GetShaderInfoAMD_ptr: GetShaderInfoAMD_panic,
-      GetMemoryWin32HandleNV_ptr: GetMemoryWin32HandleNV_panic,
-      GetMemoryWin32HandleKHR_ptr: GetMemoryWin32HandleKHR_panic,
-      GetMemoryWin32HandlePropertiesKHR_ptr: GetMemoryWin32HandlePropertiesKHR_panic,
-      GetMemoryFdKHR_ptr: GetMemoryFdKHR_panic,
-      GetMemoryFdPropertiesKHR_ptr: GetMemoryFdPropertiesKHR_panic,
-      ImportSemaphoreWin32HandleKHR_ptr: ImportSemaphoreWin32HandleKHR_panic,
-      GetSemaphoreWin32HandleKHR_ptr: GetSemaphoreWin32HandleKHR_panic,
-      ImportSemaphoreFdKHR_ptr: ImportSemaphoreFdKHR_panic,
-      GetSemaphoreFdKHR_ptr: GetSemaphoreFdKHR_panic,
-      CmdPushDescriptorSetKHR_ptr: CmdPushDescriptorSetKHR_panic,
-      CmdPushDescriptorSetWithTemplateKHR_ptr: CmdPushDescriptorSetWithTemplateKHR_panic,
-      CmdBeginConditionalRenderingEXT_ptr: CmdBeginConditionalRenderingEXT_panic,
-      CmdEndConditionalRenderingEXT_ptr: CmdEndConditionalRenderingEXT_panic,
-      CmdProcessCommandsNVX_ptr: CmdProcessCommandsNVX_panic,
-      CmdReserveSpaceForCommandsNVX_ptr: CmdReserveSpaceForCommandsNVX_panic,
-      CreateIndirectCommandsLayoutNVX_ptr: CreateIndirectCommandsLayoutNVX_panic,
-      DestroyIndirectCommandsLayoutNVX_ptr: DestroyIndirectCommandsLayoutNVX_panic,
-      CreateObjectTableNVX_ptr: CreateObjectTableNVX_panic,
-      DestroyObjectTableNVX_ptr: DestroyObjectTableNVX_panic,
-      RegisterObjectsNVX_ptr: RegisterObjectsNVX_panic,
-      UnregisterObjectsNVX_ptr: UnregisterObjectsNVX_panic,
-      GetPhysicalDeviceGeneratedCommandsPropertiesNVX_ptr: GetPhysicalDeviceGeneratedCommandsPropertiesNVX_panic,
-      CmdSetViewportWScalingNV_ptr: CmdSetViewportWScalingNV_panic,
-      DisplayPowerControlEXT_ptr: DisplayPowerControlEXT_panic,
-      RegisterDeviceEventEXT_ptr: RegisterDeviceEventEXT_panic,
-      RegisterDisplayEventEXT_ptr: RegisterDisplayEventEXT_panic,
-      GetSwapchainCounterEXT_ptr: GetSwapchainCounterEXT_panic,
-      GetRefreshCycleDurationGOOGLE_ptr: GetRefreshCycleDurationGOOGLE_panic,
-      GetPastPresentationTimingGOOGLE_ptr: GetPastPresentationTimingGOOGLE_panic,
-      CmdSetDiscardRectangleEXT_ptr: CmdSetDiscardRectangleEXT_panic,
-      SetHdrMetadataEXT_ptr: SetHdrMetadataEXT_panic,
-      CreateRenderPass2KHR_ptr: CreateRenderPass2KHR_panic,
-      CmdBeginRenderPass2KHR_ptr: CmdBeginRenderPass2KHR_panic,
-      CmdNextSubpass2KHR_ptr: CmdNextSubpass2KHR_panic,
-      CmdEndRenderPass2KHR_ptr: CmdEndRenderPass2KHR_panic,
-      GetSwapchainStatusKHR_ptr: GetSwapchainStatusKHR_panic,
-      ImportFenceWin32HandleKHR_ptr: ImportFenceWin32HandleKHR_panic,
-      GetFenceWin32HandleKHR_ptr: GetFenceWin32HandleKHR_panic,
-      ImportFenceFdKHR_ptr: ImportFenceFdKHR_panic,
-      GetFenceFdKHR_ptr: GetFenceFdKHR_panic,
-      GetAndroidHardwareBufferPropertiesANDROID_ptr: GetAndroidHardwareBufferPropertiesANDROID_panic,
-      GetMemoryAndroidHardwareBufferANDROID_ptr: GetMemoryAndroidHardwareBufferANDROID_panic,
-      CmdSetSampleLocationsEXT_ptr: CmdSetSampleLocationsEXT_panic,
-      GetPhysicalDeviceMultisamplePropertiesEXT_ptr: GetPhysicalDeviceMultisamplePropertiesEXT_panic,
-      GetImageDrmFormatModifierPropertiesEXT_ptr: GetImageDrmFormatModifierPropertiesEXT_panic,
-      CreateValidationCacheEXT_ptr: CreateValidationCacheEXT_panic,
-      DestroyValidationCacheEXT_ptr: DestroyValidationCacheEXT_panic,
-      MergeValidationCachesEXT_ptr: MergeValidationCachesEXT_panic,
-      GetValidationCacheDataEXT_ptr: GetValidationCacheDataEXT_panic,
-      CmdBindShadingRateImageNV_ptr: CmdBindShadingRateImageNV_panic,
-      CmdSetViewportShadingRatePaletteNV_ptr: CmdSetViewportShadingRatePaletteNV_panic,
-      CmdSetCoarseSampleOrderNV_ptr: CmdSetCoarseSampleOrderNV_panic,
-      CreateAccelerationStructureNV_ptr: CreateAccelerationStructureNV_panic,
-      DestroyAccelerationStructureNV_ptr: DestroyAccelerationStructureNV_panic,
-      GetAccelerationStructureMemoryRequirementsNV_ptr: GetAccelerationStructureMemoryRequirementsNV_panic,
-      BindAccelerationStructureMemoryNV_ptr: BindAccelerationStructureMemoryNV_panic,
-      CmdBuildAccelerationStructureNV_ptr: CmdBuildAccelerationStructureNV_panic,
-      CmdCopyAccelerationStructureNV_ptr: CmdCopyAccelerationStructureNV_panic,
-      CmdTraceRaysNV_ptr: CmdTraceRaysNV_panic,
-      CreateRayTracingPipelinesNV_ptr: CreateRayTracingPipelinesNV_panic,
-      GetRayTracingShaderGroupHandlesNV_ptr: GetRayTracingShaderGroupHandlesNV_panic,
-      GetAccelerationStructureHandleNV_ptr: GetAccelerationStructureHandleNV_panic,
-      CmdWriteAccelerationStructuresPropertiesNV_ptr: CmdWriteAccelerationStructuresPropertiesNV_panic,
-      CompileDeferredNV_ptr: CompileDeferredNV_panic,
-      CmdDrawIndirectCountKHR_ptr: CmdDrawIndirectCountKHR_panic,
-      CmdDrawIndexedIndirectCountKHR_ptr: CmdDrawIndexedIndirectCountKHR_panic,
-      GetMemoryHostPointerPropertiesEXT_ptr: GetMemoryHostPointerPropertiesEXT_panic,
-      CmdWriteBufferMarkerAMD_ptr: CmdWriteBufferMarkerAMD_panic,
-      GetPhysicalDeviceCalibrateableTimeDomainsEXT_ptr: GetPhysicalDeviceCalibrateableTimeDomainsEXT_panic,
-      GetCalibratedTimestampsEXT_ptr: GetCalibratedTimestampsEXT_panic,
-      CmdDrawMeshTasksNV_ptr: CmdDrawMeshTasksNV_panic,
-      CmdDrawMeshTasksIndirectNV_ptr: CmdDrawMeshTasksIndirectNV_panic,
-      CmdDrawMeshTasksIndirectCountNV_ptr: CmdDrawMeshTasksIndirectCountNV_panic,
-      CmdSetExclusiveScissorNV_ptr: CmdSetExclusiveScissorNV_panic,
-      CmdSetCheckpointNV_ptr: CmdSetCheckpointNV_panic,
-      GetQueueCheckpointDataNV_ptr: GetQueueCheckpointDataNV_panic,
-    }
-  }
-}
-
-
-impl DeviceExtensions {
-  /// Initialized device extensions
-  /// 
-  /// A valid instance of [Core](struct.Core.html) is needen to successfully initialize extensions.
-  /// The vulkan feature level is picked up through the current Core instance.
-  pub fn new(hdevice: Device) -> DeviceExtensions {
-    let mut name;
-    let mut ptr;
-
-    unsafe { 
-      let feature = (*core.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::Core")).feature;
-        name = std::ffi::CString::new("vkCreateSwapchainKHR").unwrap();
-        let CreateSwapchainKHR_ptr = if feature < VERSION_1_0 {
-          CreateSwapchainKHR_panic as extern "system" fn (device: Device, pCreateInfo: *const SwapchainCreateInfoKHR, pAllocator: *const AllocationCallbacks, pSwapchain: *mut SwapchainKHR) -> Result
-        } else {
-          ptr = GetDeviceProcAddr(hdevice, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            CreateSwapchainKHR_panic as extern "system" fn (device: Device, pCreateInfo: *const SwapchainCreateInfoKHR, pAllocator: *const AllocationCallbacks, pSwapchain: *mut SwapchainKHR) -> Result
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkDestroySwapchainKHR").unwrap();
-        let DestroySwapchainKHR_ptr = if feature < VERSION_1_0 {
-          DestroySwapchainKHR_panic as extern "system" fn (device: Device, swapchain: SwapchainKHR, pAllocator: *const AllocationCallbacks)
-        } else {
-          ptr = GetDeviceProcAddr(hdevice, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            DestroySwapchainKHR_panic as extern "system" fn (device: Device, swapchain: SwapchainKHR, pAllocator: *const AllocationCallbacks)
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkGetSwapchainImagesKHR").unwrap();
-        let GetSwapchainImagesKHR_ptr = if feature < VERSION_1_0 {
-          GetSwapchainImagesKHR_panic as extern "system" fn (device: Device, swapchain: SwapchainKHR, pSwapchainImageCount: *mut u32, pSwapchainImages: *mut Image) -> Result
-        } else {
-          ptr = GetDeviceProcAddr(hdevice, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            GetSwapchainImagesKHR_panic as extern "system" fn (device: Device, swapchain: SwapchainKHR, pSwapchainImageCount: *mut u32, pSwapchainImages: *mut Image) -> Result
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkAcquireNextImageKHR").unwrap();
-        let AcquireNextImageKHR_ptr = if feature < VERSION_1_0 {
-          AcquireNextImageKHR_panic as extern "system" fn (device: Device, swapchain: SwapchainKHR, timeout: u64, semaphore: Semaphore, fence: Fence, pImageIndex: *mut u32) -> Result
-        } else {
-          ptr = GetDeviceProcAddr(hdevice, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            AcquireNextImageKHR_panic as extern "system" fn (device: Device, swapchain: SwapchainKHR, timeout: u64, semaphore: Semaphore, fence: Fence, pImageIndex: *mut u32) -> Result
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkQueuePresentKHR").unwrap();
-        let QueuePresentKHR_ptr = if feature < VERSION_1_0 {
-          QueuePresentKHR_panic as extern "system" fn (queue: Queue, pPresentInfo: *const PresentInfoKHR) -> Result
-        } else {
-          ptr = GetDeviceProcAddr(hdevice, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            QueuePresentKHR_panic as extern "system" fn (queue: Queue, pPresentInfo: *const PresentInfoKHR) -> Result
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkGetDeviceGroupPresentCapabilitiesKHR").unwrap();
-        let GetDeviceGroupPresentCapabilitiesKHR_ptr = if feature < VERSION_1_0 {
-          GetDeviceGroupPresentCapabilitiesKHR_panic as extern "system" fn (device: Device, pDeviceGroupPresentCapabilities: *mut DeviceGroupPresentCapabilitiesKHR) -> Result
-        } else {
-          ptr = GetDeviceProcAddr(hdevice, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            GetDeviceGroupPresentCapabilitiesKHR_panic as extern "system" fn (device: Device, pDeviceGroupPresentCapabilities: *mut DeviceGroupPresentCapabilitiesKHR) -> Result
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkGetDeviceGroupSurfacePresentModesKHR").unwrap();
-        let GetDeviceGroupSurfacePresentModesKHR_ptr = if feature < VERSION_1_0 {
-          GetDeviceGroupSurfacePresentModesKHR_panic as extern "system" fn (device: Device, surface: SurfaceKHR, pModes: *mut DeviceGroupPresentModeFlagsKHR) -> Result
-        } else {
-          ptr = GetDeviceProcAddr(hdevice, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            GetDeviceGroupSurfacePresentModesKHR_panic as extern "system" fn (device: Device, surface: SurfaceKHR, pModes: *mut DeviceGroupPresentModeFlagsKHR) -> Result
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkGetPhysicalDevicePresentRectanglesKHR").unwrap();
-        let GetPhysicalDevicePresentRectanglesKHR_ptr = if feature < VERSION_1_0 {
-          GetPhysicalDevicePresentRectanglesKHR_panic as extern "system" fn (physicalDevice: PhysicalDevice, surface: SurfaceKHR, pRectCount: *mut u32, pRects: *mut Rect2D) -> Result
-        } else {
-          ptr = GetDeviceProcAddr(hdevice, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            GetPhysicalDevicePresentRectanglesKHR_panic as extern "system" fn (physicalDevice: PhysicalDevice, surface: SurfaceKHR, pRectCount: *mut u32, pRects: *mut Rect2D) -> Result
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkAcquireNextImage2KHR").unwrap();
-        let AcquireNextImage2KHR_ptr = if feature < VERSION_1_0 {
-          AcquireNextImage2KHR_panic as extern "system" fn (device: Device, pAcquireInfo: *const AcquireNextImageInfoKHR, pImageIndex: *mut u32) -> Result
-        } else {
-          ptr = GetDeviceProcAddr(hdevice, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            AcquireNextImage2KHR_panic as extern "system" fn (device: Device, pAcquireInfo: *const AcquireNextImageInfoKHR, pImageIndex: *mut u32) -> Result
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkCreateSharedSwapchainsKHR").unwrap();
-        let CreateSharedSwapchainsKHR_ptr = if feature < VERSION_1_0 {
-          CreateSharedSwapchainsKHR_panic as extern "system" fn (device: Device, swapchainCount: u32, pCreateInfos: *const SwapchainCreateInfoKHR, pAllocator: *const AllocationCallbacks, pSwapchains: *mut SwapchainKHR) -> Result
-        } else {
-          ptr = GetDeviceProcAddr(hdevice, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            CreateSharedSwapchainsKHR_panic as extern "system" fn (device: Device, swapchainCount: u32, pCreateInfos: *const SwapchainCreateInfoKHR, pAllocator: *const AllocationCallbacks, pSwapchains: *mut SwapchainKHR) -> Result
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkDebugMarkerSetObjectTagEXT").unwrap();
-        let DebugMarkerSetObjectTagEXT_ptr = if feature < VERSION_1_0 {
-          DebugMarkerSetObjectTagEXT_panic as extern "system" fn (device: Device, pTagInfo: *const DebugMarkerObjectTagInfoEXT) -> Result
-        } else {
-          ptr = GetDeviceProcAddr(hdevice, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            DebugMarkerSetObjectTagEXT_panic as extern "system" fn (device: Device, pTagInfo: *const DebugMarkerObjectTagInfoEXT) -> Result
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkDebugMarkerSetObjectNameEXT").unwrap();
-        let DebugMarkerSetObjectNameEXT_ptr = if feature < VERSION_1_0 {
-          DebugMarkerSetObjectNameEXT_panic as extern "system" fn (device: Device, pNameInfo: *const DebugMarkerObjectNameInfoEXT) -> Result
-        } else {
-          ptr = GetDeviceProcAddr(hdevice, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            DebugMarkerSetObjectNameEXT_panic as extern "system" fn (device: Device, pNameInfo: *const DebugMarkerObjectNameInfoEXT) -> Result
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkCmdDebugMarkerBeginEXT").unwrap();
-        let CmdDebugMarkerBeginEXT_ptr = if feature < VERSION_1_0 {
-          CmdDebugMarkerBeginEXT_panic as extern "system" fn (commandBuffer: CommandBuffer, pMarkerInfo: *const DebugMarkerMarkerInfoEXT)
-        } else {
-          ptr = GetDeviceProcAddr(hdevice, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            CmdDebugMarkerBeginEXT_panic as extern "system" fn (commandBuffer: CommandBuffer, pMarkerInfo: *const DebugMarkerMarkerInfoEXT)
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkCmdDebugMarkerEndEXT").unwrap();
-        let CmdDebugMarkerEndEXT_ptr = if feature < VERSION_1_0 {
-          CmdDebugMarkerEndEXT_panic as extern "system" fn (commandBuffer: CommandBuffer)
-        } else {
-          ptr = GetDeviceProcAddr(hdevice, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            CmdDebugMarkerEndEXT_panic as extern "system" fn (commandBuffer: CommandBuffer)
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkCmdDebugMarkerInsertEXT").unwrap();
-        let CmdDebugMarkerInsertEXT_ptr = if feature < VERSION_1_0 {
-          CmdDebugMarkerInsertEXT_panic as extern "system" fn (commandBuffer: CommandBuffer, pMarkerInfo: *const DebugMarkerMarkerInfoEXT)
-        } else {
-          ptr = GetDeviceProcAddr(hdevice, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            CmdDebugMarkerInsertEXT_panic as extern "system" fn (commandBuffer: CommandBuffer, pMarkerInfo: *const DebugMarkerMarkerInfoEXT)
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkCmdBindTransformFeedbackBuffersEXT").unwrap();
-        let CmdBindTransformFeedbackBuffersEXT_ptr = if feature < VERSION_1_0 {
-          CmdBindTransformFeedbackBuffersEXT_panic as extern "system" fn (commandBuffer: CommandBuffer, firstBinding: u32, bindingCount: u32, pBuffers: *const Buffer, pOffsets: *const DeviceSize, pSizes: *const DeviceSize)
-        } else {
-          ptr = GetDeviceProcAddr(hdevice, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            CmdBindTransformFeedbackBuffersEXT_panic as extern "system" fn (commandBuffer: CommandBuffer, firstBinding: u32, bindingCount: u32, pBuffers: *const Buffer, pOffsets: *const DeviceSize, pSizes: *const DeviceSize)
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkCmdBeginTransformFeedbackEXT").unwrap();
-        let CmdBeginTransformFeedbackEXT_ptr = if feature < VERSION_1_0 {
-          CmdBeginTransformFeedbackEXT_panic as extern "system" fn (commandBuffer: CommandBuffer, firstCounterBuffer: u32, counterBufferCount: u32, pCounterBuffers: *const Buffer, pCounterBufferOffsets: *const DeviceSize)
-        } else {
-          ptr = GetDeviceProcAddr(hdevice, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            CmdBeginTransformFeedbackEXT_panic as extern "system" fn (commandBuffer: CommandBuffer, firstCounterBuffer: u32, counterBufferCount: u32, pCounterBuffers: *const Buffer, pCounterBufferOffsets: *const DeviceSize)
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkCmdEndTransformFeedbackEXT").unwrap();
-        let CmdEndTransformFeedbackEXT_ptr = if feature < VERSION_1_0 {
-          CmdEndTransformFeedbackEXT_panic as extern "system" fn (commandBuffer: CommandBuffer, firstCounterBuffer: u32, counterBufferCount: u32, pCounterBuffers: *const Buffer, pCounterBufferOffsets: *const DeviceSize)
-        } else {
-          ptr = GetDeviceProcAddr(hdevice, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            CmdEndTransformFeedbackEXT_panic as extern "system" fn (commandBuffer: CommandBuffer, firstCounterBuffer: u32, counterBufferCount: u32, pCounterBuffers: *const Buffer, pCounterBufferOffsets: *const DeviceSize)
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkCmdBeginQueryIndexedEXT").unwrap();
-        let CmdBeginQueryIndexedEXT_ptr = if feature < VERSION_1_0 {
-          CmdBeginQueryIndexedEXT_panic as extern "system" fn (commandBuffer: CommandBuffer, queryPool: QueryPool, query: u32, flags: QueryControlFlags, index: u32)
-        } else {
-          ptr = GetDeviceProcAddr(hdevice, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            CmdBeginQueryIndexedEXT_panic as extern "system" fn (commandBuffer: CommandBuffer, queryPool: QueryPool, query: u32, flags: QueryControlFlags, index: u32)
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkCmdEndQueryIndexedEXT").unwrap();
-        let CmdEndQueryIndexedEXT_ptr = if feature < VERSION_1_0 {
-          CmdEndQueryIndexedEXT_panic as extern "system" fn (commandBuffer: CommandBuffer, queryPool: QueryPool, query: u32, index: u32)
-        } else {
-          ptr = GetDeviceProcAddr(hdevice, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            CmdEndQueryIndexedEXT_panic as extern "system" fn (commandBuffer: CommandBuffer, queryPool: QueryPool, query: u32, index: u32)
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkCmdDrawIndirectByteCountEXT").unwrap();
-        let CmdDrawIndirectByteCountEXT_ptr = if feature < VERSION_1_0 {
-          CmdDrawIndirectByteCountEXT_panic as extern "system" fn (commandBuffer: CommandBuffer, instanceCount: u32, firstInstance: u32, counterBuffer: Buffer, counterBufferOffset: DeviceSize, counterOffset: u32, vertexStride: u32)
-        } else {
-          ptr = GetDeviceProcAddr(hdevice, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            CmdDrawIndirectByteCountEXT_panic as extern "system" fn (commandBuffer: CommandBuffer, instanceCount: u32, firstInstance: u32, counterBuffer: Buffer, counterBufferOffset: DeviceSize, counterOffset: u32, vertexStride: u32)
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkCmdDrawIndirectCountAMD").unwrap();
-        let CmdDrawIndirectCountAMD_ptr = if feature < VERSION_1_0 {
-          CmdDrawIndirectCountAMD_panic as extern "system" fn (commandBuffer: CommandBuffer, buffer: Buffer, offset: DeviceSize, countBuffer: Buffer, countBufferOffset: DeviceSize, maxDrawCount: u32, stride: u32)
-        } else {
-          ptr = GetDeviceProcAddr(hdevice, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            CmdDrawIndirectCountAMD_panic as extern "system" fn (commandBuffer: CommandBuffer, buffer: Buffer, offset: DeviceSize, countBuffer: Buffer, countBufferOffset: DeviceSize, maxDrawCount: u32, stride: u32)
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkCmdDrawIndexedIndirectCountAMD").unwrap();
-        let CmdDrawIndexedIndirectCountAMD_ptr = if feature < VERSION_1_0 {
-          CmdDrawIndexedIndirectCountAMD_panic as extern "system" fn (commandBuffer: CommandBuffer, buffer: Buffer, offset: DeviceSize, countBuffer: Buffer, countBufferOffset: DeviceSize, maxDrawCount: u32, stride: u32)
-        } else {
-          ptr = GetDeviceProcAddr(hdevice, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            CmdDrawIndexedIndirectCountAMD_panic as extern "system" fn (commandBuffer: CommandBuffer, buffer: Buffer, offset: DeviceSize, countBuffer: Buffer, countBufferOffset: DeviceSize, maxDrawCount: u32, stride: u32)
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkGetShaderInfoAMD").unwrap();
-        let GetShaderInfoAMD_ptr = if feature < VERSION_1_0 {
-          GetShaderInfoAMD_panic as extern "system" fn (device: Device, pipeline: Pipeline, shaderStage: ShaderStageFlagBits, infoType: ShaderInfoTypeAMD, pInfoSize: *mut usize, pInfo: *mut c_void) -> Result
-        } else {
-          ptr = GetDeviceProcAddr(hdevice, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            GetShaderInfoAMD_panic as extern "system" fn (device: Device, pipeline: Pipeline, shaderStage: ShaderStageFlagBits, infoType: ShaderInfoTypeAMD, pInfoSize: *mut usize, pInfo: *mut c_void) -> Result
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkGetMemoryWin32HandleNV").unwrap();
-        let GetMemoryWin32HandleNV_ptr = if feature < VERSION_1_0 {
-          GetMemoryWin32HandleNV_panic as extern "system" fn (device: Device, memory: DeviceMemory, handleType: ExternalMemoryHandleTypeFlagsNV, pHandle: *mut HANDLE) -> Result
-        } else {
-          ptr = GetDeviceProcAddr(hdevice, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            GetMemoryWin32HandleNV_panic as extern "system" fn (device: Device, memory: DeviceMemory, handleType: ExternalMemoryHandleTypeFlagsNV, pHandle: *mut HANDLE) -> Result
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkGetMemoryWin32HandleKHR").unwrap();
-        let GetMemoryWin32HandleKHR_ptr = if feature < VERSION_1_0 {
-          GetMemoryWin32HandleKHR_panic as extern "system" fn (device: Device, pGetWin32HandleInfo: *const MemoryGetWin32HandleInfoKHR, pHandle: *mut HANDLE) -> Result
-        } else {
-          ptr = GetDeviceProcAddr(hdevice, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            GetMemoryWin32HandleKHR_panic as extern "system" fn (device: Device, pGetWin32HandleInfo: *const MemoryGetWin32HandleInfoKHR, pHandle: *mut HANDLE) -> Result
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkGetMemoryWin32HandlePropertiesKHR").unwrap();
-        let GetMemoryWin32HandlePropertiesKHR_ptr = if feature < VERSION_1_0 {
-          GetMemoryWin32HandlePropertiesKHR_panic as extern "system" fn (device: Device, handleType: ExternalMemoryHandleTypeFlagBits, handle: HANDLE, pMemoryWin32HandleProperties: *mut MemoryWin32HandlePropertiesKHR) -> Result
-        } else {
-          ptr = GetDeviceProcAddr(hdevice, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            GetMemoryWin32HandlePropertiesKHR_panic as extern "system" fn (device: Device, handleType: ExternalMemoryHandleTypeFlagBits, handle: HANDLE, pMemoryWin32HandleProperties: *mut MemoryWin32HandlePropertiesKHR) -> Result
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkGetMemoryFdKHR").unwrap();
-        let GetMemoryFdKHR_ptr = if feature < VERSION_1_0 {
-          GetMemoryFdKHR_panic as extern "system" fn (device: Device, pGetFdInfo: *const MemoryGetFdInfoKHR, pFd: *mut i32) -> Result
-        } else {
-          ptr = GetDeviceProcAddr(hdevice, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            GetMemoryFdKHR_panic as extern "system" fn (device: Device, pGetFdInfo: *const MemoryGetFdInfoKHR, pFd: *mut i32) -> Result
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkGetMemoryFdPropertiesKHR").unwrap();
-        let GetMemoryFdPropertiesKHR_ptr = if feature < VERSION_1_0 {
-          GetMemoryFdPropertiesKHR_panic as extern "system" fn (device: Device, handleType: ExternalMemoryHandleTypeFlagBits, fd: i32, pMemoryFdProperties: *mut MemoryFdPropertiesKHR) -> Result
-        } else {
-          ptr = GetDeviceProcAddr(hdevice, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            GetMemoryFdPropertiesKHR_panic as extern "system" fn (device: Device, handleType: ExternalMemoryHandleTypeFlagBits, fd: i32, pMemoryFdProperties: *mut MemoryFdPropertiesKHR) -> Result
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkImportSemaphoreWin32HandleKHR").unwrap();
-        let ImportSemaphoreWin32HandleKHR_ptr = if feature < VERSION_1_0 {
-          ImportSemaphoreWin32HandleKHR_panic as extern "system" fn (device: Device, pImportSemaphoreWin32HandleInfo: *const ImportSemaphoreWin32HandleInfoKHR) -> Result
-        } else {
-          ptr = GetDeviceProcAddr(hdevice, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            ImportSemaphoreWin32HandleKHR_panic as extern "system" fn (device: Device, pImportSemaphoreWin32HandleInfo: *const ImportSemaphoreWin32HandleInfoKHR) -> Result
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkGetSemaphoreWin32HandleKHR").unwrap();
-        let GetSemaphoreWin32HandleKHR_ptr = if feature < VERSION_1_0 {
-          GetSemaphoreWin32HandleKHR_panic as extern "system" fn (device: Device, pGetWin32HandleInfo: *const SemaphoreGetWin32HandleInfoKHR, pHandle: *mut HANDLE) -> Result
-        } else {
-          ptr = GetDeviceProcAddr(hdevice, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            GetSemaphoreWin32HandleKHR_panic as extern "system" fn (device: Device, pGetWin32HandleInfo: *const SemaphoreGetWin32HandleInfoKHR, pHandle: *mut HANDLE) -> Result
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkImportSemaphoreFdKHR").unwrap();
-        let ImportSemaphoreFdKHR_ptr = if feature < VERSION_1_0 {
-          ImportSemaphoreFdKHR_panic as extern "system" fn (device: Device, pImportSemaphoreFdInfo: *const ImportSemaphoreFdInfoKHR) -> Result
-        } else {
-          ptr = GetDeviceProcAddr(hdevice, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            ImportSemaphoreFdKHR_panic as extern "system" fn (device: Device, pImportSemaphoreFdInfo: *const ImportSemaphoreFdInfoKHR) -> Result
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkGetSemaphoreFdKHR").unwrap();
-        let GetSemaphoreFdKHR_ptr = if feature < VERSION_1_0 {
-          GetSemaphoreFdKHR_panic as extern "system" fn (device: Device, pGetFdInfo: *const SemaphoreGetFdInfoKHR, pFd: *mut i32) -> Result
-        } else {
-          ptr = GetDeviceProcAddr(hdevice, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            GetSemaphoreFdKHR_panic as extern "system" fn (device: Device, pGetFdInfo: *const SemaphoreGetFdInfoKHR, pFd: *mut i32) -> Result
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkCmdPushDescriptorSetKHR").unwrap();
-        let CmdPushDescriptorSetKHR_ptr = if feature < VERSION_1_0 {
-          CmdPushDescriptorSetKHR_panic as extern "system" fn (commandBuffer: CommandBuffer, pipelineBindPoint: PipelineBindPoint, layout: PipelineLayout, set: u32, descriptorWriteCount: u32, pDescriptorWrites: *const WriteDescriptorSet)
-        } else {
-          ptr = GetDeviceProcAddr(hdevice, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            CmdPushDescriptorSetKHR_panic as extern "system" fn (commandBuffer: CommandBuffer, pipelineBindPoint: PipelineBindPoint, layout: PipelineLayout, set: u32, descriptorWriteCount: u32, pDescriptorWrites: *const WriteDescriptorSet)
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkCmdPushDescriptorSetWithTemplateKHR").unwrap();
-        let CmdPushDescriptorSetWithTemplateKHR_ptr = if feature < VERSION_1_0 {
-          CmdPushDescriptorSetWithTemplateKHR_panic as extern "system" fn (commandBuffer: CommandBuffer, descriptorUpdateTemplate: DescriptorUpdateTemplate, layout: PipelineLayout, set: u32, pData: *const c_void)
-        } else {
-          ptr = GetDeviceProcAddr(hdevice, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            CmdPushDescriptorSetWithTemplateKHR_panic as extern "system" fn (commandBuffer: CommandBuffer, descriptorUpdateTemplate: DescriptorUpdateTemplate, layout: PipelineLayout, set: u32, pData: *const c_void)
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkCmdBeginConditionalRenderingEXT").unwrap();
-        let CmdBeginConditionalRenderingEXT_ptr = if feature < VERSION_1_0 {
-          CmdBeginConditionalRenderingEXT_panic as extern "system" fn (commandBuffer: CommandBuffer, pConditionalRenderingBegin: *const ConditionalRenderingBeginInfoEXT)
-        } else {
-          ptr = GetDeviceProcAddr(hdevice, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            CmdBeginConditionalRenderingEXT_panic as extern "system" fn (commandBuffer: CommandBuffer, pConditionalRenderingBegin: *const ConditionalRenderingBeginInfoEXT)
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkCmdEndConditionalRenderingEXT").unwrap();
-        let CmdEndConditionalRenderingEXT_ptr = if feature < VERSION_1_0 {
-          CmdEndConditionalRenderingEXT_panic as extern "system" fn (commandBuffer: CommandBuffer)
-        } else {
-          ptr = GetDeviceProcAddr(hdevice, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            CmdEndConditionalRenderingEXT_panic as extern "system" fn (commandBuffer: CommandBuffer)
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkCmdProcessCommandsNVX").unwrap();
-        let CmdProcessCommandsNVX_ptr = if feature < VERSION_1_0 {
-          CmdProcessCommandsNVX_panic as extern "system" fn (commandBuffer: CommandBuffer, pProcessCommandsInfo: *const CmdProcessCommandsInfoNVX)
-        } else {
-          ptr = GetDeviceProcAddr(hdevice, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            CmdProcessCommandsNVX_panic as extern "system" fn (commandBuffer: CommandBuffer, pProcessCommandsInfo: *const CmdProcessCommandsInfoNVX)
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkCmdReserveSpaceForCommandsNVX").unwrap();
-        let CmdReserveSpaceForCommandsNVX_ptr = if feature < VERSION_1_0 {
-          CmdReserveSpaceForCommandsNVX_panic as extern "system" fn (commandBuffer: CommandBuffer, pReserveSpaceInfo: *const CmdReserveSpaceForCommandsInfoNVX)
-        } else {
-          ptr = GetDeviceProcAddr(hdevice, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            CmdReserveSpaceForCommandsNVX_panic as extern "system" fn (commandBuffer: CommandBuffer, pReserveSpaceInfo: *const CmdReserveSpaceForCommandsInfoNVX)
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkCreateIndirectCommandsLayoutNVX").unwrap();
-        let CreateIndirectCommandsLayoutNVX_ptr = if feature < VERSION_1_0 {
-          CreateIndirectCommandsLayoutNVX_panic as extern "system" fn (device: Device, pCreateInfo: *const IndirectCommandsLayoutCreateInfoNVX, pAllocator: *const AllocationCallbacks, pIndirectCommandsLayout: *mut IndirectCommandsLayoutNVX) -> Result
-        } else {
-          ptr = GetDeviceProcAddr(hdevice, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            CreateIndirectCommandsLayoutNVX_panic as extern "system" fn (device: Device, pCreateInfo: *const IndirectCommandsLayoutCreateInfoNVX, pAllocator: *const AllocationCallbacks, pIndirectCommandsLayout: *mut IndirectCommandsLayoutNVX) -> Result
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkDestroyIndirectCommandsLayoutNVX").unwrap();
-        let DestroyIndirectCommandsLayoutNVX_ptr = if feature < VERSION_1_0 {
-          DestroyIndirectCommandsLayoutNVX_panic as extern "system" fn (device: Device, indirectCommandsLayout: IndirectCommandsLayoutNVX, pAllocator: *const AllocationCallbacks)
-        } else {
-          ptr = GetDeviceProcAddr(hdevice, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            DestroyIndirectCommandsLayoutNVX_panic as extern "system" fn (device: Device, indirectCommandsLayout: IndirectCommandsLayoutNVX, pAllocator: *const AllocationCallbacks)
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkCreateObjectTableNVX").unwrap();
-        let CreateObjectTableNVX_ptr = if feature < VERSION_1_0 {
-          CreateObjectTableNVX_panic as extern "system" fn (device: Device, pCreateInfo: *const ObjectTableCreateInfoNVX, pAllocator: *const AllocationCallbacks, pObjectTable: *mut ObjectTableNVX) -> Result
-        } else {
-          ptr = GetDeviceProcAddr(hdevice, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            CreateObjectTableNVX_panic as extern "system" fn (device: Device, pCreateInfo: *const ObjectTableCreateInfoNVX, pAllocator: *const AllocationCallbacks, pObjectTable: *mut ObjectTableNVX) -> Result
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkDestroyObjectTableNVX").unwrap();
-        let DestroyObjectTableNVX_ptr = if feature < VERSION_1_0 {
-          DestroyObjectTableNVX_panic as extern "system" fn (device: Device, objectTable: ObjectTableNVX, pAllocator: *const AllocationCallbacks)
-        } else {
-          ptr = GetDeviceProcAddr(hdevice, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            DestroyObjectTableNVX_panic as extern "system" fn (device: Device, objectTable: ObjectTableNVX, pAllocator: *const AllocationCallbacks)
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkRegisterObjectsNVX").unwrap();
-        let RegisterObjectsNVX_ptr = if feature < VERSION_1_0 {
-          RegisterObjectsNVX_panic as extern "system" fn (device: Device, objectTable: ObjectTableNVX, objectCount: u32, ppObjectTableEntries: *const *const ObjectTableEntryNVX, pObjectIndices: *const u32) -> Result
-        } else {
-          ptr = GetDeviceProcAddr(hdevice, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            RegisterObjectsNVX_panic as extern "system" fn (device: Device, objectTable: ObjectTableNVX, objectCount: u32, ppObjectTableEntries: *const *const ObjectTableEntryNVX, pObjectIndices: *const u32) -> Result
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkUnregisterObjectsNVX").unwrap();
-        let UnregisterObjectsNVX_ptr = if feature < VERSION_1_0 {
-          UnregisterObjectsNVX_panic as extern "system" fn (device: Device, objectTable: ObjectTableNVX, objectCount: u32, pObjectEntryTypes: *const ObjectEntryTypeNVX, pObjectIndices: *const u32) -> Result
-        } else {
-          ptr = GetDeviceProcAddr(hdevice, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            UnregisterObjectsNVX_panic as extern "system" fn (device: Device, objectTable: ObjectTableNVX, objectCount: u32, pObjectEntryTypes: *const ObjectEntryTypeNVX, pObjectIndices: *const u32) -> Result
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkGetPhysicalDeviceGeneratedCommandsPropertiesNVX").unwrap();
-        let GetPhysicalDeviceGeneratedCommandsPropertiesNVX_ptr = if feature < VERSION_1_0 {
-          GetPhysicalDeviceGeneratedCommandsPropertiesNVX_panic as extern "system" fn (physicalDevice: PhysicalDevice, pFeatures: *mut DeviceGeneratedCommandsFeaturesNVX, pLimits: *mut DeviceGeneratedCommandsLimitsNVX)
-        } else {
-          ptr = GetDeviceProcAddr(hdevice, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            GetPhysicalDeviceGeneratedCommandsPropertiesNVX_panic as extern "system" fn (physicalDevice: PhysicalDevice, pFeatures: *mut DeviceGeneratedCommandsFeaturesNVX, pLimits: *mut DeviceGeneratedCommandsLimitsNVX)
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkCmdSetViewportWScalingNV").unwrap();
-        let CmdSetViewportWScalingNV_ptr = if feature < VERSION_1_0 {
-          CmdSetViewportWScalingNV_panic as extern "system" fn (commandBuffer: CommandBuffer, firstViewport: u32, viewportCount: u32, pViewportWScalings: *const ViewportWScalingNV)
-        } else {
-          ptr = GetDeviceProcAddr(hdevice, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            CmdSetViewportWScalingNV_panic as extern "system" fn (commandBuffer: CommandBuffer, firstViewport: u32, viewportCount: u32, pViewportWScalings: *const ViewportWScalingNV)
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkDisplayPowerControlEXT").unwrap();
-        let DisplayPowerControlEXT_ptr = if feature < VERSION_1_0 {
-          DisplayPowerControlEXT_panic as extern "system" fn (device: Device, display: DisplayKHR, pDisplayPowerInfo: *const DisplayPowerInfoEXT) -> Result
-        } else {
-          ptr = GetDeviceProcAddr(hdevice, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            DisplayPowerControlEXT_panic as extern "system" fn (device: Device, display: DisplayKHR, pDisplayPowerInfo: *const DisplayPowerInfoEXT) -> Result
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkRegisterDeviceEventEXT").unwrap();
-        let RegisterDeviceEventEXT_ptr = if feature < VERSION_1_0 {
-          RegisterDeviceEventEXT_panic as extern "system" fn (device: Device, pDeviceEventInfo: *const DeviceEventInfoEXT, pAllocator: *const AllocationCallbacks, pFence: *mut Fence) -> Result
-        } else {
-          ptr = GetDeviceProcAddr(hdevice, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            RegisterDeviceEventEXT_panic as extern "system" fn (device: Device, pDeviceEventInfo: *const DeviceEventInfoEXT, pAllocator: *const AllocationCallbacks, pFence: *mut Fence) -> Result
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkRegisterDisplayEventEXT").unwrap();
-        let RegisterDisplayEventEXT_ptr = if feature < VERSION_1_0 {
-          RegisterDisplayEventEXT_panic as extern "system" fn (device: Device, display: DisplayKHR, pDisplayEventInfo: *const DisplayEventInfoEXT, pAllocator: *const AllocationCallbacks, pFence: *mut Fence) -> Result
-        } else {
-          ptr = GetDeviceProcAddr(hdevice, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            RegisterDisplayEventEXT_panic as extern "system" fn (device: Device, display: DisplayKHR, pDisplayEventInfo: *const DisplayEventInfoEXT, pAllocator: *const AllocationCallbacks, pFence: *mut Fence) -> Result
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkGetSwapchainCounterEXT").unwrap();
-        let GetSwapchainCounterEXT_ptr = if feature < VERSION_1_0 {
-          GetSwapchainCounterEXT_panic as extern "system" fn (device: Device, swapchain: SwapchainKHR, counter: SurfaceCounterFlagBitsEXT, pCounterValue: *mut u64) -> Result
-        } else {
-          ptr = GetDeviceProcAddr(hdevice, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            GetSwapchainCounterEXT_panic as extern "system" fn (device: Device, swapchain: SwapchainKHR, counter: SurfaceCounterFlagBitsEXT, pCounterValue: *mut u64) -> Result
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkGetRefreshCycleDurationGOOGLE").unwrap();
-        let GetRefreshCycleDurationGOOGLE_ptr = if feature < VERSION_1_0 {
-          GetRefreshCycleDurationGOOGLE_panic as extern "system" fn (device: Device, swapchain: SwapchainKHR, pDisplayTimingProperties: *mut RefreshCycleDurationGOOGLE) -> Result
-        } else {
-          ptr = GetDeviceProcAddr(hdevice, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            GetRefreshCycleDurationGOOGLE_panic as extern "system" fn (device: Device, swapchain: SwapchainKHR, pDisplayTimingProperties: *mut RefreshCycleDurationGOOGLE) -> Result
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkGetPastPresentationTimingGOOGLE").unwrap();
-        let GetPastPresentationTimingGOOGLE_ptr = if feature < VERSION_1_0 {
-          GetPastPresentationTimingGOOGLE_panic as extern "system" fn (device: Device, swapchain: SwapchainKHR, pPresentationTimingCount: *mut u32, pPresentationTimings: *mut PastPresentationTimingGOOGLE) -> Result
-        } else {
-          ptr = GetDeviceProcAddr(hdevice, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            GetPastPresentationTimingGOOGLE_panic as extern "system" fn (device: Device, swapchain: SwapchainKHR, pPresentationTimingCount: *mut u32, pPresentationTimings: *mut PastPresentationTimingGOOGLE) -> Result
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkCmdSetDiscardRectangleEXT").unwrap();
-        let CmdSetDiscardRectangleEXT_ptr = if feature < VERSION_1_0 {
-          CmdSetDiscardRectangleEXT_panic as extern "system" fn (commandBuffer: CommandBuffer, firstDiscardRectangle: u32, discardRectangleCount: u32, pDiscardRectangles: *const Rect2D)
-        } else {
-          ptr = GetDeviceProcAddr(hdevice, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            CmdSetDiscardRectangleEXT_panic as extern "system" fn (commandBuffer: CommandBuffer, firstDiscardRectangle: u32, discardRectangleCount: u32, pDiscardRectangles: *const Rect2D)
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkSetHdrMetadataEXT").unwrap();
-        let SetHdrMetadataEXT_ptr = if feature < VERSION_1_0 {
-          SetHdrMetadataEXT_panic as extern "system" fn (device: Device, swapchainCount: u32, pSwapchains: *const SwapchainKHR, pMetadata: *const HdrMetadataEXT)
-        } else {
-          ptr = GetDeviceProcAddr(hdevice, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            SetHdrMetadataEXT_panic as extern "system" fn (device: Device, swapchainCount: u32, pSwapchains: *const SwapchainKHR, pMetadata: *const HdrMetadataEXT)
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkCreateRenderPass2KHR").unwrap();
-        let CreateRenderPass2KHR_ptr = if feature < VERSION_1_0 {
-          CreateRenderPass2KHR_panic as extern "system" fn (device: Device, pCreateInfo: *const RenderPassCreateInfo2KHR, pAllocator: *const AllocationCallbacks, pRenderPass: *mut RenderPass) -> Result
-        } else {
-          ptr = GetDeviceProcAddr(hdevice, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            CreateRenderPass2KHR_panic as extern "system" fn (device: Device, pCreateInfo: *const RenderPassCreateInfo2KHR, pAllocator: *const AllocationCallbacks, pRenderPass: *mut RenderPass) -> Result
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkCmdBeginRenderPass2KHR").unwrap();
-        let CmdBeginRenderPass2KHR_ptr = if feature < VERSION_1_0 {
-          CmdBeginRenderPass2KHR_panic as extern "system" fn (commandBuffer: CommandBuffer, pRenderPassBegin: *const RenderPassBeginInfo, pSubpassBeginInfo: *const SubpassBeginInfoKHR)
-        } else {
-          ptr = GetDeviceProcAddr(hdevice, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            CmdBeginRenderPass2KHR_panic as extern "system" fn (commandBuffer: CommandBuffer, pRenderPassBegin: *const RenderPassBeginInfo, pSubpassBeginInfo: *const SubpassBeginInfoKHR)
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkCmdNextSubpass2KHR").unwrap();
-        let CmdNextSubpass2KHR_ptr = if feature < VERSION_1_0 {
-          CmdNextSubpass2KHR_panic as extern "system" fn (commandBuffer: CommandBuffer, pSubpassBeginInfo: *const SubpassBeginInfoKHR, pSubpassEndInfo: *const SubpassEndInfoKHR)
-        } else {
-          ptr = GetDeviceProcAddr(hdevice, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            CmdNextSubpass2KHR_panic as extern "system" fn (commandBuffer: CommandBuffer, pSubpassBeginInfo: *const SubpassBeginInfoKHR, pSubpassEndInfo: *const SubpassEndInfoKHR)
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkCmdEndRenderPass2KHR").unwrap();
-        let CmdEndRenderPass2KHR_ptr = if feature < VERSION_1_0 {
-          CmdEndRenderPass2KHR_panic as extern "system" fn (commandBuffer: CommandBuffer, pSubpassEndInfo: *const SubpassEndInfoKHR)
-        } else {
-          ptr = GetDeviceProcAddr(hdevice, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            CmdEndRenderPass2KHR_panic as extern "system" fn (commandBuffer: CommandBuffer, pSubpassEndInfo: *const SubpassEndInfoKHR)
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkGetSwapchainStatusKHR").unwrap();
-        let GetSwapchainStatusKHR_ptr = if feature < VERSION_1_0 {
-          GetSwapchainStatusKHR_panic as extern "system" fn (device: Device, swapchain: SwapchainKHR) -> Result
-        } else {
-          ptr = GetDeviceProcAddr(hdevice, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            GetSwapchainStatusKHR_panic as extern "system" fn (device: Device, swapchain: SwapchainKHR) -> Result
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkImportFenceWin32HandleKHR").unwrap();
-        let ImportFenceWin32HandleKHR_ptr = if feature < VERSION_1_0 {
-          ImportFenceWin32HandleKHR_panic as extern "system" fn (device: Device, pImportFenceWin32HandleInfo: *const ImportFenceWin32HandleInfoKHR) -> Result
-        } else {
-          ptr = GetDeviceProcAddr(hdevice, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            ImportFenceWin32HandleKHR_panic as extern "system" fn (device: Device, pImportFenceWin32HandleInfo: *const ImportFenceWin32HandleInfoKHR) -> Result
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkGetFenceWin32HandleKHR").unwrap();
-        let GetFenceWin32HandleKHR_ptr = if feature < VERSION_1_0 {
-          GetFenceWin32HandleKHR_panic as extern "system" fn (device: Device, pGetWin32HandleInfo: *const FenceGetWin32HandleInfoKHR, pHandle: *mut HANDLE) -> Result
-        } else {
-          ptr = GetDeviceProcAddr(hdevice, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            GetFenceWin32HandleKHR_panic as extern "system" fn (device: Device, pGetWin32HandleInfo: *const FenceGetWin32HandleInfoKHR, pHandle: *mut HANDLE) -> Result
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkImportFenceFdKHR").unwrap();
-        let ImportFenceFdKHR_ptr = if feature < VERSION_1_0 {
-          ImportFenceFdKHR_panic as extern "system" fn (device: Device, pImportFenceFdInfo: *const ImportFenceFdInfoKHR) -> Result
-        } else {
-          ptr = GetDeviceProcAddr(hdevice, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            ImportFenceFdKHR_panic as extern "system" fn (device: Device, pImportFenceFdInfo: *const ImportFenceFdInfoKHR) -> Result
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkGetFenceFdKHR").unwrap();
-        let GetFenceFdKHR_ptr = if feature < VERSION_1_0 {
-          GetFenceFdKHR_panic as extern "system" fn (device: Device, pGetFdInfo: *const FenceGetFdInfoKHR, pFd: *mut i32) -> Result
-        } else {
-          ptr = GetDeviceProcAddr(hdevice, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            GetFenceFdKHR_panic as extern "system" fn (device: Device, pGetFdInfo: *const FenceGetFdInfoKHR, pFd: *mut i32) -> Result
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkGetAndroidHardwareBufferPropertiesANDROID").unwrap();
-        let GetAndroidHardwareBufferPropertiesANDROID_ptr = if feature < VERSION_1_0 {
-          GetAndroidHardwareBufferPropertiesANDROID_panic as extern "system" fn (device: Device, buffer: *const AHardwareBuffer, pProperties: *mut AndroidHardwareBufferPropertiesANDROID) -> Result
-        } else {
-          ptr = GetDeviceProcAddr(hdevice, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            GetAndroidHardwareBufferPropertiesANDROID_panic as extern "system" fn (device: Device, buffer: *const AHardwareBuffer, pProperties: *mut AndroidHardwareBufferPropertiesANDROID) -> Result
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkGetMemoryAndroidHardwareBufferANDROID").unwrap();
-        let GetMemoryAndroidHardwareBufferANDROID_ptr = if feature < VERSION_1_0 {
-          GetMemoryAndroidHardwareBufferANDROID_panic as extern "system" fn (device: Device, pInfo: *const MemoryGetAndroidHardwareBufferInfoANDROID, pBuffer: *mut *mut AHardwareBuffer) -> Result
-        } else {
-          ptr = GetDeviceProcAddr(hdevice, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            GetMemoryAndroidHardwareBufferANDROID_panic as extern "system" fn (device: Device, pInfo: *const MemoryGetAndroidHardwareBufferInfoANDROID, pBuffer: *mut *mut AHardwareBuffer) -> Result
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkCmdSetSampleLocationsEXT").unwrap();
-        let CmdSetSampleLocationsEXT_ptr = if feature < VERSION_1_0 {
-          CmdSetSampleLocationsEXT_panic as extern "system" fn (commandBuffer: CommandBuffer, pSampleLocationsInfo: *const SampleLocationsInfoEXT)
-        } else {
-          ptr = GetDeviceProcAddr(hdevice, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            CmdSetSampleLocationsEXT_panic as extern "system" fn (commandBuffer: CommandBuffer, pSampleLocationsInfo: *const SampleLocationsInfoEXT)
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkGetPhysicalDeviceMultisamplePropertiesEXT").unwrap();
-        let GetPhysicalDeviceMultisamplePropertiesEXT_ptr = if feature < VERSION_1_0 {
-          GetPhysicalDeviceMultisamplePropertiesEXT_panic as extern "system" fn (physicalDevice: PhysicalDevice, samples: SampleCountFlagBits, pMultisampleProperties: *mut MultisamplePropertiesEXT)
-        } else {
-          ptr = GetDeviceProcAddr(hdevice, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            GetPhysicalDeviceMultisamplePropertiesEXT_panic as extern "system" fn (physicalDevice: PhysicalDevice, samples: SampleCountFlagBits, pMultisampleProperties: *mut MultisamplePropertiesEXT)
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkGetImageDrmFormatModifierPropertiesEXT").unwrap();
-        let GetImageDrmFormatModifierPropertiesEXT_ptr = if feature < VERSION_1_0 {
-          GetImageDrmFormatModifierPropertiesEXT_panic as extern "system" fn (device: Device, image: Image, pProperties: *mut ImageDrmFormatModifierPropertiesEXT) -> Result
-        } else {
-          ptr = GetDeviceProcAddr(hdevice, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            GetImageDrmFormatModifierPropertiesEXT_panic as extern "system" fn (device: Device, image: Image, pProperties: *mut ImageDrmFormatModifierPropertiesEXT) -> Result
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkCreateValidationCacheEXT").unwrap();
-        let CreateValidationCacheEXT_ptr = if feature < VERSION_1_0 {
-          CreateValidationCacheEXT_panic as extern "system" fn (device: Device, pCreateInfo: *const ValidationCacheCreateInfoEXT, pAllocator: *const AllocationCallbacks, pValidationCache: *mut ValidationCacheEXT) -> Result
-        } else {
-          ptr = GetDeviceProcAddr(hdevice, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            CreateValidationCacheEXT_panic as extern "system" fn (device: Device, pCreateInfo: *const ValidationCacheCreateInfoEXT, pAllocator: *const AllocationCallbacks, pValidationCache: *mut ValidationCacheEXT) -> Result
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkDestroyValidationCacheEXT").unwrap();
-        let DestroyValidationCacheEXT_ptr = if feature < VERSION_1_0 {
-          DestroyValidationCacheEXT_panic as extern "system" fn (device: Device, validationCache: ValidationCacheEXT, pAllocator: *const AllocationCallbacks)
-        } else {
-          ptr = GetDeviceProcAddr(hdevice, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            DestroyValidationCacheEXT_panic as extern "system" fn (device: Device, validationCache: ValidationCacheEXT, pAllocator: *const AllocationCallbacks)
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkMergeValidationCachesEXT").unwrap();
-        let MergeValidationCachesEXT_ptr = if feature < VERSION_1_0 {
-          MergeValidationCachesEXT_panic as extern "system" fn (device: Device, dstCache: ValidationCacheEXT, srcCacheCount: u32, pSrcCaches: *const ValidationCacheEXT) -> Result
-        } else {
-          ptr = GetDeviceProcAddr(hdevice, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            MergeValidationCachesEXT_panic as extern "system" fn (device: Device, dstCache: ValidationCacheEXT, srcCacheCount: u32, pSrcCaches: *const ValidationCacheEXT) -> Result
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkGetValidationCacheDataEXT").unwrap();
-        let GetValidationCacheDataEXT_ptr = if feature < VERSION_1_0 {
-          GetValidationCacheDataEXT_panic as extern "system" fn (device: Device, validationCache: ValidationCacheEXT, pDataSize: *mut usize, pData: *mut c_void) -> Result
-        } else {
-          ptr = GetDeviceProcAddr(hdevice, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            GetValidationCacheDataEXT_panic as extern "system" fn (device: Device, validationCache: ValidationCacheEXT, pDataSize: *mut usize, pData: *mut c_void) -> Result
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkCmdBindShadingRateImageNV").unwrap();
-        let CmdBindShadingRateImageNV_ptr = if feature < VERSION_1_0 {
-          CmdBindShadingRateImageNV_panic as extern "system" fn (commandBuffer: CommandBuffer, imageView: ImageView, imageLayout: ImageLayout)
-        } else {
-          ptr = GetDeviceProcAddr(hdevice, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            CmdBindShadingRateImageNV_panic as extern "system" fn (commandBuffer: CommandBuffer, imageView: ImageView, imageLayout: ImageLayout)
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkCmdSetViewportShadingRatePaletteNV").unwrap();
-        let CmdSetViewportShadingRatePaletteNV_ptr = if feature < VERSION_1_0 {
-          CmdSetViewportShadingRatePaletteNV_panic as extern "system" fn (commandBuffer: CommandBuffer, firstViewport: u32, viewportCount: u32, pShadingRatePalettes: *const ShadingRatePaletteNV)
-        } else {
-          ptr = GetDeviceProcAddr(hdevice, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            CmdSetViewportShadingRatePaletteNV_panic as extern "system" fn (commandBuffer: CommandBuffer, firstViewport: u32, viewportCount: u32, pShadingRatePalettes: *const ShadingRatePaletteNV)
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkCmdSetCoarseSampleOrderNV").unwrap();
-        let CmdSetCoarseSampleOrderNV_ptr = if feature < VERSION_1_0 {
-          CmdSetCoarseSampleOrderNV_panic as extern "system" fn (commandBuffer: CommandBuffer, sampleOrderType: CoarseSampleOrderTypeNV, customSampleOrderCount: u32, pCustomSampleOrders: *const CoarseSampleOrderCustomNV)
-        } else {
-          ptr = GetDeviceProcAddr(hdevice, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            CmdSetCoarseSampleOrderNV_panic as extern "system" fn (commandBuffer: CommandBuffer, sampleOrderType: CoarseSampleOrderTypeNV, customSampleOrderCount: u32, pCustomSampleOrders: *const CoarseSampleOrderCustomNV)
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkCreateAccelerationStructureNV").unwrap();
-        let CreateAccelerationStructureNV_ptr = if feature < VERSION_1_0 {
-          CreateAccelerationStructureNV_panic as extern "system" fn (device: Device, pCreateInfo: *const AccelerationStructureCreateInfoNV, pAllocator: *const AllocationCallbacks, pAccelerationStructure: *mut AccelerationStructureNV) -> Result
-        } else {
-          ptr = GetDeviceProcAddr(hdevice, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            CreateAccelerationStructureNV_panic as extern "system" fn (device: Device, pCreateInfo: *const AccelerationStructureCreateInfoNV, pAllocator: *const AllocationCallbacks, pAccelerationStructure: *mut AccelerationStructureNV) -> Result
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkDestroyAccelerationStructureNV").unwrap();
-        let DestroyAccelerationStructureNV_ptr = if feature < VERSION_1_0 {
-          DestroyAccelerationStructureNV_panic as extern "system" fn (device: Device, accelerationStructure: AccelerationStructureNV, pAllocator: *const AllocationCallbacks)
-        } else {
-          ptr = GetDeviceProcAddr(hdevice, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            DestroyAccelerationStructureNV_panic as extern "system" fn (device: Device, accelerationStructure: AccelerationStructureNV, pAllocator: *const AllocationCallbacks)
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkGetAccelerationStructureMemoryRequirementsNV").unwrap();
-        let GetAccelerationStructureMemoryRequirementsNV_ptr = if feature < VERSION_1_0 {
-          GetAccelerationStructureMemoryRequirementsNV_panic as extern "system" fn (device: Device, pInfo: *const AccelerationStructureMemoryRequirementsInfoNV, pMemoryRequirements: *mut MemoryRequirements2)
-        } else {
-          ptr = GetDeviceProcAddr(hdevice, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            GetAccelerationStructureMemoryRequirementsNV_panic as extern "system" fn (device: Device, pInfo: *const AccelerationStructureMemoryRequirementsInfoNV, pMemoryRequirements: *mut MemoryRequirements2)
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkBindAccelerationStructureMemoryNV").unwrap();
-        let BindAccelerationStructureMemoryNV_ptr = if feature < VERSION_1_0 {
-          BindAccelerationStructureMemoryNV_panic as extern "system" fn (device: Device, bindInfoCount: u32, pBindInfos: *const BindAccelerationStructureMemoryInfoNV) -> Result
-        } else {
-          ptr = GetDeviceProcAddr(hdevice, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            BindAccelerationStructureMemoryNV_panic as extern "system" fn (device: Device, bindInfoCount: u32, pBindInfos: *const BindAccelerationStructureMemoryInfoNV) -> Result
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkCmdBuildAccelerationStructureNV").unwrap();
-        let CmdBuildAccelerationStructureNV_ptr = if feature < VERSION_1_0 {
-          CmdBuildAccelerationStructureNV_panic as extern "system" fn (commandBuffer: CommandBuffer, pInfo: *const AccelerationStructureInfoNV, instanceData: Buffer, instanceOffset: DeviceSize, update: Bool32, dst: AccelerationStructureNV, src: AccelerationStructureNV, scratch: Buffer, scratchOffset: DeviceSize)
-        } else {
-          ptr = GetDeviceProcAddr(hdevice, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            CmdBuildAccelerationStructureNV_panic as extern "system" fn (commandBuffer: CommandBuffer, pInfo: *const AccelerationStructureInfoNV, instanceData: Buffer, instanceOffset: DeviceSize, update: Bool32, dst: AccelerationStructureNV, src: AccelerationStructureNV, scratch: Buffer, scratchOffset: DeviceSize)
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkCmdCopyAccelerationStructureNV").unwrap();
-        let CmdCopyAccelerationStructureNV_ptr = if feature < VERSION_1_0 {
-          CmdCopyAccelerationStructureNV_panic as extern "system" fn (commandBuffer: CommandBuffer, dst: AccelerationStructureNV, src: AccelerationStructureNV, mode: CopyAccelerationStructureModeNV)
-        } else {
-          ptr = GetDeviceProcAddr(hdevice, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            CmdCopyAccelerationStructureNV_panic as extern "system" fn (commandBuffer: CommandBuffer, dst: AccelerationStructureNV, src: AccelerationStructureNV, mode: CopyAccelerationStructureModeNV)
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkCmdTraceRaysNV").unwrap();
-        let CmdTraceRaysNV_ptr = if feature < VERSION_1_0 {
-          CmdTraceRaysNV_panic as extern "system" fn (commandBuffer: CommandBuffer, raygenShaderBindingTableBuffer: Buffer, raygenShaderBindingOffset: DeviceSize, missShaderBindingTableBuffer: Buffer, missShaderBindingOffset: DeviceSize, missShaderBindingStride: DeviceSize, hitShaderBindingTableBuffer: Buffer, hitShaderBindingOffset: DeviceSize, hitShaderBindingStride: DeviceSize, callableShaderBindingTableBuffer: Buffer, callableShaderBindingOffset: DeviceSize, callableShaderBindingStride: DeviceSize, width: u32, height: u32, depth: u32)
-        } else {
-          ptr = GetDeviceProcAddr(hdevice, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            CmdTraceRaysNV_panic as extern "system" fn (commandBuffer: CommandBuffer, raygenShaderBindingTableBuffer: Buffer, raygenShaderBindingOffset: DeviceSize, missShaderBindingTableBuffer: Buffer, missShaderBindingOffset: DeviceSize, missShaderBindingStride: DeviceSize, hitShaderBindingTableBuffer: Buffer, hitShaderBindingOffset: DeviceSize, hitShaderBindingStride: DeviceSize, callableShaderBindingTableBuffer: Buffer, callableShaderBindingOffset: DeviceSize, callableShaderBindingStride: DeviceSize, width: u32, height: u32, depth: u32)
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkCreateRayTracingPipelinesNV").unwrap();
-        let CreateRayTracingPipelinesNV_ptr = if feature < VERSION_1_0 {
-          CreateRayTracingPipelinesNV_panic as extern "system" fn (device: Device, pipelineCache: PipelineCache, createInfoCount: u32, pCreateInfos: *const RayTracingPipelineCreateInfoNV, pAllocator: *const AllocationCallbacks, pPipelines: *mut Pipeline) -> Result
-        } else {
-          ptr = GetDeviceProcAddr(hdevice, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            CreateRayTracingPipelinesNV_panic as extern "system" fn (device: Device, pipelineCache: PipelineCache, createInfoCount: u32, pCreateInfos: *const RayTracingPipelineCreateInfoNV, pAllocator: *const AllocationCallbacks, pPipelines: *mut Pipeline) -> Result
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkGetRayTracingShaderGroupHandlesNV").unwrap();
-        let GetRayTracingShaderGroupHandlesNV_ptr = if feature < VERSION_1_0 {
-          GetRayTracingShaderGroupHandlesNV_panic as extern "system" fn (device: Device, pipeline: Pipeline, firstGroup: u32, groupCount: u32, dataSize: usize, pData: *mut c_void) -> Result
-        } else {
-          ptr = GetDeviceProcAddr(hdevice, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            GetRayTracingShaderGroupHandlesNV_panic as extern "system" fn (device: Device, pipeline: Pipeline, firstGroup: u32, groupCount: u32, dataSize: usize, pData: *mut c_void) -> Result
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkGetAccelerationStructureHandleNV").unwrap();
-        let GetAccelerationStructureHandleNV_ptr = if feature < VERSION_1_0 {
-          GetAccelerationStructureHandleNV_panic as extern "system" fn (device: Device, accelerationStructure: AccelerationStructureNV, dataSize: usize, pData: *mut c_void) -> Result
-        } else {
-          ptr = GetDeviceProcAddr(hdevice, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            GetAccelerationStructureHandleNV_panic as extern "system" fn (device: Device, accelerationStructure: AccelerationStructureNV, dataSize: usize, pData: *mut c_void) -> Result
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkCmdWriteAccelerationStructuresPropertiesNV").unwrap();
-        let CmdWriteAccelerationStructuresPropertiesNV_ptr = if feature < VERSION_1_0 {
-          CmdWriteAccelerationStructuresPropertiesNV_panic as extern "system" fn (commandBuffer: CommandBuffer, accelerationStructureCount: u32, pAccelerationStructures: *const AccelerationStructureNV, queryType: QueryType, queryPool: QueryPool, firstQuery: u32)
-        } else {
-          ptr = GetDeviceProcAddr(hdevice, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            CmdWriteAccelerationStructuresPropertiesNV_panic as extern "system" fn (commandBuffer: CommandBuffer, accelerationStructureCount: u32, pAccelerationStructures: *const AccelerationStructureNV, queryType: QueryType, queryPool: QueryPool, firstQuery: u32)
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkCompileDeferredNV").unwrap();
-        let CompileDeferredNV_ptr = if feature < VERSION_1_0 {
-          CompileDeferredNV_panic as extern "system" fn (device: Device, pipeline: Pipeline, shader: u32) -> Result
-        } else {
-          ptr = GetDeviceProcAddr(hdevice, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            CompileDeferredNV_panic as extern "system" fn (device: Device, pipeline: Pipeline, shader: u32) -> Result
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkCmdDrawIndirectCountKHR").unwrap();
-        let CmdDrawIndirectCountKHR_ptr = if feature < VERSION_1_0 {
-          CmdDrawIndirectCountKHR_panic as extern "system" fn (commandBuffer: CommandBuffer, buffer: Buffer, offset: DeviceSize, countBuffer: Buffer, countBufferOffset: DeviceSize, maxDrawCount: u32, stride: u32)
-        } else {
-          ptr = GetDeviceProcAddr(hdevice, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            CmdDrawIndirectCountKHR_panic as extern "system" fn (commandBuffer: CommandBuffer, buffer: Buffer, offset: DeviceSize, countBuffer: Buffer, countBufferOffset: DeviceSize, maxDrawCount: u32, stride: u32)
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkCmdDrawIndexedIndirectCountKHR").unwrap();
-        let CmdDrawIndexedIndirectCountKHR_ptr = if feature < VERSION_1_0 {
-          CmdDrawIndexedIndirectCountKHR_panic as extern "system" fn (commandBuffer: CommandBuffer, buffer: Buffer, offset: DeviceSize, countBuffer: Buffer, countBufferOffset: DeviceSize, maxDrawCount: u32, stride: u32)
-        } else {
-          ptr = GetDeviceProcAddr(hdevice, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            CmdDrawIndexedIndirectCountKHR_panic as extern "system" fn (commandBuffer: CommandBuffer, buffer: Buffer, offset: DeviceSize, countBuffer: Buffer, countBufferOffset: DeviceSize, maxDrawCount: u32, stride: u32)
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkGetMemoryHostPointerPropertiesEXT").unwrap();
-        let GetMemoryHostPointerPropertiesEXT_ptr = if feature < VERSION_1_0 {
-          GetMemoryHostPointerPropertiesEXT_panic as extern "system" fn (device: Device, handleType: ExternalMemoryHandleTypeFlagBits, pHostPointer: *const c_void, pMemoryHostPointerProperties: *mut MemoryHostPointerPropertiesEXT) -> Result
-        } else {
-          ptr = GetDeviceProcAddr(hdevice, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            GetMemoryHostPointerPropertiesEXT_panic as extern "system" fn (device: Device, handleType: ExternalMemoryHandleTypeFlagBits, pHostPointer: *const c_void, pMemoryHostPointerProperties: *mut MemoryHostPointerPropertiesEXT) -> Result
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkCmdWriteBufferMarkerAMD").unwrap();
-        let CmdWriteBufferMarkerAMD_ptr = if feature < VERSION_1_0 {
-          CmdWriteBufferMarkerAMD_panic as extern "system" fn (commandBuffer: CommandBuffer, pipelineStage: PipelineStageFlagBits, dstBuffer: Buffer, dstOffset: DeviceSize, marker: u32)
-        } else {
-          ptr = GetDeviceProcAddr(hdevice, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            CmdWriteBufferMarkerAMD_panic as extern "system" fn (commandBuffer: CommandBuffer, pipelineStage: PipelineStageFlagBits, dstBuffer: Buffer, dstOffset: DeviceSize, marker: u32)
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkGetPhysicalDeviceCalibrateableTimeDomainsEXT").unwrap();
-        let GetPhysicalDeviceCalibrateableTimeDomainsEXT_ptr = if feature < VERSION_1_0 {
-          GetPhysicalDeviceCalibrateableTimeDomainsEXT_panic as extern "system" fn (physicalDevice: PhysicalDevice, pTimeDomainCount: *mut u32, pTimeDomains: *mut TimeDomainEXT) -> Result
-        } else {
-          ptr = GetDeviceProcAddr(hdevice, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            GetPhysicalDeviceCalibrateableTimeDomainsEXT_panic as extern "system" fn (physicalDevice: PhysicalDevice, pTimeDomainCount: *mut u32, pTimeDomains: *mut TimeDomainEXT) -> Result
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkGetCalibratedTimestampsEXT").unwrap();
-        let GetCalibratedTimestampsEXT_ptr = if feature < VERSION_1_0 {
-          GetCalibratedTimestampsEXT_panic as extern "system" fn (device: Device, timestampCount: u32, pTimestampInfos: *const CalibratedTimestampInfoEXT, pTimestamps: *mut u64, pMaxDeviation: *mut u64) -> Result
-        } else {
-          ptr = GetDeviceProcAddr(hdevice, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            GetCalibratedTimestampsEXT_panic as extern "system" fn (device: Device, timestampCount: u32, pTimestampInfos: *const CalibratedTimestampInfoEXT, pTimestamps: *mut u64, pMaxDeviation: *mut u64) -> Result
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkCmdDrawMeshTasksNV").unwrap();
-        let CmdDrawMeshTasksNV_ptr = if feature < VERSION_1_0 {
-          CmdDrawMeshTasksNV_panic as extern "system" fn (commandBuffer: CommandBuffer, taskCount: u32, firstTask: u32)
-        } else {
-          ptr = GetDeviceProcAddr(hdevice, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            CmdDrawMeshTasksNV_panic as extern "system" fn (commandBuffer: CommandBuffer, taskCount: u32, firstTask: u32)
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkCmdDrawMeshTasksIndirectNV").unwrap();
-        let CmdDrawMeshTasksIndirectNV_ptr = if feature < VERSION_1_0 {
-          CmdDrawMeshTasksIndirectNV_panic as extern "system" fn (commandBuffer: CommandBuffer, buffer: Buffer, offset: DeviceSize, drawCount: u32, stride: u32)
-        } else {
-          ptr = GetDeviceProcAddr(hdevice, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            CmdDrawMeshTasksIndirectNV_panic as extern "system" fn (commandBuffer: CommandBuffer, buffer: Buffer, offset: DeviceSize, drawCount: u32, stride: u32)
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkCmdDrawMeshTasksIndirectCountNV").unwrap();
-        let CmdDrawMeshTasksIndirectCountNV_ptr = if feature < VERSION_1_0 {
-          CmdDrawMeshTasksIndirectCountNV_panic as extern "system" fn (commandBuffer: CommandBuffer, buffer: Buffer, offset: DeviceSize, countBuffer: Buffer, countBufferOffset: DeviceSize, maxDrawCount: u32, stride: u32)
-        } else {
-          ptr = GetDeviceProcAddr(hdevice, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            CmdDrawMeshTasksIndirectCountNV_panic as extern "system" fn (commandBuffer: CommandBuffer, buffer: Buffer, offset: DeviceSize, countBuffer: Buffer, countBufferOffset: DeviceSize, maxDrawCount: u32, stride: u32)
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkCmdSetExclusiveScissorNV").unwrap();
-        let CmdSetExclusiveScissorNV_ptr = if feature < VERSION_1_0 {
-          CmdSetExclusiveScissorNV_panic as extern "system" fn (commandBuffer: CommandBuffer, firstExclusiveScissor: u32, exclusiveScissorCount: u32, pExclusiveScissors: *const Rect2D)
-        } else {
-          ptr = GetDeviceProcAddr(hdevice, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            CmdSetExclusiveScissorNV_panic as extern "system" fn (commandBuffer: CommandBuffer, firstExclusiveScissor: u32, exclusiveScissorCount: u32, pExclusiveScissors: *const Rect2D)
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkCmdSetCheckpointNV").unwrap();
-        let CmdSetCheckpointNV_ptr = if feature < VERSION_1_0 {
-          CmdSetCheckpointNV_panic as extern "system" fn (commandBuffer: CommandBuffer, pCheckpointMarker: *const c_void)
-        } else {
-          ptr = GetDeviceProcAddr(hdevice, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            CmdSetCheckpointNV_panic as extern "system" fn (commandBuffer: CommandBuffer, pCheckpointMarker: *const c_void)
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-        name = std::ffi::CString::new("vkGetQueueCheckpointDataNV").unwrap();
-        let GetQueueCheckpointDataNV_ptr = if feature < VERSION_1_0 {
-          GetQueueCheckpointDataNV_panic as extern "system" fn (queue: Queue, pCheckpointDataCount: *mut u32, pCheckpointData: *mut CheckpointDataNV)
-        } else {
-          ptr = GetDeviceProcAddr(hdevice, name.as_ptr());
-          if (ptr as *const c_void).is_null() {
-            GetQueueCheckpointDataNV_panic as extern "system" fn (queue: Queue, pCheckpointDataCount: *mut u32, pCheckpointData: *mut CheckpointDataNV)
-          } else {
-            mem::transmute(ptr)
-          }
-        };
-        
-
-      DeviceExtensions {
-        hdevice,
-        CreateSwapchainKHR_ptr,
-        DestroySwapchainKHR_ptr,
-        GetSwapchainImagesKHR_ptr,
-        AcquireNextImageKHR_ptr,
-        QueuePresentKHR_ptr,
-        GetDeviceGroupPresentCapabilitiesKHR_ptr,
-        GetDeviceGroupSurfacePresentModesKHR_ptr,
-        GetPhysicalDevicePresentRectanglesKHR_ptr,
-        AcquireNextImage2KHR_ptr,
-        CreateSharedSwapchainsKHR_ptr,
-        DebugMarkerSetObjectTagEXT_ptr,
-        DebugMarkerSetObjectNameEXT_ptr,
-        CmdDebugMarkerBeginEXT_ptr,
-        CmdDebugMarkerEndEXT_ptr,
-        CmdDebugMarkerInsertEXT_ptr,
-        CmdBindTransformFeedbackBuffersEXT_ptr,
-        CmdBeginTransformFeedbackEXT_ptr,
-        CmdEndTransformFeedbackEXT_ptr,
-        CmdBeginQueryIndexedEXT_ptr,
-        CmdEndQueryIndexedEXT_ptr,
-        CmdDrawIndirectByteCountEXT_ptr,
-        CmdDrawIndirectCountAMD_ptr,
-        CmdDrawIndexedIndirectCountAMD_ptr,
-        GetShaderInfoAMD_ptr,
-        GetMemoryWin32HandleNV_ptr,
-        GetMemoryWin32HandleKHR_ptr,
-        GetMemoryWin32HandlePropertiesKHR_ptr,
-        GetMemoryFdKHR_ptr,
-        GetMemoryFdPropertiesKHR_ptr,
-        ImportSemaphoreWin32HandleKHR_ptr,
-        GetSemaphoreWin32HandleKHR_ptr,
-        ImportSemaphoreFdKHR_ptr,
-        GetSemaphoreFdKHR_ptr,
-        CmdPushDescriptorSetKHR_ptr,
-        CmdPushDescriptorSetWithTemplateKHR_ptr,
-        CmdBeginConditionalRenderingEXT_ptr,
-        CmdEndConditionalRenderingEXT_ptr,
-        CmdProcessCommandsNVX_ptr,
-        CmdReserveSpaceForCommandsNVX_ptr,
-        CreateIndirectCommandsLayoutNVX_ptr,
-        DestroyIndirectCommandsLayoutNVX_ptr,
-        CreateObjectTableNVX_ptr,
-        DestroyObjectTableNVX_ptr,
-        RegisterObjectsNVX_ptr,
-        UnregisterObjectsNVX_ptr,
-        GetPhysicalDeviceGeneratedCommandsPropertiesNVX_ptr,
-        CmdSetViewportWScalingNV_ptr,
-        DisplayPowerControlEXT_ptr,
-        RegisterDeviceEventEXT_ptr,
-        RegisterDisplayEventEXT_ptr,
-        GetSwapchainCounterEXT_ptr,
-        GetRefreshCycleDurationGOOGLE_ptr,
-        GetPastPresentationTimingGOOGLE_ptr,
-        CmdSetDiscardRectangleEXT_ptr,
-        SetHdrMetadataEXT_ptr,
-        CreateRenderPass2KHR_ptr,
-        CmdBeginRenderPass2KHR_ptr,
-        CmdNextSubpass2KHR_ptr,
-        CmdEndRenderPass2KHR_ptr,
-        GetSwapchainStatusKHR_ptr,
-        ImportFenceWin32HandleKHR_ptr,
-        GetFenceWin32HandleKHR_ptr,
-        ImportFenceFdKHR_ptr,
-        GetFenceFdKHR_ptr,
-        GetAndroidHardwareBufferPropertiesANDROID_ptr,
-        GetMemoryAndroidHardwareBufferANDROID_ptr,
-        CmdSetSampleLocationsEXT_ptr,
-        GetPhysicalDeviceMultisamplePropertiesEXT_ptr,
-        GetImageDrmFormatModifierPropertiesEXT_ptr,
-        CreateValidationCacheEXT_ptr,
-        DestroyValidationCacheEXT_ptr,
-        MergeValidationCachesEXT_ptr,
-        GetValidationCacheDataEXT_ptr,
-        CmdBindShadingRateImageNV_ptr,
-        CmdSetViewportShadingRatePaletteNV_ptr,
-        CmdSetCoarseSampleOrderNV_ptr,
-        CreateAccelerationStructureNV_ptr,
-        DestroyAccelerationStructureNV_ptr,
-        GetAccelerationStructureMemoryRequirementsNV_ptr,
-        BindAccelerationStructureMemoryNV_ptr,
-        CmdBuildAccelerationStructureNV_ptr,
-        CmdCopyAccelerationStructureNV_ptr,
-        CmdTraceRaysNV_ptr,
-        CreateRayTracingPipelinesNV_ptr,
-        GetRayTracingShaderGroupHandlesNV_ptr,
-        GetAccelerationStructureHandleNV_ptr,
-        CmdWriteAccelerationStructuresPropertiesNV_ptr,
-        CompileDeferredNV_ptr,
-        CmdDrawIndirectCountKHR_ptr,
-        CmdDrawIndexedIndirectCountKHR_ptr,
-        GetMemoryHostPointerPropertiesEXT_ptr,
-        CmdWriteBufferMarkerAMD_ptr,
-        GetPhysicalDeviceCalibrateableTimeDomainsEXT_ptr,
-        GetCalibratedTimestampsEXT_ptr,
-        CmdDrawMeshTasksNV_ptr,
-        CmdDrawMeshTasksIndirectNV_ptr,
-        CmdDrawMeshTasksIndirectCountNV_ptr,
-        CmdSetExclusiveScissorNV_ptr,
-        CmdSetCheckpointNV_ptr,
-        GetQueueCheckpointDataNV_ptr,
-      }
-    }
-  }
-
-
-  /// Retrieve the vulkan handle of the DeviceExtensions
-  pub fn get_handle(&self) -> Device {
-    self.hdevice
-  }
-
   #[doc(hidden)] pub fn CreateSwapchainKHR(&self, device: Device, pCreateInfo: *const SwapchainCreateInfoKHR, pAllocator: *const AllocationCallbacks, pSwapchain: *mut SwapchainKHR) -> Result{
     (self.CreateSwapchainKHR_ptr)(device, pCreateInfo, pAllocator, pSwapchain)
   }
@@ -13123,6 +11443,1907 @@ impl DeviceExtensions {
   }
   #[doc(hidden)] pub fn GetQueueCheckpointDataNV(&self, queue: Queue, pCheckpointDataCount: *mut u32, pCheckpointData: *mut CheckpointDataNV){
     (self.GetQueueCheckpointDataNV_ptr)(queue, pCheckpointDataCount, pCheckpointData)
+  }
+}
+impl Drop for VkLib {
+  fn drop(&mut self) {
+    unsafe {
+      vklib = None;
+    }
+  }
+}
+
+
+static mut vklib: Option<*mut VkLib> = None;
+
+#[doc(hidden)] pub fn CreateInstance(pCreateInfo: *const InstanceCreateInfo, pAllocator: *const AllocationCallbacks, pInstance: *mut Instance) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CreateInstance_ptr)(pCreateInfo, pAllocator, pInstance)
+  }
+}
+#[doc(hidden)] pub fn DestroyInstance(instance: Instance, pAllocator: *const AllocationCallbacks){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).DestroyInstance_ptr)(instance, pAllocator)
+  }
+}
+#[doc(hidden)] pub fn EnumeratePhysicalDevices(instance: Instance, pPhysicalDeviceCount: *mut u32, pPhysicalDevices: *mut PhysicalDevice) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).EnumeratePhysicalDevices_ptr)(instance, pPhysicalDeviceCount, pPhysicalDevices)
+  }
+}
+#[doc(hidden)] pub fn GetPhysicalDeviceFeatures(physicalDevice: PhysicalDevice, pFeatures: *mut PhysicalDeviceFeatures){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).GetPhysicalDeviceFeatures_ptr)(physicalDevice, pFeatures)
+  }
+}
+#[doc(hidden)] pub fn GetPhysicalDeviceFormatProperties(physicalDevice: PhysicalDevice, format: Format, pFormatProperties: *mut FormatProperties){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).GetPhysicalDeviceFormatProperties_ptr)(physicalDevice, format, pFormatProperties)
+  }
+}
+#[doc(hidden)] pub fn GetPhysicalDeviceImageFormatProperties(physicalDevice: PhysicalDevice, format: Format, typ: ImageType, tiling: ImageTiling, usage: ImageUsageFlags, flags: ImageCreateFlags, pImageFormatProperties: *mut ImageFormatProperties) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).GetPhysicalDeviceImageFormatProperties_ptr)(physicalDevice, format, typ, tiling, usage, flags, pImageFormatProperties)
+  }
+}
+#[doc(hidden)] pub fn GetPhysicalDeviceProperties(physicalDevice: PhysicalDevice, pProperties: *mut PhysicalDeviceProperties){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).GetPhysicalDeviceProperties_ptr)(physicalDevice, pProperties)
+  }
+}
+#[doc(hidden)] pub fn GetPhysicalDeviceQueueFamilyProperties(physicalDevice: PhysicalDevice, pQueueFamilyPropertyCount: *mut u32, pQueueFamilyProperties: *mut QueueFamilyProperties){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).GetPhysicalDeviceQueueFamilyProperties_ptr)(physicalDevice, pQueueFamilyPropertyCount, pQueueFamilyProperties)
+  }
+}
+#[doc(hidden)] pub fn GetPhysicalDeviceMemoryProperties(physicalDevice: PhysicalDevice, pMemoryProperties: *mut PhysicalDeviceMemoryProperties){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).GetPhysicalDeviceMemoryProperties_ptr)(physicalDevice, pMemoryProperties)
+  }
+}
+#[doc(hidden)] pub fn GetInstanceProcAddr(instance: Instance, pName: *const c_char) -> PFN_vkVoidFunction{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).GetInstanceProcAddr_ptr)(instance, pName)
+  }
+}
+#[doc(hidden)] pub fn GetDeviceProcAddr(device: Device, pName: *const c_char) -> PFN_vkVoidFunction{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).GetDeviceProcAddr_ptr)(device, pName)
+  }
+}
+#[doc(hidden)] pub fn CreateDevice(physicalDevice: PhysicalDevice, pCreateInfo: *const DeviceCreateInfo, pAllocator: *const AllocationCallbacks, pDevice: *mut Device) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CreateDevice_ptr)(physicalDevice, pCreateInfo, pAllocator, pDevice)
+  }
+}
+#[doc(hidden)] pub fn DestroyDevice(device: Device, pAllocator: *const AllocationCallbacks){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).DestroyDevice_ptr)(device, pAllocator)
+  }
+}
+#[doc(hidden)] pub fn EnumerateInstanceExtensionProperties(pLayerName: *const c_char, pPropertyCount: *mut u32, pProperties: *mut ExtensionProperties) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).EnumerateInstanceExtensionProperties_ptr)(pLayerName, pPropertyCount, pProperties)
+  }
+}
+#[doc(hidden)] pub fn EnumerateDeviceExtensionProperties(physicalDevice: PhysicalDevice, pLayerName: *const c_char, pPropertyCount: *mut u32, pProperties: *mut ExtensionProperties) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).EnumerateDeviceExtensionProperties_ptr)(physicalDevice, pLayerName, pPropertyCount, pProperties)
+  }
+}
+#[doc(hidden)] pub fn EnumerateInstanceLayerProperties(pPropertyCount: *mut u32, pProperties: *mut LayerProperties) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).EnumerateInstanceLayerProperties_ptr)(pPropertyCount, pProperties)
+  }
+}
+#[doc(hidden)] pub fn EnumerateDeviceLayerProperties(physicalDevice: PhysicalDevice, pPropertyCount: *mut u32, pProperties: *mut LayerProperties) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).EnumerateDeviceLayerProperties_ptr)(physicalDevice, pPropertyCount, pProperties)
+  }
+}
+#[doc(hidden)] pub fn GetDeviceQueue(device: Device, queueFamilyIndex: u32, queueIndex: u32, pQueue: *mut Queue){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).GetDeviceQueue_ptr)(device, queueFamilyIndex, queueIndex, pQueue)
+  }
+}
+#[doc(hidden)] pub fn QueueSubmit(queue: Queue, submitCount: u32, pSubmits: *const SubmitInfo, fence: Fence) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).QueueSubmit_ptr)(queue, submitCount, pSubmits, fence)
+  }
+}
+#[doc(hidden)] pub fn QueueWaitIdle(queue: Queue) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).QueueWaitIdle_ptr)(queue)
+  }
+}
+#[doc(hidden)] pub fn DeviceWaitIdle(device: Device) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).DeviceWaitIdle_ptr)(device)
+  }
+}
+#[doc(hidden)] pub fn AllocateMemory(device: Device, pAllocateInfo: *const MemoryAllocateInfo, pAllocator: *const AllocationCallbacks, pMemory: *mut DeviceMemory) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).AllocateMemory_ptr)(device, pAllocateInfo, pAllocator, pMemory)
+  }
+}
+#[doc(hidden)] pub fn FreeMemory(device: Device, memory: DeviceMemory, pAllocator: *const AllocationCallbacks){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).FreeMemory_ptr)(device, memory, pAllocator)
+  }
+}
+#[doc(hidden)] pub fn MapMemory(device: Device, memory: DeviceMemory, offset: DeviceSize, size: DeviceSize, flags: MemoryMapFlags, ppData: *mut *mut c_void) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).MapMemory_ptr)(device, memory, offset, size, flags, ppData)
+  }
+}
+#[doc(hidden)] pub fn UnmapMemory(device: Device, memory: DeviceMemory){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).UnmapMemory_ptr)(device, memory)
+  }
+}
+#[doc(hidden)] pub fn FlushMappedMemoryRanges(device: Device, memoryRangeCount: u32, pMemoryRanges: *const MappedMemoryRange) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).FlushMappedMemoryRanges_ptr)(device, memoryRangeCount, pMemoryRanges)
+  }
+}
+#[doc(hidden)] pub fn InvalidateMappedMemoryRanges(device: Device, memoryRangeCount: u32, pMemoryRanges: *const MappedMemoryRange) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).InvalidateMappedMemoryRanges_ptr)(device, memoryRangeCount, pMemoryRanges)
+  }
+}
+#[doc(hidden)] pub fn GetDeviceMemoryCommitment(device: Device, memory: DeviceMemory, pCommittedMemoryInBytes: *mut DeviceSize){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).GetDeviceMemoryCommitment_ptr)(device, memory, pCommittedMemoryInBytes)
+  }
+}
+#[doc(hidden)] pub fn BindBufferMemory(device: Device, buffer: Buffer, memory: DeviceMemory, memoryOffset: DeviceSize) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).BindBufferMemory_ptr)(device, buffer, memory, memoryOffset)
+  }
+}
+#[doc(hidden)] pub fn BindImageMemory(device: Device, image: Image, memory: DeviceMemory, memoryOffset: DeviceSize) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).BindImageMemory_ptr)(device, image, memory, memoryOffset)
+  }
+}
+#[doc(hidden)] pub fn GetBufferMemoryRequirements(device: Device, buffer: Buffer, pMemoryRequirements: *mut MemoryRequirements){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).GetBufferMemoryRequirements_ptr)(device, buffer, pMemoryRequirements)
+  }
+}
+#[doc(hidden)] pub fn GetImageMemoryRequirements(device: Device, image: Image, pMemoryRequirements: *mut MemoryRequirements){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).GetImageMemoryRequirements_ptr)(device, image, pMemoryRequirements)
+  }
+}
+#[doc(hidden)] pub fn GetImageSparseMemoryRequirements(device: Device, image: Image, pSparseMemoryRequirementCount: *mut u32, pSparseMemoryRequirements: *mut SparseImageMemoryRequirements){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).GetImageSparseMemoryRequirements_ptr)(device, image, pSparseMemoryRequirementCount, pSparseMemoryRequirements)
+  }
+}
+#[doc(hidden)] pub fn GetPhysicalDeviceSparseImageFormatProperties(physicalDevice: PhysicalDevice, format: Format, typ: ImageType, samples: SampleCountFlagBits, usage: ImageUsageFlags, tiling: ImageTiling, pPropertyCount: *mut u32, pProperties: *mut SparseImageFormatProperties){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).GetPhysicalDeviceSparseImageFormatProperties_ptr)(physicalDevice, format, typ, samples, usage, tiling, pPropertyCount, pProperties)
+  }
+}
+#[doc(hidden)] pub fn QueueBindSparse(queue: Queue, bindInfoCount: u32, pBindInfo: *const BindSparseInfo, fence: Fence) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).QueueBindSparse_ptr)(queue, bindInfoCount, pBindInfo, fence)
+  }
+}
+#[doc(hidden)] pub fn CreateFence(device: Device, pCreateInfo: *const FenceCreateInfo, pAllocator: *const AllocationCallbacks, pFence: *mut Fence) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CreateFence_ptr)(device, pCreateInfo, pAllocator, pFence)
+  }
+}
+#[doc(hidden)] pub fn DestroyFence(device: Device, fence: Fence, pAllocator: *const AllocationCallbacks){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).DestroyFence_ptr)(device, fence, pAllocator)
+  }
+}
+#[doc(hidden)] pub fn ResetFences(device: Device, fenceCount: u32, pFences: *const Fence) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).ResetFences_ptr)(device, fenceCount, pFences)
+  }
+}
+#[doc(hidden)] pub fn GetFenceStatus(device: Device, fence: Fence) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).GetFenceStatus_ptr)(device, fence)
+  }
+}
+#[doc(hidden)] pub fn WaitForFences(device: Device, fenceCount: u32, pFences: *const Fence, waitAll: Bool32, timeout: u64) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).WaitForFences_ptr)(device, fenceCount, pFences, waitAll, timeout)
+  }
+}
+#[doc(hidden)] pub fn CreateSemaphore(device: Device, pCreateInfo: *const SemaphoreCreateInfo, pAllocator: *const AllocationCallbacks, pSemaphore: *mut Semaphore) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CreateSemaphore_ptr)(device, pCreateInfo, pAllocator, pSemaphore)
+  }
+}
+#[doc(hidden)] pub fn DestroySemaphore(device: Device, semaphore: Semaphore, pAllocator: *const AllocationCallbacks){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).DestroySemaphore_ptr)(device, semaphore, pAllocator)
+  }
+}
+#[doc(hidden)] pub fn CreateEvent(device: Device, pCreateInfo: *const EventCreateInfo, pAllocator: *const AllocationCallbacks, pEvent: *mut Event) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CreateEvent_ptr)(device, pCreateInfo, pAllocator, pEvent)
+  }
+}
+#[doc(hidden)] pub fn DestroyEvent(device: Device, event: Event, pAllocator: *const AllocationCallbacks){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).DestroyEvent_ptr)(device, event, pAllocator)
+  }
+}
+#[doc(hidden)] pub fn GetEventStatus(device: Device, event: Event) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).GetEventStatus_ptr)(device, event)
+  }
+}
+#[doc(hidden)] pub fn SetEvent(device: Device, event: Event) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).SetEvent_ptr)(device, event)
+  }
+}
+#[doc(hidden)] pub fn ResetEvent(device: Device, event: Event) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).ResetEvent_ptr)(device, event)
+  }
+}
+#[doc(hidden)] pub fn CreateQueryPool(device: Device, pCreateInfo: *const QueryPoolCreateInfo, pAllocator: *const AllocationCallbacks, pQueryPool: *mut QueryPool) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CreateQueryPool_ptr)(device, pCreateInfo, pAllocator, pQueryPool)
+  }
+}
+#[doc(hidden)] pub fn DestroyQueryPool(device: Device, queryPool: QueryPool, pAllocator: *const AllocationCallbacks){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).DestroyQueryPool_ptr)(device, queryPool, pAllocator)
+  }
+}
+#[doc(hidden)] pub fn GetQueryPoolResults(device: Device, queryPool: QueryPool, firstQuery: u32, queryCount: u32, dataSize: usize, pData: *mut c_void, stride: DeviceSize, flags: QueryResultFlags) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).GetQueryPoolResults_ptr)(device, queryPool, firstQuery, queryCount, dataSize, pData, stride, flags)
+  }
+}
+#[doc(hidden)] pub fn CreateBuffer(device: Device, pCreateInfo: *const BufferCreateInfo, pAllocator: *const AllocationCallbacks, pBuffer: *mut Buffer) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CreateBuffer_ptr)(device, pCreateInfo, pAllocator, pBuffer)
+  }
+}
+#[doc(hidden)] pub fn DestroyBuffer(device: Device, buffer: Buffer, pAllocator: *const AllocationCallbacks){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).DestroyBuffer_ptr)(device, buffer, pAllocator)
+  }
+}
+#[doc(hidden)] pub fn CreateBufferView(device: Device, pCreateInfo: *const BufferViewCreateInfo, pAllocator: *const AllocationCallbacks, pView: *mut BufferView) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CreateBufferView_ptr)(device, pCreateInfo, pAllocator, pView)
+  }
+}
+#[doc(hidden)] pub fn DestroyBufferView(device: Device, bufferView: BufferView, pAllocator: *const AllocationCallbacks){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).DestroyBufferView_ptr)(device, bufferView, pAllocator)
+  }
+}
+#[doc(hidden)] pub fn CreateImage(device: Device, pCreateInfo: *const ImageCreateInfo, pAllocator: *const AllocationCallbacks, pImage: *mut Image) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CreateImage_ptr)(device, pCreateInfo, pAllocator, pImage)
+  }
+}
+#[doc(hidden)] pub fn DestroyImage(device: Device, image: Image, pAllocator: *const AllocationCallbacks){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).DestroyImage_ptr)(device, image, pAllocator)
+  }
+}
+#[doc(hidden)] pub fn GetImageSubresourceLayout(device: Device, image: Image, pSubresource: *const ImageSubresource, pLayout: *mut SubresourceLayout){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).GetImageSubresourceLayout_ptr)(device, image, pSubresource, pLayout)
+  }
+}
+#[doc(hidden)] pub fn CreateImageView(device: Device, pCreateInfo: *const ImageViewCreateInfo, pAllocator: *const AllocationCallbacks, pView: *mut ImageView) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CreateImageView_ptr)(device, pCreateInfo, pAllocator, pView)
+  }
+}
+#[doc(hidden)] pub fn DestroyImageView(device: Device, imageView: ImageView, pAllocator: *const AllocationCallbacks){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).DestroyImageView_ptr)(device, imageView, pAllocator)
+  }
+}
+#[doc(hidden)] pub fn CreateShaderModule(device: Device, pCreateInfo: *const ShaderModuleCreateInfo, pAllocator: *const AllocationCallbacks, pShaderModule: *mut ShaderModule) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CreateShaderModule_ptr)(device, pCreateInfo, pAllocator, pShaderModule)
+  }
+}
+#[doc(hidden)] pub fn DestroyShaderModule(device: Device, shaderModule: ShaderModule, pAllocator: *const AllocationCallbacks){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).DestroyShaderModule_ptr)(device, shaderModule, pAllocator)
+  }
+}
+#[doc(hidden)] pub fn CreatePipelineCache(device: Device, pCreateInfo: *const PipelineCacheCreateInfo, pAllocator: *const AllocationCallbacks, pPipelineCache: *mut PipelineCache) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CreatePipelineCache_ptr)(device, pCreateInfo, pAllocator, pPipelineCache)
+  }
+}
+#[doc(hidden)] pub fn DestroyPipelineCache(device: Device, pipelineCache: PipelineCache, pAllocator: *const AllocationCallbacks){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).DestroyPipelineCache_ptr)(device, pipelineCache, pAllocator)
+  }
+}
+#[doc(hidden)] pub fn GetPipelineCacheData(device: Device, pipelineCache: PipelineCache, pDataSize: *mut usize, pData: *mut c_void) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).GetPipelineCacheData_ptr)(device, pipelineCache, pDataSize, pData)
+  }
+}
+#[doc(hidden)] pub fn MergePipelineCaches(device: Device, dstCache: PipelineCache, srcCacheCount: u32, pSrcCaches: *const PipelineCache) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).MergePipelineCaches_ptr)(device, dstCache, srcCacheCount, pSrcCaches)
+  }
+}
+#[doc(hidden)] pub fn CreateGraphicsPipelines(device: Device, pipelineCache: PipelineCache, createInfoCount: u32, pCreateInfos: *const GraphicsPipelineCreateInfo, pAllocator: *const AllocationCallbacks, pPipelines: *mut Pipeline) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CreateGraphicsPipelines_ptr)(device, pipelineCache, createInfoCount, pCreateInfos, pAllocator, pPipelines)
+  }
+}
+#[doc(hidden)] pub fn CreateComputePipelines(device: Device, pipelineCache: PipelineCache, createInfoCount: u32, pCreateInfos: *const ComputePipelineCreateInfo, pAllocator: *const AllocationCallbacks, pPipelines: *mut Pipeline) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CreateComputePipelines_ptr)(device, pipelineCache, createInfoCount, pCreateInfos, pAllocator, pPipelines)
+  }
+}
+#[doc(hidden)] pub fn DestroyPipeline(device: Device, pipeline: Pipeline, pAllocator: *const AllocationCallbacks){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).DestroyPipeline_ptr)(device, pipeline, pAllocator)
+  }
+}
+#[doc(hidden)] pub fn CreatePipelineLayout(device: Device, pCreateInfo: *const PipelineLayoutCreateInfo, pAllocator: *const AllocationCallbacks, pPipelineLayout: *mut PipelineLayout) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CreatePipelineLayout_ptr)(device, pCreateInfo, pAllocator, pPipelineLayout)
+  }
+}
+#[doc(hidden)] pub fn DestroyPipelineLayout(device: Device, pipelineLayout: PipelineLayout, pAllocator: *const AllocationCallbacks){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).DestroyPipelineLayout_ptr)(device, pipelineLayout, pAllocator)
+  }
+}
+#[doc(hidden)] pub fn CreateSampler(device: Device, pCreateInfo: *const SamplerCreateInfo, pAllocator: *const AllocationCallbacks, pSampler: *mut Sampler) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CreateSampler_ptr)(device, pCreateInfo, pAllocator, pSampler)
+  }
+}
+#[doc(hidden)] pub fn DestroySampler(device: Device, sampler: Sampler, pAllocator: *const AllocationCallbacks){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).DestroySampler_ptr)(device, sampler, pAllocator)
+  }
+}
+#[doc(hidden)] pub fn CreateDescriptorSetLayout(device: Device, pCreateInfo: *const DescriptorSetLayoutCreateInfo, pAllocator: *const AllocationCallbacks, pSetLayout: *mut DescriptorSetLayout) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CreateDescriptorSetLayout_ptr)(device, pCreateInfo, pAllocator, pSetLayout)
+  }
+}
+#[doc(hidden)] pub fn DestroyDescriptorSetLayout(device: Device, descriptorSetLayout: DescriptorSetLayout, pAllocator: *const AllocationCallbacks){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).DestroyDescriptorSetLayout_ptr)(device, descriptorSetLayout, pAllocator)
+  }
+}
+#[doc(hidden)] pub fn CreateDescriptorPool(device: Device, pCreateInfo: *const DescriptorPoolCreateInfo, pAllocator: *const AllocationCallbacks, pDescriptorPool: *mut DescriptorPool) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CreateDescriptorPool_ptr)(device, pCreateInfo, pAllocator, pDescriptorPool)
+  }
+}
+#[doc(hidden)] pub fn DestroyDescriptorPool(device: Device, descriptorPool: DescriptorPool, pAllocator: *const AllocationCallbacks){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).DestroyDescriptorPool_ptr)(device, descriptorPool, pAllocator)
+  }
+}
+#[doc(hidden)] pub fn ResetDescriptorPool(device: Device, descriptorPool: DescriptorPool, flags: DescriptorPoolResetFlags) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).ResetDescriptorPool_ptr)(device, descriptorPool, flags)
+  }
+}
+#[doc(hidden)] pub fn AllocateDescriptorSets(device: Device, pAllocateInfo: *const DescriptorSetAllocateInfo, pDescriptorSets: *mut DescriptorSet) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).AllocateDescriptorSets_ptr)(device, pAllocateInfo, pDescriptorSets)
+  }
+}
+#[doc(hidden)] pub fn FreeDescriptorSets(device: Device, descriptorPool: DescriptorPool, descriptorSetCount: u32, pDescriptorSets: *const DescriptorSet) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).FreeDescriptorSets_ptr)(device, descriptorPool, descriptorSetCount, pDescriptorSets)
+  }
+}
+#[doc(hidden)] pub fn UpdateDescriptorSets(device: Device, descriptorWriteCount: u32, pDescriptorWrites: *const WriteDescriptorSet, descriptorCopyCount: u32, pDescriptorCopies: *const CopyDescriptorSet){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).UpdateDescriptorSets_ptr)(device, descriptorWriteCount, pDescriptorWrites, descriptorCopyCount, pDescriptorCopies)
+  }
+}
+#[doc(hidden)] pub fn CreateFramebuffer(device: Device, pCreateInfo: *const FramebufferCreateInfo, pAllocator: *const AllocationCallbacks, pFramebuffer: *mut Framebuffer) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CreateFramebuffer_ptr)(device, pCreateInfo, pAllocator, pFramebuffer)
+  }
+}
+#[doc(hidden)] pub fn DestroyFramebuffer(device: Device, framebuffer: Framebuffer, pAllocator: *const AllocationCallbacks){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).DestroyFramebuffer_ptr)(device, framebuffer, pAllocator)
+  }
+}
+#[doc(hidden)] pub fn CreateRenderPass(device: Device, pCreateInfo: *const RenderPassCreateInfo, pAllocator: *const AllocationCallbacks, pRenderPass: *mut RenderPass) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CreateRenderPass_ptr)(device, pCreateInfo, pAllocator, pRenderPass)
+  }
+}
+#[doc(hidden)] pub fn DestroyRenderPass(device: Device, renderPass: RenderPass, pAllocator: *const AllocationCallbacks){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).DestroyRenderPass_ptr)(device, renderPass, pAllocator)
+  }
+}
+#[doc(hidden)] pub fn GetRenderAreaGranularity(device: Device, renderPass: RenderPass, pGranularity: *mut Extent2D){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).GetRenderAreaGranularity_ptr)(device, renderPass, pGranularity)
+  }
+}
+#[doc(hidden)] pub fn CreateCommandPool(device: Device, pCreateInfo: *const CommandPoolCreateInfo, pAllocator: *const AllocationCallbacks, pCommandPool: *mut CommandPool) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CreateCommandPool_ptr)(device, pCreateInfo, pAllocator, pCommandPool)
+  }
+}
+#[doc(hidden)] pub fn DestroyCommandPool(device: Device, commandPool: CommandPool, pAllocator: *const AllocationCallbacks){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).DestroyCommandPool_ptr)(device, commandPool, pAllocator)
+  }
+}
+#[doc(hidden)] pub fn ResetCommandPool(device: Device, commandPool: CommandPool, flags: CommandPoolResetFlags) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).ResetCommandPool_ptr)(device, commandPool, flags)
+  }
+}
+#[doc(hidden)] pub fn AllocateCommandBuffers(device: Device, pAllocateInfo: *const CommandBufferAllocateInfo, pCommandBuffers: *mut CommandBuffer) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).AllocateCommandBuffers_ptr)(device, pAllocateInfo, pCommandBuffers)
+  }
+}
+#[doc(hidden)] pub fn FreeCommandBuffers(device: Device, commandPool: CommandPool, commandBufferCount: u32, pCommandBuffers: *const CommandBuffer){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).FreeCommandBuffers_ptr)(device, commandPool, commandBufferCount, pCommandBuffers)
+  }
+}
+#[doc(hidden)] pub fn BeginCommandBuffer(commandBuffer: CommandBuffer, pBeginInfo: *const CommandBufferBeginInfo) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).BeginCommandBuffer_ptr)(commandBuffer, pBeginInfo)
+  }
+}
+#[doc(hidden)] pub fn EndCommandBuffer(commandBuffer: CommandBuffer) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).EndCommandBuffer_ptr)(commandBuffer)
+  }
+}
+#[doc(hidden)] pub fn ResetCommandBuffer(commandBuffer: CommandBuffer, flags: CommandBufferResetFlags) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).ResetCommandBuffer_ptr)(commandBuffer, flags)
+  }
+}
+#[doc(hidden)] pub fn CmdBindPipeline(commandBuffer: CommandBuffer, pipelineBindPoint: PipelineBindPoint, pipeline: Pipeline){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CmdBindPipeline_ptr)(commandBuffer, pipelineBindPoint, pipeline)
+  }
+}
+#[doc(hidden)] pub fn CmdSetViewport(commandBuffer: CommandBuffer, firstViewport: u32, viewportCount: u32, pViewports: *const Viewport){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CmdSetViewport_ptr)(commandBuffer, firstViewport, viewportCount, pViewports)
+  }
+}
+#[doc(hidden)] pub fn CmdSetScissor(commandBuffer: CommandBuffer, firstScissor: u32, scissorCount: u32, pScissors: *const Rect2D){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CmdSetScissor_ptr)(commandBuffer, firstScissor, scissorCount, pScissors)
+  }
+}
+#[doc(hidden)] pub fn CmdSetLineWidth(commandBuffer: CommandBuffer, lineWidth: f32){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CmdSetLineWidth_ptr)(commandBuffer, lineWidth)
+  }
+}
+#[doc(hidden)] pub fn CmdSetDepthBias(commandBuffer: CommandBuffer, depthBiasConstantFactor: f32, depthBiasClamp: f32, depthBiasSlopeFactor: f32){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CmdSetDepthBias_ptr)(commandBuffer, depthBiasConstantFactor, depthBiasClamp, depthBiasSlopeFactor)
+  }
+}
+#[doc(hidden)] pub fn CmdSetBlendConstants(commandBuffer: CommandBuffer, blendConstants: [f32; 4]){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CmdSetBlendConstants_ptr)(commandBuffer, blendConstants)
+  }
+}
+#[doc(hidden)] pub fn CmdSetDepthBounds(commandBuffer: CommandBuffer, minDepthBounds: f32, maxDepthBounds: f32){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CmdSetDepthBounds_ptr)(commandBuffer, minDepthBounds, maxDepthBounds)
+  }
+}
+#[doc(hidden)] pub fn CmdSetStencilCompareMask(commandBuffer: CommandBuffer, faceMask: StencilFaceFlags, compareMask: u32){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CmdSetStencilCompareMask_ptr)(commandBuffer, faceMask, compareMask)
+  }
+}
+#[doc(hidden)] pub fn CmdSetStencilWriteMask(commandBuffer: CommandBuffer, faceMask: StencilFaceFlags, writeMask: u32){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CmdSetStencilWriteMask_ptr)(commandBuffer, faceMask, writeMask)
+  }
+}
+#[doc(hidden)] pub fn CmdSetStencilReference(commandBuffer: CommandBuffer, faceMask: StencilFaceFlags, reference: u32){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CmdSetStencilReference_ptr)(commandBuffer, faceMask, reference)
+  }
+}
+#[doc(hidden)] pub fn CmdBindDescriptorSets(commandBuffer: CommandBuffer, pipelineBindPoint: PipelineBindPoint, layout: PipelineLayout, firstSet: u32, descriptorSetCount: u32, pDescriptorSets: *const DescriptorSet, dynamicOffsetCount: u32, pDynamicOffsets: *const u32){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CmdBindDescriptorSets_ptr)(commandBuffer, pipelineBindPoint, layout, firstSet, descriptorSetCount, pDescriptorSets, dynamicOffsetCount, pDynamicOffsets)
+  }
+}
+#[doc(hidden)] pub fn CmdBindIndexBuffer(commandBuffer: CommandBuffer, buffer: Buffer, offset: DeviceSize, indexType: IndexType){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CmdBindIndexBuffer_ptr)(commandBuffer, buffer, offset, indexType)
+  }
+}
+#[doc(hidden)] pub fn CmdBindVertexBuffers(commandBuffer: CommandBuffer, firstBinding: u32, bindingCount: u32, pBuffers: *const Buffer, pOffsets: *const DeviceSize){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CmdBindVertexBuffers_ptr)(commandBuffer, firstBinding, bindingCount, pBuffers, pOffsets)
+  }
+}
+#[doc(hidden)] pub fn CmdDraw(commandBuffer: CommandBuffer, vertexCount: u32, instanceCount: u32, firstVertex: u32, firstInstance: u32){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CmdDraw_ptr)(commandBuffer, vertexCount, instanceCount, firstVertex, firstInstance)
+  }
+}
+#[doc(hidden)] pub fn CmdDrawIndexed(commandBuffer: CommandBuffer, indexCount: u32, instanceCount: u32, firstIndex: u32, vertexOffset: i32, firstInstance: u32){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CmdDrawIndexed_ptr)(commandBuffer, indexCount, instanceCount, firstIndex, vertexOffset, firstInstance)
+  }
+}
+#[doc(hidden)] pub fn CmdDrawIndirect(commandBuffer: CommandBuffer, buffer: Buffer, offset: DeviceSize, drawCount: u32, stride: u32){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CmdDrawIndirect_ptr)(commandBuffer, buffer, offset, drawCount, stride)
+  }
+}
+#[doc(hidden)] pub fn CmdDrawIndexedIndirect(commandBuffer: CommandBuffer, buffer: Buffer, offset: DeviceSize, drawCount: u32, stride: u32){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CmdDrawIndexedIndirect_ptr)(commandBuffer, buffer, offset, drawCount, stride)
+  }
+}
+#[doc(hidden)] pub fn CmdDispatch(commandBuffer: CommandBuffer, groupCountX: u32, groupCountY: u32, groupCountZ: u32){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CmdDispatch_ptr)(commandBuffer, groupCountX, groupCountY, groupCountZ)
+  }
+}
+#[doc(hidden)] pub fn CmdDispatchIndirect(commandBuffer: CommandBuffer, buffer: Buffer, offset: DeviceSize){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CmdDispatchIndirect_ptr)(commandBuffer, buffer, offset)
+  }
+}
+#[doc(hidden)] pub fn CmdCopyBuffer(commandBuffer: CommandBuffer, srcBuffer: Buffer, dstBuffer: Buffer, regionCount: u32, pRegions: *const BufferCopy){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CmdCopyBuffer_ptr)(commandBuffer, srcBuffer, dstBuffer, regionCount, pRegions)
+  }
+}
+#[doc(hidden)] pub fn CmdCopyImage(commandBuffer: CommandBuffer, srcImage: Image, srcImageLayout: ImageLayout, dstImage: Image, dstImageLayout: ImageLayout, regionCount: u32, pRegions: *const ImageCopy){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CmdCopyImage_ptr)(commandBuffer, srcImage, srcImageLayout, dstImage, dstImageLayout, regionCount, pRegions)
+  }
+}
+#[doc(hidden)] pub fn CmdBlitImage(commandBuffer: CommandBuffer, srcImage: Image, srcImageLayout: ImageLayout, dstImage: Image, dstImageLayout: ImageLayout, regionCount: u32, pRegions: *const ImageBlit, filter: Filter){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CmdBlitImage_ptr)(commandBuffer, srcImage, srcImageLayout, dstImage, dstImageLayout, regionCount, pRegions, filter)
+  }
+}
+#[doc(hidden)] pub fn CmdCopyBufferToImage(commandBuffer: CommandBuffer, srcBuffer: Buffer, dstImage: Image, dstImageLayout: ImageLayout, regionCount: u32, pRegions: *const BufferImageCopy){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CmdCopyBufferToImage_ptr)(commandBuffer, srcBuffer, dstImage, dstImageLayout, regionCount, pRegions)
+  }
+}
+#[doc(hidden)] pub fn CmdCopyImageToBuffer(commandBuffer: CommandBuffer, srcImage: Image, srcImageLayout: ImageLayout, dstBuffer: Buffer, regionCount: u32, pRegions: *const BufferImageCopy){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CmdCopyImageToBuffer_ptr)(commandBuffer, srcImage, srcImageLayout, dstBuffer, regionCount, pRegions)
+  }
+}
+#[doc(hidden)] pub fn CmdUpdateBuffer(commandBuffer: CommandBuffer, dstBuffer: Buffer, dstOffset: DeviceSize, dataSize: DeviceSize, pData: *const c_void){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CmdUpdateBuffer_ptr)(commandBuffer, dstBuffer, dstOffset, dataSize, pData)
+  }
+}
+#[doc(hidden)] pub fn CmdFillBuffer(commandBuffer: CommandBuffer, dstBuffer: Buffer, dstOffset: DeviceSize, size: DeviceSize, data: u32){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CmdFillBuffer_ptr)(commandBuffer, dstBuffer, dstOffset, size, data)
+  }
+}
+#[doc(hidden)] pub fn CmdClearColorImage(commandBuffer: CommandBuffer, image: Image, imageLayout: ImageLayout, pColor: *const ClearColorValue, rangeCount: u32, pRanges: *const ImageSubresourceRange){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CmdClearColorImage_ptr)(commandBuffer, image, imageLayout, pColor, rangeCount, pRanges)
+  }
+}
+#[doc(hidden)] pub fn CmdClearDepthStencilImage(commandBuffer: CommandBuffer, image: Image, imageLayout: ImageLayout, pDepthStencil: *const ClearDepthStencilValue, rangeCount: u32, pRanges: *const ImageSubresourceRange){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CmdClearDepthStencilImage_ptr)(commandBuffer, image, imageLayout, pDepthStencil, rangeCount, pRanges)
+  }
+}
+#[doc(hidden)] pub fn CmdClearAttachments(commandBuffer: CommandBuffer, attachmentCount: u32, pAttachments: *const ClearAttachment, rectCount: u32, pRects: *const ClearRect){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CmdClearAttachments_ptr)(commandBuffer, attachmentCount, pAttachments, rectCount, pRects)
+  }
+}
+#[doc(hidden)] pub fn CmdResolveImage(commandBuffer: CommandBuffer, srcImage: Image, srcImageLayout: ImageLayout, dstImage: Image, dstImageLayout: ImageLayout, regionCount: u32, pRegions: *const ImageResolve){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CmdResolveImage_ptr)(commandBuffer, srcImage, srcImageLayout, dstImage, dstImageLayout, regionCount, pRegions)
+  }
+}
+#[doc(hidden)] pub fn CmdSetEvent(commandBuffer: CommandBuffer, event: Event, stageMask: PipelineStageFlags){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CmdSetEvent_ptr)(commandBuffer, event, stageMask)
+  }
+}
+#[doc(hidden)] pub fn CmdResetEvent(commandBuffer: CommandBuffer, event: Event, stageMask: PipelineStageFlags){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CmdResetEvent_ptr)(commandBuffer, event, stageMask)
+  }
+}
+#[doc(hidden)] pub fn CmdWaitEvents(commandBuffer: CommandBuffer, eventCount: u32, pEvents: *const Event, srcStageMask: PipelineStageFlags, dstStageMask: PipelineStageFlags, memoryBarrierCount: u32, pMemoryBarriers: *const MemoryBarrier, bufferMemoryBarrierCount: u32, pBufferMemoryBarriers: *const BufferMemoryBarrier, imageMemoryBarrierCount: u32, pImageMemoryBarriers: *const ImageMemoryBarrier){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CmdWaitEvents_ptr)(commandBuffer, eventCount, pEvents, srcStageMask, dstStageMask, memoryBarrierCount, pMemoryBarriers, bufferMemoryBarrierCount, pBufferMemoryBarriers, imageMemoryBarrierCount, pImageMemoryBarriers)
+  }
+}
+#[doc(hidden)] pub fn CmdPipelineBarrier(commandBuffer: CommandBuffer, srcStageMask: PipelineStageFlags, dstStageMask: PipelineStageFlags, dependencyFlags: DependencyFlags, memoryBarrierCount: u32, pMemoryBarriers: *const MemoryBarrier, bufferMemoryBarrierCount: u32, pBufferMemoryBarriers: *const BufferMemoryBarrier, imageMemoryBarrierCount: u32, pImageMemoryBarriers: *const ImageMemoryBarrier){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CmdPipelineBarrier_ptr)(commandBuffer, srcStageMask, dstStageMask, dependencyFlags, memoryBarrierCount, pMemoryBarriers, bufferMemoryBarrierCount, pBufferMemoryBarriers, imageMemoryBarrierCount, pImageMemoryBarriers)
+  }
+}
+#[doc(hidden)] pub fn CmdBeginQuery(commandBuffer: CommandBuffer, queryPool: QueryPool, query: u32, flags: QueryControlFlags){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CmdBeginQuery_ptr)(commandBuffer, queryPool, query, flags)
+  }
+}
+#[doc(hidden)] pub fn CmdEndQuery(commandBuffer: CommandBuffer, queryPool: QueryPool, query: u32){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CmdEndQuery_ptr)(commandBuffer, queryPool, query)
+  }
+}
+#[doc(hidden)] pub fn CmdResetQueryPool(commandBuffer: CommandBuffer, queryPool: QueryPool, firstQuery: u32, queryCount: u32){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CmdResetQueryPool_ptr)(commandBuffer, queryPool, firstQuery, queryCount)
+  }
+}
+#[doc(hidden)] pub fn CmdWriteTimestamp(commandBuffer: CommandBuffer, pipelineStage: PipelineStageFlagBits, queryPool: QueryPool, query: u32){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CmdWriteTimestamp_ptr)(commandBuffer, pipelineStage, queryPool, query)
+  }
+}
+#[doc(hidden)] pub fn CmdCopyQueryPoolResults(commandBuffer: CommandBuffer, queryPool: QueryPool, firstQuery: u32, queryCount: u32, dstBuffer: Buffer, dstOffset: DeviceSize, stride: DeviceSize, flags: QueryResultFlags){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CmdCopyQueryPoolResults_ptr)(commandBuffer, queryPool, firstQuery, queryCount, dstBuffer, dstOffset, stride, flags)
+  }
+}
+#[doc(hidden)] pub fn CmdPushConstants(commandBuffer: CommandBuffer, layout: PipelineLayout, stageFlags: ShaderStageFlags, offset: u32, size: u32, pValues: *const c_void){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CmdPushConstants_ptr)(commandBuffer, layout, stageFlags, offset, size, pValues)
+  }
+}
+#[doc(hidden)] pub fn CmdBeginRenderPass(commandBuffer: CommandBuffer, pRenderPassBegin: *const RenderPassBeginInfo, contents: SubpassContents){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CmdBeginRenderPass_ptr)(commandBuffer, pRenderPassBegin, contents)
+  }
+}
+#[doc(hidden)] pub fn CmdNextSubpass(commandBuffer: CommandBuffer, contents: SubpassContents){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CmdNextSubpass_ptr)(commandBuffer, contents)
+  }
+}
+#[doc(hidden)] pub fn CmdEndRenderPass(commandBuffer: CommandBuffer){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CmdEndRenderPass_ptr)(commandBuffer)
+  }
+}
+#[doc(hidden)] pub fn CmdExecuteCommands(commandBuffer: CommandBuffer, commandBufferCount: u32, pCommandBuffers: *const CommandBuffer){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CmdExecuteCommands_ptr)(commandBuffer, commandBufferCount, pCommandBuffers)
+  }
+}
+#[doc(hidden)] pub fn EnumerateInstanceVersion(pApiVersion: *mut u32) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).EnumerateInstanceVersion_ptr)(pApiVersion)
+  }
+}
+#[doc(hidden)] pub fn BindBufferMemory2(device: Device, bindInfoCount: u32, pBindInfos: *const BindBufferMemoryInfo) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).BindBufferMemory2_ptr)(device, bindInfoCount, pBindInfos)
+  }
+}
+#[doc(hidden)] pub fn BindImageMemory2(device: Device, bindInfoCount: u32, pBindInfos: *const BindImageMemoryInfo) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).BindImageMemory2_ptr)(device, bindInfoCount, pBindInfos)
+  }
+}
+#[doc(hidden)] pub fn GetDeviceGroupPeerMemoryFeatures(device: Device, heapIndex: u32, localDeviceIndex: u32, remoteDeviceIndex: u32, pPeerMemoryFeatures: *mut PeerMemoryFeatureFlags){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).GetDeviceGroupPeerMemoryFeatures_ptr)(device, heapIndex, localDeviceIndex, remoteDeviceIndex, pPeerMemoryFeatures)
+  }
+}
+#[doc(hidden)] pub fn CmdSetDeviceMask(commandBuffer: CommandBuffer, deviceMask: u32){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CmdSetDeviceMask_ptr)(commandBuffer, deviceMask)
+  }
+}
+#[doc(hidden)] pub fn CmdDispatchBase(commandBuffer: CommandBuffer, baseGroupX: u32, baseGroupY: u32, baseGroupZ: u32, groupCountX: u32, groupCountY: u32, groupCountZ: u32){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CmdDispatchBase_ptr)(commandBuffer, baseGroupX, baseGroupY, baseGroupZ, groupCountX, groupCountY, groupCountZ)
+  }
+}
+#[doc(hidden)] pub fn EnumeratePhysicalDeviceGroups(instance: Instance, pPhysicalDeviceGroupCount: *mut u32, pPhysicalDeviceGroupProperties: *mut PhysicalDeviceGroupProperties) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).EnumeratePhysicalDeviceGroups_ptr)(instance, pPhysicalDeviceGroupCount, pPhysicalDeviceGroupProperties)
+  }
+}
+#[doc(hidden)] pub fn GetImageMemoryRequirements2(device: Device, pInfo: *const ImageMemoryRequirementsInfo2, pMemoryRequirements: *mut MemoryRequirements2){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).GetImageMemoryRequirements2_ptr)(device, pInfo, pMemoryRequirements)
+  }
+}
+#[doc(hidden)] pub fn GetBufferMemoryRequirements2(device: Device, pInfo: *const BufferMemoryRequirementsInfo2, pMemoryRequirements: *mut MemoryRequirements2){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).GetBufferMemoryRequirements2_ptr)(device, pInfo, pMemoryRequirements)
+  }
+}
+#[doc(hidden)] pub fn GetImageSparseMemoryRequirements2(device: Device, pInfo: *const ImageSparseMemoryRequirementsInfo2, pSparseMemoryRequirementCount: *mut u32, pSparseMemoryRequirements: *mut SparseImageMemoryRequirements2){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).GetImageSparseMemoryRequirements2_ptr)(device, pInfo, pSparseMemoryRequirementCount, pSparseMemoryRequirements)
+  }
+}
+#[doc(hidden)] pub fn GetPhysicalDeviceFeatures2(physicalDevice: PhysicalDevice, pFeatures: *mut PhysicalDeviceFeatures2){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).GetPhysicalDeviceFeatures2_ptr)(physicalDevice, pFeatures)
+  }
+}
+#[doc(hidden)] pub fn GetPhysicalDeviceProperties2(physicalDevice: PhysicalDevice, pProperties: *mut PhysicalDeviceProperties2){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).GetPhysicalDeviceProperties2_ptr)(physicalDevice, pProperties)
+  }
+}
+#[doc(hidden)] pub fn GetPhysicalDeviceFormatProperties2(physicalDevice: PhysicalDevice, format: Format, pFormatProperties: *mut FormatProperties2){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).GetPhysicalDeviceFormatProperties2_ptr)(physicalDevice, format, pFormatProperties)
+  }
+}
+#[doc(hidden)] pub fn GetPhysicalDeviceImageFormatProperties2(physicalDevice: PhysicalDevice, pImageFormatInfo: *const PhysicalDeviceImageFormatInfo2, pImageFormatProperties: *mut ImageFormatProperties2) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).GetPhysicalDeviceImageFormatProperties2_ptr)(physicalDevice, pImageFormatInfo, pImageFormatProperties)
+  }
+}
+#[doc(hidden)] pub fn GetPhysicalDeviceQueueFamilyProperties2(physicalDevice: PhysicalDevice, pQueueFamilyPropertyCount: *mut u32, pQueueFamilyProperties: *mut QueueFamilyProperties2){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).GetPhysicalDeviceQueueFamilyProperties2_ptr)(physicalDevice, pQueueFamilyPropertyCount, pQueueFamilyProperties)
+  }
+}
+#[doc(hidden)] pub fn GetPhysicalDeviceMemoryProperties2(physicalDevice: PhysicalDevice, pMemoryProperties: *mut PhysicalDeviceMemoryProperties2){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).GetPhysicalDeviceMemoryProperties2_ptr)(physicalDevice, pMemoryProperties)
+  }
+}
+#[doc(hidden)] pub fn GetPhysicalDeviceSparseImageFormatProperties2(physicalDevice: PhysicalDevice, pFormatInfo: *const PhysicalDeviceSparseImageFormatInfo2, pPropertyCount: *mut u32, pProperties: *mut SparseImageFormatProperties2){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).GetPhysicalDeviceSparseImageFormatProperties2_ptr)(physicalDevice, pFormatInfo, pPropertyCount, pProperties)
+  }
+}
+#[doc(hidden)] pub fn TrimCommandPool(device: Device, commandPool: CommandPool, flags: CommandPoolTrimFlags){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).TrimCommandPool_ptr)(device, commandPool, flags)
+  }
+}
+#[doc(hidden)] pub fn GetDeviceQueue2(device: Device, pQueueInfo: *const DeviceQueueInfo2, pQueue: *mut Queue){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).GetDeviceQueue2_ptr)(device, pQueueInfo, pQueue)
+  }
+}
+#[doc(hidden)] pub fn CreateSamplerYcbcrConversion(device: Device, pCreateInfo: *const SamplerYcbcrConversionCreateInfo, pAllocator: *const AllocationCallbacks, pYcbcrConversion: *mut SamplerYcbcrConversion) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CreateSamplerYcbcrConversion_ptr)(device, pCreateInfo, pAllocator, pYcbcrConversion)
+  }
+}
+#[doc(hidden)] pub fn DestroySamplerYcbcrConversion(device: Device, ycbcrConversion: SamplerYcbcrConversion, pAllocator: *const AllocationCallbacks){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).DestroySamplerYcbcrConversion_ptr)(device, ycbcrConversion, pAllocator)
+  }
+}
+#[doc(hidden)] pub fn CreateDescriptorUpdateTemplate(device: Device, pCreateInfo: *const DescriptorUpdateTemplateCreateInfo, pAllocator: *const AllocationCallbacks, pDescriptorUpdateTemplate: *mut DescriptorUpdateTemplate) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CreateDescriptorUpdateTemplate_ptr)(device, pCreateInfo, pAllocator, pDescriptorUpdateTemplate)
+  }
+}
+#[doc(hidden)] pub fn DestroyDescriptorUpdateTemplate(device: Device, descriptorUpdateTemplate: DescriptorUpdateTemplate, pAllocator: *const AllocationCallbacks){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).DestroyDescriptorUpdateTemplate_ptr)(device, descriptorUpdateTemplate, pAllocator)
+  }
+}
+#[doc(hidden)] pub fn UpdateDescriptorSetWithTemplate(device: Device, descriptorSet: DescriptorSet, descriptorUpdateTemplate: DescriptorUpdateTemplate, pData: *const c_void){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).UpdateDescriptorSetWithTemplate_ptr)(device, descriptorSet, descriptorUpdateTemplate, pData)
+  }
+}
+#[doc(hidden)] pub fn GetPhysicalDeviceExternalBufferProperties(physicalDevice: PhysicalDevice, pExternalBufferInfo: *const PhysicalDeviceExternalBufferInfo, pExternalBufferProperties: *mut ExternalBufferProperties){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).GetPhysicalDeviceExternalBufferProperties_ptr)(physicalDevice, pExternalBufferInfo, pExternalBufferProperties)
+  }
+}
+#[doc(hidden)] pub fn GetPhysicalDeviceExternalFenceProperties(physicalDevice: PhysicalDevice, pExternalFenceInfo: *const PhysicalDeviceExternalFenceInfo, pExternalFenceProperties: *mut ExternalFenceProperties){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).GetPhysicalDeviceExternalFenceProperties_ptr)(physicalDevice, pExternalFenceInfo, pExternalFenceProperties)
+  }
+}
+#[doc(hidden)] pub fn GetPhysicalDeviceExternalSemaphoreProperties(physicalDevice: PhysicalDevice, pExternalSemaphoreInfo: *const PhysicalDeviceExternalSemaphoreInfo, pExternalSemaphoreProperties: *mut ExternalSemaphoreProperties){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).GetPhysicalDeviceExternalSemaphoreProperties_ptr)(physicalDevice, pExternalSemaphoreInfo, pExternalSemaphoreProperties)
+  }
+}
+#[doc(hidden)] pub fn GetDescriptorSetLayoutSupport(device: Device, pCreateInfo: *const DescriptorSetLayoutCreateInfo, pSupport: *mut DescriptorSetLayoutSupport){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).GetDescriptorSetLayoutSupport_ptr)(device, pCreateInfo, pSupport)
+  }
+}
+#[doc(hidden)] pub fn DestroySurfaceKHR(instance: Instance, surface: SurfaceKHR, pAllocator: *const AllocationCallbacks){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).DestroySurfaceKHR_ptr)(instance, surface, pAllocator)
+  }
+}
+#[doc(hidden)] pub fn GetPhysicalDeviceSurfaceSupportKHR(physicalDevice: PhysicalDevice, queueFamilyIndex: u32, surface: SurfaceKHR, pSupported: *mut Bool32) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).GetPhysicalDeviceSurfaceSupportKHR_ptr)(physicalDevice, queueFamilyIndex, surface, pSupported)
+  }
+}
+#[doc(hidden)] pub fn GetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice: PhysicalDevice, surface: SurfaceKHR, pSurfaceCapabilities: *mut SurfaceCapabilitiesKHR) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).GetPhysicalDeviceSurfaceCapabilitiesKHR_ptr)(physicalDevice, surface, pSurfaceCapabilities)
+  }
+}
+#[doc(hidden)] pub fn GetPhysicalDeviceSurfaceFormatsKHR(physicalDevice: PhysicalDevice, surface: SurfaceKHR, pSurfaceFormatCount: *mut u32, pSurfaceFormats: *mut SurfaceFormatKHR) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).GetPhysicalDeviceSurfaceFormatsKHR_ptr)(physicalDevice, surface, pSurfaceFormatCount, pSurfaceFormats)
+  }
+}
+#[doc(hidden)] pub fn GetPhysicalDeviceSurfacePresentModesKHR(physicalDevice: PhysicalDevice, surface: SurfaceKHR, pPresentModeCount: *mut u32, pPresentModes: *mut PresentModeKHR) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).GetPhysicalDeviceSurfacePresentModesKHR_ptr)(physicalDevice, surface, pPresentModeCount, pPresentModes)
+  }
+}
+#[doc(hidden)] pub fn GetPhysicalDeviceDisplayPropertiesKHR(physicalDevice: PhysicalDevice, pPropertyCount: *mut u32, pProperties: *mut DisplayPropertiesKHR) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).GetPhysicalDeviceDisplayPropertiesKHR_ptr)(physicalDevice, pPropertyCount, pProperties)
+  }
+}
+#[doc(hidden)] pub fn GetPhysicalDeviceDisplayPlanePropertiesKHR(physicalDevice: PhysicalDevice, pPropertyCount: *mut u32, pProperties: *mut DisplayPlanePropertiesKHR) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).GetPhysicalDeviceDisplayPlanePropertiesKHR_ptr)(physicalDevice, pPropertyCount, pProperties)
+  }
+}
+#[doc(hidden)] pub fn GetDisplayPlaneSupportedDisplaysKHR(physicalDevice: PhysicalDevice, planeIndex: u32, pDisplayCount: *mut u32, pDisplays: *mut DisplayKHR) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).GetDisplayPlaneSupportedDisplaysKHR_ptr)(physicalDevice, planeIndex, pDisplayCount, pDisplays)
+  }
+}
+#[doc(hidden)] pub fn GetDisplayModePropertiesKHR(physicalDevice: PhysicalDevice, display: DisplayKHR, pPropertyCount: *mut u32, pProperties: *mut DisplayModePropertiesKHR) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).GetDisplayModePropertiesKHR_ptr)(physicalDevice, display, pPropertyCount, pProperties)
+  }
+}
+#[doc(hidden)] pub fn CreateDisplayModeKHR(physicalDevice: PhysicalDevice, display: DisplayKHR, pCreateInfo: *const DisplayModeCreateInfoKHR, pAllocator: *const AllocationCallbacks, pMode: *mut DisplayModeKHR) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CreateDisplayModeKHR_ptr)(physicalDevice, display, pCreateInfo, pAllocator, pMode)
+  }
+}
+#[doc(hidden)] pub fn GetDisplayPlaneCapabilitiesKHR(physicalDevice: PhysicalDevice, mode: DisplayModeKHR, planeIndex: u32, pCapabilities: *mut DisplayPlaneCapabilitiesKHR) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).GetDisplayPlaneCapabilitiesKHR_ptr)(physicalDevice, mode, planeIndex, pCapabilities)
+  }
+}
+#[doc(hidden)] pub fn CreateDisplayPlaneSurfaceKHR(instance: Instance, pCreateInfo: *const DisplaySurfaceCreateInfoKHR, pAllocator: *const AllocationCallbacks, pSurface: *mut SurfaceKHR) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CreateDisplayPlaneSurfaceKHR_ptr)(instance, pCreateInfo, pAllocator, pSurface)
+  }
+}
+#[doc(hidden)] pub fn CreateXlibSurfaceKHR(instance: Instance, pCreateInfo: *const XlibSurfaceCreateInfoKHR, pAllocator: *const AllocationCallbacks, pSurface: *mut SurfaceKHR) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CreateXlibSurfaceKHR_ptr)(instance, pCreateInfo, pAllocator, pSurface)
+  }
+}
+#[doc(hidden)] pub fn GetPhysicalDeviceXlibPresentationSupportKHR(physicalDevice: PhysicalDevice, queueFamilyIndex: u32, dpy: *mut Display, visualID: VisualID) -> Bool32{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).GetPhysicalDeviceXlibPresentationSupportKHR_ptr)(physicalDevice, queueFamilyIndex, dpy, visualID)
+  }
+}
+#[doc(hidden)] pub fn CreateXcbSurfaceKHR(instance: Instance, pCreateInfo: *const XcbSurfaceCreateInfoKHR, pAllocator: *const AllocationCallbacks, pSurface: *mut SurfaceKHR) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CreateXcbSurfaceKHR_ptr)(instance, pCreateInfo, pAllocator, pSurface)
+  }
+}
+#[doc(hidden)] pub fn GetPhysicalDeviceXcbPresentationSupportKHR(physicalDevice: PhysicalDevice, queueFamilyIndex: u32, connection: *mut xcb_connection_t, visual_id: xcb_visualid_t) -> Bool32{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).GetPhysicalDeviceXcbPresentationSupportKHR_ptr)(physicalDevice, queueFamilyIndex, connection, visual_id)
+  }
+}
+#[doc(hidden)] pub fn CreateWaylandSurfaceKHR(instance: Instance, pCreateInfo: *const WaylandSurfaceCreateInfoKHR, pAllocator: *const AllocationCallbacks, pSurface: *mut SurfaceKHR) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CreateWaylandSurfaceKHR_ptr)(instance, pCreateInfo, pAllocator, pSurface)
+  }
+}
+#[doc(hidden)] pub fn GetPhysicalDeviceWaylandPresentationSupportKHR(physicalDevice: PhysicalDevice, queueFamilyIndex: u32, display: *mut wl_display) -> Bool32{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).GetPhysicalDeviceWaylandPresentationSupportKHR_ptr)(physicalDevice, queueFamilyIndex, display)
+  }
+}
+#[doc(hidden)] pub fn CreateAndroidSurfaceKHR(instance: Instance, pCreateInfo: *const AndroidSurfaceCreateInfoKHR, pAllocator: *const AllocationCallbacks, pSurface: *mut SurfaceKHR) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CreateAndroidSurfaceKHR_ptr)(instance, pCreateInfo, pAllocator, pSurface)
+  }
+}
+#[doc(hidden)] pub fn CreateWin32SurfaceKHR(instance: Instance, pCreateInfo: *const Win32SurfaceCreateInfoKHR, pAllocator: *const AllocationCallbacks, pSurface: *mut SurfaceKHR) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CreateWin32SurfaceKHR_ptr)(instance, pCreateInfo, pAllocator, pSurface)
+  }
+}
+#[doc(hidden)] pub fn GetPhysicalDeviceWin32PresentationSupportKHR(physicalDevice: PhysicalDevice, queueFamilyIndex: u32) -> Bool32{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).GetPhysicalDeviceWin32PresentationSupportKHR_ptr)(physicalDevice, queueFamilyIndex)
+  }
+}
+#[doc(hidden)] pub fn CreateDebugReportCallbackEXT(instance: Instance, pCreateInfo: *const DebugReportCallbackCreateInfoEXT, pAllocator: *const AllocationCallbacks, pCallback: *mut DebugReportCallbackEXT) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CreateDebugReportCallbackEXT_ptr)(instance, pCreateInfo, pAllocator, pCallback)
+  }
+}
+#[doc(hidden)] pub fn DestroyDebugReportCallbackEXT(instance: Instance, callback: DebugReportCallbackEXT, pAllocator: *const AllocationCallbacks){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).DestroyDebugReportCallbackEXT_ptr)(instance, callback, pAllocator)
+  }
+}
+#[doc(hidden)] pub fn DebugReportMessageEXT(instance: Instance, flags: DebugReportFlagsEXT, objectType: DebugReportObjectTypeEXT, object: u64, location: usize, messageCode: i32, pLayerPrefix: *const c_char, pMessage: *const c_char){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).DebugReportMessageEXT_ptr)(instance, flags, objectType, object, location, messageCode, pLayerPrefix, pMessage)
+  }
+}
+#[doc(hidden)] pub fn GetPhysicalDeviceExternalImageFormatPropertiesNV(physicalDevice: PhysicalDevice, format: Format, typ: ImageType, tiling: ImageTiling, usage: ImageUsageFlags, flags: ImageCreateFlags, externalHandleType: ExternalMemoryHandleTypeFlagsNV, pExternalImageFormatProperties: *mut ExternalImageFormatPropertiesNV) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).GetPhysicalDeviceExternalImageFormatPropertiesNV_ptr)(physicalDevice, format, typ, tiling, usage, flags, externalHandleType, pExternalImageFormatProperties)
+  }
+}
+#[doc(hidden)] pub fn CreateViSurfaceNN(instance: Instance, pCreateInfo: *const ViSurfaceCreateInfoNN, pAllocator: *const AllocationCallbacks, pSurface: *mut SurfaceKHR) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CreateViSurfaceNN_ptr)(instance, pCreateInfo, pAllocator, pSurface)
+  }
+}
+#[doc(hidden)] pub fn ReleaseDisplayEXT(physicalDevice: PhysicalDevice, display: DisplayKHR) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).ReleaseDisplayEXT_ptr)(physicalDevice, display)
+  }
+}
+#[doc(hidden)] pub fn AcquireXlibDisplayEXT(physicalDevice: PhysicalDevice, dpy: *mut Display, display: DisplayKHR) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).AcquireXlibDisplayEXT_ptr)(physicalDevice, dpy, display)
+  }
+}
+#[doc(hidden)] pub fn GetRandROutputDisplayEXT(physicalDevice: PhysicalDevice, dpy: *mut Display, rrOutput: RROutput, pDisplay: *mut DisplayKHR) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).GetRandROutputDisplayEXT_ptr)(physicalDevice, dpy, rrOutput, pDisplay)
+  }
+}
+#[doc(hidden)] pub fn GetPhysicalDeviceSurfaceCapabilities2EXT(physicalDevice: PhysicalDevice, surface: SurfaceKHR, pSurfaceCapabilities: *mut SurfaceCapabilities2EXT) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).GetPhysicalDeviceSurfaceCapabilities2EXT_ptr)(physicalDevice, surface, pSurfaceCapabilities)
+  }
+}
+#[doc(hidden)] pub fn GetPhysicalDeviceSurfaceCapabilities2KHR(physicalDevice: PhysicalDevice, pSurfaceInfo: *const PhysicalDeviceSurfaceInfo2KHR, pSurfaceCapabilities: *mut SurfaceCapabilities2KHR) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).GetPhysicalDeviceSurfaceCapabilities2KHR_ptr)(physicalDevice, pSurfaceInfo, pSurfaceCapabilities)
+  }
+}
+#[doc(hidden)] pub fn GetPhysicalDeviceSurfaceFormats2KHR(physicalDevice: PhysicalDevice, pSurfaceInfo: *const PhysicalDeviceSurfaceInfo2KHR, pSurfaceFormatCount: *mut u32, pSurfaceFormats: *mut SurfaceFormat2KHR) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).GetPhysicalDeviceSurfaceFormats2KHR_ptr)(physicalDevice, pSurfaceInfo, pSurfaceFormatCount, pSurfaceFormats)
+  }
+}
+#[doc(hidden)] pub fn GetPhysicalDeviceDisplayProperties2KHR(physicalDevice: PhysicalDevice, pPropertyCount: *mut u32, pProperties: *mut DisplayProperties2KHR) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).GetPhysicalDeviceDisplayProperties2KHR_ptr)(physicalDevice, pPropertyCount, pProperties)
+  }
+}
+#[doc(hidden)] pub fn GetPhysicalDeviceDisplayPlaneProperties2KHR(physicalDevice: PhysicalDevice, pPropertyCount: *mut u32, pProperties: *mut DisplayPlaneProperties2KHR) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).GetPhysicalDeviceDisplayPlaneProperties2KHR_ptr)(physicalDevice, pPropertyCount, pProperties)
+  }
+}
+#[doc(hidden)] pub fn GetDisplayModeProperties2KHR(physicalDevice: PhysicalDevice, display: DisplayKHR, pPropertyCount: *mut u32, pProperties: *mut DisplayModeProperties2KHR) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).GetDisplayModeProperties2KHR_ptr)(physicalDevice, display, pPropertyCount, pProperties)
+  }
+}
+#[doc(hidden)] pub fn GetDisplayPlaneCapabilities2KHR(physicalDevice: PhysicalDevice, pDisplayPlaneInfo: *const DisplayPlaneInfo2KHR, pCapabilities: *mut DisplayPlaneCapabilities2KHR) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).GetDisplayPlaneCapabilities2KHR_ptr)(physicalDevice, pDisplayPlaneInfo, pCapabilities)
+  }
+}
+#[doc(hidden)] pub fn CreateIOSSurfaceMVK(instance: Instance, pCreateInfo: *const IOSSurfaceCreateInfoMVK, pAllocator: *const AllocationCallbacks, pSurface: *mut SurfaceKHR) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CreateIOSSurfaceMVK_ptr)(instance, pCreateInfo, pAllocator, pSurface)
+  }
+}
+#[doc(hidden)] pub fn CreateMacOSSurfaceMVK(instance: Instance, pCreateInfo: *const MacOSSurfaceCreateInfoMVK, pAllocator: *const AllocationCallbacks, pSurface: *mut SurfaceKHR) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CreateMacOSSurfaceMVK_ptr)(instance, pCreateInfo, pAllocator, pSurface)
+  }
+}
+#[doc(hidden)] pub fn SetDebugUtilsObjectNameEXT(device: Device, pNameInfo: *const DebugUtilsObjectNameInfoEXT) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).SetDebugUtilsObjectNameEXT_ptr)(device, pNameInfo)
+  }
+}
+#[doc(hidden)] pub fn SetDebugUtilsObjectTagEXT(device: Device, pTagInfo: *const DebugUtilsObjectTagInfoEXT) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).SetDebugUtilsObjectTagEXT_ptr)(device, pTagInfo)
+  }
+}
+#[doc(hidden)] pub fn QueueBeginDebugUtilsLabelEXT(queue: Queue, pLabelInfo: *const DebugUtilsLabelEXT){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).QueueBeginDebugUtilsLabelEXT_ptr)(queue, pLabelInfo)
+  }
+}
+#[doc(hidden)] pub fn QueueEndDebugUtilsLabelEXT(queue: Queue){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).QueueEndDebugUtilsLabelEXT_ptr)(queue)
+  }
+}
+#[doc(hidden)] pub fn QueueInsertDebugUtilsLabelEXT(queue: Queue, pLabelInfo: *const DebugUtilsLabelEXT){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).QueueInsertDebugUtilsLabelEXT_ptr)(queue, pLabelInfo)
+  }
+}
+#[doc(hidden)] pub fn CmdBeginDebugUtilsLabelEXT(commandBuffer: CommandBuffer, pLabelInfo: *const DebugUtilsLabelEXT){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CmdBeginDebugUtilsLabelEXT_ptr)(commandBuffer, pLabelInfo)
+  }
+}
+#[doc(hidden)] pub fn CmdEndDebugUtilsLabelEXT(commandBuffer: CommandBuffer){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CmdEndDebugUtilsLabelEXT_ptr)(commandBuffer)
+  }
+}
+#[doc(hidden)] pub fn CmdInsertDebugUtilsLabelEXT(commandBuffer: CommandBuffer, pLabelInfo: *const DebugUtilsLabelEXT){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CmdInsertDebugUtilsLabelEXT_ptr)(commandBuffer, pLabelInfo)
+  }
+}
+#[doc(hidden)] pub fn CreateDebugUtilsMessengerEXT(instance: Instance, pCreateInfo: *const DebugUtilsMessengerCreateInfoEXT, pAllocator: *const AllocationCallbacks, pMessenger: *mut DebugUtilsMessengerEXT) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CreateDebugUtilsMessengerEXT_ptr)(instance, pCreateInfo, pAllocator, pMessenger)
+  }
+}
+#[doc(hidden)] pub fn DestroyDebugUtilsMessengerEXT(instance: Instance, messenger: DebugUtilsMessengerEXT, pAllocator: *const AllocationCallbacks){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).DestroyDebugUtilsMessengerEXT_ptr)(instance, messenger, pAllocator)
+  }
+}
+#[doc(hidden)] pub fn SubmitDebugUtilsMessageEXT(instance: Instance, messageSeverity: DebugUtilsMessageSeverityFlagBitsEXT, messageTypes: DebugUtilsMessageTypeFlagsEXT, pCallbackData: *const DebugUtilsMessengerCallbackDataEXT){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).SubmitDebugUtilsMessageEXT_ptr)(instance, messageSeverity, messageTypes, pCallbackData)
+  }
+}
+#[doc(hidden)] pub fn CreateImagePipeSurfaceFUCHSIA(instance: Instance, pCreateInfo: *const ImagePipeSurfaceCreateInfoFUCHSIA, pAllocator: *const AllocationCallbacks, pSurface: *mut SurfaceKHR) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CreateImagePipeSurfaceFUCHSIA_ptr)(instance, pCreateInfo, pAllocator, pSurface)
+  }
+}
+#[doc(hidden)] pub fn CreateSwapchainKHR(device: Device, pCreateInfo: *const SwapchainCreateInfoKHR, pAllocator: *const AllocationCallbacks, pSwapchain: *mut SwapchainKHR) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CreateSwapchainKHR_ptr)(device, pCreateInfo, pAllocator, pSwapchain)
+  }
+}
+#[doc(hidden)] pub fn DestroySwapchainKHR(device: Device, swapchain: SwapchainKHR, pAllocator: *const AllocationCallbacks){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).DestroySwapchainKHR_ptr)(device, swapchain, pAllocator)
+  }
+}
+#[doc(hidden)] pub fn GetSwapchainImagesKHR(device: Device, swapchain: SwapchainKHR, pSwapchainImageCount: *mut u32, pSwapchainImages: *mut Image) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).GetSwapchainImagesKHR_ptr)(device, swapchain, pSwapchainImageCount, pSwapchainImages)
+  }
+}
+#[doc(hidden)] pub fn AcquireNextImageKHR(device: Device, swapchain: SwapchainKHR, timeout: u64, semaphore: Semaphore, fence: Fence, pImageIndex: *mut u32) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).AcquireNextImageKHR_ptr)(device, swapchain, timeout, semaphore, fence, pImageIndex)
+  }
+}
+#[doc(hidden)] pub fn QueuePresentKHR(queue: Queue, pPresentInfo: *const PresentInfoKHR) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).QueuePresentKHR_ptr)(queue, pPresentInfo)
+  }
+}
+#[doc(hidden)] pub fn GetDeviceGroupPresentCapabilitiesKHR(device: Device, pDeviceGroupPresentCapabilities: *mut DeviceGroupPresentCapabilitiesKHR) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).GetDeviceGroupPresentCapabilitiesKHR_ptr)(device, pDeviceGroupPresentCapabilities)
+  }
+}
+#[doc(hidden)] pub fn GetDeviceGroupSurfacePresentModesKHR(device: Device, surface: SurfaceKHR, pModes: *mut DeviceGroupPresentModeFlagsKHR) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).GetDeviceGroupSurfacePresentModesKHR_ptr)(device, surface, pModes)
+  }
+}
+#[doc(hidden)] pub fn GetPhysicalDevicePresentRectanglesKHR(physicalDevice: PhysicalDevice, surface: SurfaceKHR, pRectCount: *mut u32, pRects: *mut Rect2D) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).GetPhysicalDevicePresentRectanglesKHR_ptr)(physicalDevice, surface, pRectCount, pRects)
+  }
+}
+#[doc(hidden)] pub fn AcquireNextImage2KHR(device: Device, pAcquireInfo: *const AcquireNextImageInfoKHR, pImageIndex: *mut u32) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).AcquireNextImage2KHR_ptr)(device, pAcquireInfo, pImageIndex)
+  }
+}
+#[doc(hidden)] pub fn CreateSharedSwapchainsKHR(device: Device, swapchainCount: u32, pCreateInfos: *const SwapchainCreateInfoKHR, pAllocator: *const AllocationCallbacks, pSwapchains: *mut SwapchainKHR) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CreateSharedSwapchainsKHR_ptr)(device, swapchainCount, pCreateInfos, pAllocator, pSwapchains)
+  }
+}
+#[doc(hidden)] pub fn DebugMarkerSetObjectTagEXT(device: Device, pTagInfo: *const DebugMarkerObjectTagInfoEXT) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).DebugMarkerSetObjectTagEXT_ptr)(device, pTagInfo)
+  }
+}
+#[doc(hidden)] pub fn DebugMarkerSetObjectNameEXT(device: Device, pNameInfo: *const DebugMarkerObjectNameInfoEXT) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).DebugMarkerSetObjectNameEXT_ptr)(device, pNameInfo)
+  }
+}
+#[doc(hidden)] pub fn CmdDebugMarkerBeginEXT(commandBuffer: CommandBuffer, pMarkerInfo: *const DebugMarkerMarkerInfoEXT){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CmdDebugMarkerBeginEXT_ptr)(commandBuffer, pMarkerInfo)
+  }
+}
+#[doc(hidden)] pub fn CmdDebugMarkerEndEXT(commandBuffer: CommandBuffer){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CmdDebugMarkerEndEXT_ptr)(commandBuffer)
+  }
+}
+#[doc(hidden)] pub fn CmdDebugMarkerInsertEXT(commandBuffer: CommandBuffer, pMarkerInfo: *const DebugMarkerMarkerInfoEXT){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CmdDebugMarkerInsertEXT_ptr)(commandBuffer, pMarkerInfo)
+  }
+}
+#[doc(hidden)] pub fn CmdBindTransformFeedbackBuffersEXT(commandBuffer: CommandBuffer, firstBinding: u32, bindingCount: u32, pBuffers: *const Buffer, pOffsets: *const DeviceSize, pSizes: *const DeviceSize){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CmdBindTransformFeedbackBuffersEXT_ptr)(commandBuffer, firstBinding, bindingCount, pBuffers, pOffsets, pSizes)
+  }
+}
+#[doc(hidden)] pub fn CmdBeginTransformFeedbackEXT(commandBuffer: CommandBuffer, firstCounterBuffer: u32, counterBufferCount: u32, pCounterBuffers: *const Buffer, pCounterBufferOffsets: *const DeviceSize){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CmdBeginTransformFeedbackEXT_ptr)(commandBuffer, firstCounterBuffer, counterBufferCount, pCounterBuffers, pCounterBufferOffsets)
+  }
+}
+#[doc(hidden)] pub fn CmdEndTransformFeedbackEXT(commandBuffer: CommandBuffer, firstCounterBuffer: u32, counterBufferCount: u32, pCounterBuffers: *const Buffer, pCounterBufferOffsets: *const DeviceSize){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CmdEndTransformFeedbackEXT_ptr)(commandBuffer, firstCounterBuffer, counterBufferCount, pCounterBuffers, pCounterBufferOffsets)
+  }
+}
+#[doc(hidden)] pub fn CmdBeginQueryIndexedEXT(commandBuffer: CommandBuffer, queryPool: QueryPool, query: u32, flags: QueryControlFlags, index: u32){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CmdBeginQueryIndexedEXT_ptr)(commandBuffer, queryPool, query, flags, index)
+  }
+}
+#[doc(hidden)] pub fn CmdEndQueryIndexedEXT(commandBuffer: CommandBuffer, queryPool: QueryPool, query: u32, index: u32){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CmdEndQueryIndexedEXT_ptr)(commandBuffer, queryPool, query, index)
+  }
+}
+#[doc(hidden)] pub fn CmdDrawIndirectByteCountEXT(commandBuffer: CommandBuffer, instanceCount: u32, firstInstance: u32, counterBuffer: Buffer, counterBufferOffset: DeviceSize, counterOffset: u32, vertexStride: u32){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CmdDrawIndirectByteCountEXT_ptr)(commandBuffer, instanceCount, firstInstance, counterBuffer, counterBufferOffset, counterOffset, vertexStride)
+  }
+}
+#[doc(hidden)] pub fn CmdDrawIndirectCountAMD(commandBuffer: CommandBuffer, buffer: Buffer, offset: DeviceSize, countBuffer: Buffer, countBufferOffset: DeviceSize, maxDrawCount: u32, stride: u32){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CmdDrawIndirectCountAMD_ptr)(commandBuffer, buffer, offset, countBuffer, countBufferOffset, maxDrawCount, stride)
+  }
+}
+#[doc(hidden)] pub fn CmdDrawIndexedIndirectCountAMD(commandBuffer: CommandBuffer, buffer: Buffer, offset: DeviceSize, countBuffer: Buffer, countBufferOffset: DeviceSize, maxDrawCount: u32, stride: u32){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CmdDrawIndexedIndirectCountAMD_ptr)(commandBuffer, buffer, offset, countBuffer, countBufferOffset, maxDrawCount, stride)
+  }
+}
+#[doc(hidden)] pub fn GetShaderInfoAMD(device: Device, pipeline: Pipeline, shaderStage: ShaderStageFlagBits, infoType: ShaderInfoTypeAMD, pInfoSize: *mut usize, pInfo: *mut c_void) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).GetShaderInfoAMD_ptr)(device, pipeline, shaderStage, infoType, pInfoSize, pInfo)
+  }
+}
+#[doc(hidden)] pub fn GetMemoryWin32HandleNV(device: Device, memory: DeviceMemory, handleType: ExternalMemoryHandleTypeFlagsNV, pHandle: *mut HANDLE) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).GetMemoryWin32HandleNV_ptr)(device, memory, handleType, pHandle)
+  }
+}
+#[doc(hidden)] pub fn GetMemoryWin32HandleKHR(device: Device, pGetWin32HandleInfo: *const MemoryGetWin32HandleInfoKHR, pHandle: *mut HANDLE) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).GetMemoryWin32HandleKHR_ptr)(device, pGetWin32HandleInfo, pHandle)
+  }
+}
+#[doc(hidden)] pub fn GetMemoryWin32HandlePropertiesKHR(device: Device, handleType: ExternalMemoryHandleTypeFlagBits, handle: HANDLE, pMemoryWin32HandleProperties: *mut MemoryWin32HandlePropertiesKHR) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).GetMemoryWin32HandlePropertiesKHR_ptr)(device, handleType, handle, pMemoryWin32HandleProperties)
+  }
+}
+#[doc(hidden)] pub fn GetMemoryFdKHR(device: Device, pGetFdInfo: *const MemoryGetFdInfoKHR, pFd: *mut i32) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).GetMemoryFdKHR_ptr)(device, pGetFdInfo, pFd)
+  }
+}
+#[doc(hidden)] pub fn GetMemoryFdPropertiesKHR(device: Device, handleType: ExternalMemoryHandleTypeFlagBits, fd: i32, pMemoryFdProperties: *mut MemoryFdPropertiesKHR) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).GetMemoryFdPropertiesKHR_ptr)(device, handleType, fd, pMemoryFdProperties)
+  }
+}
+#[doc(hidden)] pub fn ImportSemaphoreWin32HandleKHR(device: Device, pImportSemaphoreWin32HandleInfo: *const ImportSemaphoreWin32HandleInfoKHR) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).ImportSemaphoreWin32HandleKHR_ptr)(device, pImportSemaphoreWin32HandleInfo)
+  }
+}
+#[doc(hidden)] pub fn GetSemaphoreWin32HandleKHR(device: Device, pGetWin32HandleInfo: *const SemaphoreGetWin32HandleInfoKHR, pHandle: *mut HANDLE) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).GetSemaphoreWin32HandleKHR_ptr)(device, pGetWin32HandleInfo, pHandle)
+  }
+}
+#[doc(hidden)] pub fn ImportSemaphoreFdKHR(device: Device, pImportSemaphoreFdInfo: *const ImportSemaphoreFdInfoKHR) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).ImportSemaphoreFdKHR_ptr)(device, pImportSemaphoreFdInfo)
+  }
+}
+#[doc(hidden)] pub fn GetSemaphoreFdKHR(device: Device, pGetFdInfo: *const SemaphoreGetFdInfoKHR, pFd: *mut i32) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).GetSemaphoreFdKHR_ptr)(device, pGetFdInfo, pFd)
+  }
+}
+#[doc(hidden)] pub fn CmdPushDescriptorSetKHR(commandBuffer: CommandBuffer, pipelineBindPoint: PipelineBindPoint, layout: PipelineLayout, set: u32, descriptorWriteCount: u32, pDescriptorWrites: *const WriteDescriptorSet){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CmdPushDescriptorSetKHR_ptr)(commandBuffer, pipelineBindPoint, layout, set, descriptorWriteCount, pDescriptorWrites)
+  }
+}
+#[doc(hidden)] pub fn CmdPushDescriptorSetWithTemplateKHR(commandBuffer: CommandBuffer, descriptorUpdateTemplate: DescriptorUpdateTemplate, layout: PipelineLayout, set: u32, pData: *const c_void){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CmdPushDescriptorSetWithTemplateKHR_ptr)(commandBuffer, descriptorUpdateTemplate, layout, set, pData)
+  }
+}
+#[doc(hidden)] pub fn CmdBeginConditionalRenderingEXT(commandBuffer: CommandBuffer, pConditionalRenderingBegin: *const ConditionalRenderingBeginInfoEXT){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CmdBeginConditionalRenderingEXT_ptr)(commandBuffer, pConditionalRenderingBegin)
+  }
+}
+#[doc(hidden)] pub fn CmdEndConditionalRenderingEXT(commandBuffer: CommandBuffer){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CmdEndConditionalRenderingEXT_ptr)(commandBuffer)
+  }
+}
+#[doc(hidden)] pub fn CmdProcessCommandsNVX(commandBuffer: CommandBuffer, pProcessCommandsInfo: *const CmdProcessCommandsInfoNVX){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CmdProcessCommandsNVX_ptr)(commandBuffer, pProcessCommandsInfo)
+  }
+}
+#[doc(hidden)] pub fn CmdReserveSpaceForCommandsNVX(commandBuffer: CommandBuffer, pReserveSpaceInfo: *const CmdReserveSpaceForCommandsInfoNVX){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CmdReserveSpaceForCommandsNVX_ptr)(commandBuffer, pReserveSpaceInfo)
+  }
+}
+#[doc(hidden)] pub fn CreateIndirectCommandsLayoutNVX(device: Device, pCreateInfo: *const IndirectCommandsLayoutCreateInfoNVX, pAllocator: *const AllocationCallbacks, pIndirectCommandsLayout: *mut IndirectCommandsLayoutNVX) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CreateIndirectCommandsLayoutNVX_ptr)(device, pCreateInfo, pAllocator, pIndirectCommandsLayout)
+  }
+}
+#[doc(hidden)] pub fn DestroyIndirectCommandsLayoutNVX(device: Device, indirectCommandsLayout: IndirectCommandsLayoutNVX, pAllocator: *const AllocationCallbacks){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).DestroyIndirectCommandsLayoutNVX_ptr)(device, indirectCommandsLayout, pAllocator)
+  }
+}
+#[doc(hidden)] pub fn CreateObjectTableNVX(device: Device, pCreateInfo: *const ObjectTableCreateInfoNVX, pAllocator: *const AllocationCallbacks, pObjectTable: *mut ObjectTableNVX) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CreateObjectTableNVX_ptr)(device, pCreateInfo, pAllocator, pObjectTable)
+  }
+}
+#[doc(hidden)] pub fn DestroyObjectTableNVX(device: Device, objectTable: ObjectTableNVX, pAllocator: *const AllocationCallbacks){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).DestroyObjectTableNVX_ptr)(device, objectTable, pAllocator)
+  }
+}
+#[doc(hidden)] pub fn RegisterObjectsNVX(device: Device, objectTable: ObjectTableNVX, objectCount: u32, ppObjectTableEntries: *const *const ObjectTableEntryNVX, pObjectIndices: *const u32) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).RegisterObjectsNVX_ptr)(device, objectTable, objectCount, ppObjectTableEntries, pObjectIndices)
+  }
+}
+#[doc(hidden)] pub fn UnregisterObjectsNVX(device: Device, objectTable: ObjectTableNVX, objectCount: u32, pObjectEntryTypes: *const ObjectEntryTypeNVX, pObjectIndices: *const u32) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).UnregisterObjectsNVX_ptr)(device, objectTable, objectCount, pObjectEntryTypes, pObjectIndices)
+  }
+}
+#[doc(hidden)] pub fn GetPhysicalDeviceGeneratedCommandsPropertiesNVX(physicalDevice: PhysicalDevice, pFeatures: *mut DeviceGeneratedCommandsFeaturesNVX, pLimits: *mut DeviceGeneratedCommandsLimitsNVX){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).GetPhysicalDeviceGeneratedCommandsPropertiesNVX_ptr)(physicalDevice, pFeatures, pLimits)
+  }
+}
+#[doc(hidden)] pub fn CmdSetViewportWScalingNV(commandBuffer: CommandBuffer, firstViewport: u32, viewportCount: u32, pViewportWScalings: *const ViewportWScalingNV){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CmdSetViewportWScalingNV_ptr)(commandBuffer, firstViewport, viewportCount, pViewportWScalings)
+  }
+}
+#[doc(hidden)] pub fn DisplayPowerControlEXT(device: Device, display: DisplayKHR, pDisplayPowerInfo: *const DisplayPowerInfoEXT) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).DisplayPowerControlEXT_ptr)(device, display, pDisplayPowerInfo)
+  }
+}
+#[doc(hidden)] pub fn RegisterDeviceEventEXT(device: Device, pDeviceEventInfo: *const DeviceEventInfoEXT, pAllocator: *const AllocationCallbacks, pFence: *mut Fence) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).RegisterDeviceEventEXT_ptr)(device, pDeviceEventInfo, pAllocator, pFence)
+  }
+}
+#[doc(hidden)] pub fn RegisterDisplayEventEXT(device: Device, display: DisplayKHR, pDisplayEventInfo: *const DisplayEventInfoEXT, pAllocator: *const AllocationCallbacks, pFence: *mut Fence) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).RegisterDisplayEventEXT_ptr)(device, display, pDisplayEventInfo, pAllocator, pFence)
+  }
+}
+#[doc(hidden)] pub fn GetSwapchainCounterEXT(device: Device, swapchain: SwapchainKHR, counter: SurfaceCounterFlagBitsEXT, pCounterValue: *mut u64) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).GetSwapchainCounterEXT_ptr)(device, swapchain, counter, pCounterValue)
+  }
+}
+#[doc(hidden)] pub fn GetRefreshCycleDurationGOOGLE(device: Device, swapchain: SwapchainKHR, pDisplayTimingProperties: *mut RefreshCycleDurationGOOGLE) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).GetRefreshCycleDurationGOOGLE_ptr)(device, swapchain, pDisplayTimingProperties)
+  }
+}
+#[doc(hidden)] pub fn GetPastPresentationTimingGOOGLE(device: Device, swapchain: SwapchainKHR, pPresentationTimingCount: *mut u32, pPresentationTimings: *mut PastPresentationTimingGOOGLE) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).GetPastPresentationTimingGOOGLE_ptr)(device, swapchain, pPresentationTimingCount, pPresentationTimings)
+  }
+}
+#[doc(hidden)] pub fn CmdSetDiscardRectangleEXT(commandBuffer: CommandBuffer, firstDiscardRectangle: u32, discardRectangleCount: u32, pDiscardRectangles: *const Rect2D){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CmdSetDiscardRectangleEXT_ptr)(commandBuffer, firstDiscardRectangle, discardRectangleCount, pDiscardRectangles)
+  }
+}
+#[doc(hidden)] pub fn SetHdrMetadataEXT(device: Device, swapchainCount: u32, pSwapchains: *const SwapchainKHR, pMetadata: *const HdrMetadataEXT){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).SetHdrMetadataEXT_ptr)(device, swapchainCount, pSwapchains, pMetadata)
+  }
+}
+#[doc(hidden)] pub fn CreateRenderPass2KHR(device: Device, pCreateInfo: *const RenderPassCreateInfo2KHR, pAllocator: *const AllocationCallbacks, pRenderPass: *mut RenderPass) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CreateRenderPass2KHR_ptr)(device, pCreateInfo, pAllocator, pRenderPass)
+  }
+}
+#[doc(hidden)] pub fn CmdBeginRenderPass2KHR(commandBuffer: CommandBuffer, pRenderPassBegin: *const RenderPassBeginInfo, pSubpassBeginInfo: *const SubpassBeginInfoKHR){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CmdBeginRenderPass2KHR_ptr)(commandBuffer, pRenderPassBegin, pSubpassBeginInfo)
+  }
+}
+#[doc(hidden)] pub fn CmdNextSubpass2KHR(commandBuffer: CommandBuffer, pSubpassBeginInfo: *const SubpassBeginInfoKHR, pSubpassEndInfo: *const SubpassEndInfoKHR){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CmdNextSubpass2KHR_ptr)(commandBuffer, pSubpassBeginInfo, pSubpassEndInfo)
+  }
+}
+#[doc(hidden)] pub fn CmdEndRenderPass2KHR(commandBuffer: CommandBuffer, pSubpassEndInfo: *const SubpassEndInfoKHR){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CmdEndRenderPass2KHR_ptr)(commandBuffer, pSubpassEndInfo)
+  }
+}
+#[doc(hidden)] pub fn GetSwapchainStatusKHR(device: Device, swapchain: SwapchainKHR) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).GetSwapchainStatusKHR_ptr)(device, swapchain)
+  }
+}
+#[doc(hidden)] pub fn ImportFenceWin32HandleKHR(device: Device, pImportFenceWin32HandleInfo: *const ImportFenceWin32HandleInfoKHR) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).ImportFenceWin32HandleKHR_ptr)(device, pImportFenceWin32HandleInfo)
+  }
+}
+#[doc(hidden)] pub fn GetFenceWin32HandleKHR(device: Device, pGetWin32HandleInfo: *const FenceGetWin32HandleInfoKHR, pHandle: *mut HANDLE) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).GetFenceWin32HandleKHR_ptr)(device, pGetWin32HandleInfo, pHandle)
+  }
+}
+#[doc(hidden)] pub fn ImportFenceFdKHR(device: Device, pImportFenceFdInfo: *const ImportFenceFdInfoKHR) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).ImportFenceFdKHR_ptr)(device, pImportFenceFdInfo)
+  }
+}
+#[doc(hidden)] pub fn GetFenceFdKHR(device: Device, pGetFdInfo: *const FenceGetFdInfoKHR, pFd: *mut i32) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).GetFenceFdKHR_ptr)(device, pGetFdInfo, pFd)
+  }
+}
+#[doc(hidden)] pub fn GetAndroidHardwareBufferPropertiesANDROID(device: Device, buffer: *const AHardwareBuffer, pProperties: *mut AndroidHardwareBufferPropertiesANDROID) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).GetAndroidHardwareBufferPropertiesANDROID_ptr)(device, buffer, pProperties)
+  }
+}
+#[doc(hidden)] pub fn GetMemoryAndroidHardwareBufferANDROID(device: Device, pInfo: *const MemoryGetAndroidHardwareBufferInfoANDROID, pBuffer: *mut *mut AHardwareBuffer) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).GetMemoryAndroidHardwareBufferANDROID_ptr)(device, pInfo, pBuffer)
+  }
+}
+#[doc(hidden)] pub fn CmdSetSampleLocationsEXT(commandBuffer: CommandBuffer, pSampleLocationsInfo: *const SampleLocationsInfoEXT){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CmdSetSampleLocationsEXT_ptr)(commandBuffer, pSampleLocationsInfo)
+  }
+}
+#[doc(hidden)] pub fn GetPhysicalDeviceMultisamplePropertiesEXT(physicalDevice: PhysicalDevice, samples: SampleCountFlagBits, pMultisampleProperties: *mut MultisamplePropertiesEXT){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).GetPhysicalDeviceMultisamplePropertiesEXT_ptr)(physicalDevice, samples, pMultisampleProperties)
+  }
+}
+#[doc(hidden)] pub fn GetImageDrmFormatModifierPropertiesEXT(device: Device, image: Image, pProperties: *mut ImageDrmFormatModifierPropertiesEXT) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).GetImageDrmFormatModifierPropertiesEXT_ptr)(device, image, pProperties)
+  }
+}
+#[doc(hidden)] pub fn CreateValidationCacheEXT(device: Device, pCreateInfo: *const ValidationCacheCreateInfoEXT, pAllocator: *const AllocationCallbacks, pValidationCache: *mut ValidationCacheEXT) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CreateValidationCacheEXT_ptr)(device, pCreateInfo, pAllocator, pValidationCache)
+  }
+}
+#[doc(hidden)] pub fn DestroyValidationCacheEXT(device: Device, validationCache: ValidationCacheEXT, pAllocator: *const AllocationCallbacks){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).DestroyValidationCacheEXT_ptr)(device, validationCache, pAllocator)
+  }
+}
+#[doc(hidden)] pub fn MergeValidationCachesEXT(device: Device, dstCache: ValidationCacheEXT, srcCacheCount: u32, pSrcCaches: *const ValidationCacheEXT) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).MergeValidationCachesEXT_ptr)(device, dstCache, srcCacheCount, pSrcCaches)
+  }
+}
+#[doc(hidden)] pub fn GetValidationCacheDataEXT(device: Device, validationCache: ValidationCacheEXT, pDataSize: *mut usize, pData: *mut c_void) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).GetValidationCacheDataEXT_ptr)(device, validationCache, pDataSize, pData)
+  }
+}
+#[doc(hidden)] pub fn CmdBindShadingRateImageNV(commandBuffer: CommandBuffer, imageView: ImageView, imageLayout: ImageLayout){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CmdBindShadingRateImageNV_ptr)(commandBuffer, imageView, imageLayout)
+  }
+}
+#[doc(hidden)] pub fn CmdSetViewportShadingRatePaletteNV(commandBuffer: CommandBuffer, firstViewport: u32, viewportCount: u32, pShadingRatePalettes: *const ShadingRatePaletteNV){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CmdSetViewportShadingRatePaletteNV_ptr)(commandBuffer, firstViewport, viewportCount, pShadingRatePalettes)
+  }
+}
+#[doc(hidden)] pub fn CmdSetCoarseSampleOrderNV(commandBuffer: CommandBuffer, sampleOrderType: CoarseSampleOrderTypeNV, customSampleOrderCount: u32, pCustomSampleOrders: *const CoarseSampleOrderCustomNV){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CmdSetCoarseSampleOrderNV_ptr)(commandBuffer, sampleOrderType, customSampleOrderCount, pCustomSampleOrders)
+  }
+}
+#[doc(hidden)] pub fn CreateAccelerationStructureNV(device: Device, pCreateInfo: *const AccelerationStructureCreateInfoNV, pAllocator: *const AllocationCallbacks, pAccelerationStructure: *mut AccelerationStructureNV) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CreateAccelerationStructureNV_ptr)(device, pCreateInfo, pAllocator, pAccelerationStructure)
+  }
+}
+#[doc(hidden)] pub fn DestroyAccelerationStructureNV(device: Device, accelerationStructure: AccelerationStructureNV, pAllocator: *const AllocationCallbacks){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).DestroyAccelerationStructureNV_ptr)(device, accelerationStructure, pAllocator)
+  }
+}
+#[doc(hidden)] pub fn GetAccelerationStructureMemoryRequirementsNV(device: Device, pInfo: *const AccelerationStructureMemoryRequirementsInfoNV, pMemoryRequirements: *mut MemoryRequirements2){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).GetAccelerationStructureMemoryRequirementsNV_ptr)(device, pInfo, pMemoryRequirements)
+  }
+}
+#[doc(hidden)] pub fn BindAccelerationStructureMemoryNV(device: Device, bindInfoCount: u32, pBindInfos: *const BindAccelerationStructureMemoryInfoNV) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).BindAccelerationStructureMemoryNV_ptr)(device, bindInfoCount, pBindInfos)
+  }
+}
+#[doc(hidden)] pub fn CmdBuildAccelerationStructureNV(commandBuffer: CommandBuffer, pInfo: *const AccelerationStructureInfoNV, instanceData: Buffer, instanceOffset: DeviceSize, update: Bool32, dst: AccelerationStructureNV, src: AccelerationStructureNV, scratch: Buffer, scratchOffset: DeviceSize){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CmdBuildAccelerationStructureNV_ptr)(commandBuffer, pInfo, instanceData, instanceOffset, update, dst, src, scratch, scratchOffset)
+  }
+}
+#[doc(hidden)] pub fn CmdCopyAccelerationStructureNV(commandBuffer: CommandBuffer, dst: AccelerationStructureNV, src: AccelerationStructureNV, mode: CopyAccelerationStructureModeNV){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CmdCopyAccelerationStructureNV_ptr)(commandBuffer, dst, src, mode)
+  }
+}
+#[doc(hidden)] pub fn CmdTraceRaysNV(commandBuffer: CommandBuffer, raygenShaderBindingTableBuffer: Buffer, raygenShaderBindingOffset: DeviceSize, missShaderBindingTableBuffer: Buffer, missShaderBindingOffset: DeviceSize, missShaderBindingStride: DeviceSize, hitShaderBindingTableBuffer: Buffer, hitShaderBindingOffset: DeviceSize, hitShaderBindingStride: DeviceSize, callableShaderBindingTableBuffer: Buffer, callableShaderBindingOffset: DeviceSize, callableShaderBindingStride: DeviceSize, width: u32, height: u32, depth: u32){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CmdTraceRaysNV_ptr)(commandBuffer, raygenShaderBindingTableBuffer, raygenShaderBindingOffset, missShaderBindingTableBuffer, missShaderBindingOffset, missShaderBindingStride, hitShaderBindingTableBuffer, hitShaderBindingOffset, hitShaderBindingStride, callableShaderBindingTableBuffer, callableShaderBindingOffset, callableShaderBindingStride, width, height, depth)
+  }
+}
+#[doc(hidden)] pub fn CreateRayTracingPipelinesNV(device: Device, pipelineCache: PipelineCache, createInfoCount: u32, pCreateInfos: *const RayTracingPipelineCreateInfoNV, pAllocator: *const AllocationCallbacks, pPipelines: *mut Pipeline) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CreateRayTracingPipelinesNV_ptr)(device, pipelineCache, createInfoCount, pCreateInfos, pAllocator, pPipelines)
+  }
+}
+#[doc(hidden)] pub fn GetRayTracingShaderGroupHandlesNV(device: Device, pipeline: Pipeline, firstGroup: u32, groupCount: u32, dataSize: usize, pData: *mut c_void) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).GetRayTracingShaderGroupHandlesNV_ptr)(device, pipeline, firstGroup, groupCount, dataSize, pData)
+  }
+}
+#[doc(hidden)] pub fn GetAccelerationStructureHandleNV(device: Device, accelerationStructure: AccelerationStructureNV, dataSize: usize, pData: *mut c_void) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).GetAccelerationStructureHandleNV_ptr)(device, accelerationStructure, dataSize, pData)
+  }
+}
+#[doc(hidden)] pub fn CmdWriteAccelerationStructuresPropertiesNV(commandBuffer: CommandBuffer, accelerationStructureCount: u32, pAccelerationStructures: *const AccelerationStructureNV, queryType: QueryType, queryPool: QueryPool, firstQuery: u32){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CmdWriteAccelerationStructuresPropertiesNV_ptr)(commandBuffer, accelerationStructureCount, pAccelerationStructures, queryType, queryPool, firstQuery)
+  }
+}
+#[doc(hidden)] pub fn CompileDeferredNV(device: Device, pipeline: Pipeline, shader: u32) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CompileDeferredNV_ptr)(device, pipeline, shader)
+  }
+}
+#[doc(hidden)] pub fn CmdDrawIndirectCountKHR(commandBuffer: CommandBuffer, buffer: Buffer, offset: DeviceSize, countBuffer: Buffer, countBufferOffset: DeviceSize, maxDrawCount: u32, stride: u32){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CmdDrawIndirectCountKHR_ptr)(commandBuffer, buffer, offset, countBuffer, countBufferOffset, maxDrawCount, stride)
+  }
+}
+#[doc(hidden)] pub fn CmdDrawIndexedIndirectCountKHR(commandBuffer: CommandBuffer, buffer: Buffer, offset: DeviceSize, countBuffer: Buffer, countBufferOffset: DeviceSize, maxDrawCount: u32, stride: u32){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CmdDrawIndexedIndirectCountKHR_ptr)(commandBuffer, buffer, offset, countBuffer, countBufferOffset, maxDrawCount, stride)
+  }
+}
+#[doc(hidden)] pub fn GetMemoryHostPointerPropertiesEXT(device: Device, handleType: ExternalMemoryHandleTypeFlagBits, pHostPointer: *const c_void, pMemoryHostPointerProperties: *mut MemoryHostPointerPropertiesEXT) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).GetMemoryHostPointerPropertiesEXT_ptr)(device, handleType, pHostPointer, pMemoryHostPointerProperties)
+  }
+}
+#[doc(hidden)] pub fn CmdWriteBufferMarkerAMD(commandBuffer: CommandBuffer, pipelineStage: PipelineStageFlagBits, dstBuffer: Buffer, dstOffset: DeviceSize, marker: u32){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CmdWriteBufferMarkerAMD_ptr)(commandBuffer, pipelineStage, dstBuffer, dstOffset, marker)
+  }
+}
+#[doc(hidden)] pub fn GetPhysicalDeviceCalibrateableTimeDomainsEXT(physicalDevice: PhysicalDevice, pTimeDomainCount: *mut u32, pTimeDomains: *mut TimeDomainEXT) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).GetPhysicalDeviceCalibrateableTimeDomainsEXT_ptr)(physicalDevice, pTimeDomainCount, pTimeDomains)
+  }
+}
+#[doc(hidden)] pub fn GetCalibratedTimestampsEXT(device: Device, timestampCount: u32, pTimestampInfos: *const CalibratedTimestampInfoEXT, pTimestamps: *mut u64, pMaxDeviation: *mut u64) -> Result{
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).GetCalibratedTimestampsEXT_ptr)(device, timestampCount, pTimestampInfos, pTimestamps, pMaxDeviation)
+  }
+}
+#[doc(hidden)] pub fn CmdDrawMeshTasksNV(commandBuffer: CommandBuffer, taskCount: u32, firstTask: u32){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CmdDrawMeshTasksNV_ptr)(commandBuffer, taskCount, firstTask)
+  }
+}
+#[doc(hidden)] pub fn CmdDrawMeshTasksIndirectNV(commandBuffer: CommandBuffer, buffer: Buffer, offset: DeviceSize, drawCount: u32, stride: u32){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CmdDrawMeshTasksIndirectNV_ptr)(commandBuffer, buffer, offset, drawCount, stride)
+  }
+}
+#[doc(hidden)] pub fn CmdDrawMeshTasksIndirectCountNV(commandBuffer: CommandBuffer, buffer: Buffer, offset: DeviceSize, countBuffer: Buffer, countBufferOffset: DeviceSize, maxDrawCount: u32, stride: u32){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CmdDrawMeshTasksIndirectCountNV_ptr)(commandBuffer, buffer, offset, countBuffer, countBufferOffset, maxDrawCount, stride)
+  }
+}
+#[doc(hidden)] pub fn CmdSetExclusiveScissorNV(commandBuffer: CommandBuffer, firstExclusiveScissor: u32, exclusiveScissorCount: u32, pExclusiveScissors: *const Rect2D){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CmdSetExclusiveScissorNV_ptr)(commandBuffer, firstExclusiveScissor, exclusiveScissorCount, pExclusiveScissors)
+  }
+}
+#[doc(hidden)] pub fn CmdSetCheckpointNV(commandBuffer: CommandBuffer, pCheckpointMarker: *const c_void){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).CmdSetCheckpointNV_ptr)(commandBuffer, pCheckpointMarker)
+  }
+}
+#[doc(hidden)] pub fn GetQueueCheckpointDataNV(queue: Queue, pCheckpointDataCount: *mut u32, pCheckpointData: *mut CheckpointDataNV){
+  unsafe {
+    let ptr = vklib.expect("Vulkan core not initialized, make sure to have a valid instance of nobs_vk::VkLib");
+    ((*ptr).GetQueueCheckpointDataNV_ptr)(queue, pCheckpointDataCount, pCheckpointData)
   }
 }
 

@@ -32,8 +32,6 @@ pub struct Queue {
 pub struct Device {
   /// The actuol vulkan device handle
   pub handle: vk::Device,
-  /// The device extensions
-  pub ext: vk::DeviceExtensions,
   /// Queues of the device
   pub queues: Vec<Queue>,
 }
@@ -157,8 +155,6 @@ impl Builder {
       priorities: Vec<f32>,
     }
 
-    let inst_ext = vk::InstanceExtensions::new(self.physical_device.instance);
-
     // Get all available queue families from vulkan
     let mut families: Vec<Family> = {
       // Get family properties from vulkan
@@ -181,7 +177,7 @@ impl Builder {
               vk::NULL_HANDLE => false,
               _ => {
                 let mut present_support = vk::FALSE;
-                inst_ext.GetPhysicalDeviceSurfaceSupportKHR(self.physical_device.handle, f.0 as u32, self.surface, &mut present_support);
+                vk::GetPhysicalDeviceSurfaceSupportKHR(self.physical_device.handle, f.0 as u32, self.surface, &mut present_support);
                 present_support == vk::TRUE
               }
             },
@@ -279,7 +275,6 @@ impl Builder {
       self.physical_device.clone(),
       Device {
         handle,
-        ext: vk::DeviceExtensions::new(handle),
         queues,
       },
     ))

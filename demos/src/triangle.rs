@@ -28,7 +28,7 @@ pub fn setup_vulkan_window() -> (
   winit::EventsLoop,
   vk::wnd::Window,
 ) {
-  let lib = vk::Core::new();
+  let lib = vk::VkLib::new();
   let inst = vk::instance::new()
     .validate(vk::DEBUG_REPORT_ERROR_BIT_EXT | vk::DEBUG_REPORT_WARNING_BIT_EXT)
     .application("awesome app", 0)
@@ -105,7 +105,7 @@ pub fn main() {
 
   let (mut sc, rp, fbs) = setup_rendertargets(&inst, &pdevice, &device, &window, &mut alloc);
 
-  let pipe = fstri::new(&device.ext, rp.pass)
+  let pipe = fstri::new(device.handle, rp.pass)
     .dynamic(
       vk::pipes::Dynamic::default()
         .push_state(vk::DYNAMIC_STATE_VIEWPORT)

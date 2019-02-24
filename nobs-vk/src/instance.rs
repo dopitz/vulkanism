@@ -16,12 +16,10 @@ use crate as vk;
 /// Create and conveniently configure an Instance with the [instance builder](fn.new.html)
 pub struct Instance {
   #[allow(dead_code)]
-  vklib: std::boxed::Box<vk::Core>,
+  vklib: std::boxed::Box<vk::VkLib>,
   debug_callback: vk::DebugReportCallbackEXT,
   /// The actual vulkan instance handle
   pub handle: vk::Instance,
-  /// Extensions for the instance
-  pub ext: vk::InstanceExtensions,
 }
 
 impl Drop for Instance {
@@ -33,9 +31,12 @@ impl Drop for Instance {
   /// After the instance is dropped, all vulkan commands will panic
   fn drop(&mut self) {
     if self.debug_callback != vk::NULL_HANDLE {
-      self
-        .ext
-        .DestroyDebugReportCallbackEXT(self.handle, self.debug_callback, ptr::null());
+      let name = std::ffi::CString::new("vkDestroyDebugReportCallbackEXT").unwrap();
+      let ptr = vk::GetInstanceProcAddr(self.handle, name.as_ptr());
+      if !(ptr as *const c_void).is_null() {
+        let destroy_callback: vk::PFN_vkDestroyDebugReportCallbackEXT = unsafe { std::mem::transmute(ptr) };
+        destroy_callback(self.handle, self.debug_callback, ptr::null());
+      };
     }
     vk::DestroyInstance(self.handle, ptr::null());
   }
@@ -256,9 +257,9 @@ impl Builder {
   /// Create the instance from the current configuration
   ///
   /// # Returns
-  /// Instance creation can only fail, if the `vk::CreateInstance` call is unsuccessfull. 
+  /// Instance creation can only fail, if the `vk::CreateInstance` call is unsuccessfull.
   /// In this case the [vk::Error](../enum.Error.html) is returned.
-  pub fn create(&mut self, vklib: std::boxed::Box<vk::Core>) -> Result<Instance, vk::Error> {
+  pub fn create(&mut self, vklib: std::boxed::Box<vk::VkLib>) -> Result<Instance, vk::Error> {
     let app_info = vk::ApplicationInfo {
       sType: vk::STRUCTURE_TYPE_APPLICATION_INFO,
       pNext: ptr::null(),
@@ -290,26 +291,29 @@ impl Builder {
 
     let mut handle = vk::NULL_HANDLE;
     vk_check!(vk::CreateInstance(&create_info, ptr::null(), &mut handle))?;
-    let ext = vk::InstanceExtensions::new(handle);
 
     let mut debug_callback = vk::NULL_HANDLE;
     if self.validation_flags != 0 {
-      let callback_info = vk::DebugReportCallbackCreateInfoEXT {
-        sType: vk::STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT,
-        pNext: ptr::null(),
-        flags: self.validation_flags,
-        pfnCallback: debug_callback_fn,
-        pUserData: ptr::null_mut(),
-      };
+      let name = std::ffi::CString::new("vkCreateDebugReportCallbackEXT").unwrap();
+      let ptr = vk::GetInstanceProcAddr(handle, name.as_ptr());
+      if !(ptr as *const c_void).is_null() {
+        let create_callback: vk::PFN_vkCreateDebugReportCallbackEXT = unsafe { std::mem::transmute(ptr) };
+        let callback_info = vk::DebugReportCallbackCreateInfoEXT {
+          sType: vk::STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT,
+          pNext: ptr::null(),
+          flags: self.validation_flags,
+          pfnCallback: debug_callback_fn,
+          pUserData: ptr::null_mut(),
+        };
 
-      vk_check!(ext.CreateDebugReportCallbackEXT(handle, &callback_info, ptr::null(), &mut debug_callback))?;
+        vk_check!(create_callback(handle, &callback_info, ptr::null(), &mut debug_callback))?;
+      };
     }
 
     Ok(Instance {
       vklib,
       debug_callback,
       handle,
-      ext,
     })
   }
 }

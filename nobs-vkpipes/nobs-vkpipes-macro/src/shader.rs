@@ -269,7 +269,7 @@ impl Shader {
         {spirv}
       ];
 
-      pub fn create_module(device: &vk::DeviceExtensions) -> vk::PipelineShaderStageCreateInfo {{
+      pub fn create_module(device: vk::Device) -> vk::PipelineShaderStageCreateInfo {{
         let create_info = vk::ShaderModuleCreateInfo {{
           sType: vk::STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
           pNext: std::ptr::null(),
@@ -279,7 +279,7 @@ impl Shader {
         }};
   
         let mut module = vk::NULL_HANDLE;
-        vk::CreateShaderModule(device.get_handle(), &create_info, std::ptr::null(), &mut module);
+        vk::CreateShaderModule(device, &create_info, std::ptr::null(), &mut module);
         vk::PipelineShaderStageCreateInfo {{
           sType: vk::STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
           pNext: std::ptr::null(),

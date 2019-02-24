@@ -22,7 +22,7 @@ mod make_sequence {
 }
 
 pub fn main() {
-  let lib = vk::Core::new();
+  let lib = vk::VkLib::new();
   let inst = vk::instance::new()
     .validate(vk::DEBUG_REPORT_ERROR_BIT_EXT | vk::DEBUG_REPORT_WARNING_BIT_EXT)
     .application("awesome app", 0)
@@ -44,7 +44,7 @@ pub fn main() {
     .create()
     .unwrap();
 
-  let p = make_sequence::new(&device.ext).create().unwrap();
+  let p = make_sequence::new(device.handle).create().unwrap();
 
   let mut pool = vk::pipes::DescriptorPool::with_capacity(device.handle, &make_sequence::SIZES, make_sequence::NUM_SETS).unwrap();
   let ds = pool.new_dset(p.dsets[&0].layout, &p.dsets[&0].sizes).unwrap();

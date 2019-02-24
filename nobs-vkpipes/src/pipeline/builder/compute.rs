@@ -9,17 +9,17 @@ use vk;
 ///
 /// For a successfull pipeline creation the builder needs to be constructed from a valid device and
 /// valid bindings and a compute shader stage need to be configured.
-pub struct Compute<'a> {
-  device: &'a vk::DeviceExtensions,
+pub struct Compute {
+  device: vk::Device,
   bindings: Vec<Binding>,
   comp: Option<vk::PipelineShaderStageCreateInfo>,
 }
 
-impl<'a> Compute<'a> {
+impl Compute {
   /// Create builder from a device
   ///
   /// The builder is initialized with no bindings and no compute stage configured
-  pub fn from_device(device: &vk::DeviceExtensions) -> Compute {
+  pub fn from_device(device: vk::Device) -> Compute {
     Compute {
       device,
       bindings: Default::default(),
@@ -61,19 +61,12 @@ impl<'a> Compute<'a> {
     };
 
     let mut handle = vk::NULL_HANDLE;
-    vk::CreateComputePipelines(
-      self.device.get_handle(),
-      vk::NULL_HANDLE,
-      1,
-      &create_info,
-      std::ptr::null(),
-      &mut handle,
-    );
+    vk::CreateComputePipelines(self.device, vk::NULL_HANDLE, 1, &create_info, std::ptr::null(), &mut handle);
 
-    vk::DestroyShaderModule(self.device.get_handle(), stage.module, std::ptr::null());
+    vk::DestroyShaderModule(self.device, stage.module, std::ptr::null());
 
     Ok(Pipeline {
-      device: self.device.get_handle(),
+      device: self.device,
       handle,
       dsets,
       layout,
