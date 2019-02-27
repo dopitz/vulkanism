@@ -46,9 +46,7 @@ extern crate nobs_vkpipes;
 
 pub use vk::*;
 /// See [nobs_vkmem](../nobs_vkmem/index.html)
-pub mod mem {
-  pub use nobs_vkmem::*;
-}
+pub mod mem;
 /// See [nobs_vkpipes](../nobs_vkpipes/index.html)
 pub mod pipes {
   pub use nobs_vkpipes::*;
