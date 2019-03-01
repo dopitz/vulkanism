@@ -229,6 +229,7 @@ f.write(enum.write_result(types))
 f.write("\n\n")
 f.write("pub mod device;\n")
 f.write("pub mod instance;\n")
+f.write("pub mod builder;\n")
 
 f.write("\n")
 f.close()

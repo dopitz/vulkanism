@@ -1,5 +1,6 @@
 extern crate nobs_vulkanism as vk;
 
+use vk::builder::Buildable;
 use vk::winit;
 
 mod fstri {
@@ -76,18 +77,24 @@ pub fn setup_rendertargets(
 
   let depth_format = vk::fb::select_depth_format(pdevice.handle, vk::fb::DEPTH_FORMATS).unwrap();
 
-  let pass = vk::fb::new_pass(device.handle)
-    .attachment(0, vk::fb::new_attachment(vk::FORMAT_B8G8R8A8_UNORM))
-    .attachment(1, vk::fb::new_attachment(depth_format))
-    .subpass(0, vk::fb::new_subpass(vk::PIPELINE_BIND_POINT_GRAPHICS).color(0).depth(1).clone())
-    .dependency(vk::fb::new_dependency().external(0).clone())
+  let pass = vk::fb::Renderpass::build(device.handle)
+    .attachment(0, vk::AttachmentDescription::build().format(vk::FORMAT_B8G8R8A8_UNORM))
+    .attachment(1, vk::AttachmentDescription::build().format(depth_format))
+    .subpass(
+      0,
+      vk::SubpassDescription::build()
+        .bindpoint(vk::PIPELINE_BIND_POINT_GRAPHICS)
+        .color(0)
+        .depth(1),
+    )
+    .dependency(vk::SubpassDependency::build().external(0))
     .create()
     .unwrap();
 
   let fbs = vec![
-    vk::fb::new_framebuffer_from_pass(&pass, alloc).extent(sc.extent).create(),
-    vk::fb::new_framebuffer_from_pass(&pass, alloc).extent(sc.extent).create(),
-    vk::fb::new_framebuffer_from_pass(&pass, alloc).extent(sc.extent).create(),
+    vk::fb::Framebuffer::build_from_pass(&pass, alloc).extent(sc.extent).create(),
+    vk::fb::Framebuffer::build_from_pass(&pass, alloc).extent(sc.extent).create(),
+    vk::fb::Framebuffer::build_from_pass(&pass, alloc).extent(sc.extent).create(),
   ];
 
   //fbs[0].set_clear(&[vk::fb::clear_colorf32([1.0,0.0,0.0,1.0]), vk::fb::clear_depth(0.0)]);
@@ -107,11 +114,11 @@ pub fn main() {
 
   let pipe = fstri::new(device.handle, rp.pass)
     .dynamic(
-      vk::pipes::Dynamic::default()
+      vk::PipelineDynamicStateCreateInfo::build()
         .push_state(vk::DYNAMIC_STATE_VIEWPORT)
         .push_state(vk::DYNAMIC_STATE_SCISSOR),
     )
-    .blend(vk::pipes::Blend::default().push_attachment(vk::pipes::BlendAttachment::default()))
+    .blend(vk::PipelineColorBlendStateCreateInfo::build().push_attachment(vk::PipelineColorBlendAttachmentState::build()))
     .create()
     .unwrap();
 

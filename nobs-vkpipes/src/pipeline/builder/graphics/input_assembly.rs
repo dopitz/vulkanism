@@ -10,20 +10,7 @@ pub struct Builder {
   pub info: vk::PipelineInputAssemblyStateCreateInfo,
 }
 
-impl Builder {
-  pub fn raw(info: vk::PipelineInputAssemblyStateCreateInfo) -> Self {
-    Self { info }
-  }
-
-  pub fn topology(mut self, topology: vk::PrimitiveTopology) -> Self {
-    self.info.topology = topology;
-    self
-  }
-  pub fn primitive_restart_enable(mut self, enable: vk::Bool32) -> Self {
-    self.info.primitiveRestartEnable = enable;
-    self
-  }
-}
+vk_builder!(vk::PipelineInputAssemblyStateCreateInfo, Builder);
 
 impl Default for Builder {
   fn default() -> Builder {
@@ -36,5 +23,16 @@ impl Default for Builder {
         primitiveRestartEnable: vk::FALSE,
       },
     }
+  }
+}
+
+impl Builder {
+  pub fn topology(mut self, topology: vk::PrimitiveTopology) -> Self {
+    self.info.topology = topology;
+    self
+  }
+  pub fn primitive_restart_enable(mut self, enable: vk::Bool32) -> Self {
+    self.info.primitiveRestartEnable = enable;
+    self
   }
 }

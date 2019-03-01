@@ -1,4 +1,5 @@
 use vk;
+use vk::builder::Buildable;
 
 /// Builder for a raster state
 ///
@@ -18,11 +19,31 @@ pub struct Builder {
   pub info: vk::PipelineRasterizationStateCreateInfo,
 }
 
-impl Builder {
-  pub fn raw(info: vk::PipelineRasterizationStateCreateInfo) -> Self {
-    Self { info }
-  }
+vk_builder!(vk::PipelineRasterizationStateCreateInfo, Builder);
 
+impl Default for Builder {
+  fn default() -> Builder {
+    Builder {
+      info: vk::PipelineRasterizationStateCreateInfo {
+        sType: vk::STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
+        pNext: std::ptr::null(),
+        flags: 0,
+        depthClampEnable: vk::FALSE,
+        rasterizerDiscardEnable: vk::FALSE,
+        polygonMode: vk::POLYGON_MODE_FILL,
+        lineWidth: 1.0f32,
+        cullMode: vk::CULL_MODE_BACK_BIT,
+        frontFace: vk::FRONT_FACE_COUNTER_CLOCKWISE,
+        depthBiasEnable: vk::FALSE,
+        depthBiasConstantFactor: 0.0f32,
+        depthBiasClamp: 0.0f32,
+        depthBiasSlopeFactor: 0.0f32,
+      },
+    }
+  }
+}
+
+impl Builder {
   pub fn depth_clamp_enable(mut self, enable: vk::Bool32) -> Self {
     self.info.depthClampEnable = enable;
     self
@@ -62,27 +83,5 @@ impl Builder {
   pub fn depth_bias_slopefactor(mut self, f: f32) -> Self {
     self.info.depthBiasSlopeFactor = f;
     self
-  }
-}
-
-impl Default for Builder {
-  fn default() -> Builder {
-    Builder {
-      info: vk::PipelineRasterizationStateCreateInfo {
-        sType: vk::STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
-        pNext: std::ptr::null(),
-        flags: 0,
-        depthClampEnable: vk::FALSE,
-        rasterizerDiscardEnable: vk::FALSE,
-        polygonMode: vk::POLYGON_MODE_FILL,
-        lineWidth: 1.0f32,
-        cullMode: vk::CULL_MODE_BACK_BIT,
-        frontFace: vk::FRONT_FACE_COUNTER_CLOCKWISE,
-        depthBiasEnable: vk::FALSE,
-        depthBiasConstantFactor: 0.0f32,
-        depthBiasClamp: 0.0f32,
-        depthBiasSlopeFactor: 0.0f32,
-      },
-    }
   }
 }

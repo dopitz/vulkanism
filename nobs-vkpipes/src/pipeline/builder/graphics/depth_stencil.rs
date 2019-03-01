@@ -1,4 +1,5 @@
 use vk;
+use vk::builder::Buildable;
 
 /// Builder for a depth stencil state
 ///
@@ -17,11 +18,30 @@ pub struct Builder {
   pub info: vk::PipelineDepthStencilStateCreateInfo,
 }
 
-impl Builder {
-  pub fn raw(info: vk::PipelineDepthStencilStateCreateInfo) -> Self {
-    Self { info }
-  }
+vk_builder!(vk::PipelineDepthStencilStateCreateInfo, Builder);
 
+impl Default for Builder {
+  fn default() -> Builder {
+    Builder {
+      info: vk::PipelineDepthStencilStateCreateInfo {
+        sType: vk::STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
+        pNext: std::ptr::null(),
+        flags: 0,
+        depthTestEnable: vk::TRUE,
+        depthWriteEnable: vk::TRUE,
+        depthCompareOp: vk::COMPARE_OP_LESS_OR_EQUAL,
+        depthBoundsTestEnable: vk::FALSE,
+        minDepthBounds: 0.0f32,
+        maxDepthBounds: 1.0f32,
+        stencilTestEnable: vk::FALSE,
+        front: unsafe { std::mem::zeroed() },
+        back: unsafe { std::mem::zeroed() },
+      },
+    }
+  }
+}
+
+impl Builder {
   pub fn depth_test_enable(mut self, enable: vk::Bool32) -> Self {
     self.info.depthTestEnable = enable;
     self
@@ -57,26 +77,5 @@ impl Builder {
   pub fn back(mut self, back: vk::StencilOpState) -> Self {
     self.info.back = back;
     self
-  }
-}
-
-impl Default for Builder {
-  fn default() -> Builder {
-    Builder {
-      info: vk::PipelineDepthStencilStateCreateInfo {
-        sType: vk::STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
-        pNext: std::ptr::null(),
-        flags: 0,
-        depthTestEnable: vk::TRUE,
-        depthWriteEnable: vk::TRUE,
-        depthCompareOp: vk::COMPARE_OP_LESS_OR_EQUAL,
-        depthBoundsTestEnable: vk::FALSE,
-        minDepthBounds: 0.0f32,
-        maxDepthBounds: 1.0f32,
-        stencilTestEnable: vk::FALSE,
-        front: unsafe { std::mem::zeroed() },
-        back: unsafe { std::mem::zeroed() },
-      },
-    }
   }
 }

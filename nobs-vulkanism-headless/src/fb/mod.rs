@@ -18,39 +18,6 @@ pub enum Error {
   CreateRenderPass(vk::Error),
 }
 
-/// Returns a [builder](renderpass/struct.AttachmentBuilder.html) for an attachment for use in [Renderpass](renderpass/struct.Renderpass.html)
-pub fn new_attachment(format: vk::Format) -> renderpass::AttachmentBuilder {
-  renderpass::AttachmentBuilder::with_format(format)
-}
-
-/// Returns a [builder](renderpass/struct.SubpassBuilder.html) for a subpass for use in [Renderpass](renderpass/struct.Renderpass.html)
-pub fn new_subpass(bindpoint: vk::PipelineBindPoint) -> renderpass::SubpassBuilder {
-  renderpass::SubpassBuilder::with_bindpoint(bindpoint)
-}
-
-/// Returns a [builder](renderpass/struct.DependencyBuilder.html) for a subpass depencency for use in [Renderpass](renderpass/struct.Renderpass.html)
-pub fn new_dependency() -> renderpass::DependencyBuilder {
-  renderpass::DependencyBuilder::new()
-}
-
-/// Returns a [builder](renderpass/struct.Builder.html) for a [Renderpass](renderpass/struct.Renderpass.html)
-pub fn new_pass(device: vk::Device) -> renderpass::Builder {
-  renderpass::Builder::new(device)
-}
-
-/// Returns a [builder](framebuffer/struct.Builder.html) for a [Framebuffer](framebuffer/struct.Framebuffer.html)
-pub fn new_framebuffer(device: vk::Device, pass: vk::RenderPass) -> framebuffer::Builder {
-  framebuffer::Builder::new(device, pass)
-}
-
-/// Returns a [builder](framebuffer/struct.RenderpassFramebufferBuilder.html) for a [Framebuffer](framebuffer/struct.Framebuffer.html)
-pub fn new_framebuffer_from_pass<'a, 'b>(
-  pass: &'b Renderpass,
-  alloc: &'a mut crate::mem::Allocator,
-) -> framebuffer::RenderpassFramebufferBuilder<'a, 'b> {
-  framebuffer::RenderpassFramebufferBuilder::new(pass, alloc)
-}
-
 /// Get a `vk::ClearValue` for colors initialized from 4 floats
 pub fn clear_colorf32(c: [f32; 4]) -> vk::ClearValue {
   vk::ClearValue {

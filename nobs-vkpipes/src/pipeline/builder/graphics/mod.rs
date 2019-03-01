@@ -182,18 +182,18 @@ impl Graphics {
       flags: 0,
       stageCount: stages.len() as u32,
       pStages: stages.as_ptr(),
-      pVertexInputState: &self.vertex_input.info,
+      pVertexInputState: &self.vertex_input.get(),
       pInputAssemblyState: &self.input_assembly.info,
       pTessellationState: &self.tesselation.info,
-      pViewportState: &self.viewport.info,
+      pViewportState: &self.viewport.get(),
       pRasterizationState: &self.raster.info,
       pDepthStencilState: &self.depth_stencil.info,
       pMultisampleState: &self.multisample.info,
-      pColorBlendState: &self.blend.info,
+      pColorBlendState: &self.blend.get(),
       pDynamicState: if self.dynamic.states.is_empty() {
         std::ptr::null()
       } else {
-        &self.dynamic.info
+        &self.dynamic.get()
       },
       layout: layout,
       renderPass: self.pass,

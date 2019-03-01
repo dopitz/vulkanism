@@ -9,16 +9,7 @@ pub struct Builder {
   pub info: vk::PipelineTessellationStateCreateInfo,
 }
 
-impl Builder {
-  pub fn raw(info: vk::PipelineTessellationStateCreateInfo) -> Self {
-    Self { info }
-  }
-
-  pub fn patch_control_points(mut self, points: u32) -> Self {
-    self.info.patchControlPoints = points;
-    self
-  }
-}
+vk_builder!(vk::PipelineTessellationStateCreateInfo, Builder);
 
 impl Default for Builder {
   fn default() -> Builder {
@@ -30,5 +21,12 @@ impl Default for Builder {
         patchControlPoints: 0,
       },
     }
+  }
+}
+
+impl Builder {
+  pub fn patch_control_points(mut self, points: u32) -> Self {
+    self.info.patchControlPoints = points;
+    self
   }
 }

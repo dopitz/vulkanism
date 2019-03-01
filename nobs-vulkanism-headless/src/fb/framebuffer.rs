@@ -5,7 +5,7 @@ use crate::cmd::commands::RenderpassEnd;
 use crate::fb::Renderpass;
 use crate::mem;
 
-/// Wrapper for a vulkan framebuffer 
+/// Wrapper for a vulkan framebuffer
 ///
 /// Owns the images and image views for all framebuffer attachments
 pub struct Framebuffer {
@@ -19,7 +19,25 @@ pub struct Framebuffer {
   pub clear: Vec<vk::ClearValue>,
 }
 
+impl Drop for Framebuffer {
+  fn drop(&mut self) {
+    vk::DestroyFramebuffer(self.device, self.handle, std::ptr::null());
+
+    for v in self.views.iter() {
+      vk::DestroyImageView(self.device, *v, std::ptr::null())
+    }
+  }
+}
+
 impl Framebuffer {
+  pub fn build(device: vk::Device, pass: vk::RenderPass) -> Builder {
+    Builder::new(device, pass)
+  }
+
+  pub fn build_from_pass<'a, 'b>(pass: &'b Renderpass, alloc: &'a mut mem::Allocator) -> RenderpassFramebufferBuilder<'a, 'b> {
+    RenderpassFramebufferBuilder::new(pass, alloc)
+  }
+
   /// Set the clear values for all attachments
   pub fn set_clear(&mut self, clear: &[vk::ClearValue]) {
     assert!(self.clear.len() == clear.len());
@@ -41,16 +59,6 @@ impl Framebuffer {
   /// Returns a render pass end command
   pub fn end(&self) -> RenderpassEnd {
     RenderpassEnd {}
-  }
-}
-
-impl Drop for Framebuffer {
-  fn drop(&mut self) {
-    vk::DestroyFramebuffer(self.device, self.handle, std::ptr::null());
-
-    for v in self.views.iter() {
-      vk::DestroyImageView(self.device, *v, std::ptr::null())
-    }
   }
 }
 
@@ -148,7 +156,7 @@ impl<'a, 'b> RenderpassFramebufferBuilder<'a, 'b> {
 
   /// Specify `image` as rendertarget at position `index`.
   ///
-  /// The builder will use the specified image as attachment. 
+  /// The builder will use the specified image as attachment.
   /// For the attachment at position `index` no image will be created in [create](struct.RenderpassFramebufferBuilder.html#method.create).
   /// An image view will still be created.
   pub fn target(mut self, index: usize, image: vk::Image) -> Self {
@@ -205,7 +213,7 @@ impl<'a, 'b> RenderpassFramebufferBuilder<'a, 'b> {
     }
 
     // create the framebuffer
-    let mut builder = crate::fb::new_framebuffer(self.pass.device, self.pass.pass);
+    let mut builder = Framebuffer::build(self.pass.device, self.pass.pass);
     for (i, v, f) in self
       .images
       .iter()

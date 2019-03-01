@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use vk;
+use vk::builder::Buildable;
 
 use crate::fb::Error;
 
@@ -22,18 +23,26 @@ impl Drop for Renderpass {
   }
 }
 
+impl Renderpass {
+  pub fn build(device: vk::Device) -> Builder {
+    Builder::new(device)
+  }
+}
+
 /// Builder pattern for vk::AttachmentDescription
 #[derive(Clone, Copy)]
 pub struct AttachmentBuilder {
   pub desc: vk::AttachmentDescription,
 }
 
-impl AttachmentBuilder {
-  pub fn with_format(format: vk::Format) -> Self {
+vk_builder!(vk::AttachmentDescription, AttachmentBuilder, desc);
+
+impl Default for AttachmentBuilder {
+  fn default() -> Self {
     Self {
       desc: vk::AttachmentDescription {
         flags: 0,
-        format: format,
+        format: vk::FORMAT_UNDEFINED,
         samples: vk::SAMPLE_COUNT_1_BIT,
         loadOp: vk::ATTACHMENT_LOAD_OP_CLEAR,
         storeOp: vk::ATTACHMENT_STORE_OP_STORE,
@@ -44,50 +53,51 @@ impl AttachmentBuilder {
       },
     }
   }
+}
 
-  pub fn with_rawdesc(desc: vk::AttachmentDescription) -> Self {
-    Self { desc }
+impl AttachmentBuilder {
+  pub fn format(mut self, format: vk::Format) -> Self {
+    self.desc.format = format;
+    self
   }
-
-  pub fn samples(&mut self, samples: vk::SampleCountFlags) -> &mut Self {
+  pub fn samples(mut self, samples: vk::SampleCountFlags) -> Self {
     self.desc.samples = samples;
     self
   }
-  pub fn load_op(&mut self, op: vk::AttachmentLoadOp) -> &mut Self {
+  pub fn load_op(mut self, op: vk::AttachmentLoadOp) -> Self {
     self.desc.loadOp = op;
     self
   }
-  pub fn store_op(&mut self, op: vk::AttachmentStoreOp) -> &mut Self {
+  pub fn store_op(mut self, op: vk::AttachmentStoreOp) -> Self {
     self.desc.storeOp = op;
     self
   }
-  pub fn stencil_load_op(&mut self, op: vk::AttachmentLoadOp) -> &mut Self {
+  pub fn stencil_load_op(mut self, op: vk::AttachmentLoadOp) -> Self {
     self.desc.stencilLoadOp = op;
     self
   }
-  pub fn stencil_store_op(&mut self, op: vk::AttachmentStoreOp) -> &mut Self {
+  pub fn stencil_store_op(mut self, op: vk::AttachmentStoreOp) -> Self {
     self.desc.stencilStoreOp = op;
     self
   }
-  pub fn initial_layout(&mut self, layout: vk::ImageLayout) -> &mut Self {
+  pub fn initial_layout(mut self, layout: vk::ImageLayout) -> Self {
     self.desc.initialLayout = layout;
     self
   }
-  pub fn final_layout(&mut self, layout: vk::ImageLayout) -> &mut Self {
+  pub fn final_layout(mut self, layout: vk::ImageLayout) -> Self {
     self.desc.finalLayout = layout;
     self
   }
 
-  pub fn get_desc(&self) -> vk::AttachmentDescription {
+  pub fn get(&self) -> vk::AttachmentDescription {
     self.desc
   }
 }
 
 /// Builder pattern for vk::SubpassDescription
-#[derive(Clone)]
 pub struct SubpassBuilder {
-  pub input: Vec<vk::AttachmentReference>,
   pub color: Vec<vk::AttachmentReference>,
+  pub input: Vec<vk::AttachmentReference>,
   pub resolve: Vec<vk::AttachmentReference>,
   pub depth: vk::AttachmentReference,
   pub preserve: Vec<u32>,
@@ -95,11 +105,13 @@ pub struct SubpassBuilder {
   pub desc: vk::SubpassDescription,
 }
 
-impl SubpassBuilder {
-  pub fn with_bindpoint(bindpoint: vk::PipelineBindPoint) -> Self {
+vk_builder!(vk::SubpassDescription, SubpassBuilder, desc);
+
+impl Default for SubpassBuilder {
+  fn default() -> Self {
     Self {
-      input: Default::default(),
       color: Default::default(),
+      input: Default::default(),
       resolve: Default::default(),
       depth: vk::AttachmentReference {
         attachment: vk::ATTACHMENT_UNUSED,
@@ -108,11 +120,11 @@ impl SubpassBuilder {
       preserve: Default::default(),
       desc: vk::SubpassDescription {
         flags: 0,
-        pipelineBindPoint: bindpoint,
-        inputAttachmentCount: 0,
-        pInputAttachments: std::ptr::null(),
+        pipelineBindPoint: 0,
         colorAttachmentCount: 0,
         pColorAttachments: std::ptr::null(),
+        inputAttachmentCount: 0,
+        pInputAttachments: std::ptr::null(),
         pResolveAttachments: std::ptr::null(),
         pDepthStencilAttachment: std::ptr::null(),
         preserveAttachmentCount: 0,
@@ -120,64 +132,70 @@ impl SubpassBuilder {
       },
     }
   }
+}
 
-  pub fn with_rawdesc(desc: vk::SubpassDescription) -> Self {
-    Self {
-      input: Default::default(),
-      color: Default::default(),
-      resolve: Default::default(),
-      depth: vk::AttachmentReference {
-        attachment: vk::ATTACHMENT_UNUSED,
-        layout: vk::IMAGE_LAYOUT_UNDEFINED,
-      },
-      preserve: Default::default(),
-      desc,
-    }
-  }
-
-  pub fn color_layout(&mut self, attachment: u32, layout: vk::ImageLayout) -> &mut Self {
-    self.color.push(vk::AttachmentReference { attachment, layout });
-    self.desc.colorAttachmentCount = self.color.len() as u32;
-    self.desc.pColorAttachments = self.color.as_ptr();
+impl SubpassBuilder {
+  pub fn bindpoint(mut self, bindpoint: vk::PipelineBindPoint) -> Self {
+    self.desc.pipelineBindPoint = bindpoint;
     self
   }
-  pub fn color(&mut self, attachment: u32) -> &mut Self {
+
+  pub fn color_layout(mut self, attachment: u32, layout: vk::ImageLayout) -> Self {
+    self.color.push(vk::AttachmentReference { attachment, layout });
+    self
+  }
+  pub fn color(self, attachment: u32) -> Self {
     self.color_layout(attachment, vk::IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
   }
 
-  pub fn input_layout(&mut self, attachment: u32, layout: vk::ImageLayout) -> &mut Self {
+  pub fn input_layout(mut self, attachment: u32, layout: vk::ImageLayout) -> Self {
     self.input.push(vk::AttachmentReference { attachment, layout });
-    self.desc.inputAttachmentCount = self.input.len() as u32;
-    self.desc.pInputAttachments = self.input.as_ptr();
     self
   }
-  pub fn input(&mut self, attachment: u32) -> &mut Self {
+  pub fn input(self, attachment: u32) -> Self {
     self.input_layout(attachment, vk::IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
   }
 
-  pub fn resolve(&mut self, attachment: u32, layout: vk::ImageLayout) -> &mut Self {
+  pub fn resolve(mut self, attachment: u32, layout: vk::ImageLayout) -> Self {
     self.resolve.push(vk::AttachmentReference { attachment, layout });
-    self.desc.pResolveAttachments = self.resolve.as_ptr();
     self
   }
 
-  pub fn depth_layout(&mut self, attachment: u32, layout: vk::ImageLayout) -> &mut Self {
+  pub fn depth_layout(mut self, attachment: u32, layout: vk::ImageLayout) -> Self {
     self.depth = vk::AttachmentReference { attachment, layout };
-    self.desc.pDepthStencilAttachment = &self.depth;
     self
   }
-  pub fn depth(&mut self, attachment: u32) -> &mut Self {
+  pub fn depth(self, attachment: u32) -> Self {
     self.depth_layout(attachment, vk::IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
   }
 
-  pub fn preserve(&mut self, attachment: u32) -> &mut Self {
+  pub fn preserve(mut self, attachment: u32) -> Self {
     self.preserve.push(attachment);
-    self.desc.pPreserveAttachments = self.preserve.as_ptr();
     self
   }
 
-  pub fn get_desc(&self) -> vk::SubpassDescription {
-    self.desc
+  pub fn get(&self) -> vk::SubpassDescription {
+    let mut desc = self.desc;
+    if desc.pColorAttachments.is_null() && !self.color.is_empty() {
+      desc.colorAttachmentCount = self.color.len() as u32;
+      desc.pColorAttachments = self.color.as_ptr();
+    }
+
+    if desc.pInputAttachments.is_null() && !self.input.is_empty() {
+      desc.inputAttachmentCount = self.input.len() as u32;
+      desc.pInputAttachments = self.input.as_ptr();
+      desc.pResolveAttachments = self.resolve.as_ptr();
+    }
+
+    if desc.pDepthStencilAttachment.is_null() {
+      desc.pDepthStencilAttachment = &self.depth;
+    }
+
+    if desc.pPreserveAttachments.is_null() && !self.preserve.is_empty() {
+      desc.preserveAttachmentCount = self.preserve.len() as u32;
+      desc.pPreserveAttachments = self.preserve.as_ptr();
+    }
+    desc
   }
 }
 
@@ -187,8 +205,10 @@ pub struct DependencyBuilder {
   pub desc: vk::SubpassDependency,
 }
 
-impl DependencyBuilder {
-  pub fn new() -> Self {
+vk_builder!(vk::SubpassDependency, DependencyBuilder, desc);
+
+impl Default for DependencyBuilder {
+  fn default() -> Self {
     Self {
       desc: vk::SubpassDependency {
         dependencyFlags: 0,
@@ -201,12 +221,10 @@ impl DependencyBuilder {
       },
     }
   }
+}
 
-  pub fn with_rawdesc(desc: vk::SubpassDependency) -> Self {
-    Self { desc }
-  }
-
-  pub fn external(&mut self, dstpass: u32) -> &mut Self {
+impl DependencyBuilder {
+  pub fn external(mut self, dstpass: u32) -> Self {
     self
       .src(vk::SUBPASS_EXTERNAL, vk::PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0)
       .dst(
@@ -215,22 +233,20 @@ impl DependencyBuilder {
         vk::ACCESS_COLOR_ATTACHMENT_READ_BIT | vk::ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
       )
   }
-
-  pub fn src(&mut self, pass: u32, stages: vk::PipelineStageFlags, access: vk::AccessFlags) -> &mut Self {
+  pub fn src(mut self, pass: u32, stages: vk::PipelineStageFlags, access: vk::AccessFlags) -> Self {
     self.desc.srcSubpass = pass;
     self.desc.srcStageMask = stages;
     self.desc.srcAccessMask = access;
     self
   }
-
-  pub fn dst(&mut self, pass: u32, stages: vk::PipelineStageFlags, access: vk::AccessFlags) -> &mut Self {
+  pub fn dst(mut self, pass: u32, stages: vk::PipelineStageFlags, access: vk::AccessFlags) -> Self {
     self.desc.dstSubpass = pass;
     self.desc.dstStageMask = stages;
     self.desc.dstAccessMask = access;
     self
   }
 
-  pub fn get_desc(&self) -> vk::SubpassDependency {
+  pub fn get(&self) -> vk::SubpassDependency {
     self.desc
   }
 }
@@ -260,7 +276,7 @@ impl Builder {
 
   /// Adds an attachment at position `index`
   pub fn attachment(&mut self, index: u32, builder: AttachmentBuilder) -> &mut Self {
-    let desc = self.attachments.entry(index).or_insert_with(|| builder.get_desc());
+    let desc = self.attachments.entry(index).or_insert_with(|| builder.get());
     if crate::fb::DEPTH_FORMATS.iter().find(|f| **f == desc.format).is_some() {
       self.depth = Some(index);
     }
@@ -269,13 +285,13 @@ impl Builder {
 
   /// Adds the subpass at position `index`
   pub fn subpass(&mut self, index: u32, builder: SubpassBuilder) -> &mut Self {
-    self.subpasses.entry(index).or_insert_with(|| builder.clone());
+    self.subpasses.entry(index).or_insert_with(|| builder);
     self
   }
 
   /// Adds a subpass dependency
   pub fn dependency(&mut self, builder: DependencyBuilder) -> &mut Self {
-    self.dependencies.push(builder.get_desc());
+    self.dependencies.push(builder.get());
     self
   }
 
@@ -294,7 +310,7 @@ impl Builder {
 
     let mut subpasses = Vec::with_capacity(self.subpasses.len());
     for i in 0..self.subpasses.len() {
-      subpasses.push(self.subpasses[&(i as u32)].get_desc());
+      subpasses.push(self.subpasses[&(i as u32)].get());
     }
     let mut attachments = Vec::with_capacity(self.attachments.len());
     for i in 0..self.attachments.len() {

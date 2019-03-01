@@ -11,33 +11,7 @@ pub struct Builder {
   pub info: vk::PipelineViewportStateCreateInfo,
 }
 
-impl Builder {
-  pub fn raw(info: vk::PipelineViewportStateCreateInfo) -> Self {
-    Self {
-      viewports: Default::default(),
-      scissor_rects: Default::default(),
-      info,
-    }
-  }
-
-  pub fn push_viewport(mut self, vp: vk::Viewport) -> Self {
-    self.viewports.push(vp);
-    self.update()
-  }
-
-  pub fn push_scissors_rect(mut self, rect: vk::Rect2D) -> Self {
-    self.scissor_rects.push(rect);
-    self.update()
-  }
-
-  fn update(mut self) -> Self {
-    self.info.viewportCount = self.viewports.len() as u32;
-    self.info.pViewports = self.viewports.as_ptr();
-    self.info.scissorCount = self.scissor_rects.len() as u32;
-    self.info.pScissors = self.scissor_rects.as_ptr();
-    self
-  }
-}
+vk_builder!(vk::PipelineViewportStateCreateInfo, Builder);
 
 impl Default for Builder {
   fn default() -> Builder {
@@ -54,5 +28,29 @@ impl Default for Builder {
         pScissors: std::ptr::null(),
       },
     }
+  }
+}
+
+impl Builder {
+  pub fn push_viewport(mut self, vp: vk::Viewport) -> Self {
+    self.viewports.push(vp);
+    self
+  }
+  pub fn push_scissors_rect(mut self, rect: vk::Rect2D) -> Self {
+    self.scissor_rects.push(rect);
+    self
+  }
+
+  pub fn get(&self) -> vk::PipelineViewportStateCreateInfo {
+    let mut info = self.info;
+    if info.pViewports.is_null() && !self.viewports.is_empty() {
+      info.viewportCount = self.viewports.len() as u32;
+      info.pViewports = self.viewports.as_ptr();
+    }
+    if info.pScissors.is_null() && !self.scissor_rects.is_empty() {
+      info.scissorCount = self.scissor_rects.len() as u32;
+      info.pScissors = self.scissor_rects.as_ptr();
+    }
+    info
   }
 }
