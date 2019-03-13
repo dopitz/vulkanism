@@ -38,8 +38,8 @@ impl Drop for Swapchain {
 
 impl Swapchain {
   /// Return a [swapchain builder](struct.Builder.html)
-  pub fn build(inst: vk::Instance, pdevice: vk::PhysicalDevice, device: vk::Device, surface: vk::SurfaceKHR) -> Builder {
-    Builder::new(inst, pdevice, device, surface)
+  pub fn build(pdevice: vk::PhysicalDevice, device: vk::Device, surface: vk::SurfaceKHR) -> Builder {
+    Builder::new(pdevice, device, surface)
   }
 
   /// Aquire the next swapchain image
@@ -134,7 +134,7 @@ impl Builder {
     }
   }
 
-  fn new(inst: vk::Instance, pdevice: vk::PhysicalDevice, device: vk::Device, surface: vk::SurfaceKHR) -> Self {
+  fn new(pdevice: vk::PhysicalDevice, device: vk::Device, surface: vk::SurfaceKHR) -> Self {
     // surface capabilities
     let mut capabilities = unsafe { std::mem::uninitialized() };
     vk::GetPhysicalDeviceSurfaceCapabilitiesKHR(pdevice, surface, &mut capabilities);

@@ -64,3 +64,81 @@ impl Builder {
     info
   }
 }
+
+/// Builder for a vertex input binding
+pub struct BindingBuilder {
+  pub binding: vk::VertexInputBindingDescription,
+}
+
+vk_builder!(vk::VertexInputBindingDescription, BindingBuilder, binding);
+
+impl Default for BindingBuilder {
+  fn default() -> Self {
+    Self {
+      binding: vk::VertexInputBindingDescription {
+        binding: 0,
+        inputRate: vk::VERTEX_INPUT_RATE_VERTEX,
+        stride: 0,
+      },
+    }
+  }
+}
+
+impl BindingBuilder {
+  pub fn binding(mut self, binding: u32) -> Self {
+    self.binding.binding = binding;
+    self
+  }
+
+  pub fn input_rate(mut self, rate: vk::VertexInputRate) -> Self {
+    self.binding.inputRate = rate;
+    self
+  }
+
+  pub fn stride(mut self, stride: u32) -> Self {
+    self.binding.stride = stride;
+    self
+  }
+}
+
+/// Builder for a vertex attribute
+pub struct AttributeBuilder {
+  pub attribute: vk::VertexInputAttributeDescription,
+}
+
+vk_builder!(vk::VertexInputAttributeDescription, AttributeBuilder, attribute);
+
+impl Default for AttributeBuilder {
+  fn default() -> Self {
+    Self {
+      attribute: vk::VertexInputAttributeDescription {
+        binding: 0,
+        format: vk::FORMAT_R32G32B32A32_SFLOAT,
+        location: 0,
+        offset: 0,
+      },
+    }
+  }
+}
+
+impl AttributeBuilder {
+  pub fn binding(mut self, binding: u32) -> Self {
+    self.attribute.binding = binding;
+    self
+  }
+
+  pub fn format(mut self, format: vk::Format) -> Self {
+    self.attribute.format = format;
+    self
+  }
+
+  pub fn location(mut self, location: u32) -> Self {
+    self.attribute.location = location;
+    self
+  }
+
+  pub fn offset(mut self, offset: u32) -> Self {
+    self.attribute.offset = offset;
+    self
+  }
+}

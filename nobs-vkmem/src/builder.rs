@@ -31,13 +31,17 @@ impl<'a> ResourceBuilder<'a> {
           let info = &self.buffers[*j];
           let mut h = vk::NULL_HANDLE;
           vk_check!(vk::CreateBuffer(device, &info.info, std::ptr::null(), &mut h)).map_err(|_| Error::CreateBufferFailed(i as u32))?;
-          BindInfo::with_size(Handle::Buffer(h), info.info.size, info.properties)
+          BindInfo::with_size(Handle::Buffer(h), info.info.size, info.properties, true)
         }
         Handle::Image(j) => {
           let info = &self.images[*j];
           let mut h = vk::NULL_HANDLE;
           vk_check!(vk::CreateImage(device, &info.info, std::ptr::null(), &mut h)).map_err(|_| Error::CreateImageFailed(i as u32))?;
-          BindInfo::new(Handle::Image(h), info.properties)
+          let linear = match info.info.tiling {
+            vk::IMAGE_TILING_LINEAR | vk::IMAGE_TILING_DRM_FORMAT_MODIFIER_EXT => true,
+            _ => false,
+          };
+          BindInfo::new(Handle::Image(h), info.properties, linear)
         }
       };
       bindinfos.push(bindinfo);

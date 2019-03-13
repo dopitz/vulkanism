@@ -24,6 +24,7 @@ pub struct BindInfo {
   pub handle: Handle<u64>,
   pub size: vk::DeviceSize,
   pub requirements: vk::MemoryRequirements,
+  pub linear: bool,
 }
 
 impl BindInfo {
@@ -42,11 +43,13 @@ impl BindInfo {
       Some(size) => size,
       None => requirements.size,
     };
+    let linear = info.linear;
 
     Self {
       handle,
       size,
       requirements,
+      linear,
     }
   }
 }
@@ -78,6 +81,7 @@ pub struct PageTable {
   memtype: u32,
   pagesize: vk::DeviceSize,
 
+  begin_linear: vk::DeviceSize,
   free: BTreeSet<Block>,
   padding: BTreeSet<Block>,
   allocations: HashMap<u64, Block>,
@@ -110,6 +114,7 @@ impl PageTable {
       device,
       memtype,
       pagesize,
+      begin_linear: 0,
       free: Default::default(),
       padding: Default::default(),
       allocations: Default::default(),
@@ -164,12 +169,22 @@ impl PageTable {
   }
 
   /// Finds the smallest block in `blocks`, that is still than the specified size after padding to requested alignment.
-  fn smallest_fit(blocks: &BTreeSet<Block>, alignment: vk::DeviceSize, size: vk::DeviceSize) -> Option<Block> {
+  fn smallest_fit(blocks: &BTreeSet<Block>, alignment: vk::DeviceSize, size: vk::DeviceSize, begin_linear: vk::DeviceSize, linear: bool) -> Option<Block> {
+    if linear {
     blocks
       .range(Block::with_size(0, size + alignment, 0)..)
-      .take_while(|b| b.size_aligned(alignment) >= size)
-      .last()
+      .filter(|b| b.size_aligned(alignment) >= size)
+      .find(|b| b.begin >= begin_linear)
       .cloned()
+    }
+    else {
+    blocks
+      .range(Block::with_size(0, size + alignment, 0)..)
+      .filter(|b| b.size_aligned(alignment) >= size)
+      .rev()
+      .find(|b| b.begin <= begin_linear)
+      .cloned()
+    }
   }
 
   /// Moves blocks to the destination.
@@ -268,7 +283,7 @@ impl PageTable {
 
     // if we can find a matching block for this subrange
     // setup blocks, remove and store the free block and insert a paddings if needed
-    if let Some(best) = Self::smallest_fit(&self.free, alignment, size) {
+    if let Some(best) = Self::smallest_fit(&self.free, alignment, size, self.begin_linear, false) {
       Self::move_blocks(blocks, best, alignment);
       self.free.remove(&best);
 

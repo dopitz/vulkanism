@@ -54,3 +54,4 @@ pub mod pipes {
 
 pub mod cmd;
 pub mod fb;
+pub mod util;

@@ -3,16 +3,16 @@ extern crate nobs_vulkanism as vk;
 use vk::builder::Buildable;
 use vk::winit;
 
-mod tri {
+mod tex {
   vk::pipes::pipeline! {
     stage = {
       ty = "vert",
-      glsl = "src/triangle.vert",
+      glsl = "src/textured.vert",
     }
 
     stage = {
       ty = "frag",
-      glsl = "src/triangle.frag",
+      glsl = "src/textured.frag",
     }
   }
 }
@@ -106,7 +106,17 @@ pub fn main() {
 
   let (mut sc, rp, fbs) = setup_rendertargets(&pdevice, &device, &window, &mut alloc);
 
-  let pipe = tri::new(device.handle, rp.pass)
+  let pipe = tex::new(device.handle, rp.pass)
+    .vertex_input(
+      vk::PipelineVertexInputStateCreateInfo::build()
+        .push_binding(
+          vk::VertexInputBindingDescription::build()
+            .binding(0)
+            .stride(4 * std::mem::size_of::<f32>() as u32)
+            .binding,
+        )
+        .push_attribute(vk::VertexInputAttributeDescription::build().binding(0).location(0).attribute),
+    )
     .dynamic(
       vk::PipelineDynamicStateCreateInfo::build()
         .push_state(vk::DYNAMIC_STATE_VIEWPORT)
@@ -116,6 +126,40 @@ pub fn main() {
     .create()
     .unwrap();
 
+  let mut vb = vk::NULL_HANDLE;
+  vk::mem::Buffer::new(&mut vb)
+    .devicelocal(true)
+    .usage(vk::BUFFER_USAGE_VERTEX_BUFFER_BIT | vk::BUFFER_USAGE_TRANSFER_DST_BIT)
+    .size(12 * std::mem::size_of::<f32>() as vk::DeviceSize)
+    .bind(&mut alloc, vk::mem::BindType::Scatter)
+    .unwrap();
+
+  let mut stage = vk::mem::Staging::new(&mut alloc, 12 * std::mem::size_of::<f32>() as vk::DeviceSize).unwrap();
+  {
+    let mut map = stage.map().unwrap();
+    let svb = map.as_slice_mut::<f32>();
+    svb[0] = 0.0;
+    svb[1] = -0.5;
+    svb[2] = 0.0;
+    svb[3] = 0.0;
+
+    svb[4] = -0.5;
+    svb[5] = 0.5;
+    svb[6] = 0.0;
+    svb[7] = 0.0;
+
+    svb[8] = 0.5;
+    svb[9] = 0.5;
+    svb[10] = 0.0;
+    svb[11] = 0.0;
+  }
+
+  let cs = cmds.begin_stream().unwrap().push(&stage.copy_into_buffer(vb, 0));
+
+
+  let mut batch = vk::cmd::AutoBatch::new(device.handle).unwrap();
+  batch.push(cs).submit(device.queues[0].handle).0.sync().unwrap();
+
   let t = std::time::SystemTime::now();
   let mut n = 0;
 
@@ -123,7 +167,7 @@ pub fn main() {
   let mut x = 'x';
 
   use vk::cmd::commands::*;
-  let draw = Draw::default().vertices().vertex_count(3);
+  let draw = Draw::default().push(vb, 0).vertices().vertex_count(3);
   let mut frame = vk::cmd::Frame::new(device.handle, fbs.len()).unwrap();
 
   loop {

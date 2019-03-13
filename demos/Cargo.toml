@@ -18,3 +18,7 @@ path = "src/headless.rs"
 [[bin]]
 name = "triangle"
 path = "src/triangle.rs"
+
+[[bin]]
+name = "textured"
+path = "src/textured.rs"

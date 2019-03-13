@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 
 use vk;
-use vk::builder::Buildable;
 
 use crate::fb::Error;
 
@@ -224,7 +223,7 @@ impl Default for DependencyBuilder {
 }
 
 impl DependencyBuilder {
-  pub fn external(mut self, dstpass: u32) -> Self {
+  pub fn external(self, dstpass: u32) -> Self {
     self
       .src(vk::SUBPASS_EXTERNAL, vk::PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0)
       .dst(

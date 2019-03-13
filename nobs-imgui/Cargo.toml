@@ -1,0 +1,14 @@
+[package]
+name = "nobs-imgui"
+version = "0.1.0"
+authors = ["Daniel Opitz <danielopitz91@gmail.com>"]
+description = "immediate gui for vulkan"
+license = "MIT"
+keywords = ["vulkan", "gui", "graphics", "gpu", "rendering"]
+categories = ["rendering::graphics-api"]
+repository = "https://github.com/dopitz/vulkanism/nobs-vulkanism-headless"
+readme = "README.md"
+edition = "2018"
+
+[dependencies]
+nobs-vulkanism-headless = {version = "0.1.0", path = "../nobs-vulkanism-headless"}

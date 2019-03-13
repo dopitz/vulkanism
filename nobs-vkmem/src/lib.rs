@@ -121,6 +121,7 @@ pub struct BindInfo {
   handle: Handle<u64>,
   size: Option<vk::DeviceSize>,
   properties: vk::MemoryPropertyFlags,
+  linear: bool,
 }
 
 impl BindInfo {
@@ -129,11 +130,12 @@ impl BindInfo {
   /// ## Arguments
   /// *`handle` - the handle that needs a memory binding
   /// *`properties` - the memory properties indicating if the resource is device local or host accessible
-  pub fn new(handle: Handle<u64>, properties: vk::MemoryPropertyFlags) -> Self {
+  pub fn new(handle: Handle<u64>, properties: vk::MemoryPropertyFlags, linear: bool) -> Self {
     Self {
       handle,
       properties,
       size: None,
+      linear,
     }
   }
 
@@ -143,11 +145,12 @@ impl BindInfo {
   /// *`handle` - the handle that needs a memory binding
   /// *`size` - the actual size of the resource (in bytes)
   /// *`properties` - the memory properties indicating if the resource is device local or host accessible
-  pub fn with_size(handle: Handle<u64>, size: vk::DeviceSize, properties: vk::MemoryPropertyFlags) -> Self {
+  pub fn with_size(handle: Handle<u64>, size: vk::DeviceSize, properties: vk::MemoryPropertyFlags, linear: bool) -> Self {
     Self {
       handle,
       properties,
       size: Some(size),
+      linear,
     }
   }
 }
@@ -328,6 +331,23 @@ impl AllocatorSizes {
   }
 }
 
+struct AllocatorImpl {
+  device: vk::Device,
+  pagetbls: HashMap<u32, page::PageTable>,
+  handles: HashMap<u64, Handle<u32>>,
+}
+
+impl Drop for AllocatorImpl {
+  fn drop(&mut self) {
+    for (h, mt) in self.handles.iter() {
+      match mt {
+        Handle::Buffer(_) => vk::DestroyBuffer(self.device, *h, std::ptr::null()),
+        Handle::Image(_) => vk::DestroyImage(self.device, *h, std::ptr::null()),
+      };
+    }
+  }
+}
+
 /// Allocator for buffer and image resources
 ///
 /// Manages device memory for a single device. The actual memory is managed for each memory type separately by a page table.
@@ -439,23 +459,11 @@ impl AllocatorSizes {
 /// // dropping the allocator automatically destroys bound resources and frees all memory
 /// # }
 /// ```
+#[derive(Clone)]
 pub struct Allocator {
   device: vk::Device,
-  sizes: AllocatorSizes,
-
-  pagetbls: HashMap<u32, page::PageTable>,
-  handles: HashMap<u64, Handle<u32>>,
-}
-
-impl Drop for Allocator {
-  fn drop(&mut self) {
-    for (h, mt) in self.handles.iter() {
-      match mt {
-        Handle::Buffer(_) => vk::DestroyBuffer(self.device, *h, std::ptr::null()),
-        Handle::Image(_) => vk::DestroyImage(self.device, *h, std::ptr::null()),
-      };
-    }
-  }
+  sizes: std::sync::Arc<AllocatorSizes>,
+  alloc: std::sync::Arc<std::sync::Mutex<AllocatorImpl>>,
 }
 
 impl Allocator {
@@ -555,9 +563,12 @@ impl Allocator {
   pub fn with_sizes(device: vk::Device, sizes: AllocatorSizes) -> Allocator {
     Allocator {
       device,
-      sizes,
-      pagetbls: Default::default(),
-      handles: Default::default(),
+      sizes: std::sync::Arc::new(sizes),
+      alloc: std::sync::Arc::new(std::sync::Mutex::new(AllocatorImpl {
+        device,
+        pagetbls: Default::default(),
+        handles: Default::default(),
+      })),
     }
   }
 
@@ -651,18 +662,20 @@ impl Allocator {
       by_memtype.entry(memtype).or_insert(Vec::new()).push(pageinfo);
     }
 
+    let mut alloc = self.alloc.lock().unwrap();
+
     // for every group with the same memtype bind the buffers to a page table
     let device = self.device;
     for (memtype, infos) in by_memtype {
       let pagesize = self.sizes.get_pagesize(memtype);
-      self
+      alloc
         .pagetbls
         .entry(memtype)
         .or_insert_with(|| PageTable::new(device, memtype, pagesize))
         .bind(&infos, bindtype)?;
 
       for h in infos.iter().map(|i| i.handle) {
-        self.handles.insert(h.get(), h.map(memtype));
+        alloc.handles.insert(h.get(), h.map(memtype));
       }
     }
 
@@ -725,22 +738,27 @@ impl Allocator {
   /// # }
   /// ```
   pub fn destroy_many(&mut self, handles: &[u64]) {
-    let by_memtype = handles
-      .iter()
-      .filter_map(|h| self.handles.get(h).map(|mt| (h, mt.get())))
-      .fold(HashMap::new(), |mut acc, (h, mt)| {
-        acc.entry(mt).or_insert(Vec::new()).push(*h);
-        acc
-      });
+    Self::destroy_inner(self.device, &mut self.alloc.lock().unwrap(), handles);
+  }
+
+  fn destroy_inner(device: vk::Device, alloc: &mut AllocatorImpl, handles: &[u64]) {
+    let by_memtype =
+      handles
+        .iter()
+        .filter_map(|h| alloc.handles.get(h).map(|mt| (h, mt.get())))
+        .fold(HashMap::new(), |mut acc, (h, mt)| {
+          acc.entry(mt).or_insert(Vec::new()).push(*h);
+          acc
+        });
 
     for (mt, hs) in by_memtype.iter() {
-      self.pagetbls.get_mut(mt).unwrap().unbind(hs);
+      alloc.pagetbls.get_mut(mt).unwrap().unbind(hs);
     }
 
     for h in handles.iter() {
-      match self.handles.remove(h) {
-        Some(Handle::Buffer(_)) => vk::DestroyBuffer(self.device, *h, std::ptr::null()),
-        Some(Handle::Image(_)) => vk::DestroyImage(self.device, *h, std::ptr::null()),
+      match alloc.handles.remove(h) {
+        Some(Handle::Buffer(_)) => vk::DestroyBuffer(device, *h, std::ptr::null()),
+        Some(Handle::Image(_)) => vk::DestroyImage(device, *h, std::ptr::null()),
         None => (),
       };
     }
@@ -748,7 +766,7 @@ impl Allocator {
 
   /// Frees memory of unused pages
   pub fn free_unused(&mut self) {
-    for (_, tbl) in self.pagetbls.iter_mut() {
+    for (_, tbl) in self.alloc.lock().unwrap().pagetbls.iter_mut() {
       tbl.free_unused();
     }
   }
@@ -764,10 +782,11 @@ impl Allocator {
   }
 
   fn get_mem(&self, handle: u64) -> Option<Block> {
-    self
+    let alloc = self.alloc.lock().unwrap();
+    alloc
       .handles
       .get(&handle)
-      .and_then(|t| self.pagetbls.get(&t.get()))
+      .and_then(|t| alloc.pagetbls.get(&t.get()))
       .and_then(|tbl| tbl.get_mem(handle))
   }
 
@@ -890,12 +909,13 @@ impl Allocator {
 
   /// Print staticstics for the Allocator in yaml format
   pub fn print_stats(&self) -> String {
+    let alloc = self.alloc.lock().unwrap();
     let mut s = String::new();
 
-    let mut keys: Vec<_> = self.pagetbls.keys().collect();
+    let mut keys: Vec<_> = alloc.pagetbls.keys().collect();
     keys.sort();
     for k in keys {
-      write!(s, "{}", self.pagetbls[k].print_stats()).unwrap();
+      write!(s, "{}", alloc.pagetbls[k].print_stats()).unwrap();
     }
     s
   }
