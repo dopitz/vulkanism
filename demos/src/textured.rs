@@ -170,6 +170,8 @@ pub fn main() {
   let draw = Draw::default().push(vb, 0).vertices().vertex_count(3);
   let mut frame = vk::cmd::Frame::new(device.handle, fbs.len()).unwrap();
 
+  println!("{}", alloc.print_stats());
+
   loop {
     events_loop.poll_events(|event| match event {
       winit::Event::WindowEvent {
@@ -211,6 +213,7 @@ pub fn main() {
       break;
     }
   }
+
 
   let t = t.elapsed().unwrap();
   let t = t.as_secs() as f32 + t.subsec_millis() as f32 / 1000.0;

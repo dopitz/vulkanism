@@ -24,7 +24,6 @@ pub struct BindInfo {
   pub handle: Handle<u64>,
   pub size: vk::DeviceSize,
   pub requirements: vk::MemoryRequirements,
-  pub linear: bool,
 }
 
 impl BindInfo {
@@ -43,14 +42,24 @@ impl BindInfo {
       Some(size) => size,
       None => requirements.size,
     };
-    let linear = info.linear;
 
     Self {
       handle,
       size,
       requirements,
-      linear,
     }
+  }
+}
+
+#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
+pub struct Memtype {
+  pub index: u32,
+  pub linear: bool,
+}
+
+impl std::fmt::Display for Memtype {
+  fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+    write!(f, "memtype({}, {})", self.index, if self.linear { "linear" } else { "non-linear" })
   }
 }
 
@@ -77,11 +86,10 @@ pub enum BindType {
 /// Allocated blocks are mapped by their respective resource handle.
 pub struct PageTable {
   device: vk::Device,
+  memtype: Memtype,
 
-  memtype: u32,
   pagesize: vk::DeviceSize,
 
-  begin_linear: vk::DeviceSize,
   free: BTreeSet<Block>,
   padding: BTreeSet<Block>,
   allocations: HashMap<u64, Block>,
@@ -109,12 +117,11 @@ impl PageTable {
   /// Creates a new page table with the desired page size.
   ///
   /// We do not need to check for the minimum page size, since [Allocator](../struct.Allocator.html) already does that, and we don't leak this type.
-  pub fn new(device: vk::Device, memtype: u32, pagesize: vk::DeviceSize) -> Self {
+  pub fn new(device: vk::Device, memtype: Memtype, pagesize: vk::DeviceSize) -> Self {
     Self {
       device,
       memtype,
       pagesize,
-      begin_linear: 0,
       free: Default::default(),
       padding: Default::default(),
       allocations: Default::default(),
@@ -130,7 +137,7 @@ impl PageTable {
       sType: vk::STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
       pNext: std::ptr::null(),
       allocationSize: pagesize,
-      memoryTypeIndex: self.memtype,
+      memoryTypeIndex: self.memtype.index,
     };
 
     let mut handle = vk::NULL_HANDLE;
@@ -169,22 +176,12 @@ impl PageTable {
   }
 
   /// Finds the smallest block in `blocks`, that is still than the specified size after padding to requested alignment.
-  fn smallest_fit(blocks: &BTreeSet<Block>, alignment: vk::DeviceSize, size: vk::DeviceSize, begin_linear: vk::DeviceSize, linear: bool) -> Option<Block> {
-    if linear {
+  fn smallest_fit(blocks: &BTreeSet<Block>, alignment: vk::DeviceSize, size: vk::DeviceSize) -> Option<Block> {
     blocks
       .range(Block::with_size(0, size + alignment, 0)..)
-      .filter(|b| b.size_aligned(alignment) >= size)
-      .find(|b| b.begin >= begin_linear)
+      .take_while(|b| b.size_aligned(alignment) >= size)
+      .last()
       .cloned()
-    }
-    else {
-    blocks
-      .range(Block::with_size(0, size + alignment, 0)..)
-      .filter(|b| b.size_aligned(alignment) >= size)
-      .rev()
-      .find(|b| b.begin <= begin_linear)
-      .cloned()
-    }
   }
 
   /// Moves blocks to the destination.
@@ -196,7 +193,7 @@ impl PageTable {
       return dst;
     }
 
-    let offset = dst.begin + dst.size_aligned(alignment) - dst.size();
+    let offset = dst.begin + (alignment + dst.size_aligned(alignment) - dst.size()) % alignment;
     let mem = dst.mem;
 
     for b in blocks.iter_mut() {
@@ -283,7 +280,7 @@ impl PageTable {
 
     // if we can find a matching block for this subrange
     // setup blocks, remove and store the free block and insert a paddings if needed
-    if let Some(best) = Self::smallest_fit(&self.free, alignment, size, self.begin_linear, false) {
+    if let Some(best) = Self::smallest_fit(&self.free, alignment, size) {
       Self::move_blocks(blocks, best, alignment);
       self.free.remove(&best);
 
@@ -418,7 +415,10 @@ impl PageTable {
     if bindinfos.iter().any(|i| self.allocations.contains_key(&i.handle.get())) {
       Err(Error::AlreadyBound)?;
     }
-    if bindinfos.iter().any(|i| i.requirements.memoryTypeBits & (1 << self.memtype) == 0) {
+    if bindinfos
+      .iter()
+      .any(|i| i.requirements.memoryTypeBits & (1 << self.memtype.index) == 0)
+    {
       Err(Error::InvalidMemoryType)?;
     }
 
@@ -555,7 +555,7 @@ impl PageTable {
   pub fn print_stats(&self) -> String {
     let mut s = String::new();
     for (i, (mem, blocks)) in self.collect_pages().iter_mut().enumerate() {
-      write!(s, "MemType: {}\n", self.memtype).unwrap();
+      write!(s, "{}:\n", self.memtype).unwrap();
       blocks.sort_by_key(|b| b.1.begin);
 
       let mut sum_alloc = 0;

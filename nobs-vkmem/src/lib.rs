@@ -32,6 +32,7 @@ pub use builder::ImageView;
 pub use builder::Resource;
 pub use mapped::Mapped;
 pub use page::BindType;
+pub use page::Memtype;
 
 use std::collections::HashMap;
 use std::fmt::Write;
@@ -182,7 +183,7 @@ pub struct AllocatorSizes {
   /// The default page size is initialized with 64MiB.
   pub pagesize_default: vk::DeviceSize,
   /// Page size mapped by memory type index
-  pub pagesizes: HashMap<u32, vk::DeviceSize>,
+  pub pagesizes: HashMap<Memtype, vk::DeviceSize>,
 }
 
 impl AllocatorSizes {
@@ -264,19 +265,44 @@ impl AllocatorSizes {
     let pagesize_default = vk::DeviceSize::max(minsize * 4, 1 << 26);
     let mut pagesizes = HashMap::new();
 
-    let memtype_local_image = Allocator::get_memtype(pdevice, &image_requirements, vk::MEMORY_PROPERTY_DEVICE_LOCAL_BIT).unwrap();
-    let memtype_local_buffer = Allocator::get_memtype(pdevice, &buffer_requirements, vk::MEMORY_PROPERTY_DEVICE_LOCAL_BIT).unwrap();
-    let memtype_hostaccess = Allocator::get_memtype(
+    let memtype_idx_local_image = Allocator::get_memtype(pdevice, &image_requirements, vk::MEMORY_PROPERTY_DEVICE_LOCAL_BIT).unwrap();
+    let memtype_idx_local_buffer = Allocator::get_memtype(pdevice, &buffer_requirements, vk::MEMORY_PROPERTY_DEVICE_LOCAL_BIT).unwrap();
+    let memtype_idx_hostaccess = Allocator::get_memtype(
       pdevice,
       &buffer_requirements,
       vk::MEMORY_PROPERTY_HOST_VISIBLE_BIT | vk::MEMORY_PROPERTY_HOST_COHERENT_BIT,
     )
     .unwrap();
 
-    pagesizes.insert(memtype_local_image, vk::DeviceSize::max(minsize, 1 << 27));
-    pagesizes.insert(memtype_local_buffer, vk::DeviceSize::max(minsize, 1 << 27));
-    if memtype_local_buffer != memtype_hostaccess {
-      pagesizes.insert(memtype_hostaccess, vk::DeviceSize::max(minsize, 1 << 18));
+    pagesizes.insert(
+      Memtype {
+        index: memtype_idx_local_image,
+        linear: false,
+      },
+      vk::DeviceSize::max(minsize, 1 << 27),
+    );
+    pagesizes.insert(
+      Memtype {
+        index: memtype_idx_local_image,
+        linear: true,
+      },
+      vk::DeviceSize::max(minsize, 1 << 27),
+    );
+    pagesizes.insert(
+      Memtype {
+        index: memtype_idx_local_buffer,
+        linear: true,
+      },
+      vk::DeviceSize::max(minsize, 1 << 27),
+    );
+    if memtype_idx_local_buffer != memtype_idx_hostaccess {
+      pagesizes.insert(
+        Memtype {
+          index: memtype_idx_hostaccess,
+          linear: true,
+        },
+        vk::DeviceSize::max(minsize, 1 << 18),
+      );
     }
 
     Self {
@@ -294,8 +320,8 @@ impl AllocatorSizes {
   /// ## Returns
   ///  - An option with the memory type index.
   ///  - None, if there is no memory type that supports images with the specified properties
-  pub fn get_image_memtype(&self, properties: vk::MemoryPropertyFlags) -> Option<u32> {
-    Allocator::get_memtype(self.pdevice, &self.image_requirements, properties)
+  pub fn get_image_memtype(&self, properties: vk::MemoryPropertyFlags, linear: bool) -> Option<Memtype> {
+    Allocator::get_memtype(self.pdevice, &self.image_requirements, properties).map(|index| Memtype { index, linear })
   }
 
   /// Get the memtype of a buffer with the specified memory properties
@@ -303,8 +329,8 @@ impl AllocatorSizes {
   /// ## Returns
   ///  - An option with the memory type index.
   ///  - None, if there is no memory type that supports buffers with the specified properties
-  pub fn get_buffer_memtype(&self, properties: vk::MemoryPropertyFlags) -> Option<u32> {
-    Allocator::get_memtype(self.pdevice, &self.buffer_requirements, properties)
+  pub fn get_buffer_memtype(&self, properties: vk::MemoryPropertyFlags) -> Option<Memtype> {
+    Allocator::get_memtype(self.pdevice, &self.buffer_requirements, properties).map(|index| Memtype { index, linear: true })
   }
 
   /// Get the pagesize for the memory type
@@ -312,7 +338,7 @@ impl AllocatorSizes {
   /// # Returns
   ///  - The pagesize of the memory type, if one has been set in the AllocatorSizes.
   ///  - Otherwise the default pagesize is returned.
-  pub fn get_pagesize(&self, memtype: u32) -> vk::DeviceSize {
+  pub fn get_pagesize(&self, memtype: Memtype) -> vk::DeviceSize {
     match self.pagesizes.get(&memtype) {
       Some(size) => *size,
       None => self.pagesize_default,
@@ -322,7 +348,7 @@ impl AllocatorSizes {
   /// Set the pagesize for the specifid memory type
   ///
   /// The page size must be at least of size `bufferImageGranularity`. If not the result returns [InvalidPageSize](enum.Error.html#field.InvalidPageSize).
-  pub fn set_pagesize(&mut self, memtype: u32, size: vk::DeviceSize) -> Result<(), Error> {
+  pub fn set_pagesize(&mut self, memtype: Memtype, size: vk::DeviceSize) -> Result<(), Error> {
     if size < Allocator::get_min_pagesize(self.pdevice) {
       Err(Error::InvalidPageSize)?
     }
@@ -333,8 +359,8 @@ impl AllocatorSizes {
 
 struct AllocatorImpl {
   device: vk::Device,
-  pagetbls: HashMap<u32, page::PageTable>,
-  handles: HashMap<u64, Handle<u32>>,
+  pagetbls: HashMap<Memtype, page::PageTable>,
+  handles: HashMap<u64, Handle<Memtype>>,
 }
 
 impl Drop for AllocatorImpl {
@@ -658,7 +684,10 @@ impl Allocator {
     let mut by_memtype = HashMap::new();
     for info in bindinfos.iter() {
       let pageinfo = page::BindInfo::new(self.device, info);
-      let memtype = Self::get_memtype(self.sizes.pdevice, &pageinfo.requirements, info.properties).ok_or(Error::InvalidMemoryType)?;
+      let memtype = Memtype {
+        index: Self::get_memtype(self.sizes.pdevice, &pageinfo.requirements, info.properties).ok_or(Error::InvalidMemoryType)?,
+        linear: info.linear,
+      };
       by_memtype.entry(memtype).or_insert(Vec::new()).push(pageinfo);
     }
 
