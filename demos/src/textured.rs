@@ -1,5 +1,7 @@
+extern crate cgmath as cgm;
 extern crate nobs_vulkanism as vk;
 
+use cgm::*;
 use vk::builder::Buildable;
 use vk::winit;
 
@@ -14,6 +16,12 @@ mod tex {
       ty = "frag",
       glsl = "src/textured.frag",
     }
+  }
+
+  pub struct UbTransform {
+    pub model: cgm::Matrix4<f32>,
+    pub view: cgm::Matrix4<f32>,
+    pub proj: cgm::Matrix4<f32>,
   }
 }
 
@@ -91,10 +99,6 @@ pub fn setup_rendertargets(
     vk::fb::Framebuffer::build_from_pass(&pass, alloc).extent(sc.extent).create(),
   ];
 
-  //fbs[0].set_clear(&[vk::fb::clear_colorf32([1.0,0.0,0.0,1.0]), vk::fb::clear_depth(0.0)]);
-  //fbs[1].set_clear(&[vk::fb::clear_colorf32([0.0,1.0,0.0,1.0]), vk::fb::clear_depth(0.0)]);
-  //fbs[2].set_clear(&[vk::fb::clear_colorf32([0.0,0.0,1.0,1.0]), vk::fb::clear_depth(0.0)]);
-
   (sc, pass, fbs)
 }
 
@@ -127,38 +131,43 @@ pub fn main() {
     .unwrap();
 
   let mut vb = vk::NULL_HANDLE;
+  let mut ub = vk::NULL_HANDLE;
   vk::mem::Buffer::new(&mut vb)
-    .devicelocal(true)
-    .usage(vk::BUFFER_USAGE_VERTEX_BUFFER_BIT | vk::BUFFER_USAGE_TRANSFER_DST_BIT)
-    .size(12 * std::mem::size_of::<f32>() as vk::DeviceSize)
-    .bind(&mut alloc, vk::mem::BindType::Scatter)
+    .vertex_buffer(12 * std::mem::size_of::<f32>() as vk::DeviceSize)
+    .new_buffer(&mut ub)
+    .uniform_buffer(std::mem::size_of::<tex::UbTransform>() as vk::DeviceSize)
+    .bind(&mut alloc, vk::mem::BindType::Block)
     .unwrap();
 
-  let mut stage = vk::mem::Staging::new(&mut alloc, 12 * std::mem::size_of::<f32>() as vk::DeviceSize).unwrap();
+  let mut stage = vk::mem::Staging::new(&mut alloc, std::mem::size_of::<tex::UbTransform>() as vk::DeviceSize).unwrap();
   {
-    let mut map = stage.map().unwrap();
+    let mut map = stage.range(0, 12 * std::mem::size_of::<f32>() as vk::DeviceSize).map().unwrap();
     let svb = map.as_slice_mut::<f32>();
     svb[0] = 0.0;
-    svb[1] = -0.5;
+    svb[1] = 1.0;
     svb[2] = 0.0;
-    svb[3] = 0.0;
+    svb[3] = 1.0;
 
-    svb[4] = -0.5;
-    svb[5] = 0.5;
+    svb[4] = -1.0;
+    svb[5] = -1.0;
     svb[6] = 0.0;
-    svb[7] = 0.0;
+    svb[7] = 1.0;
 
-    svb[8] = 0.5;
-    svb[9] = 0.5;
+    svb[8] = 1.0;
+    svb[9] = -1.0;
     svb[10] = 0.0;
-    svb[11] = 0.0;
+    svb[11] = 1.0;
+
+    let cs = cmds.begin_stream().unwrap().push(&stage.copy_into_buffer(vb, 0));
+
+    let mut batch = vk::cmd::AutoBatch::new(device.handle).unwrap();
+    batch.push(cs).submit(device.queues[0].handle).0.sync().unwrap();
   }
 
-  let cs = cmds.begin_stream().unwrap().push(&stage.copy_into_buffer(vb, 0));
+  let mut descriptors = vk::pipes::DescriptorPool::with_capacity(device.handle, &tex::SIZES, tex::NUM_SETS).unwrap();
+  let ds = descriptors.new_dset(pipe.dsets[&0].layout, &pipe.dsets[&0].sizes).unwrap();
 
-
-  let mut batch = vk::cmd::AutoBatch::new(device.handle).unwrap();
-  batch.push(cs).submit(device.queues[0].handle).0.sync().unwrap();
+  tex::dset::write(device.handle, ds).ub_transform(|b| b.buffer(ub)).update();
 
   let t = std::time::SystemTime::now();
   let mut n = 0;
@@ -170,8 +179,6 @@ pub fn main() {
   let draw = Draw::default().push(vb, 0).vertices().vertex_count(3);
   let mut frame = vk::cmd::Frame::new(device.handle, fbs.len()).unwrap();
 
-  println!("{}", alloc.print_stats());
-
   loop {
     events_loop.poll_events(|event| match event {
       winit::Event::WindowEvent {
@@ -179,9 +186,48 @@ pub fn main() {
         ..
       } => close = true,
       winit::Event::WindowEvent {
+        event: winit::WindowEvent::Resized(size),
+        ..
+      } => {
+        println!("{:?}", size);
+        let mut map = stage
+          .range(0, std::mem::size_of::<tex::UbTransform>() as vk::DeviceSize)
+          .map()
+          .unwrap();
+        let svb = map.as_slice_mut::<tex::UbTransform>();
+
+        svb[0].model = cgm::One::one();
+        svb[0].view = cgm::Matrix4::look_at(
+          cgm::Point3::new(0.0, 0.0, -10.0),
+          cgm::Point3::new(0.0, 0.0, 0.0),
+          cgm::Vector3::new(0.0, 1.0, 0.0),
+        );
+        svb[0].proj = cgm::Matrix4::from_nonuniform_scale(1.0, -1.0, 1.0)
+          * cgm::perspective(cgm::Deg(45.0), (size.width / size.height) as f32, 1.0, 100.0);
+
+        let cs = cmds.begin_stream().unwrap().push(&stage.copy_into_buffer(ub, 0));
+
+        let mut batch = vk::cmd::AutoBatch::new(device.handle).unwrap();
+        batch.push(cs).submit(device.queues[0].handle).0.sync().unwrap();
+      }
+      winit::Event::WindowEvent {
         event: winit::WindowEvent::ReceivedCharacter(c),
         ..
       } => x = c,
+      winit::Event::DeviceEvent {
+        event: winit::DeviceEvent::Key(key),
+        ..
+      } => {
+        println!("{:?}", key);
+      }
+      winit::Event::DeviceEvent {
+        event: winit::DeviceEvent::MouseWheel {
+          delta: winit::MouseScrollDelta::LineDelta(lp, la)
+        },
+        ..
+      } => {
+        println!("{:?}", (lp, la));
+      }
       _ => (),
     });
 
@@ -197,6 +243,7 @@ pub fn main() {
       .push(&Viewport::with_extent(sc.extent))
       .push(&Scissor::with_extent(sc.extent))
       .push(&BindPipeline::graphics(pipe.handle))
+      .push(&BindDset::new(vk::PIPELINE_BIND_POINT_GRAPHICS, pipe.layout, 0, ds))
       .push(&draw)
       .push(&fb.end())
       .push(&sc.blit(next.index, fb.images[0]));
@@ -214,6 +261,7 @@ pub fn main() {
     }
   }
 
+  println!("{}", alloc.print_stats());
 
   let t = t.elapsed().unwrap();
   let t = t.as_secs() as f32 + t.subsec_millis() as f32 / 1000.0;

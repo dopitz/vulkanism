@@ -10,7 +10,7 @@ use vk::builder::Buildable;
 /// - polygon mode: `vk::POLYGON_MODE_FILL`
 /// - line width: `1`
 /// - cull mode: `vk::CULL_MODE_BACK_BIT`
-/// - front face: `vk::FRONT_FACE_COUNTER_CLOCKWISE`
+/// - front face: `vk::FRONT_FACE_CLOCKWISE`
 /// - depth bias: disabled
 /// - depth bias const factor: `0`
 /// - depth bias clamp: `0`
@@ -33,7 +33,7 @@ impl Default for Builder {
         polygonMode: vk::POLYGON_MODE_FILL,
         lineWidth: 1.0f32,
         cullMode: vk::CULL_MODE_BACK_BIT,
-        frontFace: vk::FRONT_FACE_COUNTER_CLOCKWISE,
+        frontFace: vk::FRONT_FACE_CLOCKWISE,
         depthBiasEnable: vk::FALSE,
         depthBiasConstantFactor: 0.0f32,
         depthBiasClamp: 0.0f32,

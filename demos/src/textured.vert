@@ -4,11 +4,15 @@
 layout(location = 0) in vec4 position;
 
 //layout(location = 0) out vec2 tex;
-out gl_PerVertex {
-  vec4 gl_Position;
+
+layout(binding = 0) uniform ub_transform {
+  mat4 model;
+  mat4 view;
+  mat4 proj;
 };
 
 void main() {
-  gl_Position = vec4(position.xy, 0.0, 1.0);
+  gl_Position = proj * view * model * position;
+  //gl_Position = position;
 }
 

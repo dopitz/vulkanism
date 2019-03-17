@@ -225,7 +225,7 @@ impl<'a, 'b> RenderpassFramebufferBuilder<'a, 'b> {
         *i,
         *v,
         match is_depth(f) {
-          true => crate::fb::clear_depth(0.0),
+          true => crate::fb::clear_depth(1.0),
           false => crate::fb::clear_coloru32([0, 0, 0, 0]),
         },
       );

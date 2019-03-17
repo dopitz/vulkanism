@@ -285,6 +285,32 @@ impl<'a> Buffer<'a> {
     }
   }
 
+  /// Makro configuration for setting up vertex buffers
+  ///
+  /// Sets
+  ///  - devicelokal: 'true'
+  ///  - usage: `vk::BUFFER_USAGE_VERTEX_BUFFER_BIT | vk::BUFFER_USAGE_TRANSFER_DST_BIT`
+  ///  - size: as specified
+  pub fn vertex_buffer(self, size: vk::DeviceSize) -> Self {
+    self
+      .devicelocal(true)
+      .usage(vk::BUFFER_USAGE_VERTEX_BUFFER_BIT | vk::BUFFER_USAGE_TRANSFER_DST_BIT)
+      .size(size)
+  }
+
+  /// Makro configuration for setting up uniform buffers
+  ///
+  /// Sets
+  ///  - devicelokal: 'true'
+  ///  - usage: `vk::BUFFER_USAGE_UNIFORM_BUFFER_BIT | vk::BUFFER_USAGE_TRANSFER_DST_BIT`
+  ///  - size: as specified
+  pub fn uniform_buffer(self, size: vk::DeviceSize) -> Self {
+    self
+      .devicelocal(true)
+      .usage(vk::BUFFER_USAGE_UNIFORM_BUFFER_BIT | vk::BUFFER_USAGE_TRANSFER_DST_BIT)
+      .size(size)
+  }
+
   /// Finishes configuration of this buffer
   ///
   /// ## Returns
