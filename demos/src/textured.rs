@@ -222,7 +222,7 @@ pub fn main() {
       }
       winit::Event::DeviceEvent {
         event: winit::DeviceEvent::MouseWheel {
-          delta: winit::MouseScrollDelta::LineDelta(lp, la)
+          delta: winit::MouseScrollDelta::LineDelta(lp, la),
         },
         ..
       } => {

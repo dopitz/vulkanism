@@ -433,6 +433,56 @@ impl PageTable {
     }
   }
 
+  fn bindx(&mut self, bindinfos: &[BindInfo]) -> Result<(), Error> {
+    let mut blocks = Vec::with_capacity(bindinfos.len());
+    blocks.resize(bindinfos.len(), Block::new(0, 0, 0));
+
+    struct Group {
+      b: usize,
+      e: usize,
+      free: Block,
+    }
+
+    let mut groups = Vec::new();
+    let mut g = Group {
+      b: 0,
+      e: bindinfos.len(),
+      free: Block::new(0, 0, 0),
+    };
+
+    loop {
+      let bindinfos = &bindinfos[g.b..g.e];
+      let blocks = &mut blocks[g.b..g.e];
+
+      let (alignment, size) = Self::compute_blocks(bindinfos, blocks);
+
+      if let Some(free) = self
+        .free
+        .range(Block::with_size(0, size + alignment, 0)..)
+        .take_while(|b| b.size_aligned(alignment) >= size)
+        .last()
+        .cloned()
+      {
+        self.free.remove(&free);
+        groups.push(Group {
+          b: g.b,
+          e: g.e,
+          free: free,
+        });
+      } else {
+        let largest = self.free.iter().next().cloned().and_then(|b| self.free.take(&b));
+
+        for b in blocks.iter() {
+
+        }
+
+        break;
+      }
+    }
+
+    Ok(())
+  }
+
   /// Collects all blocks in `src` that overlap with at least one block in `dst`
   ///
   /// Overlapping Blocks in src are deleted.
