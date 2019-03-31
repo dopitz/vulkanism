@@ -148,33 +148,6 @@ impl PageTable {
     Ok(Block::with_size(0, self.pagesize, handle))
   }
 
-  /// Compute blocks from [BindInfos](struct.BindInfo.html)
-  ///
-  /// Requires that `bindinfos.len() == blocks.len()`.
-  ///
-  /// Sets the begin and end field in every block. The offsets are computed so that every block is aligned correctly w/r to their BindInfo's reqirements.
-  /// The block's begin and end are computed to base address 0, e.g. the first block starts with `begin == 0`.
-  /// Returns the reqired alignment of the first block and the required total size of all blocks.
-  fn compute_blocks(bindinfos: &[BindInfo], blocks: &mut [Block]) -> (vk::DeviceSize, vk::DeviceSize) {
-    // use the largest alignment for all resources
-    let alignment = bindinfos
-      .iter()
-      .fold(0, |align, i| vk::DeviceSize::max(align, i.requirements.alignment));
-
-    let mut prev = Block::new(0, 0, 0);
-    for (block, info) in blocks.iter_mut().zip(bindinfos.iter()) {
-      let begin = match prev.end % info.requirements.alignment {
-        0 => prev.end,
-        modulo => prev.end + info.requirements.alignment - modulo,
-      };
-
-      *block = Block::with_size(begin, info.size, 0);
-      prev = *block;
-    }
-
-    (alignment, prev.end)
-  }
-
   /// Finds the smallest block in `blocks`, that is still than the specified size after padding to requested alignment.
   fn smallest_fit(blocks: &BTreeSet<Block>, alignment: vk::DeviceSize, size: vk::DeviceSize) -> Option<Block> {
     blocks
@@ -276,7 +249,7 @@ impl PageTable {
     used: &mut Vec<Block>,
     free: &mut Vec<Block>,
   ) -> Result<(), Error> {
-    let (alignment, size) = Self::compute_blocks(bindinfos, blocks);
+    let (alignment, size, c) = Self::compute_blocks(bindinfos, blocks, None);
 
     // if we can find a matching block for this subrange
     // setup blocks, remove and store the free block and insert a paddings if needed
@@ -424,7 +397,7 @@ impl PageTable {
 
     let mut blocks = Vec::with_capacity(bindinfos.len());
     blocks.resize(bindinfos.len(), Block::new(0, 0, 0));
-    Self::compute_blocks(bindinfos, &mut blocks);
+    Self::compute_blocks(bindinfos, &mut blocks, None);
 
     match bindtype {
       BindType::Scatter => self.bind_scatter(bindinfos, &mut blocks),
@@ -433,10 +406,51 @@ impl PageTable {
     }
   }
 
+  /// Compute blocks from [BindInfos](struct.BindInfo.html)
+  ///
+  /// Requires that `bindinfos.len() == blocks.len()`.
+  ///
+  /// Sets the begin and end field in every block. The offsets are computed so that every block is aligned correctly w/r to their BindInfo's reqirements.
+  /// The block's begin and end are computed to base address 0, e.g. the first block starts with `begin == 0`.
+  /// Returns the reqired alignment of the first block and the required total size of all blocks.
+  fn compute_blocks(
+    bindinfos: &[BindInfo],
+    blocks: &mut [Block],
+    size: Option<vk::DeviceSize>,
+  ) -> (vk::DeviceSize, vk::DeviceSize, usize) {
+    // use the largest alignment for all resources
+    let alignment = bindinfos
+      .iter()
+      .fold(0, |align, i| vk::DeviceSize::max(align, i.requirements.alignment));
+
+    let mut count = 0;
+    let mut prev = Block::new(0, 0, 0);
+
+    for (block, info) in blocks.iter_mut().zip(bindinfos.iter()) {
+      let begin = match prev.end % info.requirements.alignment {
+        0 => prev.end,
+        modulo => prev.end + info.requirements.alignment - modulo,
+      };
+
+      *block = Block::with_size(begin, info.size, 0);
+      prev = *block;
+      count += 1;
+
+      if let Some(s) = size {
+        if prev.end >= s {
+          break;
+        }
+      }
+    }
+
+    (alignment, prev.end, count)
+  }
+
   fn bindx(&mut self, bindinfos: &[BindInfo]) -> Result<(), Error> {
     let mut blocks = Vec::with_capacity(bindinfos.len());
     blocks.resize(bindinfos.len(), Block::new(0, 0, 0));
 
+    /// Continuous bindinfos that can be bound to the same free block
     struct Group {
       b: usize,
       e: usize,
@@ -454,7 +468,7 @@ impl PageTable {
       let bindinfos = &bindinfos[g.b..g.e];
       let blocks = &mut blocks[g.b..g.e];
 
-      let (alignment, size) = Self::compute_blocks(bindinfos, blocks);
+      let (alignment, size, _) = Self::compute_blocks(bindinfos, blocks, None);
 
       if let Some(free) = self
         .free
@@ -463,6 +477,7 @@ impl PageTable {
         .last()
         .cloned()
       {
+        // we found a good block, so we use it
         self.free.remove(&free);
         groups.push(Group {
           b: g.b,
@@ -470,10 +485,17 @@ impl PageTable {
           free: free,
         });
       } else {
-        let largest = self.free.iter().next().cloned().and_then(|b| self.free.take(&b));
+        // no good match
+        // find the largest free block and fill it with as many bindings as possible
+        let largest = match self.free.iter().next().cloned().and_then(|b| self.free.take(&b)) {
+          Some(l) => l,
+          None => self.allocate_page(self.pagesize)?,
+        };
 
-        for b in blocks.iter() {
+        let (alignment, size, count) = Self::compute_blocks(bindinfos, blocks, Some(largest.size_aligned(alignment)));
 
+        if count == 0 {
+          Err(Error::OversizedBlock)?
         }
 
         break;
