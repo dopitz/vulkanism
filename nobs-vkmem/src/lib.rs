@@ -26,17 +26,24 @@ mod builder;
 mod mapped;
 mod page;
 
+mod bindinfo;
+mod bindtype;
+mod memtype;
+mod table;
+
+pub use bindinfo::BindInfo;
+pub use bindtype::BindType;
 pub use builder::Buffer;
 pub use builder::Image;
 pub use builder::ImageView;
 pub use builder::Resource;
 pub use mapped::Mapped;
-pub use page::BindType;
-pub use page::Memtype;
+pub use memtype::Memtype;
 
 use std::collections::HashMap;
 use std::fmt::Write;
 
+use bindinfo::BindInfoInner;
 use block::Block;
 use page::PageTable;
 
@@ -104,54 +111,6 @@ where
     match self {
       Handle::Image(_) => Handle::Image(u),
       Handle::Buffer(_) => Handle::Buffer(u),
-    }
-  }
-}
-
-/// Bundles all information for the [Allocator](struct.Allocator.html) to perform a resource memory binding.
-///
-/// It is possible to additionally specify the size of the resource in bytes ([with_size](struct.BindInfo.html#method.with_size)).
-/// This size only matters, if the resource is a buffer that will be mapped into host accessible memory.
-/// If no size is specified with the constructor the size for the memory binding will be retrieved from the buffer's `vk::MemoryRequirements`,
-/// which might include a padding at the end. If the buffer is then mapped with [get_mapped](struct.Allocator.html#method.get_mapped) the retured
-/// [Mapped](mapped/struct.Mapped.html) will contain the buffer including padding. By specifying an explicit size this can be circumvented.
-///
-/// When the builders [Buffer](builder/struct.Buffer.html) and [Image](builder/struct.Image.html) are used resources will allways be submitted with their actual size.
-#[derive(Debug, Clone, Copy)]
-pub struct BindInfo {
-  handle: Handle<u64>,
-  size: Option<vk::DeviceSize>,
-  properties: vk::MemoryPropertyFlags,
-  linear: bool,
-}
-
-impl BindInfo {
-  /// Create BindInfo from the specified memory properties
-  ///
-  /// ## Arguments
-  /// *`handle` - the handle that needs a memory binding
-  /// *`properties` - the memory properties indicating if the resource is device local or host accessible
-  pub fn new(handle: Handle<u64>, properties: vk::MemoryPropertyFlags, linear: bool) -> Self {
-    Self {
-      handle,
-      properties,
-      size: None,
-      linear,
-    }
-  }
-
-  /// Create BindInfo with the specified memory properties and explicit size in bytes
-  ///
-  /// ## Arguments
-  /// *`handle` - the handle that needs a memory binding
-  /// *`size` - the actual size of the resource (in bytes)
-  /// *`properties` - the memory properties indicating if the resource is device local or host accessible
-  pub fn with_size(handle: Handle<u64>, size: vk::DeviceSize, properties: vk::MemoryPropertyFlags, linear: bool) -> Self {
-    Self {
-      handle,
-      properties,
-      size: Some(size),
-      linear,
     }
   }
 }
@@ -683,7 +642,7 @@ impl Allocator {
     // sort handles into groups of the same memory type
     let mut by_memtype = HashMap::new();
     for info in bindinfos.iter() {
-      let pageinfo = page::BindInfo::new(self.device, info);
+      let pageinfo = BindInfoInner::new(info, self.device);
       let memtype = Memtype {
         index: Self::get_memtype(self.sizes.pdevice, &pageinfo.requirements, info.properties).ok_or(Error::InvalidMemoryType)?,
         linear: info.linear,

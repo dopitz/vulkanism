@@ -1,7 +1,10 @@
 use std::collections::{BTreeSet, HashMap, HashSet};
 use std::fmt::Write;
 
+use crate::bindinfo::BindInfoInner;
+use crate::bindtype::BindType;
 use crate::block::Block;
+use crate::memtype::Memtype;
 use crate::Error;
 use crate::Handle;
 use vk;
@@ -12,71 +15,6 @@ enum BlockType {
   Free,
   Padded,
   Alloc,
-}
-
-/// Internal bind info used only by PageTable
-///
-/// Implements conversion from the public [BindInfo](../struct.BindInfo.html).
-/// The `size` field may be smaller than the `requirements.size`, in case the public BindInfo specified it.
-/// Otherwise these two sizes will be equal.
-#[derive(Debug, Clone, Copy)]
-pub struct BindInfo {
-  pub handle: Handle<u64>,
-  pub size: vk::DeviceSize,
-  pub requirements: vk::MemoryRequirements,
-}
-
-impl BindInfo {
-  /// Create BindInfo from the public [BindInfo](../struct.BindInfo.html).
-  ///
-  /// Reads the buffer/image requirements from vulkan.
-  /// If `info.size` specifies a valid size `self.size` will be initialized with this size, otherwise the requirement's size will be used.
-  pub fn new(device: vk::Device, info: &crate::BindInfo) -> Self {
-    let mut requirements = unsafe { std::mem::uninitialized() };
-    match info.handle {
-      Handle::Image(i) => vk::GetImageMemoryRequirements(device, i, &mut requirements),
-      Handle::Buffer(b) => vk::GetBufferMemoryRequirements(device, b, &mut requirements),
-    }
-    let handle = info.handle;
-    let size = match info.size {
-      Some(size) => size,
-      None => requirements.size,
-    };
-
-    Self {
-      handle,
-      size,
-      requirements,
-    }
-  }
-}
-
-#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
-pub struct Memtype {
-  pub index: u32,
-  pub linear: bool,
-}
-
-impl std::fmt::Display for Memtype {
-  fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-    write!(f, "memtype({}, {})", self.index, if self.linear { "linear" } else { "non-linear" })
-  }
-}
-
-/// Strategy how resources are bound in the [Allocator](struct.Allocator.html)
-#[derive(Debug, Clone, Copy)]
-pub enum BindType {
-  /// The allocator may split up groups of resources.
-  /// As a consequence, not all resources will be bound to a continuous block of memory.
-  /// This makes the best usage of memory space.
-  Scatter,
-  /// The allocator is forced to bind all resources to a single continuous block of memory.
-  /// If no such block exists a new page will be allocated.
-  Block,
-  /// Allocates the resources on a NEW private page, with the exact size that is needed.
-  /// If one or more of the resources allocated with this type is [unbound](struct.Allocator.html#method.destroy) again,
-  /// the freed space on this page is free to be used by newly created resources.
-  Minipage,
 }
 
 /// A PageTable manages allocations of the same memory type.
@@ -189,7 +127,7 @@ impl PageTable {
   /// Inserts `free` blocks to the free list.
   fn bind_blocks(
     &mut self,
-    bindinfos: &[BindInfo],
+    bindinfos: &[BindInfoInner],
     blocks: &[Block],
     paddings: &[Block],
     used: &[Block],
@@ -243,7 +181,7 @@ impl PageTable {
   /// If the recursion gets to a subrange of length 1 and still no valid free block is found
   fn bind_recursive(
     &mut self,
-    bindinfos: &[BindInfo],
+    bindinfos: &[BindInfoInner],
     blocks: &mut [Block],
     paddings: &mut Vec<Block>,
     used: &mut Vec<Block>,
@@ -303,7 +241,7 @@ impl PageTable {
   /// see [BindType::Scatter](enum.BindType.html).
   ///
   /// Fails of no trivially distribution of resources to free blocks is found (does not solve the bin-packing).
-  fn bind_scatter(&mut self, bindinfos: &[BindInfo], blocks: &mut [Block]) -> Result<(), Error> {
+  fn bind_scatter(&mut self, bindinfos: &[BindInfoInner], blocks: &mut [Block]) -> Result<(), Error> {
     let mut paddings = Vec::new();
     let mut used = Vec::new();
     let mut free = Vec::new();
@@ -329,7 +267,7 @@ impl PageTable {
   ///
   /// The difference to [bind](struct.PageTable.html#method.bind_scatter) is,
   /// that if the first attempt of [bind_recursive](struct.PageTable.html#method.bind_recursive)
-  fn bind_block(&mut self, bindinfos: &[BindInfo], blocks: &mut [Block]) -> Result<(), Error> {
+  fn bind_block(&mut self, bindinfos: &[BindInfoInner], blocks: &mut [Block]) -> Result<(), Error> {
     let mut paddings = Vec::new();
     let mut used = Vec::new();
     let mut free = Vec::new();
@@ -360,7 +298,7 @@ impl PageTable {
   /// see [BindType::Block](enum.BindType.html).
   ///
   /// This will always allocate exactly as much memory as it is needed to bind all resources in `bindinfos`
-  fn bind_minipage(&mut self, bindinfos: &[BindInfo], blocks: &mut [Block]) -> Result<(), Error> {
+  fn bind_minipage(&mut self, bindinfos: &[BindInfoInner], blocks: &mut [Block]) -> Result<(), Error> {
     let page = {
       // since we are allocating memory, we have to make sure, that size - offset == alignment
       let lastblock = blocks.last_mut().unwrap();
@@ -380,7 +318,7 @@ impl PageTable {
   /// Bind resources to memory
   ///
   /// See [BindType::Block](enum.BindType.html).
-  pub fn bind(&mut self, bindinfos: &[BindInfo], bindtype: BindType) -> Result<(), Error> {
+  pub fn bind(&mut self, bindinfos: &[BindInfoInner], bindtype: BindType) -> Result<(), Error> {
     if bindinfos.is_empty() {
       return Ok(());
     }
@@ -406,18 +344,14 @@ impl PageTable {
     }
   }
 
-  /// Compute blocks from [BindInfos](struct.BindInfo.html)
+  /// Compute blocks from [BindInfos](struct.BindInfoInner.html)
   ///
   /// Requires that `bindinfos.len() == blocks.len()`.
   ///
-  /// Sets the begin and end field in every block. The offsets are computed so that every block is aligned correctly w/r to their BindInfo's reqirements.
+  /// Sets the begin and end field in every block. The offsets are computed so that every block is aligned correctly w/r to their BindInfoInner's reqirements.
   /// The block's begin and end are computed to base address 0, e.g. the first block starts with `begin == 0`.
   /// Returns the reqired alignment of the first block and the required total size of all blocks.
-  fn compute_blocks(
-    bindinfos: &[BindInfo],
-    blocks: &mut [Block],
-    size: Option<vk::DeviceSize>,
-  ) -> (vk::DeviceSize, vk::DeviceSize, usize) {
+  fn compute_blocks(bindinfos: &[BindInfoInner], blocks: &mut [Block], size: Option<vk::DeviceSize>) -> (vk::DeviceSize, vk::DeviceSize, usize) {
     // use the largest alignment for all resources
     let alignment = bindinfos
       .iter()
@@ -444,65 +378,6 @@ impl PageTable {
     }
 
     (alignment, prev.end, count)
-  }
-
-  fn bindx(&mut self, bindinfos: &[BindInfo]) -> Result<(), Error> {
-    let mut blocks = Vec::with_capacity(bindinfos.len());
-    blocks.resize(bindinfos.len(), Block::new(0, 0, 0));
-
-    /// Continuous bindinfos that can be bound to the same free block
-    struct Group {
-      b: usize,
-      e: usize,
-      free: Block,
-    }
-
-    let mut groups = Vec::new();
-    let mut g = Group {
-      b: 0,
-      e: bindinfos.len(),
-      free: Block::new(0, 0, 0),
-    };
-
-    loop {
-      let bindinfos = &bindinfos[g.b..g.e];
-      let blocks = &mut blocks[g.b..g.e];
-
-      let (alignment, size, _) = Self::compute_blocks(bindinfos, blocks, None);
-
-      if let Some(free) = self
-        .free
-        .range(Block::with_size(0, size + alignment, 0)..)
-        .take_while(|b| b.size_aligned(alignment) >= size)
-        .last()
-        .cloned()
-      {
-        // we found a good block, so we use it
-        self.free.remove(&free);
-        groups.push(Group {
-          b: g.b,
-          e: g.e,
-          free: free,
-        });
-      } else {
-        // no good match
-        // find the largest free block and fill it with as many bindings as possible
-        let largest = match self.free.iter().next().cloned().and_then(|b| self.free.take(&b)) {
-          Some(l) => l,
-          None => self.allocate_page(self.pagesize)?,
-        };
-
-        let (alignment, size, count) = Self::compute_blocks(bindinfos, blocks, Some(largest.size_aligned(alignment)));
-
-        if count == 0 {
-          Err(Error::OversizedBlock)?
-        }
-
-        break;
-      }
-    }
-
-    Ok(())
   }
 
   /// Collects all blocks in `src` that overlap with at least one block in `dst`

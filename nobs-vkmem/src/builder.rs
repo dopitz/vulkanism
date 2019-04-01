@@ -1,6 +1,6 @@
+use crate::bindtype::BindType;
 use crate::Allocator;
 use crate::BindInfo;
-use crate::BindType;
 use crate::Error;
 use crate::Handle;
 use vk;
@@ -31,7 +31,7 @@ impl<'a> ResourceBuilder<'a> {
           let info = &self.buffers[*j];
           let mut h = vk::NULL_HANDLE;
           vk_check!(vk::CreateBuffer(device, &info.info, std::ptr::null(), &mut h)).map_err(|_| Error::CreateBufferFailed(i as u32))?;
-          BindInfo::with_size(Handle::Buffer(h), info.info.size, info.properties, true)
+          BindInfo::with_size(Handle::Buffer(h), info.properties, true, info.info.size)
         }
         Handle::Image(j) => {
           let info = &self.images[*j];
