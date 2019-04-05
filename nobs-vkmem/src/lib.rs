@@ -46,6 +46,7 @@ use std::fmt::Write;
 use bindinfo::BindInfoInner;
 use block::Block;
 use page::PageTable;
+use table::Table;
 
 /// Errors that can be occure when using this crate
 #[derive(Debug)]
