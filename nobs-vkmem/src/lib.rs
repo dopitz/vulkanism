@@ -319,7 +319,8 @@ impl AllocatorSizes {
 
 struct AllocatorImpl {
   device: vk::Device,
-  pagetbls: HashMap<Memtype, page::PageTable>,
+  //pagetbls: HashMap<Memtype, page::PageTable>,
+  pagetbls: HashMap<Memtype, table::Table>,
   handles: HashMap<u64, Handle<Memtype>>,
 }
 
@@ -660,7 +661,7 @@ impl Allocator {
       alloc
         .pagetbls
         .entry(memtype)
-        .or_insert_with(|| PageTable::new(device, memtype, pagesize))
+        .or_insert_with(|| table::Table::new(device, memtype, pagesize))
         .bind(&infos, bindtype)?;
 
       for h in infos.iter().map(|i| i.handle) {
@@ -776,7 +777,7 @@ impl Allocator {
       .handles
       .get(&handle)
       .and_then(|t| alloc.pagetbls.get(&t.get()))
-      .and_then(|tbl| tbl.get_mem(handle))
+      .and_then(|tbl| tbl.get_mem(handle)).and_then(|b| Block::with_size(b.beg + b.pad, b.size_padded(), b.mem))
   }
 
   /// Gets a [Mapped](mapped/struct.Mapped.html) of the spicified resource handle
