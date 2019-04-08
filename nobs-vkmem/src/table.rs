@@ -1,61 +1,13 @@
 use std::collections::{BTreeMap, HashMap};
 use std::fmt::Write;
 
+use crate::bindinfo::BindInfoInner;
 use crate::bindtype::BindType;
+use crate::block::Block;
+use crate::block::BlockType;
 use crate::memtype::Memtype;
-use crate::BindInfoInner;
 use crate::Error;
 use crate::Handle;
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Ord, Hash)]
-struct Block {
-  mem: vk::DeviceMemory,
-  beg: vk::DeviceSize,
-  end: vk::DeviceSize,
-  pad: vk::DeviceSize,
-}
-
-impl Default for Block {
-  fn default() -> Block {
-    Block {
-      mem: 0,
-      beg: 0,
-      end: 0,
-      pad: 0,
-    }
-  }
-}
-
-impl Block {
-  pub fn new(mem: vk::DeviceMemory, beg: vk::DeviceSize, end: vk::DeviceSize, pad: vk::DeviceSize) -> Block {
-    Block { mem, beg, end, pad }
-  }
-
-  pub fn size(&self) -> vk::DeviceSize {
-    self.end - self.beg
-  }
-
-  pub fn size_padded(&self) -> vk::DeviceSize {
-    self.end - self.beg - self.pad
-  }
-}
-
-impl PartialOrd for Block {
-  fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-    use std::cmp::Ordering::*;
-    match self.size().cmp(&other.size()) {
-      Equal => Some(other.beg.cmp(&self.beg)),
-      Greater => Some(Greater),
-      Less => Some(Less),
-    }
-  }
-}
-
-#[derive(Debug, Clone, Copy)]
-enum BlockType {
-  Free(Block),
-  Occupied(Block),
-}
 
 #[derive(Debug, Clone)]
 struct Node {
@@ -78,6 +30,14 @@ pub struct Table {
   pages: HashMap<vk::DeviceMemory, HashMap<Block, Binding>>,
   bindings: HashMap<u64, Block>,
   free: BTreeMap<Block, Node>,
+}
+
+impl Drop for Table {
+  fn drop(&mut self) {
+    for (mem, _) in self.pages.iter() {
+      vk::FreeMemory(self.device, *mem, std::ptr::null());
+    }
+  }
 }
 
 impl Table {
@@ -185,7 +145,6 @@ impl Table {
             // Only if we find a free block that is large enough, we continue the loop
             // If not, we allocate a new page and put everything there
             if c != 0 {
-              self.free.remove(&b);
               groups.push(Group {
                 b: g.b,
                 e: g.b + c,
@@ -212,9 +171,6 @@ impl Table {
     // bind the resources
     for g in groups.iter() {
       let infos = &bindinfos[g.b..g.e];
-
-      // we can safely unwrap, because we made sure this block exists in self.free in adwance
-      let node = self.get_node(BlockType::Free(g.block)).unwrap();
 
       // we always start at the beginning of the block, because by definition there has to be an occupied block or no block at all before
       let mut offset = g.block.beg;
@@ -316,7 +272,7 @@ impl Table {
     let mut groups: Vec<Group> = Vec::new();
 
     for b in blocks {
-      let node = self.pages.get_mut(&b.mem).and_then(|p| p.remove(&b)).unwrap().node;
+      let node = self.remove(BlockType::Occupied(b)).unwrap();
 
       match groups.iter_mut().find(|g| {
         if let Some(BlockType::Occupied(next)) = g.node.next {
@@ -334,16 +290,44 @@ impl Table {
     }
 
     for g in groups.iter() {
+      let mut freenode = g.node.clone();
       let mut freeblock = g.block;
 
-      if let Some(BlockType::Free(prev)) = g.node.prev {
-        freeblock.beg = prev.beg;
-      }
-      if let Some(BlockType::Free(next)) = g.node.next {
-        freeblock.end = next.end;
+      loop {
+        match freenode.prev {
+          Some(BlockType::Free(b)) => {
+            if let Some(n) = self.remove(BlockType::Free(b)) {
+              freeblock.beg = b.beg;
+              freenode.prev = n.prev;
+            }
+          }
+          _ => break,
+        };
       }
 
-      self.insert(BlockType::Free(freeblock), g.node.clone(), None);
+      loop {
+        match freenode.next {
+          Some(BlockType::Free(b)) => {
+            if let Some(n) = self.remove(BlockType::Free(b)) {
+              freeblock.end = b.end;
+              freenode.next = n.next;
+            }
+          }
+          _ => break,
+        };
+      }
+
+      if let Some(BlockType::Occupied(next)) = g.node.next {
+        freeblock.end = next.beg + next.pad;
+        if let Some(binding) = self.pages.get_mut(&next.mem).and_then(|p| p.remove(&next)) {
+          let b = Block::new(next.mem, next.beg + next.pad, next.end, 0);
+          self.bindings.insert(binding.handle, b);
+          self.insert(BlockType::Occupied(b), binding.node, Some(binding.handle));
+          freenode.next = Some(BlockType::Occupied(b));
+        }
+      }
+
+      self.insert(BlockType::Free(freeblock), freenode, None);
     }
   }
 
@@ -359,12 +343,28 @@ impl Table {
   }
 
   fn insert(&mut self, b: BlockType, n: Node, h: Option<u64>) {
+    debug_assert!(
+      {
+        let mut r = true;
+        let np = n.prev.and_then(|prev| self.get_node(prev)).cloned();
+        let nn = n.next.and_then(|next| self.get_node(next)).cloned();
+
+        if np.is_some() && nn.is_some() {
+          let np = np.unwrap();
+          let nn = nn.unwrap();
+          r = np.next.is_some() && nn.prev.is_some() && np.next.unwrap().get() == nn.prev.unwrap().get();
+        }
+        r
+      },
+      "inconsistent previous and next block of new block"
+    );
+
     if let Some(n) = n.prev.and_then(|prev| self.get_node(prev)) {
       n.next = Some(b);
     }
 
     if let Some(n) = n.next.and_then(|next| self.get_node(next)) {
-      n.next = Some(b);
+      n.prev = Some(b);
     }
 
     match b {
@@ -383,6 +383,24 @@ impl Table {
         });
       }
     };
+  }
+
+  fn remove(&mut self, b: BlockType) -> Option<Node> {
+    if let Some(n) = match b {
+      BlockType::Free(b) => self.free.remove(&b),
+      BlockType::Occupied(b) => self.pages.get_mut(&b.mem).and_then(|p| p.remove(&b)).and_then(|b| Some(b.node)),
+    } {
+      if let Some(prevnode) = n.prev.and_then(|prev| self.get_node(prev)) {
+        prevnode.next = n.next;
+      }
+
+      if let Some(nextnode) = n.next.and_then(|next| self.get_node(next)) {
+        nextnode.prev = n.prev;
+      }
+      Some(n)
+    } else {
+      None
+    }
   }
 
   /// Frees up pages with no allocation.
@@ -417,108 +435,33 @@ impl Table {
   pub fn print_stats(&self) -> String {
     let mut s = String::new();
 
-    for (mem, blocks) in self
-      .pages
-      .iter()
-      .map(|(mem, blocks)| (mem, blocks.iter().map(|(b, _)| *b).collect::<Vec<Block>>()))
-      .enumerate()
-    {
-      write!(s, "{}:\n", mem);
+    write!(s, "{}:\n", self.memtype);
+
+    for (i, (mem, blocks)) in self.pages.iter().enumerate() {
+      write!(s, "  Page{}({:x}):\n", i, mem);
+
+      let mut blocks = blocks
+        .iter()
+        .map(|(b, _)| BlockType::Occupied(*b))
+        .chain(
+          self
+            .free
+            .iter()
+            .filter_map(|(b, _)| if b.mem == *mem { Some(BlockType::Free(*b)) } else { None }),
+        )
+        .collect::<Vec<BlockType>>();
+      blocks.sort_by_key(|b| b.get().beg);
+
+      for b in blocks {
+        write!(s, "    {}\n", b);
+      }
     }
-
-    //for (i, (mem, blocks)) in self.collect_pages().iter_mut().enumerate() {
-    //  write!(s, "{}:\n", self.memtype).unwrap();
-    //  blocks.sort_by_key(|b| b.1.begin);
-
-    //  let mut sum_alloc = 0;
-    //  let mut sum_free = 0;
-    //  let mut sum_paddings = 0;
-    //  let mut n_alloc = 0;
-    //  let mut n_free = 0;
-
-    //  write!(s, "  - Page{} ({:x}):\n", i, mem).unwrap();
-    //  for (t, b) in blocks.iter() {
-    //    write!(s, "    - {:?}{{begin: {}, end: {}}}\n", t, b.begin, b.end).unwrap();
-
-    //    match t {
-    //      BlockType::Alloc => {
-    //        sum_alloc += b.size();
-    //        n_alloc += 1;
-    //      }
-    //      BlockType::Free => {
-    //        sum_free += b.size();
-    //        n_free += 1;
-    //      }
-    //      BlockType::Padded => {
-    //        sum_paddings += b.size();
-    //      }
-    //    }
-    //  }
 
     //  write!(s, "    - SumAlloc   = {}\n", sum_alloc).unwrap();
     //  write!(s, "    - SumFree    = {}\n", sum_free).unwrap();
     //  write!(s, "    - SumPadding = {}\n", sum_paddings).unwrap();
     //  write!(s, "    - NAlloc = {}\n", n_alloc).unwrap();
     //  write!(s, "    - NFree  = {}\n", n_free).unwrap();
-    //}
     s
   }
-
-  //fn set_nodeptr(&mut self, node: &Node, new: Option<BlockType>) {
-  //  match node.prev {
-  //    Some(BlockType::Free(b)) => {
-  //      self.free.entry(b).and_modify(|n| n.next = new);
-  //    }
-  //    Some(BlockType::Occupied(b)) => {
-  //      self.pages.entry(b.mem).and_modify(|p| {
-  //        p.entry(b).and_modify(|b| b.node.next = new);
-  //      });
-  //    }
-  //    _ => (),
-  //  }
-
-  //  match node.next {
-  //    Some(BlockType::Free(b)) => {
-  //      self.free.entry(b).and_modify(|n| n.prev = new);
-  //    }
-  //    Some(BlockType::Occupied(b)) => {
-  //      self.pages.entry(b.mem).and_modify(|p| {
-  //        p.entry(b).and_modify(|b| b.node.prev = new);
-  //      });
-  //    }
-  //    _ => (),
-  //  }
-  //}
-
-  //fn remove_block(&mut self, b: &BlockType) {
-  //  match b {
-  //    BlockType::Free(b) => {
-  //      if let Some(n) = self.free.remove(b) {
-  //        self.set_nodeptr(&n, None);
-  //      }
-  //    }
-  //    BlockType::Occupied(b) => {
-  //      if let Some(n) = self.pages.get_mut(&b.mem).and_then(|p| p.remove(b)) {
-  //        self.set_nodeptr(&n.node, None);
-  //      }
-  //    }
-  //  }
-  //}
-
-  //fn replace_block(&mut self, old: &BlockType, new: &BlockType) {
-  //  match old {
-  //    BlockType::Free(b) => {
-  //      if let Some(n) = self.free.remove(b) {
-  //        self.set_nodeptr(&n, Some(*new));
-  //        self.free.insert(*b, n);
-  //      }
-  //    }
-  //    BlockType::Occupied(b) => {
-  //      if let Some(n) = self.pages.get_mut(&b.mem).and_then(|p| p.remove(b)) {
-  //        self.set_nodeptr(&n.node, Some(*new));
-  //        self.pages.get_mut(&b.mem).and_then(|p| p.insert(*b, n));
-  //      }
-  //    }
-  //  }
-  //}
 }

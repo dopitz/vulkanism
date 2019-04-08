@@ -106,6 +106,11 @@ pub fn main() {
   //    .submit_immediate();
 
     println!("{}", allocator.print_stats());
+
+    allocator.destroy(buf_ub);
+    //allocator.destroy(buf_out);
+
+    println!("{}", allocator.print_stats());
   {
     let mapped = allocator.get_mapped_region(buf_out, 0, 100 * 4).unwrap();
     println!("{:?}", mapped);

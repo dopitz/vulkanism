@@ -18,6 +18,7 @@ mod tex {
     }
   }
 
+  #[derive(Clone, Copy)]
   pub struct UbTransform {
     pub model: cgm::Matrix4<f32>,
     pub view: cgm::Matrix4<f32>,
@@ -102,6 +103,21 @@ pub fn setup_rendertargets(
   (sc, pass, fbs)
 }
 
+pub fn update_mvp(device: &vk::device::Device, cmds: &vk::cmd::Pool, stage: &mut vk::mem::Staging, ub: vk::Buffer, mvp: &tex::UbTransform) {
+  let mut map = stage
+    .range(0, std::mem::size_of::<tex::UbTransform>() as vk::DeviceSize)
+    .map()
+    .unwrap();
+  let svb = map.as_slice_mut::<tex::UbTransform>();
+
+  svb[0] = *mvp;
+
+  let cs = cmds.begin_stream().unwrap().push(&stage.copy_into_buffer(ub, 0));
+
+  let mut batch = vk::cmd::AutoBatch::new(device.handle).unwrap();
+  batch.push(cs).submit(device.queues[0].handle).0.sync().unwrap();
+}
+
 pub fn main() {
   let (inst, pdevice, device, mut events_loop, window) = setup_vulkan_window();
 
@@ -179,6 +195,18 @@ pub fn main() {
   let draw = Draw::default().push(vb, 0).vertices().vertex_count(3);
   let mut frame = vk::cmd::Frame::new(device.handle, fbs.len()).unwrap();
 
+  let mut z = -10.0;
+
+  let mut mvp = tex::UbTransform {
+    model: cgm::One::one(),
+    view: cgm::Matrix4::look_at(
+      cgm::Point3::new(0.0, 0.0, z),
+      cgm::Point3::new(0.0, 0.0, 0.0),
+      cgm::Vector3::new(0.0, 1.0, 0.0),
+    ),
+    proj: cgm::Matrix4::from_nonuniform_scale(1.0, -1.0, 1.0) * cgm::perspective(cgm::Deg(45.0), 1.0, 1.0, 100.0),
+  };
+
   loop {
     events_loop.poll_events(|event| match event {
       winit::Event::WindowEvent {
@@ -190,25 +218,7 @@ pub fn main() {
         ..
       } => {
         println!("{:?}", size);
-        let mut map = stage
-          .range(0, std::mem::size_of::<tex::UbTransform>() as vk::DeviceSize)
-          .map()
-          .unwrap();
-        let svb = map.as_slice_mut::<tex::UbTransform>();
-
-        svb[0].model = cgm::One::one();
-        svb[0].view = cgm::Matrix4::look_at(
-          cgm::Point3::new(0.0, 0.0, -10.0),
-          cgm::Point3::new(0.0, 0.0, 0.0),
-          cgm::Vector3::new(0.0, 1.0, 0.0),
-        );
-        svb[0].proj = cgm::Matrix4::from_nonuniform_scale(1.0, -1.0, 1.0)
-          * cgm::perspective(cgm::Deg(45.0), (size.width / size.height) as f32, 1.0, 100.0);
-
-        let cs = cmds.begin_stream().unwrap().push(&stage.copy_into_buffer(ub, 0));
-
-        let mut batch = vk::cmd::AutoBatch::new(device.handle).unwrap();
-        batch.push(cs).submit(device.queues[0].handle).0.sync().unwrap();
+        update_mvp(&device, &cmds, &mut stage, ub, &mvp)
       }
       winit::Event::WindowEvent {
         event: winit::WindowEvent::ReceivedCharacter(c),
@@ -218,7 +228,31 @@ pub fn main() {
         event: winit::DeviceEvent::Key(key),
         ..
       } => {
-        println!("{:?}", key);
+        if let Some(k) = key.virtual_keycode {
+          match k {
+            winit::VirtualKeyCode::Comma => {
+              z += 0.2;
+              mvp.view = cgm::Matrix4::look_at(
+                cgm::Point3::new(0.0, 0.0, z),
+                cgm::Point3::new(0.0, 0.0, 0.0),
+                cgm::Vector3::new(0.0, 1.0, 0.0),
+              );
+              update_mvp(&device, &cmds, &mut stage, ub, &mvp);
+            }
+            winit::VirtualKeyCode::O => {
+              z -= 0.2;
+              mvp.view = cgm::Matrix4::look_at(
+                cgm::Point3::new(0.0, 0.0, z),
+                cgm::Point3::new(0.0, 0.0, 0.0),
+                cgm::Vector3::new(0.0, 1.0, 0.0),
+              );
+              update_mvp(&device, &cmds, &mut stage, ub, &mvp);
+            }
+            _ => (),
+          }
+        }
+
+        //println!("{:?}", key);
       }
       winit::Event::DeviceEvent {
         event: winit::DeviceEvent::MouseWheel {

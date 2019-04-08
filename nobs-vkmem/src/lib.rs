@@ -21,13 +21,11 @@
 #[macro_use]
 extern crate nobs_vk as vk;
 
+mod bindinfo;
+mod bindtype;
 mod block;
 mod builder;
 mod mapped;
-mod page;
-
-mod bindinfo;
-mod bindtype;
 mod memtype;
 mod table;
 
@@ -45,7 +43,6 @@ use std::fmt::Write;
 
 use bindinfo::BindInfoInner;
 use block::Block;
-use page::PageTable;
 use table::Table;
 
 /// Errors that can be occure when using this crate
@@ -59,8 +56,6 @@ pub enum Error {
   AllocError,
   /// Indicates, that there is not enough free space available to bind resources.
   OutOfMemory,
-  /// Indicates that the requested resources can not be bound to a single block, because they are larger than a page.
-  OversizedBlock,
   /// Indicates, that this device does not have a memory type, that satisfies a combination of 'vk::MemoryRequirements' and 'vk::MemoryPropertyFlags'.
   InvalidMemoryType,
   /// Indicates, that a buffer create returned unsuccessfull.
@@ -777,7 +772,7 @@ impl Allocator {
       .handles
       .get(&handle)
       .and_then(|t| alloc.pagetbls.get(&t.get()))
-      .and_then(|tbl| tbl.get_mem(handle)).and_then(|b| Block::with_size(b.beg + b.pad, b.size_padded(), b.mem))
+      .and_then(|tbl| tbl.get_mem(handle))
   }
 
   /// Gets a [Mapped](mapped/struct.Mapped.html) of the spicified resource handle
@@ -889,8 +884,8 @@ impl Allocator {
   /// ```
   pub fn get_mapped_region(&self, handle: u64, offset: vk::DeviceSize, size: vk::DeviceSize) -> Option<Mapped> {
     self.get_mem(handle).and_then(|b| {
-      let region = Block::new(b.begin + offset, b.begin + offset + size, b.mem);
-      match region.begin < b.end && region.end <= b.end {
+      let region = Block::new(b.mem, b.beg + b.pad + offset, b.beg + offset + size, 0);
+      match region.beg < b.end && region.end <= b.end {
         true => Mapped::new(self.device, region).ok(),
         false => None,
       }
