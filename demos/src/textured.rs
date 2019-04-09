@@ -148,14 +148,17 @@ pub fn main() {
 
   let mut vb = vk::NULL_HANDLE;
   let mut ub = vk::NULL_HANDLE;
+  let mut texture = vk::NULL_HANDLE;
   vk::mem::Buffer::new(&mut vb)
     .vertex_buffer(12 * std::mem::size_of::<f32>() as vk::DeviceSize)
     .new_buffer(&mut ub)
     .uniform_buffer(std::mem::size_of::<tex::UbTransform>() as vk::DeviceSize)
+    .new_image(&mut texture)
+    .texture2d(256, 256, vk::FORMAT_R8G8B8A8_UNORM)
     .bind(&mut alloc, vk::mem::BindType::Block)
     .unwrap();
 
-  let mut stage = vk::mem::Staging::new(&mut alloc, std::mem::size_of::<tex::UbTransform>() as vk::DeviceSize).unwrap();
+  let mut stage = vk::mem::Staging::new(&mut alloc, 256 * 256 * 4).unwrap();
   {
     let mut map = stage.range(0, 12 * std::mem::size_of::<f32>() as vk::DeviceSize).map().unwrap();
     let svb = map.as_slice_mut::<f32>();
@@ -180,10 +183,34 @@ pub fn main() {
     batch.push(cs).submit(device.queues[0].handle).0.sync().unwrap();
   }
 
+  {
+    let mut map = stage
+      .range(0, 256 * 256 * std::mem::size_of::<u32>() as vk::DeviceSize)
+      .map()
+      .unwrap();
+    let data = map.as_slice_mut::<u32>();
+
+    for d in data.iter_mut() {
+      *d = 0xFF << 24 | 0xFF;
+    }
+
+    let cs = cmds.begin_stream().unwrap().push(
+      &stage.copy_into_image(
+        texture,
+        vk::BufferImageCopy::build()
+          .image_extent(vk::Extent3D::build().set(256, 256, 1).extent)
+          .subresource(vk::ImageSubresourceLayers::build().aspect(vk::IMAGE_ASPECT_COLOR_BIT).layers),
+      ),
+    );
+
+    let mut batch = vk::cmd::AutoBatch::new(device.handle).unwrap();
+    batch.push(cs).submit(device.queues[0].handle).0.sync().unwrap();
+  }
+
   let mut descriptors = vk::pipes::DescriptorPool::with_capacity(device.handle, &tex::SIZES, tex::NUM_SETS).unwrap();
   let ds = descriptors.new_dset(pipe.dsets[&0].layout, &pipe.dsets[&0].sizes).unwrap();
 
-  tex::dset::write(device.handle, ds).ub_transform(|b| b.buffer(ub)).update();
+  tex::dset::write(device.handle, ds).ub_transform(|b| b.buffer(ub)).tex_sampler(|s| s.texture(texture)).update();
 
   let t = std::time::SystemTime::now();
   let mut n = 0;
@@ -231,21 +258,11 @@ pub fn main() {
         if let Some(k) = key.virtual_keycode {
           match k {
             winit::VirtualKeyCode::Comma => {
-              z += 0.2;
-              mvp.view = cgm::Matrix4::look_at(
-                cgm::Point3::new(0.0, 0.0, z),
-                cgm::Point3::new(0.0, 0.0, 0.0),
-                cgm::Vector3::new(0.0, 1.0, 0.0),
-              );
+              mvp.view = cgm::Matrix4::from_translation(cgm::Vector3::new(0.0, 0.0, 0.2)) * mvp.view;
               update_mvp(&device, &cmds, &mut stage, ub, &mvp);
             }
             winit::VirtualKeyCode::O => {
-              z -= 0.2;
-              mvp.view = cgm::Matrix4::look_at(
-                cgm::Point3::new(0.0, 0.0, z),
-                cgm::Point3::new(0.0, 0.0, 0.0),
-                cgm::Vector3::new(0.0, 1.0, 0.0),
-              );
+              mvp.view = cgm::Matrix4::from_translation(cgm::Vector3::new(0.0, 0.0, -0.2)) * mvp.view;
               update_mvp(&device, &cmds, &mut stage, ub, &mvp);
             }
             _ => (),

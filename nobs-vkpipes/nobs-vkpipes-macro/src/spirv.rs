@@ -474,7 +474,10 @@ impl Spirv {
       if let Some(i) = spirv.instructions.iter().find(|i| match i {
         Instruction::TypeStruct { result_id, .. } if *result_id == id => true,
         _ => false,
-      }) {
+      }) 
+      
+      
+      {
         match i {
           Instruction::TypeStruct { .. } => {
             let is_buffer_block = spirv.get_decoration(id, Decoration::DecorationBufferBlock).is_some();
