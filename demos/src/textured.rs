@@ -16,8 +16,6 @@ mod tex {
       ty = "frag",
       glsl = "src/textured.frag",
     }
-
-    dump = "src/tex.rs",
   }
 
   #[derive(Clone, Copy)]
@@ -29,8 +27,8 @@ mod tex {
 
   #[repr(C)]
   pub struct Vertex {
-    pub pos : cgm::Vector4<f32>,
-    pub tex : cgm::Vector2<f32>,
+    pub pos: cgm::Vector4<f32>,
+    pub tex: cgm::Vector2<f32>,
   }
 }
 
@@ -174,41 +172,18 @@ pub fn main() {
     .bind(&mut alloc, vk::mem::BindType::Block)
     .unwrap();
 
-  let texview = vk::mem::ImageView::new(device.handle, texture)
-    .aspect(vk::IMAGE_ASPECT_COLOR_BIT)
-    .format(vk::FORMAT_R8G8B8A8_UNORM)
-    .create()
+  let texview = vk::ImageViewCreateInfo::build()
+    .texture2d(texture, vk::FORMAT_R8G8B8A8_UNORM)
+    .create(device.handle)
     .unwrap();
-  let sampler = {
-    let mut h = vk::NULL_HANDLE;
-    let info = vk::SamplerCreateInfo {
-      sType: vk::STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
-      flags: 0,
-      pNext: std::ptr::null(),
-      magFilter: vk::FILTER_NEAREST,
-      minFilter: vk::FILTER_NEAREST,
-      addressModeU: vk::SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
-      addressModeV: vk::SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
-      addressModeW: vk::SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
-      anisotropyEnable: vk::FALSE,
-      maxAnisotropy: 1.0,
-      borderColor: vk::BORDER_COLOR_INT_OPAQUE_BLACK,
-      unnormalizedCoordinates: vk::FALSE,
-      compareEnable: vk::FALSE,
-      compareOp: vk::COMPARE_OP_ALWAYS,
-      mipmapMode: vk::SAMPLER_MIPMAP_MODE_LINEAR,
-      mipLodBias: 0.0,
-      minLod: 0.0,
-      maxLod: 0.0,
-    };
-
-    vk::CreateSampler(device.handle, &info, std::ptr::null(), &mut h);
-    h
-  };
+  let sampler = vk::SamplerCreateInfo::build().create(device.handle).unwrap();
 
   let mut stage = vk::mem::Staging::new(&mut alloc, 256 * 256 * 4).unwrap();
   {
-    let mut map = stage.range(0, 3 * std::mem::size_of::<tex::Vertex>() as vk::DeviceSize).map().unwrap();
+    let mut map = stage
+      .range(0, 3 * std::mem::size_of::<tex::Vertex>() as vk::DeviceSize)
+      .map()
+      .unwrap();
     let svb = map.as_slice_mut::<tex::Vertex>();
     svb[0].pos = cgm::Vector4::new(0.0, 1.0, 0.0, 1.0);
     svb[0].tex = cgm::Vector2::new(1.0, 1.0);
@@ -356,6 +331,9 @@ pub fn main() {
       break;
     }
   }
+
+  vk::DestroyImageView(device.handle, texview, std::ptr::null());
+  vk::DestroySampler(device.handle, sampler, std::ptr::null());
 
   println!("{}", alloc.print_stats());
 

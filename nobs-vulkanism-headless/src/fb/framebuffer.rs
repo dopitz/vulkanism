@@ -4,6 +4,8 @@ use crate::cmd::commands::RenderpassBegin;
 use crate::cmd::commands::RenderpassEnd;
 use crate::fb::Renderpass;
 use crate::mem;
+use crate::util;
+use vk::builder::Buildable;
 
 /// Wrapper for a vulkan framebuffer
 ///
@@ -202,12 +204,12 @@ impl<'a, 'b> RenderpassFramebufferBuilder<'a, 'b> {
     // create view for every image
     let mut views = Vec::with_capacity(self.images.len());
     for (i, f) in self.images.iter().zip(self.pass.attachments.iter()).map(|(i, a)| (i, a.format)) {
-      let builder = mem::ImageView::new(self.pass.device, *i).format(f);
+      let builder = vk::ImageViewCreateInfo::build().image(*i).format(f);
       let view = match is_depth(f) {
         true => builder.aspect(vk::IMAGE_ASPECT_DEPTH_BIT),
         false => builder.aspect(vk::IMAGE_ASPECT_COLOR_BIT),
       }
-      .create()
+      .create(self.pass.device)
       .unwrap();
       views.push(view);
     }

@@ -33,7 +33,6 @@ pub use bindinfo::BindInfo;
 pub use bindtype::BindType;
 pub use builder::Buffer;
 pub use builder::Image;
-pub use builder::ImageView;
 pub use builder::Resource;
 pub use mapped::Mapped;
 pub use memtype::Memtype;
