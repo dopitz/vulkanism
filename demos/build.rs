@@ -3,7 +3,7 @@ extern crate nobs_vulkanism as vk;
 use vk::pipes::build::*;
 
 fn main() {
-  ShaderUsage::new().uses("src/make_sequence.comp").depends("src/compute.rs");
+  ShaderUsage::new().uses("src/make_sequence.comp").depends("src/make_sequence.comp.rs");
   ShaderUsage::new()
     .uses("src/triangle.vert")
     .uses("src/triangle.frag")

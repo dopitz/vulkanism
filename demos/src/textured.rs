@@ -1,5 +1,6 @@
 extern crate cgmath as cgm;
 extern crate nobs_vulkanism as vk;
+extern crate nobs_imgui as imgui;
 
 use cgm::*;
 use vk::builder::Buildable;
@@ -331,6 +332,8 @@ pub fn main() {
       break;
     }
   }
+
+  frame.sync().unwrap();
 
   vk::DestroyImageView(device.handle, texview, std::ptr::null());
   vk::DestroySampler(device.handle, sampler, std::ptr::null());

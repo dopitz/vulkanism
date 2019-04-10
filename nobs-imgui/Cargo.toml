@@ -11,4 +11,8 @@ readme = "README.md"
 edition = "2018"
 
 [dependencies]
+cgmath = {version = "0.17.0"}
+nobs-vulkanism-headless = {version = "0.1.0", path = "../nobs-vulkanism-headless"}
+
+[build-dependencies]
 nobs-vulkanism-headless = {version = "0.1.0", path = "../nobs-vulkanism-headless"}

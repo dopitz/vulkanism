@@ -82,6 +82,7 @@ pub use nobs_vkpipes_macro::pipeline;
 pub use nobs_vkpipes_macro::shader;
 
 pub mod pipeline;
+pub use pipeline::Pipeline;
 pub use pipeline::builder::compute::Compute as ComputeBuilder;
 pub use pipeline::builder::graphics::blend::AttachmentBuilder as BlendAttachment;
 pub use pipeline::builder::graphics::blend::Builder as Blend;

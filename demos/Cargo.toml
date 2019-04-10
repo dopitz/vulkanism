@@ -7,6 +7,7 @@ publish = false
 
 [dependencies]
 nobs-vulkanism = {version = "0.1.0", path = "../nobs-vulkanism"}
+nobs-imgui = {version = "0.1.0", path = "../nobs-imgui"}
 cgmath = {version = "0.17.0"}
 
 [build-dependencies]
@@ -23,3 +24,7 @@ path = "src/triangle.rs"
 [[bin]]
 name = "textured"
 path = "src/textured.rs"
+
+[[bin]]
+name = "text"
+path = "src/text.rs"

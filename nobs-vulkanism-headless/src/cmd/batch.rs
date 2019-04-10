@@ -391,4 +391,14 @@ impl Frame {
     let (_, sig) = self.batches[self.index].submit(queue);
     (self, sig)
   }
+
+  pub fn sync(&mut self) -> Result<(), Error> {
+    let idx = self.index;
+    loop {
+      if idx == self.next()? {
+        break;
+      }
+    }
+    Ok(())
+  }
 }

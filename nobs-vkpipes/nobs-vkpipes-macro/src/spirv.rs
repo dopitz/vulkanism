@@ -365,7 +365,8 @@ impl Spirv {
           let b3 = ((n >> 16) & 0xff) as u8;
           let b4 = ((n >> 24) & 0xff) as u8;
           vec![b1, b2, b3, b4].into_iter()
-        }).take_while(|&b| b != 0)
+        })
+        .take_while(|&b| b != 0)
         .collect::<Vec<u8>>();
 
       let r = 1 + bytes.len() / 4;
@@ -408,9 +409,7 @@ impl Spirv {
         target_id,
         decoration,
         ref params,
-      }
-        if *decoration == Decoration::DecorationBinding =>
-      {
+      } if *decoration == Decoration::DecorationBinding => {
         acc.push(Binding {
           name: match self.get_name(*target_id) {
             Ok(name) => name,
@@ -471,22 +470,26 @@ impl Spirv {
 
   pub fn get_descriptor_type(&self, id: u32) -> Result<vk::DescriptorType, ()> {
     fn get_type_recursive(spirv: &Spirv, id: u32, combined_sampler: bool) -> Result<vk::DescriptorType, ()> {
-      for i in spirv.instructions.iter() 
-      {
+      for i in spirv.instructions.iter() {
         match i {
-          Instruction::TypeStruct { .. } => {
+          Instruction::TypeStruct { result_id, .. } if *result_id == id => {
             let is_buffer_block = spirv.get_decoration(id, Decoration::DecorationBufferBlock).is_some();
             let is_block = spirv.get_decoration(id, Decoration::DecorationBlock).is_some();
 
             if is_buffer_block == is_block {
-              return Err(())
+              return Err(());
             } else if is_buffer_block && !is_block {
-              return Ok(vk::DESCRIPTOR_TYPE_STORAGE_BUFFER)
+              return Ok(vk::DESCRIPTOR_TYPE_STORAGE_BUFFER);
             } else {
-              return Ok(vk::DESCRIPTOR_TYPE_UNIFORM_BUFFER)
+              return Ok(vk::DESCRIPTOR_TYPE_UNIFORM_BUFFER);
             }
           }
-          Instruction::TypeImage { ref dim, sampled, .. } => {
+          Instruction::TypeImage {
+            result_id,
+            ref dim,
+            sampled,
+            ..
+          } if *result_id == id => {
             let sampled = sampled.expect("OpTypeImage needs to have a Sampled operand of 1 or 2");
 
             match dim {
@@ -494,21 +497,23 @@ impl Spirv {
               Dim::DimBuffer => return Ok(vk::DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER),
               _ => {
                 if combined_sampler {
-                  return Ok(vk::DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
+                  return Ok(vk::DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
                 } else if sampled {
-                  return Ok(vk::DESCRIPTOR_TYPE_SAMPLED_IMAGE)
+                  return Ok(vk::DESCRIPTOR_TYPE_SAMPLED_IMAGE);
                 } else {
-                  return Ok(vk::DESCRIPTOR_TYPE_STORAGE_IMAGE)
+                  return Ok(vk::DESCRIPTOR_TYPE_STORAGE_IMAGE);
                 }
               }
             }
           }
-          Instruction::TypeSampledImage { image_type_id, .. } => return get_type_recursive(spirv, *image_type_id, true),
-          Instruction::TypeSampler { .. } => return Ok(vk::DESCRIPTOR_TYPE_SAMPLER),
+          Instruction::TypeSampledImage { result_id, image_type_id } if *result_id == id => {
+            return get_type_recursive(spirv, *image_type_id, true);
+          }
+          Instruction::TypeSampler { result_id, .. } if *result_id == id => return Ok(vk::DESCRIPTOR_TYPE_SAMPLER),
           _ => (),
           // TODO: maybe more things in the future
         }
-      } 
+      }
 
       Err(())
     };
@@ -523,13 +528,10 @@ impl Spirv {
       .filter_map(|i| match i {
         &Instruction::Variable {
           result_type_id, result_id, ..
-        }
-          if result_id == id =>
-        {
-          Some(result_type_id)
-        }
+        } if result_id == id => Some(result_type_id),
         _ => None,
-      }).next()
+      })
+      .next()
       .unwrap();
 
     self
@@ -538,7 +540,8 @@ impl Spirv {
       .filter_map(|i| match i {
         &Instruction::TypePointer { result_id, type_id, .. } if result_id == var_ty => Some(type_id),
         _ => None,
-      }).next()
+      })
+      .next()
       .unwrap()
   }
 }
