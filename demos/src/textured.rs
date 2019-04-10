@@ -16,6 +16,8 @@ mod tex {
       ty = "frag",
       glsl = "src/textured.frag",
     }
+
+    dump = "src/tex.rs",
   }
 
   #[derive(Clone, Copy)]
@@ -23,6 +25,12 @@ mod tex {
     pub model: cgm::Matrix4<f32>,
     pub view: cgm::Matrix4<f32>,
     pub proj: cgm::Matrix4<f32>,
+  }
+
+  #[repr(C)]
+  pub struct Vertex {
+    pub pos : cgm::Vector4<f32>,
+    pub tex : cgm::Vector2<f32>,
   }
 }
 
@@ -132,10 +140,18 @@ pub fn main() {
         .push_binding(
           vk::VertexInputBindingDescription::build()
             .binding(0)
-            .stride(4 * std::mem::size_of::<f32>() as u32)
+            .stride(std::mem::size_of::<tex::Vertex>() as u32)
             .binding,
         )
-        .push_attribute(vk::VertexInputAttributeDescription::build().binding(0).location(0).attribute),
+        .push_attribute(vk::VertexInputAttributeDescription::build().binding(0).location(0).attribute)
+        .push_attribute(
+          vk::VertexInputAttributeDescription::build()
+            .binding(0)
+            .location(1)
+            .format(vk::FORMAT_R32G32_SFLOAT)
+            .offset(4 * std::mem::size_of::<f32>() as u32)
+            .attribute,
+        ),
     )
     .dynamic(
       vk::PipelineDynamicStateCreateInfo::build()
@@ -150,7 +166,7 @@ pub fn main() {
   let mut ub = vk::NULL_HANDLE;
   let mut texture = vk::NULL_HANDLE;
   vk::mem::Buffer::new(&mut vb)
-    .vertex_buffer(12 * std::mem::size_of::<f32>() as vk::DeviceSize)
+    .vertex_buffer(3 * std::mem::size_of::<tex::Vertex>() as vk::DeviceSize)
     .new_buffer(&mut ub)
     .uniform_buffer(std::mem::size_of::<tex::UbTransform>() as vk::DeviceSize)
     .new_image(&mut texture)
@@ -158,24 +174,50 @@ pub fn main() {
     .bind(&mut alloc, vk::mem::BindType::Block)
     .unwrap();
 
+  let texview = vk::mem::ImageView::new(device.handle, texture)
+    .aspect(vk::IMAGE_ASPECT_COLOR_BIT)
+    .format(vk::FORMAT_R8G8B8A8_UNORM)
+    .create()
+    .unwrap();
+  let sampler = {
+    let mut h = vk::NULL_HANDLE;
+    let info = vk::SamplerCreateInfo {
+      sType: vk::STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
+      flags: 0,
+      pNext: std::ptr::null(),
+      magFilter: vk::FILTER_NEAREST,
+      minFilter: vk::FILTER_NEAREST,
+      addressModeU: vk::SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+      addressModeV: vk::SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+      addressModeW: vk::SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+      anisotropyEnable: vk::FALSE,
+      maxAnisotropy: 1.0,
+      borderColor: vk::BORDER_COLOR_INT_OPAQUE_BLACK,
+      unnormalizedCoordinates: vk::FALSE,
+      compareEnable: vk::FALSE,
+      compareOp: vk::COMPARE_OP_ALWAYS,
+      mipmapMode: vk::SAMPLER_MIPMAP_MODE_LINEAR,
+      mipLodBias: 0.0,
+      minLod: 0.0,
+      maxLod: 0.0,
+    };
+
+    vk::CreateSampler(device.handle, &info, std::ptr::null(), &mut h);
+    h
+  };
+
   let mut stage = vk::mem::Staging::new(&mut alloc, 256 * 256 * 4).unwrap();
   {
-    let mut map = stage.range(0, 12 * std::mem::size_of::<f32>() as vk::DeviceSize).map().unwrap();
-    let svb = map.as_slice_mut::<f32>();
-    svb[0] = 0.0;
-    svb[1] = 1.0;
-    svb[2] = 0.0;
-    svb[3] = 1.0;
+    let mut map = stage.range(0, 3 * std::mem::size_of::<tex::Vertex>() as vk::DeviceSize).map().unwrap();
+    let svb = map.as_slice_mut::<tex::Vertex>();
+    svb[0].pos = cgm::Vector4::new(0.0, 1.0, 0.0, 1.0);
+    svb[0].tex = cgm::Vector2::new(1.0, 1.0);
 
-    svb[4] = -1.0;
-    svb[5] = -1.0;
-    svb[6] = 0.0;
-    svb[7] = 1.0;
+    svb[1].pos = cgm::Vector4::new(-1.0, -1.0, 0.0, 1.0);
+    svb[1].tex = cgm::Vector2::new(1.0, 1.0);
 
-    svb[8] = 1.0;
-    svb[9] = -1.0;
-    svb[10] = 0.0;
-    svb[11] = 1.0;
+    svb[2].pos = cgm::Vector4::new(1.0, -1.0, 0.0, 1.0);
+    svb[2].tex = cgm::Vector2::new(1.0, 1.0);
 
     let cs = cmds.begin_stream().unwrap().push(&stage.copy_into_buffer(vb, 0));
 
@@ -191,7 +233,7 @@ pub fn main() {
     let data = map.as_slice_mut::<u32>();
 
     for d in data.iter_mut() {
-      *d = 0xFF << 24 | 0xFF;
+      *d = 0xFF << 24 | 0xFF << 8 | 0xFF;
     }
 
     let cs = cmds.begin_stream().unwrap().push(
@@ -210,7 +252,10 @@ pub fn main() {
   let mut descriptors = vk::pipes::DescriptorPool::with_capacity(device.handle, &tex::SIZES, tex::NUM_SETS).unwrap();
   let ds = descriptors.new_dset(pipe.dsets[&0].layout, &pipe.dsets[&0].sizes).unwrap();
 
-  tex::dset::write(device.handle, ds).ub_transform(|b| b.buffer(ub)).tex_sampler(|s| s.texture(texture)).update();
+  tex::dset::write(device.handle, ds)
+    .ub_transform(|b| b.buffer(ub))
+    .tex_sampler(|s| s.set(vk::IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, texview, sampler))
+    .update();
 
   let t = std::time::SystemTime::now();
   let mut n = 0;
@@ -231,7 +276,7 @@ pub fn main() {
       cgm::Point3::new(0.0, 0.0, 0.0),
       cgm::Vector3::new(0.0, 1.0, 0.0),
     ),
-    proj: cgm::Matrix4::from_nonuniform_scale(1.0, -1.0, 1.0) * cgm::perspective(cgm::Deg(45.0), 1.0, 1.0, 100.0),
+    proj: cgm::Matrix4::from_nonuniform_scale(-1.0, -1.0, 1.0) * cgm::perspective(cgm::Deg(45.0), 1.0, 1.0, 100.0),
   };
 
   loop {

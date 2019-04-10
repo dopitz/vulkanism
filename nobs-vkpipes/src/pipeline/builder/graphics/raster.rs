@@ -33,7 +33,7 @@ impl Default for Builder {
         polygonMode: vk::POLYGON_MODE_FILL,
         lineWidth: 1.0f32,
         cullMode: vk::CULL_MODE_BACK_BIT,
-        frontFace: vk::FRONT_FACE_CLOCKWISE,
+        frontFace: vk::FRONT_FACE_COUNTER_CLOCKWISE,
         depthBiasEnable: vk::FALSE,
         depthBiasConstantFactor: 0.0f32,
         depthBiasClamp: 0.0f32,

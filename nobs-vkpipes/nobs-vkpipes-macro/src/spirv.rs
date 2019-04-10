@@ -471,12 +471,7 @@ impl Spirv {
 
   pub fn get_descriptor_type(&self, id: u32) -> Result<vk::DescriptorType, ()> {
     fn get_type_recursive(spirv: &Spirv, id: u32, combined_sampler: bool) -> Result<vk::DescriptorType, ()> {
-      if let Some(i) = spirv.instructions.iter().find(|i| match i {
-        Instruction::TypeStruct { result_id, .. } if *result_id == id => true,
-        _ => false,
-      }) 
-      
-      
+      for i in spirv.instructions.iter() 
       {
         match i {
           Instruction::TypeStruct { .. } => {
@@ -484,38 +479,38 @@ impl Spirv {
             let is_block = spirv.get_decoration(id, Decoration::DecorationBlock).is_some();
 
             if is_buffer_block == is_block {
-              Err(())
+              return Err(())
             } else if is_buffer_block && !is_block {
-              Ok(vk::DESCRIPTOR_TYPE_STORAGE_BUFFER)
+              return Ok(vk::DESCRIPTOR_TYPE_STORAGE_BUFFER)
             } else {
-              Ok(vk::DESCRIPTOR_TYPE_UNIFORM_BUFFER)
+              return Ok(vk::DESCRIPTOR_TYPE_UNIFORM_BUFFER)
             }
           }
           Instruction::TypeImage { ref dim, sampled, .. } => {
             let sampled = sampled.expect("OpTypeImage needs to have a Sampled operand of 1 or 2");
 
             match dim {
-              Dim::DimSubpassData => Err(()),
-              Dim::DimBuffer => Ok(vk::DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER),
+              Dim::DimSubpassData => return Err(()),
+              Dim::DimBuffer => return Ok(vk::DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER),
               _ => {
                 if combined_sampler {
-                  Ok(vk::DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
+                  return Ok(vk::DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
                 } else if sampled {
-                  Ok(vk::DESCRIPTOR_TYPE_SAMPLED_IMAGE)
+                  return Ok(vk::DESCRIPTOR_TYPE_SAMPLED_IMAGE)
                 } else {
-                  Ok(vk::DESCRIPTOR_TYPE_STORAGE_IMAGE)
+                  return Ok(vk::DESCRIPTOR_TYPE_STORAGE_IMAGE)
                 }
               }
             }
           }
-          Instruction::TypeSampledImage { image_type_id, .. } => get_type_recursive(spirv, *image_type_id, true),
-          Instruction::TypeSampler { .. } => Ok(vk::DESCRIPTOR_TYPE_SAMPLER),
-          _ => Err(()),
+          Instruction::TypeSampledImage { image_type_id, .. } => return get_type_recursive(spirv, *image_type_id, true),
+          Instruction::TypeSampler { .. } => return Ok(vk::DESCRIPTOR_TYPE_SAMPLER),
+          _ => (),
           // TODO: maybe more things in the future
         }
-      } else {
-        Err(())
-      }
+      } 
+
+      Err(())
     };
 
     get_type_recursive(&self, self.get_pointet_ty(id), false)
