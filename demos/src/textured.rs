@@ -133,7 +133,7 @@ pub fn main() {
 
   let (mut sc, rp, fbs) = setup_rendertargets(&pdevice, &device, &window, &mut alloc);
 
-  let pipe = tex::new(device.handle, rp.pass)
+  let pipe = tex::new(device.handle, rp.pass, 0)
     .vertex_input(
       vk::PipelineVertexInputStateCreateInfo::build()
         .push_binding(

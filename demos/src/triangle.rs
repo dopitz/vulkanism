@@ -106,7 +106,7 @@ pub fn main() {
 
   let (mut sc, rp, fbs) = setup_rendertargets(&pdevice, &device, &window, &mut alloc);
 
-  let pipe = tri::new(device.handle, rp.pass)
+  let pipe = tri::new(device.handle, rp.pass, 0)
     .dynamic(
       vk::PipelineDynamicStateCreateInfo::build()
         .push_state(vk::DYNAMIC_STATE_VIEWPORT)

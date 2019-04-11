@@ -47,11 +47,11 @@ impl Graphics {
   ///
   /// The builder is initialized with no bindings and no shader stages configured.
   /// The default states are initialized with the default constructor of their respective builder.
-  pub fn from_pass(device: vk::Device, pass: vk::RenderPass) -> Graphics {
+  pub fn from_pass(device: vk::Device, pass: vk::RenderPass, subpass: u32) -> Graphics {
     Graphics {
       device,
       pass,
-      subpass: 0,
+      subpass,
 
       bindings: Default::default(),
       vert: None,

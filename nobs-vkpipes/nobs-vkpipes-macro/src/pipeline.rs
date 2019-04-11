@@ -259,8 +259,8 @@ impl Pipeline {
 
   fn write_graphics(&self) -> String {
     format!(
-      "pub fn new(device: vk::Device, pass: vk::RenderPass) -> BuilderGraphics {{
-        let mut b = BuilderGraphics::from_pass(device, pass);
+      "pub fn new(device: vk::Device, pass: vk::RenderPass, subpass: u32) -> BuilderGraphics {{
+        let mut b = BuilderGraphics::from_pass(device, pass, subpass);
         b.bindings(&BINDINGS)
         {stages};
         b
