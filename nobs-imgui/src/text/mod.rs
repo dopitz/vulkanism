@@ -1,3 +1,6 @@
+use std::sync::Arc;
+use std::sync::Weak;
+
 use vk;
 use vk::builder::Buildable;
 use vk::cmd;
@@ -22,6 +25,10 @@ mod pipe {
     pub pos: cgm::Vector4<f32>,
     pub tex: cgm::Vector2<f32>,
   }
+
+//  use std::sync::Arc;
+//  use std::sync::Weak;
+//  pub static CACHED_PIPE: Weak<Option<vk::pipes::Pipeline>> = Weak::new();
 }
 
 pub struct Text {
@@ -53,7 +60,7 @@ impl Text {
     alloc: &mut vk::mem::Allocator,
     staging: &mut vk::mem::Staging,
   ) -> Self {
-    let pipe = pipe::new(rp.device, rp.pass)
+    let pipe = pipe::new(rp.device, rp.pass, 0)
       .input_assembly(vk::PipelineInputAssemblyStateCreateInfo::build().topology(vk::PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP))
       .dynamic(
         vk::PipelineDynamicStateCreateInfo::build()
@@ -128,10 +135,7 @@ impl Text {
     }
 
     {
-      let mut map = staging
-        .range(0, 2 * std::mem::size_of::<u32>() as vk::DeviceSize)
-        .map()
-        .unwrap();
+      let mut map = staging.range(0, 2 * std::mem::size_of::<u32>() as vk::DeviceSize).map().unwrap();
       let data = map.as_slice_mut::<u32>();
       data[0] = 1;
       data[1] = 1;
@@ -141,7 +145,6 @@ impl Text {
       let mut batch = vk::cmd::AutoBatch::new(cmds.device).unwrap();
       batch.push(cs).submit(device.queues[0].handle).0.sync().unwrap();
     }
-
 
     let mut dpool = vk::pipes::DescriptorPool::with_capacity(device.handle, &pipe::SIZES, pipe::NUM_SETS).unwrap();
     let ds = dpool.new_dset(pipe.dsets[&0].layout, &pipe.dsets[&0].sizes).unwrap();
@@ -171,9 +174,13 @@ impl Text {
 
 impl cmd::commands::StreamPush for Text {
   fn enqueue(&self, cs: cmd::Stream) -> cmd::Stream {
-    cs.push(&cmd::commands::BindPipeline::graphics(self.pipe.handle)).push(&self.draw)
-
-    //.push(&BindDset::new(vk::PIPELINE_BIND_POINT_GRAPHICS, text.pipe.layout, 0, text.ds))
+    cs.push(&cmd::commands::BindPipeline::graphics(self.pipe.handle))
+      .push(&cmd::commands::BindDset::new(
+        vk::PIPELINE_BIND_POINT_GRAPHICS,
+        self.pipe.layout,
+        0,
+        self.ds,
+      ))
+      .push(&self.draw)
   }
 }
-

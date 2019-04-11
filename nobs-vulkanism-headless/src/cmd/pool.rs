@@ -11,6 +11,7 @@ use crate::cmd::Stream;
 ///
 /// The Pool is basically a chach for [Streams](struct.Stream.html).
 /// The only method [begin_stream](struct.Pool.html#method.begin_stream) either creates a new stream or reuses one that is currently not unused.
+#[derive(Clone)]
 pub struct Pool {
   pub device: vk::Device,
   pub queue_family: u32,
@@ -21,7 +22,10 @@ pub struct Pool {
 
 impl Drop for Pool {
   fn drop(&mut self) {
-    vk::DestroyCommandPool(self.device, self.handle, std::ptr::null());
+    let mut streams = self.streams.lock().unwrap();
+    if Arc::strong_count(&self.streams) == 1 {
+      vk::DestroyCommandPool(self.device, self.handle, std::ptr::null());
+    }
   }
 }
 

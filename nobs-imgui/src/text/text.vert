@@ -20,7 +20,8 @@ vec2 positions[4] = vec2[](
 
 void main() {
   vec2 vp = vec2(width, height);
-  vec2 pos = (0.5 * positions[gl_VertexIndex] + 0.5) / vp;
+  //vec2 pos = (0.5 * positions[gl_VertexIndex] + 0.5) / vp;
+  vec2 pos = (0.5 * positions[gl_VertexIndex] + 0.5) / vp * 50;
 
   gl_Position = vec4(pos, 0, 1);
   out_tex = vec2(0,0);
