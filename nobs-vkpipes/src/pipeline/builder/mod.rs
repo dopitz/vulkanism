@@ -63,7 +63,7 @@ fn create_pool_sizes(bindings: &[Binding]) -> Vec<vk::DescriptorPoolSize> {
     .collect()
 }
 
-fn create_layouts(device: vk::Device, bindings: &[Binding]) -> (HashMap<u32, DsetLayout>, vk::PipelineLayout) {
+fn create_layouts(device: vk::Device, bindings: &[Binding]) -> (Vec<DsetLayout>, vk::PipelineLayout) {
   // spilt up bindings by descriptor set
   let dset_bindings = bindings.iter().fold(HashMap::new(), |mut acc, b| {
     {
@@ -74,7 +74,7 @@ fn create_layouts(device: vk::Device, bindings: &[Binding]) -> (HashMap<u32, Dse
   });
 
   // layout and sizes for every descriptor set
-  let dsets: HashMap<u32, DsetLayout> = dset_bindings
+  let mut dsets: Vec<(u32, DsetLayout)> = dset_bindings
     .iter()
     .map(|(set, b)| {
       (
@@ -86,9 +86,12 @@ fn create_layouts(device: vk::Device, bindings: &[Binding]) -> (HashMap<u32, Dse
       )
     })
     .collect();
+  dsets.sort_by_key(|d| d.0);
+  let dsets: Vec<DsetLayout> = dsets.iter().map(|ds| ds.1.clone()).collect();
+
 
   // pipeline layout
-  let layouts: Vec<vk::DescriptorSetLayout> = dsets.values().map(|ds| ds.layout).collect();
+  let layouts: Vec<vk::DescriptorSetLayout> = dsets.iter().map(|ds| ds.layout).collect();
   let pipe_layout = create_pipeline_layout(device, &layouts);
 
   (dsets, pipe_layout)

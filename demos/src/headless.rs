@@ -47,7 +47,7 @@ pub fn main() {
   let p = make_sequence::new(device.handle).create().unwrap();
 
   let mut pool = vk::pipes::DescriptorPool::with_capacity(device.handle, &make_sequence::SIZES, make_sequence::NUM_SETS).unwrap();
-  let ds = pool.new_dset(p.dsets[&0].layout, &p.dsets[&0].sizes).unwrap();
+  let ds = pool.new_dset(p.dsets[0].layout, &p.dsets[0].sizes).unwrap();
 
   let mut allocator = vk::mem::Allocator::new(pdevice.handle, device.handle);
 

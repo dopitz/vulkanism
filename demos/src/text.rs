@@ -92,10 +92,10 @@ pub fn main() {
   let (mut sc, rp, fbs) = setup_rendertargets(&pdevice, &device, &window, &mut alloc);
 
 
-  let gui = imgui::ImGui::new(device.handle, device.queues[0].handle, cmds.clone(), rp.pass, 0, alloc.clone());
+  let gui = std::sync::Arc::new(imgui::ImGui::new(device.handle, device.queues[0].handle, cmds.clone(), rp.pass, 0, alloc.clone()));
 
   let mut stage = vk::mem::Staging::new(&mut alloc, 256 * 256 * 4).unwrap();
-  let text = imgui::text::Text::new(&device, &cmds, &rp, &mut alloc, &mut stage);
+  let text = imgui::text::Text::new(gui.clone(), "aoueaoeu");
 
   let mut close = false;
   let mut x = 'x';
@@ -119,15 +119,10 @@ pub fn main() {
         ..
       } => {
         println!("RESIZE       {:?}", size);
-        let mut map = stage.range(0, 2 * std::mem::size_of::<u32>() as vk::DeviceSize).map().unwrap();
+        let mut map = alloc.get_mapped(text.ub).unwrap();
         let data = map.as_slice_mut::<u32>();
         data[0] = size.width as u32;
         data[1] = size.height as u32;
-
-        let cs = cmds.begin_stream().unwrap().push(&stage.copy_into_buffer(text.ub, 0));
-
-        let mut batch = vk::cmd::AutoBatch::new(cmds.device).unwrap();
-        batch.push(cs).submit(device.queues[0].handle).0.sync().unwrap();
       },
       _ => (),
     });

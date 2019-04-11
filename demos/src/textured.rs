@@ -226,7 +226,7 @@ pub fn main() {
   }
 
   let mut descriptors = vk::pipes::DescriptorPool::with_capacity(device.handle, &tex::SIZES, tex::NUM_SETS).unwrap();
-  let ds = descriptors.new_dset(pipe.dsets[&0].layout, &pipe.dsets[&0].sizes).unwrap();
+  let ds = descriptors.new_dset(pipe.dsets[0].layout, &pipe.dsets[0].sizes).unwrap();
 
   tex::dset::write(device.handle, ds)
     .ub_transform(|b| b.buffer(ub))
