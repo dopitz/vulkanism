@@ -31,10 +31,10 @@ impl PipelineCache {
     }
   }
 
-  pub fn get(&self, name: &str) -> Option<&mut CachedPipeline> {
-    let mut c = self.cache.lock().unwrap();
-    c.get_mut(name)
-  }
+  //pub fn get(&self, name: &str) -> Option<&mut CachedPipeline> {
+  //  let mut c = self.cache.lock().unwrap();
+  //  c.get_mut(name)
+  //}
 }
 
 pub struct ImGui {
