@@ -19,14 +19,14 @@ pub struct Binding {
 pub struct Pipeline {
   pub device: vk::Device,
   pub handle: vk::Pipeline,
-  pub dsets: Vec<descriptor::DsetLayout>,
+  pub dsets: Vec<descriptor::Layout>,
   pub layout: vk::PipelineLayout,
 }
 
 impl Drop for Pipeline {
   /// Cleans up the pipeline, the pipeline layout and all descriptor set layouts
   fn drop(&mut self) {
-    for (ds) in self.dsets.iter() {
+    for ds in self.dsets.iter() {
       vk::DestroyDescriptorSetLayout(self.device, ds.layout, std::ptr::null());
     }
     vk::DestroyPipelineLayout(self.device, self.layout, std::ptr::null());

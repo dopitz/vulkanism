@@ -2,7 +2,6 @@ extern crate cgmath as cgm;
 extern crate nobs_imgui as imgui;
 extern crate nobs_vulkanism as vk;
 
-use cgm::*;
 use vk::builder::Buildable;
 use vk::winit;
 
@@ -84,7 +83,7 @@ pub fn setup_rendertargets(
 }
 
 pub fn main() {
-  let (inst, pdevice, device, mut events_loop, window) = setup_vulkan_window();
+  let (_inst, pdevice, device, mut events_loop, window) = setup_vulkan_window();
 
   let mut alloc = vk::mem::Allocator::new(pdevice.handle, device.handle);
   let cmds = vk::cmd::Pool::new(device.handle, device.queues[0].family).unwrap();
@@ -94,14 +93,12 @@ pub fn main() {
 
   let gui = std::sync::Arc::new(imgui::ImGui::new(device.handle, device.queues[0].handle, cmds.clone(), rp.pass, 0, alloc.clone()));
 
-  let mut stage = vk::mem::Staging::new(&mut alloc, 256 * 256 * 4).unwrap();
   let text = imgui::text::Text::new(gui.clone(), "aoueaoeu");
 
   let mut close = false;
   let mut x = 'x';
 
   use vk::cmd::commands::*;
-  let draw = Draw::default().push(text.vb, 0).vertices().vertex_count(3);
   let mut frame = vk::cmd::Frame::new(device.handle, fbs.len()).unwrap();
 
   loop {

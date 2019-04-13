@@ -2,7 +2,6 @@ use vk;
 use vk::builder::Buildable;
 use vk::cmd;
 use vk::mem;
-use vk::pipes;
 
 use crate::ImGui;
 
@@ -29,11 +28,11 @@ pub struct Font {
 }
 
 impl Font {
-  pub fn new(font: &FontID, gui: &ImGui) -> Self {
+  pub fn new(_font: &FontID, gui: &ImGui) -> Self {
     let mut tex = vk::NULL_HANDLE;
-    vk::mem::Image::new(&mut tex)
+    mem::Image::new(&mut tex)
       .texture2d(256, 256, vk::FORMAT_R8G8B8A8_UNORM)
-      .bind(&mut gui.alloc.clone(), vk::mem::BindType::Scatter)
+      .bind(&mut gui.alloc.clone(), mem::BindType::Scatter)
       .unwrap();
 
     let texview = vk::ImageViewCreateInfo::build()
@@ -44,7 +43,7 @@ impl Font {
     let sampler = vk::SamplerCreateInfo::build().create(gui.device).unwrap();
 
     {
-      let mut stage = vk::mem::Staging::new(&mut gui.alloc.clone(), 256 * 256 * 4).unwrap();
+      let stage = mem::Staging::new(&mut gui.alloc.clone(), 256 * 256 * 4).unwrap();
       let mut map = stage
         .range(0, 256 * 256 * std::mem::size_of::<u32>() as vk::DeviceSize)
         .map()
@@ -64,7 +63,7 @@ impl Font {
         ),
       );
 
-      let mut batch = vk::cmd::AutoBatch::new(gui.device).unwrap();
+      let mut batch = cmd::AutoBatch::new(gui.device).unwrap();
       batch.push(cs).submit(gui.queue_copy).0.sync().unwrap();
     }
 

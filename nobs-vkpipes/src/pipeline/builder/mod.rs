@@ -1,7 +1,8 @@
 pub mod compute;
 pub mod graphics;
 
-use crate::descriptor::DsetLayout;
+use crate::descriptor::Layout;
+use crate::descriptor::PoolSizes;
 use crate::pipeline::Binding;
 use std::collections::HashMap;
 use vk;
@@ -63,7 +64,7 @@ fn create_pool_sizes(bindings: &[Binding]) -> Vec<vk::DescriptorPoolSize> {
     .collect()
 }
 
-fn create_layouts(device: vk::Device, bindings: &[Binding]) -> (Vec<DsetLayout>, vk::PipelineLayout) {
+fn create_layouts(device: vk::Device, bindings: &[Binding]) -> (Vec<Layout>, vk::PipelineLayout) {
   // spilt up bindings by descriptor set
   let dset_bindings = bindings.iter().fold(HashMap::new(), |mut acc, b| {
     {
@@ -74,21 +75,20 @@ fn create_layouts(device: vk::Device, bindings: &[Binding]) -> (Vec<DsetLayout>,
   });
 
   // layout and sizes for every descriptor set
-  let mut dsets: Vec<(u32, DsetLayout)> = dset_bindings
+  let mut dsets: Vec<(u32, Layout)> = dset_bindings
     .iter()
     .map(|(set, b)| {
       (
         *set,
-        DsetLayout {
+        Layout {
           layout: create_descriptor_layout(device, b),
-          sizes: create_pool_sizes(b),
+          sizes: PoolSizes::from_pool_sizes(&create_pool_sizes(b), 1),
         },
       )
     })
     .collect();
   dsets.sort_by_key(|d| d.0);
-  let dsets: Vec<DsetLayout> = dsets.iter().map(|ds| ds.1.clone()).collect();
-
+  let dsets: Vec<Layout> = dsets.iter().map(|ds| ds.1).collect();
 
   // pipeline layout
   let layouts: Vec<vk::DescriptorSetLayout> = dsets.iter().map(|ds| ds.layout).collect();

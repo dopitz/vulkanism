@@ -1,5 +1,4 @@
 use vk;
-use vk::builder::Buildable;
 
 /// Builder for a depth stencil state
 ///

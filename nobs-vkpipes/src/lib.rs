@@ -97,7 +97,15 @@ pub use pipeline::builder::graphics::viewport::Builder as Viewport;
 pub use pipeline::builder::graphics::Graphics as GraphicsBuilder;
 
 pub mod descriptor;
-pub use descriptor::pool::Pool as DescriptorPool;
+
+#[derive(Debug)]
+pub enum Error {
+  InvalidShaderModule,
+  PipelineCreateFail(vk::Error),
+  InvalidDescriptorCount,
+  DescriptorSetCreateFail(vk::Error),
+  DescriptorPoolCreateFail(vk::Error),
+}
 
 /// For usage in build.rs to automatically detect changes in glsl/spv files and force the recompilation of the rust source that references the shader.
 ///

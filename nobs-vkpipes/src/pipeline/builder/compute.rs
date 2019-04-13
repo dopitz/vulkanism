@@ -1,6 +1,7 @@
 use crate::pipeline::builder;
 use crate::pipeline::Binding;
 use crate::pipeline::Pipeline;
+use crate::Error;
 use vk;
 
 /// Builder for a compute pipeline
@@ -42,10 +43,10 @@ impl Compute {
   }
 
   /// Create the pipeline from the current configuration
-  pub fn create(&self) -> Result<Pipeline, String> {
-    let stage = self.comp.ok_or("No compute shader stage set")?;
+  pub fn create(&self) -> Result<Pipeline, Error> {
+    let stage = self.comp.ok_or(Error::InvalidShaderModule)?;
     if stage.module == vk::NULL_HANDLE {
-      Err("invalid module handle for compute stage")?
+      Err(Error::InvalidShaderModule)?
     }
 
     let (dsets, layout) = builder::create_layouts(self.device, &self.bindings);
@@ -61,7 +62,15 @@ impl Compute {
     };
 
     let mut handle = vk::NULL_HANDLE;
-    vk::CreateComputePipelines(self.device, vk::NULL_HANDLE, 1, &create_info, std::ptr::null(), &mut handle);
+    vk_check!(vk::CreateComputePipelines(
+      self.device,
+      vk::NULL_HANDLE,
+      1,
+      &create_info,
+      std::ptr::null(),
+      &mut handle
+    ))
+    .map_err(|e| Error::PipelineCreateFail(e))?;
 
     vk::DestroyShaderModule(self.device, stage.module, std::ptr::null());
 

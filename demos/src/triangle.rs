@@ -99,7 +99,7 @@ pub fn setup_rendertargets(
 }
 
 pub fn main() {
-  let (inst, pdevice, device, mut events_loop, window) = setup_vulkan_window();
+  let (_inst, pdevice, device, mut events_loop, window) = setup_vulkan_window();
 
   let mut alloc = vk::mem::Allocator::new(pdevice.handle, device.handle);
   let cmds = vk::cmd::Pool::new(device.handle, device.queues[0].family).unwrap();

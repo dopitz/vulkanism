@@ -1,11 +1,9 @@
 use std::sync::Arc;
-use std::sync::Weak;
 
 use vk;
 use vk::builder::Buildable;
 use vk::cmd;
-use vk::mem;
-use vk::pipes;
+use vk::pipes::descriptor;
 
 use crate::font::FontID;
 use crate::ImGui;
@@ -39,7 +37,7 @@ pub struct Text {
   pub font: FontID,
 
   pub pipe: vk::pipes::Pipeline,
-  pub dpool: vk::pipes::DescriptorPool,
+  pub dpool: descriptor::Pool,
   pub ds: vk::DescriptorSet,
   pub ds2: vk::DescriptorSet,
 
@@ -50,8 +48,7 @@ pub struct Text {
 }
 
 impl Text {
-  pub fn new(gui: Arc<ImGui>, text: &str) -> Self {
-
+  pub fn new(gui: Arc<ImGui>, _text: &str) -> Self {
     let font = FontID::new("curier", 12);
 
     let pipe = pipe::new(gui.device, gui.pass, gui.subpass)
@@ -121,9 +118,12 @@ impl Text {
       data[1] = 1;
     }
 
-    let mut dpool = vk::pipes::DescriptorPool::with_capacity(gui.device, &pipe::SIZES, pipe::NUM_SETS).unwrap();
-    let ds = dpool.new_dset(pipe.dsets[0].layout, &pipe.dsets[0].sizes).unwrap();
-    let ds2 = dpool.new_dset(pipe.dsets[1].layout, &pipe.dsets[1].sizes).unwrap();
+    let mut dpool = descriptor::Pool::new(
+      gui.device,
+      descriptor::Pool::new_capacity().add(&pipe.dsets[0], 1).add(&pipe.dsets[1], 1),
+    );
+    let ds = dpool.new_dset(&pipe.dsets[0]).unwrap();
+    let ds2 = dpool.new_dset(&pipe.dsets[1]).unwrap();
 
     pipe::OnResize::write(gui.device, ds).ub_viewport(|b| b.buffer(ub)).update();
 

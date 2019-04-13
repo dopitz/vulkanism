@@ -12,8 +12,8 @@ use std::sync::Mutex;
 use font::*;
 
 pub struct CachedPipeline {
-  pipe: vk::pipes::Pipeline,
-  pool: vk::pipes::DescriptorPool,
+//  pipe: vk::pipes::Pipeline,
+//  pool: vk::pipes::DescriptorPool,
 }
 
 pub struct PipelineCache {
@@ -24,7 +24,7 @@ impl PipelineCache {
   pub fn add(&mut self, name: &str, p: CachedPipeline) {
     let mut c = self.cache.lock().unwrap();
     match c.get(name) {
-      Some(p) => (),
+      Some(_) => (),
       None => {
         c.insert(name.to_owned(), p);
       }

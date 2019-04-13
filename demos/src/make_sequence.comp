@@ -3,7 +3,7 @@
 
 const uint GROUP_SIZE = 512;
 
-layout(binding = 0) uniform ub {
+layout(binding = 0) uniform Ub {
   uint num_elems;
   uint i_first;
   uint i_step;

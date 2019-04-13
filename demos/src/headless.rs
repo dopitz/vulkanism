@@ -14,7 +14,7 @@ mod make_sequence {
     }
   }
 
-  pub struct ub {
+  pub struct Ub {
     pub num_elems: u32,
     pub i_first: u32,
     pub i_step: u32,
@@ -46,15 +46,16 @@ pub fn main() {
 
   let p = make_sequence::new(device.handle).create().unwrap();
 
-  let mut pool = vk::pipes::DescriptorPool::with_capacity(device.handle, &make_sequence::SIZES, make_sequence::NUM_SETS).unwrap();
-  let ds = pool.new_dset(p.dsets[0].layout, &p.dsets[0].sizes).unwrap();
+  use vk::pipes::descriptor;
+  let mut pool = descriptor::Pool::new(device.handle, descriptor::Pool::new_capacity().add(&p.dsets[0], 1));
+  let ds = pool.new_dset(&p.dsets[0]).unwrap();
 
   let mut allocator = vk::mem::Allocator::new(pdevice.handle, device.handle);
 
   let mut buf_ub = vk::NULL_HANDLE;
   let mut buf_out = vk::NULL_HANDLE;
   vk::mem::Buffer::new(&mut buf_ub)
-    .size(std::mem::size_of::<make_sequence::ub>() as vk::DeviceSize)
+    .size(std::mem::size_of::<make_sequence::Ub>() as vk::DeviceSize)
     .usage(vk::BUFFER_USAGE_TRANSFER_DST_BIT | vk::BUFFER_USAGE_UNIFORM_BUFFER_BIT)
     .devicelocal(false)
     .new_buffer(&mut buf_out)
@@ -65,7 +66,7 @@ pub fn main() {
     .unwrap();
 
   make_sequence::dset::write(device.handle, ds)
-    .ub(|b| b.buffer(buf_ub))
+    .Ub(|b| b.buffer(buf_ub))
     .b_out(|b| b.buffer(buf_out))
     .update();
 
@@ -73,7 +74,7 @@ pub fn main() {
 
   {
     let mapped = allocator.get_mapped(buf_ub).unwrap();
-    let ubb = make_sequence::ub {
+    let ubb = make_sequence::Ub {
       num_elems: 123,
       i_first: 0,
       i_step: 1,
@@ -82,7 +83,7 @@ pub fn main() {
   }
   {
     let mapped = allocator.get_mapped(buf_ub).unwrap();
-    let mut ubb: make_sequence::ub = unsafe { std::mem::uninitialized() };
+    let mut ubb: make_sequence::Ub = unsafe { std::mem::uninitialized() };
     mapped.device_to_host(&mut ubb);
   }
 
@@ -105,12 +106,12 @@ pub fn main() {
   //    .push(&Dispatch::xyz(1, 1, 1))
   //    .submit_immediate();
 
-    println!("{}", allocator.print_stats());
+  println!("{}", allocator.print_stats());
 
-    allocator.destroy(buf_ub);
-    //allocator.destroy(buf_out);
+  allocator.destroy(buf_ub);
+  //allocator.destroy(buf_out);
 
-    println!("{}", allocator.print_stats());
+  println!("{}", allocator.print_stats());
   {
     let mapped = allocator.get_mapped_region(buf_out, 0, 100 * 4).unwrap();
     println!("{:?}", mapped);

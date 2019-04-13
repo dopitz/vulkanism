@@ -1,8 +1,7 @@
 extern crate cgmath as cgm;
-extern crate nobs_vulkanism as vk;
 extern crate nobs_imgui as imgui;
+extern crate nobs_vulkanism as vk;
 
-use cgm::*;
 use vk::builder::Buildable;
 use vk::winit;
 
@@ -126,7 +125,7 @@ pub fn update_mvp(device: &vk::device::Device, cmds: &vk::cmd::Pool, stage: &mut
 }
 
 pub fn main() {
-  let (inst, pdevice, device, mut events_loop, window) = setup_vulkan_window();
+  let (_inst, pdevice, device, mut events_loop, window) = setup_vulkan_window();
 
   let mut alloc = vk::mem::Allocator::new(pdevice.handle, device.handle);
   let cmds = vk::cmd::Pool::new(device.handle, device.queues[0].family).unwrap();
@@ -225,8 +224,9 @@ pub fn main() {
     batch.push(cs).submit(device.queues[0].handle).0.sync().unwrap();
   }
 
-  let mut descriptors = vk::pipes::DescriptorPool::with_capacity(device.handle, &tex::SIZES, tex::NUM_SETS).unwrap();
-  let ds = descriptors.new_dset(pipe.dsets[0].layout, &pipe.dsets[0].sizes).unwrap();
+  use vk::pipes::descriptor;
+  let mut descriptors = descriptor::Pool::new(device.handle, descriptor::Pool::new_capacity().add(&pipe.dsets[0], 1));
+  let ds = descriptors.new_dset(&pipe.dsets[0]).unwrap();
 
   tex::dset::write(device.handle, ds)
     .ub_transform(|b| b.buffer(ub))
@@ -243,12 +243,10 @@ pub fn main() {
   let draw = Draw::default().push(vb, 0).vertices().vertex_count(3);
   let mut frame = vk::cmd::Frame::new(device.handle, fbs.len()).unwrap();
 
-  let mut z = -10.0;
-
   let mut mvp = tex::UbTransform {
     model: cgm::One::one(),
     view: cgm::Matrix4::look_at(
-      cgm::Point3::new(0.0, 0.0, z),
+      cgm::Point3::new(0.0, 0.0, -10.0),
       cgm::Point3::new(0.0, 0.0, 0.0),
       cgm::Vector3::new(0.0, 1.0, 0.0),
     ),

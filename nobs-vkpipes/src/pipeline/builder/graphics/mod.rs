@@ -11,6 +11,7 @@ pub mod viewport;
 use crate::pipeline::builder;
 use crate::pipeline::Binding;
 use crate::pipeline::Pipeline;
+use crate::Error;
 use vk;
 
 /// Builder for a graphics pipeline
@@ -164,14 +165,14 @@ impl Graphics {
   }
 
   /// Create the pipeline from the current configuration
-  pub fn create(&self) -> Result<Pipeline, String> {
+  pub fn create(&self) -> Result<Pipeline, Error> {
     let stages = [self.vert, self.tesc, self.tesc, self.geom, self.frag]
       .iter()
       .filter(|s| s.is_some())
       .map(|s| s.unwrap())
       .collect::<Vec<_>>();
     if stages.iter().any(|s| s.module == vk::NULL_HANDLE) {
-      Err("invalid module handle")?
+      Err(Error::InvalidShaderModule)?
     }
 
     let (dsets, layout) = builder::create_layouts(self.device, &self.bindings);
@@ -203,7 +204,15 @@ impl Graphics {
     };
 
     let mut handle = vk::NULL_HANDLE;
-    vk::CreateGraphicsPipelines(self.device, vk::NULL_HANDLE, 1, &create_info, std::ptr::null(), &mut handle);
+    vk_check!(vk::CreateGraphicsPipelines(
+      self.device,
+      vk::NULL_HANDLE,
+      1,
+      &create_info,
+      std::ptr::null(),
+      &mut handle
+    ))
+    .map_err(|e| Error::PipelineCreateFail(e))?;
 
     stages
       .iter()
