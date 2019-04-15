@@ -49,12 +49,25 @@ pub fn setup_vulkan_window() -> (
   (inst, pdevice, device, events_loop, window)
 }
 
-pub fn setup_rendertargets(
+pub fn resize(
   pdevice: &vk::device::PhysicalDevice,
   device: &vk::device::Device,
   window: &vk::wnd::Window,
   alloc: &mut vk::mem::Allocator,
+  sc: Option<vk::wnd::Swapchain>,
+  rp: Option<vk::fb::Renderpass>,
+  fbs: Option<Vec<vk::fb::Framebuffer>>,
 ) -> (vk::wnd::Swapchain, vk::fb::Renderpass, Vec<vk::fb::Framebuffer>) {
+  if sc.is_some() {
+    sc.unwrap();
+  }
+  if rp.is_some() {
+    rp.unwrap();
+  }
+  if fbs.is_some() {
+    fbs.unwrap();
+  }
+
   let sc = vk::wnd::Swapchain::build(pdevice.handle, device.handle, window.surface).create();
 
   let depth_format = vk::fb::select_depth_format(pdevice.handle, vk::fb::DEPTH_FORMATS).unwrap();
@@ -73,6 +86,8 @@ pub fn setup_rendertargets(
     .create()
     .unwrap();
 
+  println!("{:?}", sc.extent);
+
   let fbs = vec![
     vk::fb::Framebuffer::build_from_pass(&pass, alloc).extent(sc.extent).create(),
     vk::fb::Framebuffer::build_from_pass(&pass, alloc).extent(sc.extent).create(),
@@ -88,13 +103,20 @@ pub fn main() {
   let mut alloc = vk::mem::Allocator::new(pdevice.handle, device.handle);
   let cmds = vk::cmd::Pool::new(device.handle, device.queues[0].family).unwrap();
 
-  let (mut sc, rp, fbs) = setup_rendertargets(&pdevice, &device, &window, &mut alloc);
+  let (mut sc, mut rp, mut fbs) = resize(&pdevice, &device, &window, &mut alloc, None, None, None);
 
-
-  let gui = std::sync::Arc::new(imgui::ImGui::new(device.handle, device.queues[0].handle, cmds.clone(), rp.pass, 0, alloc.clone()));
+  let gui = std::sync::Arc::new(imgui::ImGui::new(
+    device.handle,
+    device.queues[0].handle,
+    cmds.clone(),
+    rp.pass,
+    0,
+    alloc.clone(),
+  ));
 
   let text = imgui::text::Text::new(gui.clone(), "aoueaoeu");
 
+  let mut resizeevent = false;
   let mut close = false;
   let mut x = 'x';
 
@@ -116,13 +138,25 @@ pub fn main() {
         ..
       } => {
         println!("RESIZE       {:?}", size);
-        let mut map = alloc.get_mapped(text.ub).unwrap();
-        let data = map.as_slice_mut::<u32>();
-        data[0] = size.width as u32;
-        data[1] = size.height as u32;
-      },
+        resizeevent = true;
+      }
       _ => (),
     });
+
+    if resizeevent {
+      let (nsc, nrp, nfbs) = resize(&pdevice, &device, &window, &mut alloc, Some(sc), Some(rp), Some(fbs));
+      sc = nsc;
+      rp = nrp;
+      fbs = nfbs;
+
+      gui.resize(sc.extent);
+      let mut map = alloc.get_mapped(text.ub).unwrap();
+      let data = map.as_slice_mut::<u32>();
+      data[0] = sc.extent.width as u32;
+      data[1] = sc.extent.height as u32;
+
+      resizeevent = false;
+    }
 
     let i = frame.next().unwrap();
     let next = sc.next_image();
@@ -134,8 +168,12 @@ pub fn main() {
       .push(&ImageBarrier::to_color_attachment(fb.images[0]))
       .push(&fb.begin())
       .push(&Viewport::with_extent(sc.extent))
-      .push(&Scissor::with_extent(sc.extent))
-      .push(&text)
+      .push(&Scissor::with_extent(sc.extent));
+
+    gui.begin(cs);
+    gui.push(&mut text);
+    gui.end().unwrap()
+
       .push(&fb.end())
       .push(&sc.blit(next.index, fb.images[0]));
 

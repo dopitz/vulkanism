@@ -11,31 +11,58 @@ use std::sync::Mutex;
 
 use font::*;
 
-pub struct CachedPipeline {
-//  pipe: vk::pipes::Pipeline,
-//  pool: vk::pipes::DescriptorPool,
+pub enum Cached<T> {
+  Init(T),
+  Uninit,
 }
 
-pub struct PipelineCache {
-  cache: Arc<Mutex<HashMap<String, CachedPipeline>>>,
+impl<T> Default for Cached<T> {
+  fn default() -> Self {
+    Cached::Uninit
+  }
 }
 
-impl PipelineCache {
-  pub fn add(&mut self, name: &str, p: CachedPipeline) {
-    let mut c = self.cache.lock().unwrap();
-    match c.get(name) {
-      Some(_) => (),
-      None => {
-        c.insert(name.to_owned(), p);
-      }
+impl<T> std::ops::DerefMut for Cached<T> {
+  fn deref_mut(&mut self) -> &mut T {
+    self.get_mut()
+  }
+}
+impl<T> std::ops::Deref for Cached<T> {
+  type Target = T;
+  fn deref(&self) -> &T {
+    self.get()
+  }
+}
+
+
+impl<T> Cached<T> {
+  pub fn get(&self) -> &T {
+    match self {
+      Cached::Init(t) => t,
+      Cached::Uninit => panic!("AOEUAOUE"),
     }
   }
 
-  //pub fn get(&self, name: &str) -> Option<&mut CachedPipeline> {
-  //  let mut c = self.cache.lock().unwrap();
-  //  c.get_mut(name)
-  //}
+  pub fn get_mut(&mut self) -> &mut T {
+    match self {
+      Cached::Init(t) => t,
+      Cached::Uninit => panic!("AOEUAOUE"),
+    }
+  }
+
+  pub fn is_init(&self) -> bool {
+    match self {
+      Cached::Init(_) => true,
+      Cached::Uninit => false,
+    }
+  }
 }
+
+
+pub trait GuiPush {
+  fn enqueue(&mut self, cs: vk::cmd::Stream) -> vk::cmd::Stream;
+}
+
 
 pub struct ImGui {
   pub device: vk::Device,
@@ -46,6 +73,11 @@ pub struct ImGui {
   pub alloc: vk::mem::Allocator,
 
   fonts: Arc<Mutex<HashMap<FontID, Font>>>,
+  pipe_text: Arc<Mutex<Cached<text::Pipeline>>>,
+
+  pub ub : vk::Buffer,
+
+  cs: Option<vk::cmd::Stream>,
 }
 
 impl Drop for ImGui {
@@ -67,6 +99,13 @@ impl ImGui {
     subpass: u32,
     alloc: vk::mem::Allocator,
   ) -> Self {
+    let mut ub = vk::NULL_HANDLE;
+    vk::mem::Buffer::new(&mut ub)
+      .uniform_buffer(2 * std::mem::size_of::<f32>() as vk::DeviceSize)
+      .devicelocal(false)
+      .bind(&mut alloc.clone(), vk::mem::BindType::Block)
+      .unwrap();
+
     ImGui {
       device,
       queue_copy,
@@ -76,6 +115,10 @@ impl ImGui {
       alloc,
 
       fonts: Default::default(),
+      pipe_text: Default::default(),
+
+      ub,
+      cs : None,
     }
   }
 
@@ -84,11 +127,33 @@ impl ImGui {
     *fonts.entry(font.clone()).or_insert_with(|| Font::new(&font, self))
   }
 
-  //pub fn resize() {
+  pub fn get_pipe_text(&self) -> std::sync::MutexGuard<Cached<text::Pipeline>> {
+    let mut p = self.pipe_text.lock().unwrap();
+    if !p.is_init() {
+      *p = Cached::Init(text::Pipeline::new(self.device, self.pass, self.subpass));
+    }
+    p
+  }
 
-  //}
+  pub fn resize(&self, extent: vk::Extent2D) {
+    let mut map = self.alloc.get_mapped(self.ub).unwrap();
+    let data = map.as_slice_mut::<u32>();
+    data[0] = extent.width as u32;
+    data[1] = extent.height as u32;
+  }
 
-  //fn get_current() -> Window {
-  //  screen
-  //}
+  pub fn begin(&mut self, cs: vk::cmd::Stream) {
+    if self.cs.is_none() {
+      self.cs = Some(cs);
+    }
+  }
+  pub fn end(&mut self) -> Option<vk::cmd::Stream> {
+    self.cs.take()
+  }
+
+  pub fn push<T: GuiPush>(&mut self, p: &mut T) {
+    if let Some(cs) = self.cs.take() {
+      self.cs = Some(p.enqueue(cs))
+    }
+  }
 }

@@ -31,27 +31,14 @@ mod pipe {
   }
 }
 
-pub struct Text {
-  pub gui: Arc<ImGui>,
-
-  pub font: FontID,
-
-  pub pipe: vk::pipes::Pipeline,
-  pub dpool: descriptor::Pool,
-  pub ds: vk::DescriptorSet,
-  pub ds2: vk::DescriptorSet,
-
-  pub vb: vk::Buffer,
-  pub ub: vk::Buffer,
-
-  pub draw: cmd::commands::DrawVertices,
+pub struct Pipeline {
+  pipe: vk::pipes::Pipeline,
+  pool: descriptor::Pool,
 }
 
-impl Text {
-  pub fn new(gui: Arc<ImGui>, _text: &str) -> Self {
-    let font = FontID::new("curier", 12);
-
-    let pipe = pipe::new(gui.device, gui.pass, gui.subpass)
+impl Pipeline {
+  pub fn new(device: vk::Device, pass: vk::RenderPass, subpass: u32) -> Self {
+    let pipe = pipe::new(device, pass, subpass)
       .vertex_input(
         vk::PipelineVertexInputStateCreateInfo::build()
           .push_binding(
@@ -87,6 +74,34 @@ impl Text {
       .create()
       .unwrap();
 
+    let pool = descriptor::Pool::new(
+      device,
+      descriptor::Pool::new_capacity().add(&pipe.dsets[0], 1).add(&pipe.dsets[1], 1),
+    );
+
+    Self { pipe, pool }
+  }
+}
+
+
+pub struct Text {
+  gui: Arc<ImGui>,
+
+  font: FontID,
+  pub ub: vk::Buffer,
+
+  vb: vk::Buffer,
+
+  pipe: vk::cmd::commands::BindPipeline,
+  ds: vk::cmd::commands::BindDset,
+  ds2: vk::cmd::commands::BindDset,
+  draw: cmd::commands::DrawVertices,
+}
+
+impl Text {
+  pub fn new(gui: Arc<ImGui>, _text: &str) -> Self {
+    let font = FontID::new("curier", 12);
+
     let mut vb = vk::NULL_HANDLE;
     let mut ub = vk::NULL_HANDLE;
     vk::mem::Buffer::new(&mut vb)
@@ -118,17 +133,22 @@ impl Text {
       data[1] = 1;
     }
 
-    let mut dpool = descriptor::Pool::new(
-      gui.device,
-      descriptor::Pool::new_capacity().add(&pipe.dsets[0], 1).add(&pipe.dsets[1], 1),
-    );
-    let ds = dpool.new_dset(&pipe.dsets[0]).unwrap();
-    let ds2 = dpool.new_dset(&pipe.dsets[1]).unwrap();
+    let (pipe, ds, ds2) = {
+      let mut pp = gui.get_pipe_text();
+      let mut p = pp.get_mut();
+      let ds = p.pool.new_dset(&p.pipe.dsets[0]).unwrap();
+      let ds2 = p.pool.new_dset(&p.pipe.dsets[1]).unwrap();
+      (
+        cmd::commands::BindPipeline::graphics(p.pipe.handle),
+        cmd::commands::BindDset::new(vk::PIPELINE_BIND_POINT_GRAPHICS, p.pipe.layout, 0, ds),
+        cmd::commands::BindDset::new(vk::PIPELINE_BIND_POINT_GRAPHICS, p.pipe.layout, 1, ds2),
+      )
+    };
 
-    pipe::OnResize::write(gui.device, ds).ub_viewport(|b| b.buffer(ub)).update();
+    pipe::OnResize::write(gui.device, ds.dset).ub_viewport(|b| b.buffer(ub)).update();
 
     let fnt = gui.get_font(&font);
-    pipe::Once::write(gui.device, ds2)
+    pipe::Once::write(gui.device, ds2.dset)
       .tex_sampler(|s| s.set(vk::IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, fnt.texview, fnt.sampler))
       .update();
 
@@ -139,12 +159,11 @@ impl Text {
       .vertex_count(4);
 
     Text {
-      gui,
+      gui: gui.clone(),
 
       font,
 
       pipe,
-      dpool,
       ds,
       ds2,
 
@@ -156,21 +175,8 @@ impl Text {
   }
 }
 
-impl cmd::commands::StreamPush for Text {
-  fn enqueue(&self, cs: cmd::Stream) -> cmd::Stream {
-    cs.push(&cmd::commands::BindPipeline::graphics(self.pipe.handle))
-      .push(&cmd::commands::BindDset::new(
-        vk::PIPELINE_BIND_POINT_GRAPHICS,
-        self.pipe.layout,
-        0,
-        self.ds,
-      ))
-      .push(&cmd::commands::BindDset::new(
-        vk::PIPELINE_BIND_POINT_GRAPHICS,
-        self.pipe.layout,
-        1,
-        self.ds2,
-      ))
-      .push(&self.draw)
+impl crate::GuiPush for Text {
+  fn enqueue(&mut self, cs: cmd::Stream) -> cmd::Stream {
+    cs.push(&self.pipe).push(&self.ds).push(&self.ds2).push(&self.draw)
   }
 }
