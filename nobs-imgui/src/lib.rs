@@ -4,6 +4,7 @@ extern crate nobs_vulkanism_headless as vk;
 mod font;
 
 pub mod text;
+pub mod window;
 
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -34,7 +35,6 @@ impl<T> std::ops::Deref for Cached<T> {
   }
 }
 
-
 impl<T> Cached<T> {
   pub fn get(&self) -> &T {
     match self {
@@ -58,12 +58,6 @@ impl<T> Cached<T> {
   }
 }
 
-
-pub trait GuiPush {
-  fn enqueue(&mut self, cs: vk::cmd::Stream) -> vk::cmd::Stream;
-}
-
-
 pub struct ImGui {
   pub device: vk::Device,
   pub queue_copy: vk::Queue,
@@ -75,9 +69,12 @@ pub struct ImGui {
   fonts: Arc<Mutex<HashMap<FontID, Font>>>,
   pipe_text: Arc<Mutex<Cached<text::Pipeline>>>,
 
-  pub ub : vk::Buffer,
+  pub ub: vk::Buffer,
 
   cs: Option<vk::cmd::Stream>,
+
+
+  windows: Vec<window::Window>,
 }
 
 impl Drop for ImGui {
@@ -86,6 +83,10 @@ impl Drop for ImGui {
     for (_, f) in fonts.iter() {
       vk::DestroyImageView(self.device, f.texview, std::ptr::null());
       vk::DestroySampler(self.device, f.sampler, std::ptr::null());
+    }
+
+    for w in self.windows.iter() {
+      self.alloc.destroy(w.ub_viewport);
     }
   }
 }
@@ -118,7 +119,9 @@ impl ImGui {
       pipe_text: Default::default(),
 
       ub,
-      cs : None,
+      cs: None,
+
+      windows: Default::default(),
     }
   }
 
@@ -142,18 +145,27 @@ impl ImGui {
     data[1] = extent.height as u32;
   }
 
-  pub fn begin(&mut self, cs: vk::cmd::Stream) {
+  pub fn begin(&mut self, cs: vk::cmd::Stream) -> &mut Self {
     if self.cs.is_none() {
       self.cs = Some(cs);
     }
+    self
   }
   pub fn end(&mut self) -> Option<vk::cmd::Stream> {
     self.cs.take()
   }
 
-  pub fn push<T: GuiPush>(&mut self, p: &mut T) {
+  pub fn push<T: GuiPush>(&mut self, p: &mut T) -> &mut Self {
     if let Some(cs) = self.cs.take() {
-      self.cs = Some(p.enqueue(cs))
+      self.cs = Some(p.enqueue(cs, self))
     }
+    self
   }
 }
+
+
+
+pub trait GuiPush {
+  fn enqueue(&mut self, cs: vk::cmd::Stream, gui: &ImGui) -> vk::cmd::Stream;
+}
+

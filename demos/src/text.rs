@@ -105,16 +105,9 @@ pub fn main() {
 
   let (mut sc, mut rp, mut fbs) = resize(&pdevice, &device, &window, &mut alloc, None, None, None);
 
-  let gui = std::sync::Arc::new(imgui::ImGui::new(
-    device.handle,
-    device.queues[0].handle,
-    cmds.clone(),
-    rp.pass,
-    0,
-    alloc.clone(),
-  ));
+  let mut gui = imgui::ImGui::new(device.handle, device.queues[0].handle, cmds.clone(), rp.pass, 0, alloc.clone());
 
-  let text = imgui::text::Text::new(gui.clone(), "aoueaoeu");
+  let mut text = imgui::text::Text::new(&gui, "aoueaoeu");
 
   let mut resizeevent = false;
   let mut close = false;
@@ -150,10 +143,6 @@ pub fn main() {
       fbs = nfbs;
 
       gui.resize(sc.extent);
-      let mut map = alloc.get_mapped(text.ub).unwrap();
-      let data = map.as_slice_mut::<u32>();
-      data[0] = sc.extent.width as u32;
-      data[1] = sc.extent.height as u32;
 
       resizeevent = false;
     }
@@ -170,10 +159,11 @@ pub fn main() {
       .push(&Viewport::with_extent(sc.extent))
       .push(&Scissor::with_extent(sc.extent));
 
-    gui.begin(cs);
-    gui.push(&mut text);
-    gui.end().unwrap()
-
+    let cs = gui
+      .begin(cs)
+      .push(&mut text)
+      .end()
+      .unwrap()
       .push(&fb.end())
       .push(&sc.blit(next.index, fb.images[0]));
 

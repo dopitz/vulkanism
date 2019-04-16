@@ -4,10 +4,50 @@ use vk;
 
 use crate::ImGui;
 
-pub struct Window {
-  gui: Arc<ImGui>,
-  pub ub: vk::Buffer,
+pub trait Component : vk::cmd::commands::StreamPush {
+  fn add_compontent(&mut self, wnd: &WindowComponents);
 }
+
+pub struct Window {
+  pub ub_viewport: vk::Buffer,
+}
+
+impl Drop for Window {
+  fn drop(&mut self) {
+
+  }
+}
+
+
+
+pub struct WindowComponents<'a> {
+  pub ub_viewport: vk::Buffer,
+
+  compontents: Vec<&'a mut Component>,
+}
+
+impl<'a> WindowComponents<'a> {
+  pub fn push(mut self, c: &'a mut Component) -> Self {
+    c.add_compontent(&self);
+    self.compontents.push(c);
+    self
+  }
+
+  pub fn clear(&mut self) {
+    self.compontents.clear();
+  }
+}
+
+impl<'a> vk::cmd::commands::StreamPush for WindowComponents<'a> {
+  fn enqueue(&self, cs: vk::cmd::Stream) -> vk::cmd::Stream {
+    let mut cs = cs;
+    for c in self.compontents.iter() {
+      cs = c.enqueue(cs);
+    }
+    cs
+  }
+}
+
 
 impl Window {
 //  pub fn new(gui: Arc<ImGui>, _text: &str) -> Self {

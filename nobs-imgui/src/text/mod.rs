@@ -20,8 +20,8 @@ mod pipe {
       glsl = "src/text/text.frag",
     }
 
-    dset_name[0] = "OnResize",
-    dset_name[1] = "Once",
+    dset_name[0] = "DsViewport",
+    dset_name[1] = "DsText",
   }
 
   #[repr(C)]
@@ -81,34 +81,42 @@ impl Pipeline {
 
     Self { pipe, pool }
   }
+
+  pub fn new_ds_viewport(&mut self) -> Result<vk::DescriptorSet, vk::pipes::Error> {
+    self.pool.new_dset(&self.pipe.dsets[0])
+  }
+
+  pub fn new_ds_text(&mut self) -> Result<vk::DescriptorSet, vk::pipes::Error> {
+    self.pool.new_dset(&self.pipe.dsets[1])
+  }
 }
 
-
 pub struct Text {
-  gui: Arc<ImGui>,
-
   font: FontID,
-  pub ub: vk::Buffer,
+  ub_viewport: vk::Buffer,
 
   vb: vk::Buffer,
 
   pipe: vk::cmd::commands::BindPipeline,
-  ds: vk::cmd::commands::BindDset,
-  ds2: vk::cmd::commands::BindDset,
+  ds_viewport: vk::cmd::commands::BindDset,
+  ds_text: vk::cmd::commands::BindDset,
   draw: cmd::commands::DrawVertices,
 }
 
+
+impl Drop for Text {
+  fn drop(&mut self) {
+  }
+}
+
 impl Text {
-  pub fn new(gui: Arc<ImGui>, _text: &str) -> Self {
+  pub fn new(gui: &ImGui, _text: &str) -> Self {
     let font = FontID::new("curier", 12);
+    let ub_viewport = vk::NULL_HANDLE;
 
     let mut vb = vk::NULL_HANDLE;
-    let mut ub = vk::NULL_HANDLE;
     vk::mem::Buffer::new(&mut vb)
       .vertex_buffer(3 * std::mem::size_of::<pipe::Vertex>() as vk::DeviceSize)
-      .devicelocal(false)
-      .new_buffer(&mut ub)
-      .uniform_buffer(2 * std::mem::size_of::<f32>() as vk::DeviceSize)
       .devicelocal(false)
       .bind(&mut gui.alloc.clone(), vk::mem::BindType::Block)
       .unwrap();
@@ -126,29 +134,17 @@ impl Text {
       svb[2].size = cgm::Vector2::new(50, 50);
     }
 
-    {
-      let mut map = gui.alloc.get_mapped(ub).unwrap();
-      let data = map.as_slice_mut::<u32>();
-      data[0] = 1;
-      data[1] = 1;
-    }
-
-    let (pipe, ds, ds2) = {
-      let mut pp = gui.get_pipe_text();
-      let mut p = pp.get_mut();
-      let ds = p.pool.new_dset(&p.pipe.dsets[0]).unwrap();
-      let ds2 = p.pool.new_dset(&p.pipe.dsets[1]).unwrap();
+    let (pipe, ds_viewport, ds_text) = {
+      let mut p = gui.get_pipe_text();
       (
         cmd::commands::BindPipeline::graphics(p.pipe.handle),
-        cmd::commands::BindDset::new(vk::PIPELINE_BIND_POINT_GRAPHICS, p.pipe.layout, 0, ds),
-        cmd::commands::BindDset::new(vk::PIPELINE_BIND_POINT_GRAPHICS, p.pipe.layout, 1, ds2),
+        cmd::commands::BindDset::new(vk::PIPELINE_BIND_POINT_GRAPHICS, p.pipe.layout, 0, p.new_ds_viewport().unwrap()),
+        cmd::commands::BindDset::new(vk::PIPELINE_BIND_POINT_GRAPHICS, p.pipe.layout, 1, p.new_ds_text().unwrap()),
       )
     };
 
-    pipe::OnResize::write(gui.device, ds.dset).ub_viewport(|b| b.buffer(ub)).update();
-
     let fnt = gui.get_font(&font);
-    pipe::Once::write(gui.device, ds2.dset)
+    pipe::DsText::write(gui.device, ds_text.dset)
       .tex_sampler(|s| s.set(vk::IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, fnt.texview, fnt.sampler))
       .update();
 
@@ -159,24 +155,28 @@ impl Text {
       .vertex_count(4);
 
     Text {
-      gui: gui.clone(),
-
       font,
-
-      pipe,
-      ds,
-      ds2,
+      ub_viewport,
 
       vb,
-      ub,
 
+      pipe,
+      ds_viewport,
+      ds_text,
       draw,
     }
   }
 }
 
 impl crate::GuiPush for Text {
-  fn enqueue(&mut self, cs: cmd::Stream) -> cmd::Stream {
-    cs.push(&self.pipe).push(&self.ds).push(&self.ds2).push(&self.draw)
+  fn enqueue(&mut self, cs: cmd::Stream, gui: &ImGui) -> cmd::Stream {
+    if self.ub_viewport != gui.ub {
+      self.ub_viewport = gui.ub;
+      pipe::DsViewport::write(gui.device, self.ds_viewport.dset)
+        .ub_viewport(|b| b.buffer(self.ub_viewport))
+        .update();
+    }
+
+    cs.push(&self.pipe).push(&self.ds_viewport).push(&self.ds_text).push(&self.draw)
   }
 }
