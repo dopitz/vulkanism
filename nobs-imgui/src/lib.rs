@@ -69,12 +69,7 @@ pub struct ImGui {
   fonts: Arc<Mutex<HashMap<FontID, Font>>>,
   pipe_text: Arc<Mutex<Cached<text::Pipeline>>>,
 
-  pub ub: vk::Buffer,
-
-  cs: Option<vk::cmd::Stream>,
-
-
-  windows: Vec<window::Window>,
+  pub ub_viewport: vk::Buffer,
 }
 
 impl Drop for ImGui {
@@ -85,9 +80,7 @@ impl Drop for ImGui {
       vk::DestroySampler(self.device, f.sampler, std::ptr::null());
     }
 
-    for w in self.windows.iter() {
-      self.alloc.destroy(w.ub_viewport);
-    }
+    self.alloc.destroy(self.ub_viewport);
   }
 }
 
@@ -100,8 +93,8 @@ impl ImGui {
     subpass: u32,
     alloc: vk::mem::Allocator,
   ) -> Self {
-    let mut ub = vk::NULL_HANDLE;
-    vk::mem::Buffer::new(&mut ub)
+    let mut ub_viewport = vk::NULL_HANDLE;
+    vk::mem::Buffer::new(&mut ub_viewport)
       .uniform_buffer(2 * std::mem::size_of::<f32>() as vk::DeviceSize)
       .devicelocal(false)
       .bind(&mut alloc.clone(), vk::mem::BindType::Block)
@@ -118,10 +111,7 @@ impl ImGui {
       fonts: Default::default(),
       pipe_text: Default::default(),
 
-      ub,
-      cs: None,
-
-      windows: Default::default(),
+      ub_viewport,
     }
   }
 
@@ -139,33 +129,24 @@ impl ImGui {
   }
 
   pub fn resize(&self, extent: vk::Extent2D) {
-    let mut map = self.alloc.get_mapped(self.ub).unwrap();
+    let mut map = self.alloc.get_mapped(self.ub_viewport).unwrap();
     let data = map.as_slice_mut::<u32>();
     data[0] = extent.width as u32;
     data[1] = extent.height as u32;
   }
 
-  pub fn begin(&mut self, cs: vk::cmd::Stream) -> &mut Self {
-    if self.cs.is_none() {
-      self.cs = Some(cs);
-    }
-    self
-  }
-  pub fn end(&mut self) -> Option<vk::cmd::Stream> {
-    self.cs.take()
+  pub fn begin_window<'a>(&self) -> window::WindowComponents<'a> {
+    window::WindowComponents::new(self.device, self.ub_viewport)
   }
 
-  pub fn push<T: GuiPush>(&mut self, p: &mut T) -> &mut Self {
-    if let Some(cs) = self.cs.take() {
-      self.cs = Some(p.enqueue(cs, self))
-    }
-    self
-  }
+  //pub fn push<T: GuiPush>(&mut self, p: &mut T) -> &mut Self {
+  //  if let Some(cs) = self.cs.take() {
+  //    self.cs = Some(p.enqueue(cs, self))
+  //  }
+  //  self
+  //}
 }
-
-
 
 pub trait GuiPush {
   fn enqueue(&mut self, cs: vk::cmd::Stream, gui: &ImGui) -> vk::cmd::Stream;
 }
-

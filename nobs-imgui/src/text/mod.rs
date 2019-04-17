@@ -106,6 +106,7 @@ pub struct Text {
 
 impl Drop for Text {
   fn drop(&mut self) {
+    // TODO destroy vb
   }
 }
 
@@ -168,15 +169,34 @@ impl Text {
   }
 }
 
-impl crate::GuiPush for Text {
-  fn enqueue(&mut self, cs: cmd::Stream, gui: &ImGui) -> cmd::Stream {
-    if self.ub_viewport != gui.ub {
-      self.ub_viewport = gui.ub;
-      pipe::DsViewport::write(gui.device, self.ds_viewport.dset)
+//impl crate::GuiPush for Text {
+//  fn enqueue(&mut self, cs: cmd::Stream, gui: &ImGui) -> cmd::Stream {
+//    if self.ub_viewport != gui.ub {
+//      self.ub_viewport = gui.ub;
+//      pipe::DsViewport::write(gui.device, self.ds_viewport.dset)
+//        .ub_viewport(|b| b.buffer(self.ub_viewport))
+//        .update();
+//    }
+//
+//    cs.push(&self.pipe).push(&self.ds_viewport).push(&self.ds_text).push(&self.draw)
+//  }
+//}
+
+
+
+impl vk::cmd::commands::StreamPush for Text {
+  fn enqueue(&self, cs: cmd::Stream) -> cmd::Stream {
+    cs.push(&self.pipe).push(&self.ds_viewport).push(&self.ds_text).push(&self.draw)
+  }
+}
+
+impl crate::window::Component for Text {
+  fn add_compontent(&mut self, wnd: &crate::window::WindowComponents) {
+    if self.ub_viewport != wnd.ub_viewport {
+      self.ub_viewport = wnd.ub_viewport;
+      pipe::DsViewport::write(wnd.device, self.ds_viewport.dset)
         .ub_viewport(|b| b.buffer(self.ub_viewport))
         .update();
     }
-
-    cs.push(&self.pipe).push(&self.ds_viewport).push(&self.ds_text).push(&self.draw)
   }
 }

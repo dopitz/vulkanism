@@ -65,7 +65,15 @@ pub fn resize(
     rp.unwrap();
   }
   if fbs.is_some() {
-    fbs.unwrap();
+    let fbs = fbs.unwrap();
+    let mut imgs = Vec::new();
+    for fb in fbs.iter() {
+      for i in fb.images.iter() {
+        imgs.push(*i);
+        alloc.destroy(*i);
+      }
+    }
+    //alloc.destroy_many(&imgs);
   }
 
   let sc = vk::wnd::Swapchain::build(pdevice.handle, device.handle, window.surface).create();
@@ -85,8 +93,6 @@ pub fn resize(
     .dependency(vk::SubpassDependency::build().external(0))
     .create()
     .unwrap();
-
-  println!("{:?}", sc.extent);
 
   let fbs = vec![
     vk::fb::Framebuffer::build_from_pass(&pass, alloc).extent(sc.extent).create(),
@@ -131,16 +137,31 @@ pub fn main() {
         ..
       } => {
         println!("RESIZE       {:?}", size);
+        println!("EVENT        {:?}", event);
+        println!("DPI          {:?}", window.window.get_hidpi_factor());
+        
         resizeevent = true;
+      }
+      winit::Event::WindowEvent {
+        event: winit::WindowEvent::HiDpiFactorChanged(dpi),
+        ..
+      } => {
+        println!("DPI       {:?}", dpi);
       }
       _ => (),
     });
 
     if resizeevent {
+
+      println!("{}", alloc.print_stats());
+
+      frame.sync().unwrap();
       let (nsc, nrp, nfbs) = resize(&pdevice, &device, &window, &mut alloc, Some(sc), Some(rp), Some(fbs));
       sc = nsc;
       rp = nrp;
       fbs = nfbs;
+
+      println!("{}", alloc.print_stats());
 
       gui.resize(sc.extent);
 
@@ -157,13 +178,8 @@ pub fn main() {
       .push(&ImageBarrier::to_color_attachment(fb.images[0]))
       .push(&fb.begin())
       .push(&Viewport::with_extent(sc.extent))
-      .push(&Scissor::with_extent(sc.extent));
-
-    let cs = gui
-      .begin(cs)
-      .push(&mut text)
-      .end()
-      .unwrap()
+      .push(&Scissor::with_extent(sc.extent))
+      .push(&gui.begin_window().push(&mut text))
       .push(&fb.end())
       .push(&sc.blit(next.index, fb.images[0]));
 
@@ -181,5 +197,5 @@ pub fn main() {
 
   frame.sync().unwrap();
 
-  println!("{}", alloc.print_stats());
+  //println!("{}", alloc.print_stats());
 }

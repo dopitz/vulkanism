@@ -109,6 +109,7 @@ impl Table {
   }
 
   pub fn bind(&mut self, bindinfos: &[BindInfoInner], bindtype: BindType) -> Result<(), Error> {
+    #[derive(Debug)]
     struct Group {
       b: usize,
       e: usize,
@@ -245,6 +246,7 @@ impl Table {
       }
     }
 
+    debug_assert!(self.sanity_checks(), "bind sanity");
     Ok(())
   }
 
@@ -264,6 +266,7 @@ impl Table {
 
     blocks.sort_by_key(|b| b.beg);
 
+    #[derive(Debug)]
     struct Group {
       block: Block,
       node: Node,
@@ -329,6 +332,8 @@ impl Table {
 
       self.insert(BlockType::Free(freeblock), freenode, None);
     }
+
+    debug_assert!(self.sanity_checks(), "unbind sanity");
   }
 
   fn get_node(&mut self, b: BlockType) -> Option<&mut Node> {
@@ -343,22 +348,6 @@ impl Table {
   }
 
   fn insert(&mut self, b: BlockType, n: Node, h: Option<u64>) {
-    debug_assert!(
-      {
-        let mut r = true;
-        let np = n.prev.and_then(|prev| self.get_node(prev)).cloned();
-        let nn = n.next.and_then(|next| self.get_node(next)).cloned();
-
-        if np.is_some() && nn.is_some() {
-          let np = np.unwrap();
-          let nn = nn.unwrap();
-          r = np.next.is_some() && nn.prev.is_some() && np.next.unwrap().get() == nn.prev.unwrap().get();
-        }
-        r
-      },
-      "inconsistent previous and next block of new block"
-    );
-
     if let Some(n) = n.prev.and_then(|prev| self.get_node(prev)) {
       n.next = Some(b);
     }
@@ -463,5 +452,77 @@ impl Table {
     //  write!(s, "    - NAlloc = {}\n", n_alloc).unwrap();
     //  write!(s, "    - NFree  = {}\n", n_free).unwrap();
     s
+  }
+
+  fn sanity_checks(&mut self) -> bool {
+    let mut allblocks = self
+      .pages
+      .iter()
+      .map(|(mem, p)| p.keys().cloned())
+      .flatten()
+      .chain(self.free.iter().map(|(b, _)| *b))
+      .fold(HashMap::new(), |mut acc, b| {
+        acc.insert(b, false);
+        acc
+      });
+
+    for (mem, p) in self.pages.iter() {
+      // first block in this page
+      let b = p
+        .iter()
+        .fold(Block::new(*mem, u64::max_value(), u64::max_value(), 0), |acc, (b, _)| {
+          if b.beg < acc.beg {
+            *b
+          } else {
+            acc
+          }
+        });
+      let b = if b.beg != 0 {
+        match p.get(&b).and_then(|n| n.node.prev) {
+          Some(BlockType::Free(b)) => BlockType::Free(b),
+          _ => panic!("illegal first block {:?}", b),
+        }
+      } else {
+        BlockType::Occupied(b)
+      };
+
+      let get_node = |bl| match bl {
+        BlockType::Free(b) => self.free.get(&b),
+        BlockType::Occupied(b) => p.get(&b).and_then(|x| Some(&x.node)),
+      };
+
+      // check that the previous block of b is the same as prevb
+      let mut check = |prevb: &Option<BlockType>, b: &Option<BlockType>| {
+        if let Some(b) = b {
+          allblocks.entry(b.get()).and_modify(|x| *x = true);
+          let n = match get_node(*b) {
+            Some(n) => n,
+            None => return false,
+          };
+
+          match n.prev {
+            Some(prev) => prev.get() == prevb.unwrap().get(),
+            None => prevb.is_none(),
+          }
+        } else {
+          true
+        }
+      };
+
+      let mut prevb = None;
+      let mut b = Some(b);
+
+      // traverse the node.next and check that the pointer blocks match
+      while b.is_some() {
+        if !check(&prevb, &b) {
+          return false;
+        }
+
+        prevb = b;
+        b = get_node(b.unwrap()).unwrap().next;
+      }
+    }
+
+    allblocks.iter().any(|(_, b)| *b == true)
   }
 }
