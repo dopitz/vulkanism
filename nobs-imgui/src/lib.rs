@@ -135,18 +135,8 @@ impl ImGui {
     data[1] = extent.height as u32;
   }
 
-  pub fn begin_window<'a>(&self) -> window::WindowComponents<'a> {
-    window::WindowComponents::new(self.device, self.ub_viewport)
+  pub fn begin_window<'a>(&self) -> window::Window<'a> {
+    window::Window::new(self.device, self.ub_viewport)
   }
-
-  //pub fn push<T: GuiPush>(&mut self, p: &mut T) -> &mut Self {
-  //  if let Some(cs) = self.cs.take() {
-  //    self.cs = Some(p.enqueue(cs, self))
-  //  }
-  //  self
-  //}
 }
 
-pub trait GuiPush {
-  fn enqueue(&mut self, cs: vk::cmd::Stream, gui: &ImGui) -> vk::cmd::Stream;
-}

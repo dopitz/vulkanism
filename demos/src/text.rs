@@ -70,10 +70,9 @@ pub fn resize(
     for fb in fbs.iter() {
       for i in fb.images.iter() {
         imgs.push(*i);
-        alloc.destroy(*i);
       }
     }
-    //alloc.destroy_many(&imgs);
+    alloc.destroy_many(&imgs);
   }
 
   let sc = vk::wnd::Swapchain::build(pdevice.handle, device.handle, window.surface).create();
@@ -152,7 +151,6 @@ pub fn main() {
     });
 
     if resizeevent {
-
       println!("{}", alloc.print_stats());
 
       frame.sync().unwrap();
@@ -164,7 +162,6 @@ pub fn main() {
       println!("{}", alloc.print_stats());
 
       gui.resize(sc.extent);
-
       resizeevent = false;
     }
 
@@ -178,8 +175,11 @@ pub fn main() {
       .push(&ImageBarrier::to_color_attachment(fb.images[0]))
       .push(&fb.begin())
       .push(&Viewport::with_extent(sc.extent))
-      .push(&Scissor::with_extent(sc.extent))
-      .push(&gui.begin_window().push(&mut text))
+      //.push(&Scissor::with_extent(sc.extent))
+      //.push(&gui.begin_window().position(25, 25).size(100, 100).push(&mut text))
+      .push(&gui.begin_window().position(0, 0).size(200, 200).push(&mut text))
+      //.push(&gui.begin_window().size(200, 200).push(&mut text))
+      //.push(&gui.begin_window().size(2000, 2000).push(&mut text))
       .push(&fb.end())
       .push(&sc.blit(next.index, fb.images[0]));
 
@@ -196,6 +196,4 @@ pub fn main() {
   }
 
   frame.sync().unwrap();
-
-  //println!("{}", alloc.print_stats());
 }

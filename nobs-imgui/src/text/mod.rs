@@ -6,6 +6,7 @@ use vk::cmd;
 use vk::pipes::descriptor;
 
 use crate::font::FontID;
+use crate::window::Window;
 use crate::ImGui;
 
 mod pipe {
@@ -103,7 +104,6 @@ pub struct Text {
   draw: cmd::commands::DrawVertices,
 }
 
-
 impl Drop for Text {
   fn drop(&mut self) {
     // TODO destroy vb
@@ -115,9 +115,11 @@ impl Text {
     let font = FontID::new("curier", 12);
     let ub_viewport = vk::NULL_HANDLE;
 
+    let N = 3usize;
+
     let mut vb = vk::NULL_HANDLE;
     vk::mem::Buffer::new(&mut vb)
-      .vertex_buffer(3 * std::mem::size_of::<pipe::Vertex>() as vk::DeviceSize)
+      .vertex_buffer((N * std::mem::size_of::<pipe::Vertex>()) as vk::DeviceSize)
       .devicelocal(false)
       .bind(&mut gui.alloc.clone(), vk::mem::BindType::Block)
       .unwrap();
@@ -125,14 +127,11 @@ impl Text {
     {
       let mut map = gui.alloc.get_mapped(vb).unwrap();
       let svb = map.as_slice_mut::<pipe::Vertex>();
-      svb[0].pos = cgm::Vector2::new(0, 0);
-      svb[0].size = cgm::Vector2::new(50, 50);
 
-      svb[1].pos = cgm::Vector2::new(50, 50);
-      svb[1].size = cgm::Vector2::new(50, 50);
-
-      svb[2].pos = cgm::Vector2::new(150, 150);
-      svb[2].size = cgm::Vector2::new(50, 50);
+      for i in 0..N {
+        svb[i].pos = cgm::Vector2::new(50, 50) * i as u32;
+        svb[i].size = cgm::Vector2::new(50, 50);
+      }
     }
 
     let (pipe, ds_viewport, ds_text) = {
@@ -152,7 +151,7 @@ impl Text {
     let draw = cmd::commands::Draw::default()
       .push(vb, 0)
       .vertices()
-      .instance_count(3)
+      .instance_count(N as u32)
       .vertex_count(4);
 
     Text {
@@ -169,21 +168,6 @@ impl Text {
   }
 }
 
-//impl crate::GuiPush for Text {
-//  fn enqueue(&mut self, cs: cmd::Stream, gui: &ImGui) -> cmd::Stream {
-//    if self.ub_viewport != gui.ub {
-//      self.ub_viewport = gui.ub;
-//      pipe::DsViewport::write(gui.device, self.ds_viewport.dset)
-//        .ub_viewport(|b| b.buffer(self.ub_viewport))
-//        .update();
-//    }
-//
-//    cs.push(&self.pipe).push(&self.ds_viewport).push(&self.ds_text).push(&self.draw)
-//  }
-//}
-
-
-
 impl vk::cmd::commands::StreamPush for Text {
   fn enqueue(&self, cs: cmd::Stream) -> cmd::Stream {
     cs.push(&self.pipe).push(&self.ds_viewport).push(&self.ds_text).push(&self.draw)
@@ -191,7 +175,7 @@ impl vk::cmd::commands::StreamPush for Text {
 }
 
 impl crate::window::Component for Text {
-  fn add_compontent(&mut self, wnd: &crate::window::WindowComponents) {
+  fn add_compontent(&mut self, wnd: &Window) {
     if self.ub_viewport != wnd.ub_viewport {
       self.ub_viewport = wnd.ub_viewport;
       pipe::DsViewport::write(wnd.device, self.ds_viewport.dset)
