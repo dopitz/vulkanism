@@ -121,7 +121,7 @@ impl Pool {
     if let Some((p, id)) = self.dsets.remove(&dset) {
       vk_uncheck!(vk::FreeDescriptorSets(self.device, p, 1, &dset));
 
-      let dset_sizes = self.dset_types.iter().find(|(s, i)| **i == id).map(|(sizes, id)| sizes).unwrap();
+      let dset_sizes = self.dset_types.iter().find(|(_, i)| **i == id).map(|(sizes, _)| sizes).unwrap();
       let pool_sizes = self.pools.get_mut(&p).unwrap();
       for (c, s) in pool_sizes.iter_mut().zip(dset_sizes.iter()) {
         *c -= s;

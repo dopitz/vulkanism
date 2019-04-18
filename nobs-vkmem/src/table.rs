@@ -128,10 +128,10 @@ impl Table {
       let infos = &bindinfos[g.b..g.e];
       let (alignment, size, _) = Self::scan_bindinfos(infos, None);
 
-      if let Some((b, n)) = self
+      if let Some((b, _)) = self
         .free
         .range(Block::new(0, 0, size, 0)..)
-        .take_while(|(b, n)| groups.iter().any(|g: &Group| **b == g.block) || b.size() - Self::get_padding(b.beg, alignment) >= size)
+        .take_while(|(b, _)| groups.iter().any(|g: &Group| **b == g.block) || b.size() - Self::get_padding(b.beg, alignment) >= size)
         .last()
         .map(|(b, n)| (*b, n.clone()))
       {
@@ -141,8 +141,8 @@ impl Table {
         // Only if we are allowed to split,
         // find the biggest block and bind as many handles as possible there.
         if let BindType::Scatter {} = bindtype {
-          if let Some((b, n)) = self.free.iter().next().map(|(b, n)| (*b, n.clone())) {
-            let (a, s, c) = Self::scan_bindinfos(infos, Some(b.size()));
+          if let Some((b, _)) = self.free.iter().next().map(|(b, n)| (*b, n.clone())) {
+            let (_, _, c) = Self::scan_bindinfos(infos, Some(b.size()));
             // Only if we find a free block that is large enough, we continue the loop
             // If not, we allocate a new page and put everything there
             if c != 0 {
@@ -167,10 +167,12 @@ impl Table {
     }
 
     let mut blocks = Vec::with_capacity(bindinfos.len());
-    let mut err = false;
 
     // bind the resources
     for g in groups.iter() {
+
+      println!("{:?}", g);
+
       let infos = &bindinfos[g.b..g.e];
 
       // we always start at the beginning of the block, because by definition there has to be an occupied block or no block at all before
@@ -420,10 +422,10 @@ impl Table {
   pub fn print_stats(&self) -> String {
     let mut s = String::new();
 
-    write!(s, "{}:\n", self.memtype);
+    write!(s, "{}:\n", self.memtype).unwrap();
 
     for (i, (mem, blocks)) in self.pages.iter().enumerate() {
-      write!(s, "  Page{}({:x}):\n", i, mem);
+      write!(s, "  Page{}({:x}):\n", i, mem).unwrap();
 
       let mut blocks = blocks
         .iter()
@@ -438,7 +440,7 @@ impl Table {
       blocks.sort_by_key(|b| b.get().beg);
 
       for b in blocks {
-        write!(s, "    {}\n", b);
+        write!(s, "    {}\n", b).unwrap();
       }
     }
 
@@ -454,7 +456,7 @@ impl Table {
     let mut allblocks = self
       .pages
       .iter()
-      .map(|(mem, p)| p.keys().cloned())
+      .map(|(_, p)| p.keys().cloned())
       .flatten()
       .chain(self.free.iter().map(|(b, _)| *b))
       .fold(HashMap::new(), |mut acc, b| {

@@ -1,5 +1,3 @@
-use std::fmt::Write;
-
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Memtype {
   pub index: u32,

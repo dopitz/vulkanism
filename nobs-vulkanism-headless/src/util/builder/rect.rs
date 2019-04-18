@@ -19,6 +19,8 @@ impl Default for Rect2DBuilder {
 
 impl Rect2DBuilder {
   pub fn set(mut self, x: i32, y: i32, w: u32, h: u32) -> Self {
+    self.rect.offset.x = x;
+    self.rect.offset.y = y;
     self.rect.extent.width = w;
     self.rect.extent.height = h;
     self

@@ -13,6 +13,12 @@ pub struct StreamCache {
   streams: Vec<Stream>,
 }
 
+impl Drop for StreamCache {
+  fn drop(&mut self) {
+    vk::DestroyCommandPool(self.device, self.pool, std::ptr::null());
+  }
+}
+
 impl StreamCache {
   pub fn new(device: vk::Device, pool: vk::CommandPool) -> Self {
     Self {

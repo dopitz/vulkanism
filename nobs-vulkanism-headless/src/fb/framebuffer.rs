@@ -4,7 +4,6 @@ use crate::cmd::commands::RenderpassBegin;
 use crate::cmd::commands::RenderpassEnd;
 use crate::fb::Renderpass;
 use crate::mem;
-use crate::util;
 use vk::builder::Buildable;
 
 /// Wrapper for a vulkan framebuffer

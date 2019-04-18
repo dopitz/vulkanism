@@ -206,8 +206,6 @@ impl Pipeline {
           use {vkpipes_alias}::pipeline::Binding;
           use {vkpipes_alias}::descriptor::writes::*;
 
-          use std::sync::atomic::{{AtomicUsize, Ordering, ATOMIC_USIZE_INIT}};
-
           {bindings}
 
           {sizes}

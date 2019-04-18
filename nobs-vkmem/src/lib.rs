@@ -316,7 +316,7 @@ impl AllocatorSizes {
 struct AllocatorImpl {
   device: vk::Device,
   //pagetbls: HashMap<Memtype, page::PageTable>,
-  pagetbls: HashMap<Memtype, table::Table>,
+  pagetbls: HashMap<Memtype, Table>,
   handles: HashMap<u64, Handle<Memtype>>,
 }
 
@@ -657,7 +657,7 @@ impl Allocator {
       alloc
         .pagetbls
         .entry(memtype)
-        .or_insert_with(|| table::Table::new(device, memtype, pagesize))
+        .or_insert_with(|| Table::new(device, memtype, pagesize))
         .bind(&infos, bindtype)?;
 
       for h in infos.iter().map(|i| i.handle) {

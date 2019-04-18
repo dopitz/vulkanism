@@ -20,15 +20,6 @@ pub struct Pool {
   streams: Arc<Mutex<StreamCache>>,
 }
 
-impl Drop for Pool {
-  fn drop(&mut self) {
-    let mut streams = self.streams.lock().unwrap();
-    if Arc::strong_count(&self.streams) == 1 {
-      vk::DestroyCommandPool(self.device, self.handle, std::ptr::null());
-    }
-  }
-}
-
 impl Pool {
   /// Create a new command pool
   ///
