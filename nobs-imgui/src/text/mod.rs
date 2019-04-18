@@ -30,6 +30,11 @@ mod pipe {
     pub pos: cgm::Vector2<u32>,
     pub size: cgm::Vector2<u32>,
   }
+
+  #[repr(C)]
+  pub struct Ub {
+    pub offset: cgm::Vector2<u32>,
+  }
 }
 
 pub struct Pipeline {
@@ -93,9 +98,12 @@ impl Pipeline {
 }
 
 pub struct Text {
+  alloc: vk::mem::Allocator,
+
   font: FontID,
   ub_viewport: vk::Buffer,
 
+  ub: vk::Buffer,
   vb: vk::Buffer,
 
   pipe: vk::cmd::commands::BindPipeline,
@@ -106,7 +114,7 @@ pub struct Text {
 
 impl Drop for Text {
   fn drop(&mut self) {
-    // TODO destroy vb
+    self.alloc.destroy_many(&[self.ub, self.vb]);
   }
 }
 
@@ -117,8 +125,12 @@ impl Text {
 
     let N = 3usize;
 
+    let mut ub = vk::NULL_HANDLE;
     let mut vb = vk::NULL_HANDLE;
-    vk::mem::Buffer::new(&mut vb)
+    vk::mem::Buffer::new(&mut ub)
+      .uniform_buffer(std::mem::size_of::<pipe::Ub>() as vk::DeviceSize)
+      .devicelocal(false)
+      .new_buffer(&mut vb)
       .vertex_buffer((N * std::mem::size_of::<pipe::Vertex>()) as vk::DeviceSize)
       .devicelocal(false)
       .bind(&mut gui.alloc.clone(), vk::mem::BindType::Block)
@@ -155,9 +167,12 @@ impl Text {
       .vertex_count(4);
 
     Text {
+      alloc: gui.alloc.clone(),
+
       font,
       ub_viewport,
 
+      ub,
       vb,
 
       pipe,

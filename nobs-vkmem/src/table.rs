@@ -235,14 +235,16 @@ impl Table {
 
         // fix last block
         let remainder = Block::new(g.block.mem, blocks.last().unwrap().end, g.block.end, 0);
-        self.insert(
-          BlockType::Free(remainder),
-          Node {
-            prev: Some(BlockType::Occupied(*blocks.last().unwrap())),
-            next: n.next,
-          },
-          None,
-        );
+        if remainder.size() > 0 {
+          self.insert(
+            BlockType::Free(remainder),
+            Node {
+              prev: Some(BlockType::Occupied(*blocks.last().unwrap())),
+              next: n.next,
+            },
+            None,
+          );
+        }
       }
     }
 
@@ -468,22 +470,20 @@ impl Table {
 
     for (mem, p) in self.pages.iter() {
       // first block in this page
-      let b = p
-        .iter()
-        .fold(Block::new(*mem, u64::max_value(), u64::max_value(), 0), |acc, (b, _)| {
-          if b.beg < acc.beg {
-            *b
+      let b = match p.iter().min_by_key(|(b, _)| b.beg).map(|(b, _)| b) {
+        Some(b) => {
+          // if the first block is not occupied its previous block has to be free and starting with 0
+          if b.beg != 0 {
+            match p.get(&b).and_then(|n| n.node.prev) {
+              Some(BlockType::Free(b)) => BlockType::Free(b),
+              _ => panic!("illegal first block {:?}", b),
+            }
           } else {
-            acc
+            BlockType::Occupied(*b)
           }
-        });
-      let b = if b.beg != 0 {
-        match p.get(&b).and_then(|n| n.node.prev) {
-          Some(BlockType::Free(b)) => BlockType::Free(b),
-          _ => panic!("illegal first block {:?}", b),
         }
-      } else {
-        BlockType::Occupied(b)
+        // if no occupied block then there must be only a single free block
+        None => return self.free.iter().filter(|(b, _)| b.mem == *mem).count() == 1,
       };
 
       let get_node = |bl| match bl {
