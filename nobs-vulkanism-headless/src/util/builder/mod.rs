@@ -1,11 +1,13 @@
 mod extent;
-mod offset;
-mod subresource;
 mod imageview;
+mod offset;
+mod rect;
 mod sampler;
+mod subresource;
 
 pub use extent::*;
-pub use offset::*;
-pub use subresource::*;
 pub use imageview::*;
+pub use offset::*;
+pub use rect::*;
 pub use sampler::*;
+pub use subresource::*;

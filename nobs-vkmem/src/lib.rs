@@ -28,6 +28,7 @@ mod builder;
 mod mapped;
 mod memtype;
 mod table;
+mod unused;
 
 pub use bindinfo::BindInfo;
 pub use bindtype::BindType;
@@ -36,6 +37,7 @@ pub use builder::Image;
 pub use builder::Resource;
 pub use mapped::Mapped;
 pub use memtype::Memtype;
+pub use unused::UnusedResources;
 
 use std::collections::HashMap;
 use std::fmt::Write;

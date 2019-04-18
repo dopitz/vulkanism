@@ -1,11 +1,10 @@
-use std::sync::Arc;
-
 use vk;
 use vk::builder::Buildable;
 use vk::cmd;
 use vk::pipes::descriptor;
 
 use crate::font::FontID;
+use crate::sizebounds::SizeBounds;
 use crate::window::Window;
 use crate::ImGui;
 
@@ -33,7 +32,7 @@ mod pipe {
 
   #[repr(C)]
   pub struct Ub {
-    pub offset: cgm::Vector2<u32>,
+    pub offset: cgm::Vector2<i32>,
   }
 }
 
@@ -99,12 +98,16 @@ impl Pipeline {
 
 pub struct Text {
   alloc: vk::mem::Allocator,
+  unused: vk::mem::UnusedResources,
 
-  font: FontID,
   ub_viewport: vk::Buffer,
+  bounds: SizeBounds,
 
-  ub: vk::Buffer,
+  dirty: bool,
+  text: String,
+  font: FontID,
   vb: vk::Buffer,
+  ub: vk::Buffer,
 
   pipe: vk::cmd::commands::BindPipeline,
   ds_viewport: vk::cmd::commands::BindDset,
@@ -119,32 +122,18 @@ impl Drop for Text {
 }
 
 impl Text {
-  pub fn new(gui: &ImGui, _text: &str) -> Self {
-    let font = FontID::new("curier", 12);
+  pub fn new(gui: &ImGui) -> Self {
     let ub_viewport = vk::NULL_HANDLE;
 
-    let N = 3usize;
+    let font = FontID::new("curier", 12);
+    let vb = vk::NULL_HANDLE;
 
     let mut ub = vk::NULL_HANDLE;
-    let mut vb = vk::NULL_HANDLE;
     vk::mem::Buffer::new(&mut ub)
       .uniform_buffer(std::mem::size_of::<pipe::Ub>() as vk::DeviceSize)
       .devicelocal(false)
-      .new_buffer(&mut vb)
-      .vertex_buffer((N * std::mem::size_of::<pipe::Vertex>()) as vk::DeviceSize)
-      .devicelocal(false)
       .bind(&mut gui.alloc.clone(), vk::mem::BindType::Block)
       .unwrap();
-
-    {
-      let mut map = gui.alloc.get_mapped(vb).unwrap();
-      let svb = map.as_slice_mut::<pipe::Vertex>();
-
-      for i in 0..N {
-        svb[i].pos = cgm::Vector2::new(50, 50) * i as u32;
-        svb[i].size = cgm::Vector2::new(50, 50);
-      }
-    }
 
     let (pipe, ds_viewport, ds_text) = {
       let mut p = gui.get_pipe_text();
@@ -157,29 +146,78 @@ impl Text {
 
     let fnt = gui.get_font(&font);
     pipe::DsText::write(gui.device, ds_text.dset)
+      .ub(|b| b.buffer(ub))
       .tex_sampler(|s| s.set(vk::IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, fnt.texview, fnt.sampler))
       .update();
 
-    let draw = cmd::commands::Draw::default()
-      .push(vb, 0)
-      .vertices()
-      .instance_count(N as u32)
-      .vertex_count(4);
-
     Text {
       alloc: gui.alloc.clone(),
+      unused: gui.unused.clone(),
 
-      font,
       ub_viewport,
+      bounds: Default::default(),
 
-      ub,
+      dirty: true,
+      text: Default::default(),
+      font,
       vb,
+      ub,
 
       pipe,
       ds_viewport,
       ds_text,
-      draw,
+      draw: cmd::commands::Draw::default().vertices().instance_count(0),
     }
+  }
+
+  pub fn font(&mut self, font: FontID) -> &mut Self {
+    if self.font != font {
+      self.font = font;
+      self.dirty = true;
+    }
+    self
+  }
+
+  pub fn text(&mut self, text: &str) -> &mut Self {
+    if self.text != text {
+      self.text = text.to_owned();
+      self.dirty = true;
+    }
+    self
+  }
+
+  fn update_vb(&mut self) {
+    if !self.dirty {
+      return;
+    }
+
+    // create new buffer
+    if self.text.len() > self.draw.instance_count as usize {
+      self.unused.push(self.vb);
+      self.vb = vk::NULL_HANDLE;
+
+      vk::mem::Buffer::new(&mut self.vb)
+        .vertex_buffer((self.text.len() * std::mem::size_of::<pipe::Vertex>()) as vk::DeviceSize)
+        .devicelocal(false)
+        .bind(&mut self.alloc.clone(), vk::mem::BindType::Block)
+        .unwrap();
+
+      self.draw = cmd::commands::Draw::default()
+        .push(self.vb, 0)
+        .vertices()
+        .instance_count(self.text.len() as u32)
+        .vertex_count(4);
+    }
+
+    let mut map = self.alloc.get_mapped(self.vb).unwrap();
+    let svb = map.as_slice_mut::<pipe::Vertex>();
+
+    for i in 0..self.text.len() {
+      svb[i].pos = cgm::Vector2::new(50, 50) * i as u32;
+      svb[i].size = cgm::Vector2::new(50, 50);
+    }
+
+    self.dirty = false;
   }
 }
 
@@ -190,12 +228,23 @@ impl vk::cmd::commands::StreamPush for Text {
 }
 
 impl crate::window::Component for Text {
-  fn add_compontent(&mut self, wnd: &Window) {
+  fn add_compontent(&mut self, wnd: &mut Window) {
     if self.ub_viewport != wnd.ub_viewport {
       self.ub_viewport = wnd.ub_viewport;
       pipe::DsViewport::write(wnd.device, self.ds_viewport.dset)
         .ub_viewport(|b| b.buffer(self.ub_viewport))
         .update();
     }
+
+    let bounds = wnd.get_next_bounds();
+    if self.bounds != bounds {
+      self.bounds = bounds;
+
+      let mut map = self.alloc.get_mapped(self.ub).unwrap();
+      let data = map.as_slice_mut::<pipe::Ub>();
+      data[0].offset = bounds.position;
+    }
+
+    self.update_vb();
   }
 }

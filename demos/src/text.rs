@@ -110,16 +110,17 @@ pub fn main() {
 
   let (mut sc, mut rp, mut fbs) = resize(&pdevice, &device, &window, &mut alloc, None, None, None);
 
-  let mut gui = imgui::ImGui::new(device.handle, device.queues[0].handle, cmds.clone(), rp.pass, 0, alloc.clone());
+  let mut gui = imgui::ImGui::new(device.handle, device.queues[0].handle, cmds.clone(), rp.pass, 0, alloc.clone(), fbs.len());
 
-  let mut text = imgui::text::Text::new(&gui, "aoueaoeu");
+  let mut text = imgui::text::Text::new(&gui);
 
   let mut resizeevent = false;
   let mut close = false;
-  let mut x = 'x';
 
   use vk::cmd::commands::*;
   let mut frame = vk::cmd::Frame::new(device.handle, fbs.len()).unwrap();
+
+  let mut t = "aoe".to_owned();
 
   loop {
     events_loop.poll_events(|event| match event {
@@ -130,7 +131,7 @@ pub fn main() {
       winit::Event::WindowEvent {
         event: winit::WindowEvent::ReceivedCharacter(c),
         ..
-      } => x = c,
+      } => t.push(c),
       winit::Event::WindowEvent {
         event: winit::WindowEvent::Resized(size),
         ..
@@ -138,7 +139,7 @@ pub fn main() {
         println!("RESIZE       {:?}", size);
         println!("EVENT        {:?}", event);
         println!("DPI          {:?}", window.window.get_hidpi_factor());
-        
+
         resizeevent = true;
       }
       winit::Event::WindowEvent {
@@ -174,12 +175,8 @@ pub fn main() {
       .unwrap()
       .push(&ImageBarrier::to_color_attachment(fb.images[0]))
       .push(&fb.begin())
-      .push(&Viewport::with_extent(sc.extent))
-      //.push(&Scissor::with_extent(sc.extent))
-      //.push(&gui.begin_window().position(25, 25).size(100, 100).push(&mut text))
-      .push(&gui.begin_window().position(0, 0).size(200, 200).push(&mut text))
-      //.push(&gui.begin_window().size(200, 200).push(&mut text))
-      //.push(&gui.begin_window().size(2000, 2000).push(&mut text))
+      .push(&gui)
+      .push(&gui.begin_window().push(text.text(&t)))
       .push(&fb.end())
       .push(&sc.blit(next.index, fb.images[0]));
 
@@ -195,5 +192,6 @@ pub fn main() {
     }
   }
 
+  println!("{}", alloc.print_stats());
   frame.sync().unwrap();
 }

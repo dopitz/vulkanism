@@ -280,20 +280,25 @@ impl Table {
       let node = self.remove(BlockType::Occupied(b)).unwrap();
 
       match groups.iter_mut().find(|g| {
-        if let Some(BlockType::Occupied(next)) = g.node.next {
-          next == b
-        } else {
-          false
+        match g.node.next {
+          Some(BlockType::Occupied(next)) => next == b,
+          Some(BlockType::Free(next)) => match self.free.get(&next).and_then(|n| n.next) {
+            Some(BlockType::Occupied(next)) => next == b,
+            _ => false,
+          },
+          _ => false,
         }
       }) {
         Some(g) => {
+          if let Some(BlockType::Free(b)) = g.node.next {
+            self.free.remove(&b);
+          }
           g.block.end = b.end;
           g.node.next = node.next;
         }
         None => groups.push(Group { block: b, node }),
       }
     }
-
     for g in groups.iter() {
       let mut freenode = g.node.clone();
       let mut freeblock = g.block;
@@ -377,20 +382,9 @@ impl Table {
   }
 
   fn remove(&mut self, b: BlockType) -> Option<Node> {
-    if let Some(n) = match b {
+    match b {
       BlockType::Free(b) => self.free.remove(&b),
       BlockType::Occupied(b) => self.pages.get_mut(&b.mem).and_then(|p| p.remove(&b)).and_then(|b| Some(b.node)),
-    } {
-      if let Some(prevnode) = n.prev.and_then(|prev| self.get_node(prev)) {
-        prevnode.next = n.next;
-      }
-
-      if let Some(nextnode) = n.next.and_then(|next| self.get_node(next)) {
-        nextnode.prev = n.prev;
-      }
-      Some(n)
-    } else {
-      None
     }
   }
 

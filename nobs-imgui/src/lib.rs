@@ -3,6 +3,7 @@ extern crate nobs_vulkanism_headless as vk;
 
 mod font;
 
+pub mod sizebounds;
 pub mod text;
 pub mod window;
 
@@ -65,11 +66,13 @@ pub struct ImGui {
   pub pass: vk::RenderPass,
   pub subpass: u32,
   pub alloc: vk::mem::Allocator,
+  pub unused: vk::mem::UnusedResources,
 
   fonts: Arc<Mutex<HashMap<FontID, Font>>>,
   pipe_text: Arc<Mutex<Cached<text::Pipeline>>>,
 
   pub ub_viewport: vk::Buffer,
+  pub viewport: vk::cmd::commands::Viewport,
 }
 
 impl Drop for ImGui {
@@ -92,6 +95,7 @@ impl ImGui {
     pass: vk::RenderPass,
     subpass: u32,
     alloc: vk::mem::Allocator,
+    inflight: usize,
   ) -> Self {
     let mut ub_viewport = vk::NULL_HANDLE;
     vk::mem::Buffer::new(&mut ub_viewport)
@@ -107,11 +111,13 @@ impl ImGui {
       pass,
       subpass,
       alloc,
+      unused: vk::mem::UnusedResources::new(inflight),
 
       fonts: Default::default(),
       pipe_text: Default::default(),
 
       ub_viewport,
+      viewport: vk::cmd::commands::Viewport::with_size(0.0, 0.0),
     }
   }
 
@@ -128,15 +134,22 @@ impl ImGui {
     p
   }
 
-  pub fn resize(&self, extent: vk::Extent2D) {
+  pub fn resize(&mut self, extent: vk::Extent2D) {
     let mut map = self.alloc.get_mapped(self.ub_viewport).unwrap();
     let data = map.as_slice_mut::<u32>();
     data[0] = extent.width as u32;
     data[1] = extent.height as u32;
+    self.viewport = vk::cmd::commands::Viewport::with_extent(extent);
   }
 
   pub fn begin_window<'a>(&self) -> window::Window<'a> {
-    window::Window::new(self.device, self.ub_viewport)
+    window::Window::new(self.device, self.ub_viewport).size(self.viewport.vp.width as u32, self.viewport.vp.height as u32)
   }
 }
 
+impl<'a> vk::cmd::commands::StreamPush for ImGui {
+  fn enqueue(&self, cs: vk::cmd::Stream) -> vk::cmd::Stream {
+    self.unused.free(self.alloc.clone());
+    cs.push(&self.viewport)
+  }
+}
