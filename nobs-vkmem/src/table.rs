@@ -132,7 +132,7 @@ impl Table {
         .free
         .range(Block::new(0, 0, size, 0)..)
         .take_while(|(b, _)| groups.iter().any(|g: &Group| **b == g.block) || b.size() - Self::get_padding(b.beg, alignment) >= size)
-        .last()
+        .next()
         .map(|(b, n)| (*b, n.clone()))
       {
         groups.push(Group { b: g.b, e: g.e, block: b });
@@ -170,9 +170,6 @@ impl Table {
 
     // bind the resources
     for g in groups.iter() {
-
-      println!("{:?}", g);
-
       let infos = &bindinfos[g.b..g.e];
 
       // we always start at the beginning of the block, because by definition there has to be an occupied block or no block at all before
