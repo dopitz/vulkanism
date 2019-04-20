@@ -267,7 +267,7 @@ impl Table {
 
     blocks.sort_by_key(|b| b.beg);
 
-    #[derive(Debug)]
+    #[derive(Debug, Clone)]
     struct Group {
       block: Block,
       node: Node,
@@ -275,18 +275,29 @@ impl Table {
 
     let mut groups: Vec<Group> = Vec::new();
 
+    //println!("PAGE");
+    //for (_, p) in self.pages.iter() {
+    //  for (b, n) in p.iter() {
+    //    println!("{:?}  {:?}", b, n.node);
+    //  }
+    //}
+    //println!("FREE");
+    //for (b, n) in self.free.iter() {
+    //  println!("{:?}  {:?}", b, n);
+    //}
+    //println!("\n");
+
+    // build continuous free blocks to insert
     for b in blocks {
       let node = self.remove(BlockType::Occupied(b)).unwrap();
 
-      match groups.iter_mut().find(|g| {
-        match g.node.next {
+      match groups.iter_mut().find(|g| match g.node.next {
+        Some(BlockType::Occupied(next)) => next == b,
+        Some(BlockType::Free(next)) => match self.free.get(&next).and_then(|n| n.next) {
           Some(BlockType::Occupied(next)) => next == b,
-          Some(BlockType::Free(next)) => match self.free.get(&next).and_then(|n| n.next) {
-            Some(BlockType::Occupied(next)) => next == b,
-            _ => false,
-          },
           _ => false,
-        }
+        },
+        _ => false,
       }) {
         Some(g) => {
           if let Some(BlockType::Free(b)) = g.node.next {
@@ -298,16 +309,17 @@ impl Table {
         None => groups.push(Group { block: b, node }),
       }
     }
-    for g in groups.iter() {
-      let mut freenode = g.node.clone();
-      let mut freeblock = g.block;
+
+    // check prev and next blocks of each group
+    for i in 0..groups.len() {
+      let mut group = groups[i].clone();
 
       loop {
-        match freenode.prev {
+        match group.node.prev {
           Some(BlockType::Free(b)) => {
             if let Some(n) = self.remove(BlockType::Free(b)) {
-              freeblock.beg = b.beg;
-              freenode.prev = n.prev;
+              group.block.beg = b.beg;
+              group.node.prev = n.prev;
             }
           }
           _ => break,
@@ -315,28 +327,39 @@ impl Table {
       }
 
       loop {
-        match freenode.next {
+        match group.node.next {
           Some(BlockType::Free(b)) => {
             if let Some(n) = self.remove(BlockType::Free(b)) {
-              freeblock.end = b.end;
-              freenode.next = n.next;
+              group.block.end = b.end;
+              group.node.next = n.next;
             }
           }
           _ => break,
         };
       }
 
-      if let Some(BlockType::Occupied(next)) = g.node.next {
-        freeblock.end = next.beg + next.pad;
+      if let Some(BlockType::Occupied(next)) = groups[i].node.next {
+        group.block.end = next.beg + next.pad;
         if let Some(binding) = self.pages.get_mut(&next.mem).and_then(|p| p.remove(&next)) {
           let b = Block::new(next.mem, next.beg + next.pad, next.end, 0);
           self.bindings.insert(binding.handle, b);
           self.insert(BlockType::Occupied(b), binding.node, Some(binding.handle));
-          freenode.next = Some(BlockType::Occupied(b));
+          group.node.next = Some(BlockType::Occupied(b));
+        }
+
+        if let Some(g) = groups.iter_mut().find(|g| match g.node.prev {
+          Some(BlockType::Occupied(b)) => b == next,
+          _ => false,
+        }) {
+          g.node.prev = group.node.next;
         }
       }
 
-      self.insert(BlockType::Free(freeblock), freenode, None);
+      groups[i] = group;
+    }
+
+    for g in groups.iter() {
+      self.insert(BlockType::Free(g.block), g.node.clone(), None);
     }
 
     debug_assert!(self.sanity_checks(), "unbind sanity");
