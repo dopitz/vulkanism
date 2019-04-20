@@ -149,7 +149,9 @@ impl ImGui {
 
 impl<'a> vk::cmd::commands::StreamPush for ImGui {
   fn enqueue(&self, cs: vk::cmd::Stream) -> vk::cmd::Stream {
-    self.unused.free(self.alloc.clone());
+    if self.unused.free(self.alloc.clone()) {
+      println!("{}", self.alloc.print_stats());
+    }
     cs.push(&self.viewport)
   }
 }

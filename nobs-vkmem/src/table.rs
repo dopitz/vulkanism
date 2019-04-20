@@ -131,7 +131,7 @@ impl Table {
       if let Some((b, _)) = self
         .free
         .range(Block::new(0, 0, size, 0)..)
-        .take_while(|(b, _)| groups.iter().any(|g: &Group| **b == g.block) || b.size() - Self::get_padding(b.beg, alignment) >= size)
+        .skip_while(|(b, _)| groups.iter().any(|g: &Group| **b == g.block) || b.size() - Self::get_padding(b.beg, alignment) < size)
         .next()
         .map(|(b, n)| (*b, n.clone()))
       {
