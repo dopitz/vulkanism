@@ -13,6 +13,7 @@ edition = "2018"
 [dependencies]
 cgmath = {version = "0.17.0"}
 nobs-vulkanism-headless = {version = "0.1.0", path = "../nobs-vulkanism-headless"}
+freetype-rs = {version = "0.19.1"}
 
 [build-dependencies]
 nobs-vulkanism-headless = {version = "0.1.0", path = "../nobs-vulkanism-headless"}

@@ -152,15 +152,11 @@ pub fn main() {
     });
 
     if resizeevent {
-      println!("{}", alloc.print_stats());
-
       frame.sync().unwrap();
       let (nsc, nrp, nfbs) = resize(&pdevice, &device, &window, &mut alloc, Some(sc), Some(rp), Some(fbs));
       sc = nsc;
       rp = nrp;
       fbs = nfbs;
-
-      println!("{}", alloc.print_stats());
 
       gui.resize(sc.extent);
       resizeevent = false;

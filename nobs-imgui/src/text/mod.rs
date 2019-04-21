@@ -28,6 +28,8 @@ mod pipe {
   pub struct Vertex {
     pub pos: cgm::Vector2<u32>,
     pub size: cgm::Vector2<u32>,
+    pub tex_bl: cgm::Vector2<f32>,
+    pub tex_tr: cgm::Vector2<f32>,
   }
 
   #[repr(C)]
@@ -66,6 +68,22 @@ impl Pipeline {
               .location(1)
               .format(vk::FORMAT_R32G32_UINT)
               .offset(2 * std::mem::size_of::<f32>() as u32)
+              .attribute,
+          )
+          .push_attribute(
+            vk::VertexInputAttributeDescription::build()
+              .binding(0)
+              .location(2)
+              .format(vk::FORMAT_R32G32_SFLOAT)
+              .offset(4 * std::mem::size_of::<f32>() as u32)
+              .attribute,
+          )
+          .push_attribute(
+            vk::VertexInputAttributeDescription::build()
+              .binding(0)
+              .location(3)
+              .format(vk::FORMAT_R32G32_SFLOAT)
+              .offset(6 * std::mem::size_of::<f32>() as u32)
               .attribute,
           ),
       )
@@ -215,6 +233,8 @@ impl Text {
     for i in 0..self.text.len() {
       svb[i].pos = cgm::Vector2::new(50, 50) * i as u32;
       svb[i].size = cgm::Vector2::new(50, 50);
+      svb[i].tex_bl = cgm::Vector2::new(0.0, 1.0);
+      svb[i].tex_tr = cgm::Vector2::new(1.0, 0.0);
     }
 
     self.dirty = false;

@@ -1,5 +1,6 @@
 extern crate cgmath as cgm;
 extern crate nobs_vulkanism_headless as vk;
+extern crate freetype;
 
 mod font;
 
@@ -149,9 +150,7 @@ impl ImGui {
 
 impl<'a> vk::cmd::commands::StreamPush for ImGui {
   fn enqueue(&self, cs: vk::cmd::Stream) -> vk::cmd::Stream {
-    if self.unused.free(self.alloc.clone()) {
-      println!("{}", self.alloc.print_stats());
-    }
+    self.unused.free(self.alloc.clone());
     cs.push(&self.viewport)
   }
 }
