@@ -12,11 +12,15 @@ mod pipe {
   vk::pipes::pipeline! {
     stage = {
       ty = "vert",
+      //glsl = concat!(module_path!(), "nobs-imgui/src/text/text.vert"),
+      //glsl = "nobs-imgui/src/text/text.vert",
       glsl = "src/text/text.vert",
     }
 
     stage = {
       ty = "frag",
+      //glsl = concat!(module_path!(), "src/text/text.frag"),
+      //glsl = "nobs-imgui/src/text/text.frag",
       glsl = "src/text/text.frag",
     }
 

@@ -6,6 +6,7 @@ members = [
   "nobs-vkpipes",
   "nobs-vulkanism-headless",
   "nobs-vulkanism",
+  "nobs-vkmath",
 ]
 
 exclude = [

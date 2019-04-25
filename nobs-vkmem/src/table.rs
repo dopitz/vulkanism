@@ -415,18 +415,19 @@ impl Table {
     let empty = self
       .pages
       .iter()
-      .filter_map(|(mem, blocks)| if blocks.is_empty() { Some(mem) } else { None });
+      .filter_map(|(mem, blocks)| if blocks.is_empty() { Some(*mem) } else { None }).collect::<Vec<_>>();
 
     for mem in empty {
-      vk::FreeMemory(self.device, *mem, std::ptr::null());
+      vk::FreeMemory(self.device, mem, std::ptr::null());
 
       if let Some(b) = self
         .free
         .iter()
-        .find_map(|(b, _)| if b.mem == *mem { Some(b) } else { None })
+        .find_map(|(b, _)| if b.mem == mem { Some(b) } else { None })
         .cloned()
       {
         self.free.remove(&b);
+        self.pages.remove(&b.mem);
       }
     }
   }

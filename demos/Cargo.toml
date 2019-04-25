@@ -9,6 +9,7 @@ publish = false
 nobs-vulkanism = {version = "0.1.0", path = "../nobs-vulkanism"}
 nobs-imgui = {version = "0.1.0", path = "../nobs-imgui"}
 cgmath = {version = "0.17.0"}
+nobs-vkmath = {version = "0.1.0", path = "../nobs-vkmath"}
 
 [build-dependencies]
 nobs-vulkanism = {version = "0.1.0", path = "../nobs-vulkanism"}

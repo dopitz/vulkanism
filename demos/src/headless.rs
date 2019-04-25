@@ -109,7 +109,6 @@ pub fn main() {
   println!("{}", allocator.print_stats());
 
   allocator.destroy(buf_ub);
-  //allocator.destroy(buf_out);
 
   println!("{}", allocator.print_stats());
   {
@@ -118,4 +117,8 @@ pub fn main() {
     let v = mapped.as_slice::<u32>();
     println!("{:?}", v);
   }
+
+  allocator.destroy(buf_out);
+
+  allocator.free_unused();
 }

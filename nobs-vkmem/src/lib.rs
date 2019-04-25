@@ -437,7 +437,7 @@ impl Drop for AllocatorImpl {
 /// // destroying does NOT free memory
 /// // if we want to free memory we can do this only if a whole page is not used any more
 /// // in this case we can free the memory again
-/// allocator.free_unused();
+/// //allocator.free_unused();
 ///
 /// // dropping the allocator automatically destroys bound resources and frees all memory
 /// # }
@@ -625,8 +625,8 @@ impl Allocator {
   ///
   /// allocator.bind(
   ///   &[
-  ///     vkmem::BindInfo::with_size(buf, 12, host_access_flags),
-  ///     vkmem::BindInfo::new(img, device_local_flags),
+  ///     vkmem::BindInfo::with_size(buf, host_access_flags, true, 12),
+  ///     vkmem::BindInfo::new(img, device_local_flags, false),
   ///   ],
   ///   vkmem::BindType::Scatter,
   /// ).expect("binding buffers failed");
@@ -885,7 +885,7 @@ impl Allocator {
   /// ```
   pub fn get_mapped_region(&self, handle: u64, offset: vk::DeviceSize, size: vk::DeviceSize) -> Option<Mapped> {
     self.get_mem(handle).and_then(|b| {
-      let region = Block::new(b.mem, b.beg + b.pad + offset, b.beg + offset + size, 0);
+      let region = Block::new(b.mem, b.beg + b.pad + offset, b.beg + b.pad + offset + size, 0);
       match region.beg < b.end && region.end <= b.end {
         true => Mapped::new(self.device, region).ok(),
         false => None,

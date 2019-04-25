@@ -1,5 +1,6 @@
 extern crate cgmath as cgm;
 extern crate nobs_imgui as imgui;
+extern crate nobs_vkmath as vkm;
 extern crate nobs_vulkanism as vk;
 
 use vk::builder::Buildable;
@@ -20,15 +21,17 @@ mod tex {
 
   #[derive(Clone, Copy)]
   pub struct UbTransform {
-    pub model: cgm::Matrix4<f32>,
-    pub view: cgm::Matrix4<f32>,
-    pub proj: cgm::Matrix4<f32>,
+    pub model: vkm::Mat4f,
+    pub view: vkm::Mat4f,
+    pub proj: vkm::Mat4f,
+    //pub view: cgm::Matrix4<f32>,
+    //pub proj: cgm::Matrix4<f32>,
   }
 
   #[repr(C)]
   pub struct Vertex {
-    pub pos: cgm::Vector4<f32>,
-    pub tex: cgm::Vector2<f32>,
+    pub pos: vkm::Vec4f,
+    pub tex: vkm::Vec2f,
   }
 }
 
@@ -185,14 +188,14 @@ pub fn main() {
       .map()
       .unwrap();
     let svb = map.as_slice_mut::<tex::Vertex>();
-    svb[0].pos = cgm::Vector4::new(0.0, 1.0, 0.0, 1.0);
-    svb[0].tex = cgm::Vector2::new(1.0, 1.0);
+    svb[0].pos = vkm::Vec4::new(0.0, 1.0, 0.0, 1.0);
+    svb[0].tex = vkm::Vec2::new(1.0, 1.0);
 
-    svb[1].pos = cgm::Vector4::new(-1.0, -1.0, 0.0, 1.0);
-    svb[1].tex = cgm::Vector2::new(1.0, 1.0);
+    svb[1].pos = vkm::Vec4::new(-1.0, -1.0, 0.0, 1.0);
+    svb[1].tex = vkm::Vec2::new(1.0, 1.0);
 
-    svb[2].pos = cgm::Vector4::new(1.0, -1.0, 0.0, 1.0);
-    svb[2].tex = cgm::Vector2::new(1.0, 1.0);
+    svb[2].pos = vkm::Vec4::new(1.0, -1.0, 0.0, 1.0);
+    svb[2].tex = vkm::Vec2::new(1.0, 1.0);
 
     let cs = cmds.begin_stream().unwrap().push(&stage.copy_into_buffer(vb, 0));
 
@@ -244,13 +247,13 @@ pub fn main() {
   let mut frame = vk::cmd::Frame::new(device.handle, fbs.len()).unwrap();
 
   let mut mvp = tex::UbTransform {
-    model: cgm::One::one(),
-    view: cgm::Matrix4::look_at(
-      cgm::Point3::new(0.0, 0.0, -10.0),
-      cgm::Point3::new(0.0, 0.0, 0.0),
-      cgm::Vector3::new(0.0, 1.0, 0.0),
+    model: vkm::Mat4::identity(),
+    view: vkm::Mat4::look_at(
+      vkm::Vec3::new(0.0, 0.0, -10.0),
+      vkm::Vec3::new(0.0, 0.0, 0.0),
+      vkm::Vec3::new(0.0, 1.0, 0.0),
     ),
-    proj: cgm::Matrix4::from_nonuniform_scale(-1.0, -1.0, 1.0) * cgm::perspective(cgm::Deg(45.0), 1.0, 1.0, 100.0),
+    proj: vkm::Mat4::scale(vkm::Vec3::new(1.0, -1.0, 1.0)) * vkm::Mat4::perspective_lh(std::f32::consts::PI / 4.0, 1.0, 1.0, 100.0),
   };
 
   loop {
@@ -277,18 +280,18 @@ pub fn main() {
         if let Some(k) = key.virtual_keycode {
           match k {
             winit::VirtualKeyCode::Comma => {
-              mvp.view = cgm::Matrix4::from_translation(cgm::Vector3::new(0.0, 0.0, 0.2)) * mvp.view;
+              mvp.view = mvp.view * vkm::Mat4::translate(vkm::Vec3::new(0.0, 0.0, -0.2));
               update_mvp(&device, &cmds, &mut stage, ub, &mvp);
             }
             winit::VirtualKeyCode::O => {
-              mvp.view = cgm::Matrix4::from_translation(cgm::Vector3::new(0.0, 0.0, -0.2)) * mvp.view;
+              mvp.view = mvp.view * vkm::Mat4::translate(vkm::Vec3::new(0.0, 0.0, 0.2));
               update_mvp(&device, &cmds, &mut stage, ub, &mvp);
             }
             _ => (),
           }
         }
 
-        //println!("{:?}", key);
+        println!("{:?}", key);
       }
       winit::Event::DeviceEvent {
         event: winit::DeviceEvent::MouseWheel {
