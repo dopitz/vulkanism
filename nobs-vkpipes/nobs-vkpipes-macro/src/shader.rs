@@ -75,9 +75,17 @@ impl Builder {
       }
     }
 
+
+    if !b.path_glsl.is_empty() && !b.src_spv.is_empty() {
+      Err("Both \"glsl\" and \"spv\" have been specified for shader source")?
+    }
+
+    let crate_root = std::env::var("CARGO_MANIFEST_DIR").unwrap();
+
     // first try to read the src from a spcified spv file
     if !b.path_spv.is_empty() {
-      let mut f = std::fs::File::open(&b.path_spv).map_err(|_| format!("Could not open {}", b.path_spv))?;
+      let path = crate_root.to_owned() + "/" + &b.path_spv;
+      let mut f = std::fs::File::open(&path).map_err(|_| format!("Could not open {}", b.path_spv))?;
       let mut buf = Vec::new();
       f.read_to_end(&mut buf).map_err(|_| format!("Could not read {}", b.path_spv))?;
       unsafe {
@@ -88,12 +96,9 @@ impl Builder {
 
     // if that failed, we try to read the file as glsl source (either load from file, inline source)
     if !b.path_glsl.is_empty() {
-      if !b.src_spv.is_empty() {
-        Err("Both \"glsl\" and \"spv\" have been specified")?
-      }
-
-      if std::path::Path::new(&b.path_glsl).is_file() {
-        let mut f = std::fs::File::open(&b.path_glsl).map_err(|_| format!("Could not open {}", b.path_glsl))?;
+      let path = crate_root.to_owned() + "/" + &b.path_glsl;
+      if std::path::Path::new(&path).is_file() {
+        let mut f = std::fs::File::open(&path).map_err(|_| format!("Could not open {}", b.path_glsl))?;
         f.read_to_string(&mut b.src_glsl)
           .map_err(|_| format!("Could not read {}", b.path_glsl))?;
       } else {
@@ -102,9 +107,9 @@ impl Builder {
       }
     }
 
-    // here at least one type of source (spv or glsl) needs to be valid
+    // At this point we got to have either of those specified
     if b.src_spv.is_empty() && b.src_glsl.is_empty() {
-      Err("Neither \"glsl\" nor \"spv\" have been specified")?
+      Err("Neither \"glsl\" nor \"spv\" have been specified for shader source")?
     }
 
     // our entry point by default is main
