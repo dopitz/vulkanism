@@ -50,6 +50,7 @@ impl<T: PartialEq> PartialEq for Vec4<T> {
     self.x == other.x && self.y == other.y && self.z == other.z && self.w == other.w
   }
 }
+impl<T: Eq> Eq for Vec4<T> {}
 
 // Element Access
 impl<T> Index<usize> for Vec4<T> {

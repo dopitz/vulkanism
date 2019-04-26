@@ -58,7 +58,7 @@ impl Builder {
           tokens.next();
           let s = i.to_string();
           match s.as_ref() {
-            "nobs_vkpipes_alias" => b.usings.pipes= Some(parse::parse_string(&mut tokens)),
+            "nobs_vkpipes_alias" => b.usings.pipes = Some(parse::parse_string(&mut tokens)),
             "nobs_vk_alias" => b.usings.vk = Some(parse::parse_string(&mut tokens)),
             "ty" => b.stage = parse::parse_string(&mut tokens),
             "entry" => b.entry = parse::parse_string(&mut tokens),
@@ -75,16 +75,13 @@ impl Builder {
       }
     }
 
-
     if !b.path_glsl.is_empty() && !b.src_spv.is_empty() {
       Err("Both \"glsl\" and \"spv\" have been specified for shader source")?
     }
 
-    let crate_root = std::env::var("CARGO_MANIFEST_DIR").unwrap();
-
     // first try to read the src from a spcified spv file
     if !b.path_spv.is_empty() {
-      let path = crate_root.to_owned() + "/" + &b.path_spv;
+      let path = Self::make_abs_path(&b.path_spv).ok_or(format!("Could not find {}", b.path_spv))?;
       let mut f = std::fs::File::open(&path).map_err(|_| format!("Could not open {}", b.path_spv))?;
       let mut buf = Vec::new();
       f.read_to_end(&mut buf).map_err(|_| format!("Could not read {}", b.path_spv))?;
@@ -96,7 +93,7 @@ impl Builder {
 
     // if that failed, we try to read the file as glsl source (either load from file, inline source)
     if !b.path_glsl.is_empty() {
-      let path = crate_root.to_owned() + "/" + &b.path_glsl;
+      let path = Self::make_abs_path(&b.path_glsl).ok_or(format!("Could not find {}", b.path_glsl))?;
       if std::path::Path::new(&path).is_file() {
         let mut f = std::fs::File::open(&path).map_err(|_| format!("Could not open {}", b.path_glsl))?;
         f.read_to_string(&mut b.src_glsl)
@@ -116,6 +113,9 @@ impl Builder {
     if b.entry.is_empty() {
       b.entry = "main".to_string();
     }
+
+    // include dirs in abs path
+    b.includes = b.includes.iter_mut().filter_map(|i| Self::make_abs_path(i)).collect::<Vec<_>>();
 
     stage_from_stirng(&b.stage)?;
 
@@ -171,6 +171,21 @@ impl Builder {
       bindings: spirv.get_bindings(stage_from_stirng(&self.stage)?),
       binary: binary,
     })
+  }
+
+  fn make_abs_path(path: &String) -> Option<String> {
+    let p = std::path::Path::new(path);
+    if p.exists() {
+      Some(path.clone())
+    } else {
+      let abs = std::env::var("CARGO_MANIFEST_DIR").unwrap().to_owned() + "/" + path;
+      let p = std::path::Path::new(&abs);
+      if p.exists() {
+        Some(abs.clone())
+      } else {
+        None
+      }
+    }
   }
 
   fn find_include(

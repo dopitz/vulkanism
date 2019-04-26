@@ -2,6 +2,7 @@ use vk;
 use vk::builder::Buildable;
 use vk::cmd;
 use vk::pipes::descriptor;
+use vkm;
 
 use crate::font::FontID;
 use crate::sizebounds::SizeBounds;
@@ -12,15 +13,11 @@ mod pipe {
   vk::pipes::pipeline! {
     stage = {
       ty = "vert",
-      //glsl = concat!(module_path!(), "nobs-imgui/src/text/text.vert"),
-      //glsl = "nobs-imgui/src/text/text.vert",
       glsl = "src/text/text.vert",
     }
 
     stage = {
       ty = "frag",
-      //glsl = concat!(module_path!(), "src/text/text.frag"),
-      //glsl = "nobs-imgui/src/text/text.frag",
       glsl = "src/text/text.frag",
     }
 
@@ -30,15 +27,15 @@ mod pipe {
 
   #[repr(C)]
   pub struct Vertex {
-    pub pos: cgm::Vector2<u32>,
-    pub size: cgm::Vector2<u32>,
-    pub tex_bl: cgm::Vector2<f32>,
-    pub tex_tr: cgm::Vector2<f32>,
+    pub pos: vkm::Vec2u,
+    pub size: vkm::Vec2u,
+    pub tex_bl: vkm::Vec2f,
+    pub tex_tr: vkm::Vec2f,
   }
 
   #[repr(C)]
   pub struct Ub {
-    pub offset: cgm::Vector2<i32>,
+    pub offset: vkm::Vec2i,
   }
 }
 
@@ -235,10 +232,10 @@ impl Text {
     let svb = map.as_slice_mut::<pipe::Vertex>();
 
     for i in 0..self.text.len() {
-      svb[i].pos = cgm::Vector2::new(50, 50) * i as u32;
-      svb[i].size = cgm::Vector2::new(50, 50);
-      svb[i].tex_bl = cgm::Vector2::new(0.0, 1.0);
-      svb[i].tex_tr = cgm::Vector2::new(1.0, 0.0);
+      svb[i].pos = vkm::Vec2::new(50, 50) * i as u32;
+      svb[i].size = vkm::Vec2::new(50, 50);
+      svb[i].tex_bl = vkm::Vec2::new(0.0, 1.0);
+      svb[i].tex_tr = vkm::Vec2::new(1.0, 0.0);
     }
 
     self.dirty = false;

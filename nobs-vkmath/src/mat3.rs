@@ -81,6 +81,7 @@ impl<T: PartialEq> PartialEq for Mat3<T> {
     true
   }
 }
+impl<T: Eq> Eq for Mat3<T> {}
 
 // Arithmetic Ops
 impl<T: MatTraits<T>> Neg for Mat3<T> {

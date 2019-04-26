@@ -1,4 +1,3 @@
-extern crate cgmath as cgm;
 extern crate nobs_imgui as imgui;
 extern crate nobs_vkmath as vkm;
 extern crate nobs_vulkanism as vk;
@@ -24,8 +23,6 @@ mod tex {
     pub model: vkm::Mat4f,
     pub view: vkm::Mat4f,
     pub proj: vkm::Mat4f,
-    //pub view: cgm::Matrix4<f32>,
-    //pub proj: cgm::Matrix4<f32>,
   }
 
   #[repr(C)]

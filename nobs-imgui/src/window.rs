@@ -31,13 +31,13 @@ impl<'a> Window<'a> {
 
   pub fn size(mut self, w: u32, h: u32) -> Self {
     self.scissor.rect.extent = vk::Extent2D::build().set(w, h).extent;
-    self.bounds.size = cgm::Vector2::new(w, h);
+    self.bounds.size = vkm::Vec2::new(w, h);
     self
   }
 
   pub fn position(mut self, x: i32, y: i32) -> Self {
     self.scissor.rect.offset = vk::Offset2D::build().set(x, y).offset;
-    self.bounds.position = cgm::Vector2::new(x, y);
+    self.bounds.position = vkm::Vec2::new(x, y);
     self
   }
 

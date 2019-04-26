@@ -6,7 +6,6 @@ use vk::mem;
 use crate::ImGui;
 
 use freetype;
-use cgm;
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq)]
 pub struct FontID {
@@ -85,8 +84,8 @@ impl Font {
 
 
       let bm = &glyph.bitmap();
-      let glyph_size = cgm::Vector2::new(bm.width(), bm.rows());
-      let glyph_margin = cgm::Vector2::new(margin, margin);
+      let glyph_size = vkm::Vec2::new(bm.width(), bm.rows());
+      let glyph_margin = vkm::Vec2::new(margin, margin);
       let glyph_sizem = glyph_size + glyph_margin;
       //let glyph_tex_offset = margin / target_size as f32;
 

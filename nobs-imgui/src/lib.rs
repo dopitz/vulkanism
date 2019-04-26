@@ -1,5 +1,5 @@
-extern crate cgmath as cgm;
 extern crate nobs_vulkanism_headless as vk;
+extern crate nobs_vkmath as vkm;
 extern crate freetype;
 
 mod font;

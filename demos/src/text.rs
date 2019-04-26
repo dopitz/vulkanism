@@ -1,4 +1,3 @@
-extern crate cgmath as cgm;
 extern crate nobs_imgui as imgui;
 extern crate nobs_vulkanism as vk;
 

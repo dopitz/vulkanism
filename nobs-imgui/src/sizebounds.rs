@@ -1,9 +1,9 @@
-use cgm;
+use vkm;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct SizeBounds {
-  pub position: cgm::Vector2<i32>,
-  pub size: cgm::Vector2<u32>,
+  pub position: vkm::Vec2i,
+  pub size: vkm::Vec2u,
 }
 
 impl Default for SizeBounds {
@@ -13,11 +13,11 @@ impl Default for SizeBounds {
 }
 
 impl SizeBounds {
-  pub fn new(position: cgm::Vector2<i32>, size: cgm::Vector2<u32>) -> Self {
+  pub fn new(position: vkm::Vec2i, size: vkm::Vec2u) -> Self {
     Self { position, size }
   }
 
   pub fn from_rect(posx: i32, posy: i32, w: u32, h: u32) -> Self {
-    Self::new(cgm::Vector2::new(posx, posy), cgm::Vector2::new(w, h))
+    Self::new(vkm::Vec2::new(posx, posy), vkm::Vec2::new(w, h))
   }
 }

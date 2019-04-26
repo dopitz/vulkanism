@@ -86,6 +86,7 @@ impl<T: PartialEq> PartialEq for Mat4<T> {
     true
   }
 }
+impl<T: Eq> Eq for Mat4<T> {}
 
 // Arithmetic Ops
 impl<T: MatTraits<T>> Neg for Mat4<T> {
@@ -495,7 +496,6 @@ where
     }
   }
 }
-
 
 pub type Mat4f = Mat4<f32>;
 pub type Mat4d = Mat4<f64>;

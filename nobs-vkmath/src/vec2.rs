@@ -41,6 +41,7 @@ impl<T: PartialEq> PartialEq for Vec2<T> {
     self.x == other.x && self.y == other.y
   }
 }
+impl<T: Eq> Eq for Vec2<T> {}
 
 // Element Access
 impl<T> Index<usize> for Vec2<T> {
