@@ -232,8 +232,8 @@ impl Text {
     let svb = map.as_slice_mut::<pipe::Vertex>();
 
     for i in 0..self.text.len() {
-      svb[i].pos = vkm::Vec2::new(50, 50) * i as u32;
-      svb[i].size = vkm::Vec2::new(50, 50);
+      svb[i].pos = vkm::Vec2::new(256, 256) * i as u32;
+      svb[i].size = vkm::Vec2::new(256, 256);
       svb[i].tex_bl = vkm::Vec2::new(0.0, 1.0);
       svb[i].tex_tr = vkm::Vec2::new(1.0, 0.0);
     }

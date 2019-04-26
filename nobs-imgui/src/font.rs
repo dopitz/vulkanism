@@ -31,8 +31,7 @@ pub struct Font {
 
 impl Font {
   pub fn new(_font: &FontID, gui: &ImGui) -> Self {
-
-    let margin = 20;
+    let margin = 32;
     let target_size = 64;
 
     let mut tex = vk::NULL_HANDLE;
@@ -46,14 +45,14 @@ impl Font {
       .create(gui.device)
       .unwrap();
 
-    let sampler = vk::SamplerCreateInfo::build().create(gui.device).unwrap();
+    let sampler = vk::SamplerCreateInfo::build().min_filter(vk::FILTER_LINEAR).mag_filter(vk::FILTER_LINEAR).create(gui.device).unwrap();
 
     // Init the library
     let lib = freetype::Library::init().unwrap();
     // Load a font face
     let face = lib.new_face("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 0).unwrap();
     // Set the font size
-    //face.set_char_size(0, 63 * 64, 0, 100).unwrap();
+    //face.set_char_size(0, 64 * 2000, 0, 100).unwrap();
     face.set_pixel_sizes(0, target_size * 5).unwrap();
     // Load a character
     face.load_char('g' as usize, freetype::face::LoadFlag::RENDER).unwrap();
@@ -82,30 +81,54 @@ impl Font {
         *d = 0;
       }
 
-
       let bm = &glyph.bitmap();
-      let glyph_size = vkm::Vec2::new(bm.width(), bm.rows());
-      let glyph_margin = vkm::Vec2::new(margin, margin);
-      let glyph_sizem = glyph_size + glyph_margin;
+      let bm_size = vec2!(bm.width(), bm.rows());
+      //let glyph_margin = vec2!(margin, margin);
+      //let glyph_sizem = glyph_size + glyph_margin;
       //let glyph_tex_offset = margin / target_size as f32;
 
+      let bm_size_m = vec2!(i32::max(bm_size.x, bm_size.y) + 2 * margin);
 
-      //for y in 0..target_size {
-      //  for x in 0..target_size {
-      //    let tex = cgm::Vector2::new(1.0, 1.0) / target_size as f32;
+      let sample_bm = |p: vkm::Vec2i| {
+        if p.x >= 0 && p.y >= 0 && p.x < bm_size.x && p.y < bm_size.y {
+          let pix = p.into::<usize>();
+          glyph.bitmap().buffer()[pix.y * bm.pitch() as usize + pix.x] > 0
+        } else {
+          false
+        }
+      };
 
-      //    let pix = cgm::Vector2::new((glyph_sizem.x as f32 * tex.x) as u32, (glyph_sizem.y as f32 * tex.y) as u32);
+      for y in 0..target_size {
+        for x in 0..target_size {
+          let tex = vec2!(1.0) / target_size as f32 * vec2!(x, y).into();
 
+          let pix = (bm_size_m.into() * tex).into::<i32>() - vec2!(margin);
 
-      //    //let pix = tex * cgm::Vector2::
+          let s = sample_bm(pix);
 
+          let mut d = margin as f32;
+          for bmy in pix.y - margin..pix.y + margin {
+            for bmx in pix.x - margin..pix.x + margin {
+              if s != sample_bm(vec2!(bmx, bmy)) {
+                d = f32::min(d, vkm::Vec2f::len(pix.into() - vec2!(bmx, bmy).into()));
+              }
+            }
+          }
 
-      //  }
-      //}
+          if s {
+            //data[y as usize * 64 + x as usize] = 255;
+            //data[y as usize * 64 + x as usize] = 255 - (255.0 * (d / margin as f32)) as u8;
+            data[y as usize * 64 + x as usize] = (255.0 * (0.5 + d / 2.0 / margin as f32)) as u8;
+          }
+          else {
+            data[y as usize * 64 + x as usize] = (255.0 * (0.5 - d / 2.0 / margin as f32)) as u8;
+          }
 
+        }
+      }
 
       //for y in 0..64 {
-      //  for x in 0..60 {
+      //  for x in 0..64 {
       //    if glyph.bitmap().buffer()[y * glyph.bitmap().pitch() as usize + x as usize] > 0 {
       //      data[y * 64 + x] = 255;
       //    }
