@@ -279,31 +279,31 @@ pub type Vec4s = Vec4<usize>;
 #[macro_export]
 macro_rules! vec4 {
   () => {
-    crate::vec4::Vec4::default()
+    $crate::Vec4::default()
   };
   ($x:expr) => {
-    crate::vec4::Vec4::new($x, $x, $x, $x)
+    $crate::Vec4::new($x, $x, $x, $x)
   };
   ($x:expr, ..) => {{
-    let mut v = crate::vec4::Vec4::default();
+    let mut v = $crate::Vec4::default();
     v.x = $x;
     v
   }};
   ($x:expr, $y:expr, ..) => {{
-    let mut v = crate::vec4::Vec4::default();
+    let mut v = $crate::Vec4::default();
     v.x = $x;
     v.y = $y;
     v
   }};
   ($x:expr, $y:expr, $z:expr, ..) => {{
-    let mut v = crate::vec4::Vec4::default();
+    let mut v = $crate::Vec4::default();
     v.x = $x;
     v.y = $y;
     v.z = $z;
     v
   }};
   ($x:expr, $y:expr, $z:expr, $w:expr) => {
-    crate::vec4::Vec4::new($x, $y, $z, $w)
+    $crate::Vec4::new($x, $y, $z, $w)
   };
 }
 

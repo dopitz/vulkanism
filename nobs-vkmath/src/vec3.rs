@@ -263,24 +263,24 @@ pub type Vec3s = Vec3<usize>;
 #[macro_export]
 macro_rules! vec3 {
   () => {
-    crate::vec3::Vec3::default()
+    $crate::Vec3::default()
   };
   ($x:expr) => {
-    crate::vec3::Vec3::new($x, $x, $x)
+    $crate::Vec3::new($x, $x, $x)
   };
   ($x:expr, ..) => {{
-    let mut v = crate::vec3::Vec3::default();
+    let mut v = $crate::Vec3::default();
     v.x = $x;
     v
   }};
   ($x:expr, $y:expr, ..) => {{
-    let mut v = crate::vec3::Vec3::default();
+    let mut v = $crate::Vec3::default();
     v.x = $x;
     v.y = $y;
     v
   }};
   ($x:expr, $y:expr, $z:expr) => {
-    crate::vec3::Vec3::new($x, $y, $z)
+    $crate::Vec3::new($x, $y, $z)
   };
 }
 

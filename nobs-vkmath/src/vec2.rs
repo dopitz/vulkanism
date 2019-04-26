@@ -223,18 +223,18 @@ pub type Vec2s = Vec2<usize>;
 #[macro_export]
 macro_rules! vec2 {
   () => {
-    crate::vec2::Vec2::default()
+    $crate::Vec2::default()
   };
   ($x:expr) => {
-    crate::vec2::Vec2::new($x, $x)
+    $crate::Vec2::new($x, $x)
   };
   ($x:expr, ..) => {{
-    let mut v = crate::vec2::Vec2::default();
+    let mut v = $crate::Vec2::default();
     v.x = $x;
     v
   }};
   ($x:expr, $y:expr) => {
-    crate::vec2::Vec2::new($x, $y)
+    $crate::Vec2::new($x, $y)
   };
 }
 
