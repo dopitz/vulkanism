@@ -48,6 +48,18 @@ pub struct Char {
   pub advance: vkm::Vec2f,
 }
 
+impl std::ops::Mul<f32> for Char {
+  type Output = Char;
+  fn mul(self, s: f32) -> Self {
+    Char {
+      size : self.size * s,
+      bearing : self.bearing * s,
+      advance : self.advance * s,
+      .. self
+    }
+  }
+}
+
 pub struct Font {
   pub tex: vk::Image,
   pub texview: vk::ImageView,
@@ -64,7 +76,7 @@ impl Font {
     // Init the library
     let lib = freetype::Library::init().unwrap();
     // Load a font face
-    let face = lib.new_face("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 0).unwrap();
+    let face = lib.new_face("/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf", 0).unwrap();
     // Set the font size
     //face.set_char_size(0, 64 * 2000, 0, 100).unwrap();
     face.set_pixel_sizes(0, char_size * 5).unwrap();
@@ -99,7 +111,7 @@ impl Font {
     let mut copy_char = |glyph_bm: &freetype::bitmap::Bitmap, to: vkm::Vec2s| {
       for y in 0..glyph_bm.rows() as usize {
         for x in 0..glyph_bm.width() as usize {
-          bm[(to.y + margin + y) * bm_size.x + to.x + margin + x] = glyph_bm.buffer()[y * glyph_bm.pitch() as usize + x];
+          bm[(to.y + margin + (glyph_bm.rows() as usize - y)) * bm_size.x + to.x + margin + x] = glyph_bm.buffer()[y * glyph_bm.pitch() as usize + x];
         }
       }
     };
@@ -271,7 +283,6 @@ impl Font {
       let mut batch = cmd::AutoBatch::new(gui.device).unwrap();
       batch.push(cs).submit(gui.queue_copy).0.sync().unwrap();
     }
-
 
     Font {
       tex,

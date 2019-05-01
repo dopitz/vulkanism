@@ -1,8 +1,8 @@
 #version 450
 #extension GL_ARB_separate_shader_objects : enable
 
-layout(location = 0) in uvec2 position;
-layout(location = 1) in uvec2 size;
+layout(location = 0) in vec2 position;
+layout(location = 1) in vec2 size;
 layout(location = 2) in vec2 tex_bl;
 layout(location = 3) in vec2 tex_tr;
 

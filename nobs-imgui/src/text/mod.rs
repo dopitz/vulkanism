@@ -28,8 +28,8 @@ mod pipe {
 
   #[repr(C)]
   pub struct Vertex {
-    pub pos: vkm::Vec2u,
-    pub size: vkm::Vec2u,
+    pub pos: vkm::Vec2f,
+    pub size: vkm::Vec2f,
     pub tex_bl: vkm::Vec2f,
     pub tex_tr: vkm::Vec2f,
   }
@@ -61,14 +61,14 @@ impl Pipeline {
             vk::VertexInputAttributeDescription::build()
               .binding(0)
               .location(0)
-              .format(vk::FORMAT_R32G32_UINT)
+              .format(vk::FORMAT_R32G32_SFLOAT)
               .attribute,
           )
           .push_attribute(
             vk::VertexInputAttributeDescription::build()
               .binding(0)
               .location(1)
-              .format(vk::FORMAT_R32G32_UINT)
+              .format(vk::FORMAT_R32G32_SFLOAT)
               .offset(2 * std::mem::size_of::<f32>() as u32)
               .attribute,
           )
@@ -235,27 +235,16 @@ impl Text {
     let mut map = self.alloc.get_mapped(self.vb).unwrap();
     let svb = map.as_slice_mut::<pipe::Vertex>();
 
-    let mut off = vec2!(50);
+    let mut off = vec2!(50.0);
     for (i, c) in self.text.chars().enumerate() {
-      svb[i].pos = off;
-      let ch = self.font.get('a');
-      svb[i].size = (ch.size * 500.0).into();
-      svb[i].tex_bl = self.font.get(c).tex;
-      svb[i].tex_tr = self.font.get(c).tex + self.font.get('a').size;
-      off += (ch.advance * 500.0).into();
+      let ch = self.font.get(c);
+      svb[i].tex_bl = ch.tex;
+      svb[i].tex_tr = ch.tex + ch.size;
+      let ch = ch * 500.0;
+      svb[i].size = ch.size;
+      svb[i].pos = off - ch.bearing;
+      off += ch.advance;
     }
-
-    //for i in 0..self.text.len() {
-    //  svb[i].pos = vkm::Vec2::new(564, 264) * i as u32;
-    //  svb[i].size = vkm::Vec2::new(564, 264);
-    //  //svb[i].pos = vkm::Vec2::new(256, 256) * i as u32;
-    //  //svb[i].size = vkm::Vec2::new(256, 256);
-    //  //svb[i].tex_bl = vkm::Vec2::new(0.0, 1.0);
-    //  //svb[i].tex_tr = vkm::Vec2::new(1.0, 0.0);
-    //  svb[i].tex_bl = self.font.get('a').tex;
-    //  svb[i].tex_tr = self.font.get('a').tex + self.font.get('a').size;
-    //  //svb[i].tex_tr = vkm::Vec2::new(1.0, 0.0);
-    //}
 
     self.dirty = false;
   }
