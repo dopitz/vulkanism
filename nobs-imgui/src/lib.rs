@@ -70,7 +70,7 @@ pub struct ImGui {
   pub alloc: vk::mem::Allocator,
   pub unused: vk::mem::UnusedResources,
 
-  fonts: Arc<Mutex<HashMap<FontID, Font>>>,
+  fonts: Arc<Mutex<HashMap<FontID, Arc<Font>>>>,
   pipe_text: Arc<Mutex<Cached<text::Pipeline>>>,
 
   pub ub_viewport: vk::Buffer,
@@ -123,9 +123,9 @@ impl ImGui {
     }
   }
 
-  pub fn get_font(&self, font: &FontID) -> Font {
+  pub fn get_font(&self, font: &FontID) -> Arc<Font> {
     let mut fonts = self.fonts.lock().unwrap();
-    *fonts.entry(font.clone()).or_insert_with(|| Font::new(&font, self))
+    fonts.entry(font.clone()).or_insert_with(|| Arc::new(Font::new(&font, self))).clone()
   }
 
   pub fn get_pipe_text(&self) -> std::sync::MutexGuard<Cached<text::Pipeline>> {

@@ -4,6 +4,7 @@ use vk::cmd;
 use vk::pipes::descriptor;
 use vkm;
 
+use crate::font::Font;
 use crate::font::FontID;
 use crate::sizebounds::SizeBounds;
 use crate::window::Window;
@@ -116,6 +117,7 @@ impl Pipeline {
 }
 
 pub struct Text {
+  device: vk::Device,
   alloc: vk::mem::Allocator,
   unused: vk::mem::UnusedResources,
 
@@ -124,7 +126,7 @@ pub struct Text {
 
   dirty: bool,
   text: String,
-  font: FontID,
+  font: std::sync::Arc<Font>,
   vb: vk::Buffer,
   ub: vk::Buffer,
 
@@ -143,8 +145,6 @@ impl Drop for Text {
 impl Text {
   pub fn new(gui: &ImGui) -> Self {
     let ub_viewport = vk::NULL_HANDLE;
-
-    let font = FontID::new("curier", 12);
     let vb = vk::NULL_HANDLE;
 
     let mut ub = vk::NULL_HANDLE;
@@ -163,13 +163,14 @@ impl Text {
       )
     };
 
-    let fnt = gui.get_font(&font);
+    let font = gui.get_font(&FontID::new("curier", 12));
     pipe::DsText::write(gui.device, ds_text.dset)
       .ub(|b| b.buffer(ub))
-      .tex_sampler(|s| s.set(vk::IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, fnt.texview, fnt.sampler))
+      .tex_sampler(|s| s.set(vk::IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, font.texview, font.sampler))
       .update();
 
     Text {
+      device: gui.device,
       alloc: gui.alloc.clone(),
       unused: gui.unused.clone(),
 
@@ -189,9 +190,12 @@ impl Text {
     }
   }
 
-  pub fn font(&mut self, font: FontID) -> &mut Self {
-    if self.font != font {
+  pub fn font(&mut self, font: std::sync::Arc<Font>) -> &mut Self {
+    if !std::sync::Arc::ptr_eq(&self.font, &font) {
       self.font = font;
+      pipe::DsText::write(self.device, self.ds_text.dset)
+        .tex_sampler(|s| s.set(vk::IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, self.font.texview, self.font.sampler))
+        .update();
       self.dirty = true;
     }
     self
@@ -231,12 +235,27 @@ impl Text {
     let mut map = self.alloc.get_mapped(self.vb).unwrap();
     let svb = map.as_slice_mut::<pipe::Vertex>();
 
-    for i in 0..self.text.len() {
-      svb[i].pos = vkm::Vec2::new(256, 256) * i as u32;
-      svb[i].size = vkm::Vec2::new(256, 256);
-      svb[i].tex_bl = vkm::Vec2::new(0.0, 1.0);
-      svb[i].tex_tr = vkm::Vec2::new(1.0, 0.0);
+    let mut off = vec2!(50);
+    for (i, c) in self.text.chars().enumerate() {
+      svb[i].pos = off;
+      let ch = self.font.get('a');
+      svb[i].size = (ch.size * 500.0).into();
+      svb[i].tex_bl = self.font.get(c).tex;
+      svb[i].tex_tr = self.font.get(c).tex + self.font.get('a').size;
+      off += (ch.advance * 500.0).into();
     }
+
+    //for i in 0..self.text.len() {
+    //  svb[i].pos = vkm::Vec2::new(564, 264) * i as u32;
+    //  svb[i].size = vkm::Vec2::new(564, 264);
+    //  //svb[i].pos = vkm::Vec2::new(256, 256) * i as u32;
+    //  //svb[i].size = vkm::Vec2::new(256, 256);
+    //  //svb[i].tex_bl = vkm::Vec2::new(0.0, 1.0);
+    //  //svb[i].tex_tr = vkm::Vec2::new(1.0, 0.0);
+    //  svb[i].tex_bl = self.font.get('a').tex;
+    //  svb[i].tex_tr = self.font.get('a').tex + self.font.get('a').size;
+    //  //svb[i].tex_tr = vkm::Vec2::new(1.0, 0.0);
+    //}
 
     self.dirty = false;
   }

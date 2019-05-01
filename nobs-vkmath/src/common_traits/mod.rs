@@ -127,6 +127,11 @@ vec_into!(i64, usize);
 vec_into!(i64, f32);
 vec_into!(i64, f64);
 
+vec_into!(u8, usize);
+vec_into!(u16, usize);
+vec_into!(u32, usize);
+vec_into!(u64, usize);
+
 vec_into!(f32, u8);
 vec_into!(f32, u16);
 vec_into!(f32, u32);

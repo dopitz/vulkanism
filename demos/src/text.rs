@@ -119,7 +119,7 @@ pub fn main() {
   use vk::cmd::commands::*;
   let mut frame = vk::cmd::Frame::new(device.handle, fbs.len()).unwrap();
 
-  let mut t = "aoe".to_owned();
+  let mut t = "gab".to_owned();
 
   loop {
     events_loop.poll_events(|event| match event {
