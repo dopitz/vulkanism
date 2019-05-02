@@ -4,8 +4,7 @@ use vk::cmd;
 use vk::pipes::descriptor;
 use vkm;
 
-use crate::font::Font;
-use crate::font::FontID;
+use crate::font::*;
 use crate::sizebounds::SizeBounds;
 use crate::window::Window;
 use crate::ImGui;
@@ -32,6 +31,19 @@ mod pipe {
     pub size: vkm::Vec2f,
     pub tex_bl: vkm::Vec2f,
     pub tex_tr: vkm::Vec2f,
+  }
+
+  impl crate::font::FontChar for Vertex {
+    fn set_position(&mut self, p: vkm::Vec2f) {
+      self.pos = p;
+    }
+    fn set_size(&mut self, s: vkm::Vec2f) {
+      self.size = s;
+    }
+    fn set_tex(&mut self, t00: vkm::Vec2f, t11: vkm::Vec2f) {
+      self.tex_bl = t00;
+      self.tex_tr = t11;
+    }
   }
 
   #[repr(C)]
@@ -235,16 +247,19 @@ impl Text {
     let mut map = self.alloc.get_mapped(self.vb).unwrap();
     let svb = map.as_slice_mut::<pipe::Vertex>();
 
-    let mut off = vec2!(250.0);
-    for (i, c) in self.text.chars().enumerate() {
-      let ch = self.font.get(c);
-      svb[i].tex_bl = ch.tex;
-      svb[i].tex_tr = ch.tex + ch.size;
-      let ch = ch * 500.0;
-      svb[i].size = ch.size;
-      svb[i].pos = off + ch.bearing;
-      off += ch.advance;
-    }
+    TypeSet::new(&*self.font).offset(vec2!(250.0)).size(50.0).compute(&self.text, svb);
+
+
+    //let mut off = vec2!(250.0);
+    //for (i, c) in self.text.chars().enumerate() {
+    //  let ch = self.font.get(c);
+    //  svb[i].tex_bl = ch.tex;
+    //  svb[i].tex_tr = ch.tex + ch.size;
+    //  let ch = ch * 500.0;
+    //  svb[i].size = ch.size;
+    //  svb[i].pos = off + ch.bearing;
+    //  off += ch.advance;
+    //}
 
     self.dirty = false;
   }

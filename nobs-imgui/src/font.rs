@@ -52,10 +52,10 @@ impl std::ops::Mul<f32> for Char {
   type Output = Char;
   fn mul(self, s: f32) -> Self {
     Char {
-      size : self.size * s,
-      bearing : self.bearing * s,
-      advance : self.advance * s,
-      .. self
+      size: self.size * s,
+      bearing: self.bearing * s,
+      advance: self.advance * s,
+      ..self
     }
   }
 }
@@ -66,21 +66,22 @@ pub struct Font {
   pub sampler: vk::Sampler,
 
   pub chars: std::collections::HashMap<char, Char>,
+  pub char_height: f32,
 }
 
 impl Font {
   pub fn new(_font: &FontID, gui: &ImGui) -> Self {
     let margin = 32;
-    let char_size = 64;
+    let char_height = 64 * 5;
 
     // Init the library
     let lib = freetype::Library::init().unwrap();
     // Load a font face
-    //let face = lib.new_face("/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf", 0).unwrap();
-    let face = lib.new_face("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 0).unwrap();
-    // Set the font size
-    //face.set_char_size(0, 64 * 2000, 0, 100).unwrap();
-    face.set_pixel_sizes(0, char_size * 5).unwrap();
+    let face = lib.new_face("/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf", 0).unwrap();
+    //let face = lib.new_face("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 0).unwrap();
+    face.set_pixel_sizes(0, char_height).unwrap();
+
+    let char_height = char_height as usize + margin * 2;
 
     let mut chars = (32u32..127u32).map(|c| std::char::from_u32(c).unwrap()).collect::<Vec<_>>();
     chars.dedup();
@@ -112,14 +113,15 @@ impl Font {
     let mut copy_char = |glyph_bm: &freetype::bitmap::Bitmap, to: vkm::Vec2s| {
       for y in 0..glyph_bm.rows() as usize {
         for x in 0..glyph_bm.width() as usize {
-          bm[(to.y + margin + (glyph_bm.rows() as usize - y)) * bm_size.x + to.x + margin + x] = glyph_bm.buffer()[y * glyph_bm.pitch() as usize + x];
+          bm[(to.y + margin + (glyph_bm.rows() as usize - y)) * bm_size.x + to.x + margin + x] =
+            glyph_bm.buffer()[y * glyph_bm.pitch() as usize + x];
         }
       }
     };
 
     let mut char_pos = std::collections::HashMap::new();
 
-    let mut tex_size = vec2!(0usize, 64 * 5 + 2 * margin);
+    let mut tex_size = vec2!(0usize, char_height);
     let mut to = vec2!(0usize);
     for c in chars.iter().rev() {
       face.load_char(c.c as usize, freetype::face::LoadFlag::RENDER).unwrap();
@@ -148,7 +150,7 @@ impl Font {
       to.x += char_width;
     }
 
-    to.y += 64 * 5 + 2 * margin;
+    to.y += char_height;
 
     let margin = 32;
     let bm_region = tex_size.into();
@@ -259,10 +261,6 @@ impl Font {
       c.advance = c.advance * pixel_size;
     }
 
-    for (c, cp) in char_pos.iter_mut() {
-      println!("{} {:?}", c, cp);
-    }
-
     {
       let stage = mem::Staging::new(&mut gui.alloc.clone(), (tex_size.x * tex_size.y) as vk::DeviceSize).unwrap();
       let mut map = stage.range(0, (tex_size.x * tex_size.y) as vk::DeviceSize).map().unwrap();
@@ -290,6 +288,7 @@ impl Font {
       texview,
       sampler,
       chars: char_pos,
+      char_height: 5.0,
     }
   }
 
@@ -321,5 +320,49 @@ impl Font {
       .unwrap();
 
     (tex, texview, sampler)
+  }
+}
+
+pub trait FontChar {
+  fn set_position(&mut self, p: vkm::Vec2f);
+  fn set_size(&mut self, s: vkm::Vec2f);
+  fn set_tex(&mut self, t00: vkm::Vec2f, t11: vkm::Vec2f);
+}
+
+pub struct TypeSet<'a> {
+  font: &'a Font,
+  size: f32,
+  offset: vkm::Vec2f,
+}
+
+impl<'a> TypeSet<'a> {
+  pub fn new(font: &'a Font) -> Self {
+    Self {
+      font,
+      size: 12.0 * font.char_height,
+      offset: vec2!(0.0),
+    }
+  }
+
+  pub fn size(mut self, s: f32) -> Self {
+    self.size = s * self.font.char_height;
+    self
+  }
+
+  pub fn offset(mut self, o: vkm::Vec2f) -> Self {
+    self.offset = o;
+    self
+  }
+
+  pub fn compute<T: FontChar>(self, s: &str, buf: &mut [T]) {
+    let mut off = self.offset;
+    for (c, s) in s.chars().zip(buf.iter_mut()) {
+      let ch = self.font.get(c);
+      s.set_tex(ch.tex, ch.tex + ch.size);
+      let ch = ch * self.size;
+      s.set_size(ch.size);
+      s.set_position(off + ch.bearing);
+      off += ch.advance;
+    }
   }
 }

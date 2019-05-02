@@ -6,13 +6,14 @@ description = "immediate gui for vulkan"
 license = "MIT"
 keywords = ["vulkan", "gui", "graphics", "gpu", "rendering"]
 categories = ["rendering::graphics-api"]
-repository = "https://github.com/dopitz/vulkanism/nobs-vulkanism-headless"
+repository = "https://github.com/dopitz/vulkanism/nobs-imgui"
 readme = "README.md"
 edition = "2018"
 
 [dependencies]
 nobs-vulkanism-headless = {version = "0.1.0", path = "../nobs-vulkanism-headless"}
 nobs-vkmath = {version = "0.1.0", path = "../nobs-vkmath"}
+nobs-imgui-font = {version = "0.1.0", path = "nobs-imgui-font"}
 freetype-rs = {version = "0.19.1"}
 
 [build-dependencies]

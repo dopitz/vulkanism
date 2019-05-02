@@ -1,6 +1,7 @@
 extern crate nobs_vulkanism_headless as vk;
 #[macro_use]
 extern crate nobs_vkmath as vkm;
+extern crate nobs_imgui_font as fnt;
 extern crate freetype;
 
 mod font;
@@ -99,6 +100,7 @@ impl ImGui {
     alloc: vk::mem::Allocator,
     inflight: usize,
   ) -> Self {
+
     let mut ub_viewport = vk::NULL_HANDLE;
     vk::mem::Buffer::new(&mut ub_viewport)
       .uniform_buffer(2 * std::mem::size_of::<f32>() as vk::DeviceSize)
