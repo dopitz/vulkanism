@@ -76,7 +76,8 @@ impl Font {
     // Init the library
     let lib = freetype::Library::init().unwrap();
     // Load a font face
-    let face = lib.new_face("/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf", 0).unwrap();
+    //let face = lib.new_face("/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf", 0).unwrap();
+    let face = lib.new_face("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 0).unwrap();
     // Set the font size
     //face.set_char_size(0, 64 * 2000, 0, 100).unwrap();
     face.set_pixel_sizes(0, char_size * 5).unwrap();
@@ -140,7 +141,7 @@ impl Font {
       char_pos.entry(c.c).or_insert(crate::font::Char {
         tex: to.into(),
         size: vec2!(char_width, char_height).into(),
-        bearing: vec2!(g.bitmap_left(), g.bitmap_top()).into(),
+        bearing: vec2!(g.bitmap_left(), -g.bitmap_top()).into(),
         advance: vec2!(g.advance().x >> 6, g.advance().y >> 6).into(),
       });
 

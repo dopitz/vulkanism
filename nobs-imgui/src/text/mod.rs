@@ -235,14 +235,14 @@ impl Text {
     let mut map = self.alloc.get_mapped(self.vb).unwrap();
     let svb = map.as_slice_mut::<pipe::Vertex>();
 
-    let mut off = vec2!(50.0);
+    let mut off = vec2!(250.0);
     for (i, c) in self.text.chars().enumerate() {
       let ch = self.font.get(c);
       svb[i].tex_bl = ch.tex;
       svb[i].tex_tr = ch.tex + ch.size;
       let ch = ch * 500.0;
       svb[i].size = ch.size;
-      svb[i].pos = off - ch.bearing;
+      svb[i].pos = off + ch.bearing;
       off += ch.advance;
     }
 
