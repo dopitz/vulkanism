@@ -1,8 +1,8 @@
 extern crate nobs_vulkanism_headless as vk;
 #[macro_use]
 extern crate nobs_vkmath as vkm;
-extern crate nobs_imgui_font as fnt;
 extern crate freetype;
+extern crate nobs_imgui_font as fnt;
 
 mod font;
 
@@ -90,6 +90,19 @@ impl Drop for ImGui {
   }
 }
 
+mod dejavu {
+  use crate::font::Char;
+  use crate::font::Font;
+  use crate::ImGui;
+
+  fnt::make_font! {
+    font = "dejavu/DejaVuSans.ttf",
+    margin = 32,
+    char_height = 5,
+    dump = "src/dejavk.rs",
+  }
+}
+
 impl ImGui {
   pub fn new(
     device: vk::Device,
@@ -100,7 +113,6 @@ impl ImGui {
     alloc: vk::mem::Allocator,
     inflight: usize,
   ) -> Self {
-
     let mut ub_viewport = vk::NULL_HANDLE;
     vk::mem::Buffer::new(&mut ub_viewport)
       .uniform_buffer(2 * std::mem::size_of::<f32>() as vk::DeviceSize)
@@ -127,7 +139,10 @@ impl ImGui {
 
   pub fn get_font(&self, font: &FontID) -> Arc<Font> {
     let mut fonts = self.fonts.lock().unwrap();
-    fonts.entry(font.clone()).or_insert_with(|| Arc::new(Font::new(&font, self))).clone()
+    fonts
+      .entry(font.clone())
+      .or_insert_with(|| Arc::new(Font::new(&font, self)))
+      .clone()
   }
 
   pub fn get_pipe_text(&self) -> std::sync::MutexGuard<Cached<text::Pipeline>> {
