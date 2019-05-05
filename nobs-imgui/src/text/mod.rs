@@ -249,18 +249,6 @@ impl Text {
 
     TypeSet::new(&*self.font).offset(vec2!(250.0)).size(50.0).compute(&self.text, svb);
 
-
-    //let mut off = vec2!(250.0);
-    //for (i, c) in self.text.chars().enumerate() {
-    //  let ch = self.font.get(c);
-    //  svb[i].tex_bl = ch.tex;
-    //  svb[i].tex_tr = ch.tex + ch.size;
-    //  let ch = ch * 500.0;
-    //  svb[i].size = ch.size;
-    //  svb[i].pos = off + ch.bearing;
-    //  off += ch.advance;
-    //}
-
     self.dirty = false;
   }
 }

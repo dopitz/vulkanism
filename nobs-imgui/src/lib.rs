@@ -90,19 +90,6 @@ impl Drop for ImGui {
   }
 }
 
-mod dejavu {
-  use crate::font::Char;
-  use crate::font::Font;
-  use crate::ImGui;
-
-  fnt::make_font! {
-    font = "dejavu/DejaVuSans.ttf",
-    margin = 32,
-    char_height = 5,
-    dump = "src/dejavk.rs",
-  }
-}
-
 impl ImGui {
   pub fn new(
     device: vk::Device,
@@ -141,7 +128,7 @@ impl ImGui {
     let mut fonts = self.fonts.lock().unwrap();
     fonts
       .entry(font.clone())
-      .or_insert_with(|| Arc::new(Font::new(&font, self)))
+      .or_insert_with(|| Arc::new(font::dejavu::new(self)))
       .clone()
   }
 
