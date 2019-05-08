@@ -1,0 +1,18 @@
+[package]
+name = "nobs-imgui-font-macro"
+version = "0.1.0"
+authors = ["Daniel Opitz <danielopitz91@gmail.com>"]
+description = "immediate gui font generator macro"
+license = "MIT"
+keywords = ["vulkan", "gui", "graphics", "gpu", "rendering"]
+categories = ["rendering::graphics-api"]
+repository = "https://github.com/dopitz/vulkanism/nobs-imgui/nobs-imgui-font"
+readme = "README.md"
+edition = "2018"
+
+[lib]
+proc_macro = true
+
+[dependencies]
+freetype-rs = {version = "0.19.1"}
+nobs-vkmath = {version = "0.1.0", path = "../../../nobs-vkmath"}

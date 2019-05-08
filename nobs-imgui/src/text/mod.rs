@@ -247,7 +247,7 @@ impl Text {
     let mut map = self.alloc.get_mapped(self.vb).unwrap();
     let svb = map.as_slice_mut::<pipe::Vertex>();
 
-    TypeSet::new(&*self.font).offset(vec2!(250.0)).size(50.0).compute(&self.text, svb);
+    TypeSet::new(&*self.font).offset(vec2!(250.0)).size(20.0).compute(&self.text, svb);
 
     self.dirty = false;
   }

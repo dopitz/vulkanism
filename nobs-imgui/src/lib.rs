@@ -2,9 +2,9 @@ extern crate nobs_vulkanism_headless as vk;
 #[macro_use]
 extern crate nobs_vkmath as vkm;
 extern crate freetype;
-extern crate nobs_imgui_font as fnt;
+extern crate nobs_imgui_font as font;
 
-mod font;
+//mod font;
 
 pub mod sizebounds;
 pub mod text;
@@ -128,7 +128,7 @@ impl ImGui {
     let mut fonts = self.fonts.lock().unwrap();
     fonts
       .entry(font.clone())
-      .or_insert_with(|| Arc::new(font::dejavu::new(self)))
+      .or_insert_with(|| Arc::new(font::dejavu_mono::new(self.device, &self.alloc, self.queue_copy, &self.cmds)))
       .clone()
   }
 
