@@ -228,11 +228,7 @@ impl FontBuilder {
       if std::path::Path::new(&font).is_file() {
         font.to_owned()
       } else {
-        PATHS
-          .iter()
-          .map(|p| (*p).to_owned() + "/" + &font)
-          .find(|p| std::path::Path::new(&p).is_file())
-          .ok_or(format!("Could not find font: {}", font))?
+        std::env::var("CARGO_MANIFEST_DIR").unwrap().to_owned() + "/" + &font
       }
     };
 
