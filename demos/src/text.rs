@@ -109,7 +109,7 @@ pub fn main() {
 
   let (mut sc, mut rp, mut fbs) = resize(&pdevice, &device, &window, &mut alloc, None, None, None);
 
-  let mut gui = imgui::ImGui::new(device.handle, device.queues[0].handle, cmds.clone(), rp.pass, 0, alloc.clone(), fbs.len());
+  let mut gui = imgui::ImGui::new(device.handle, device.queues[0].handle, &cmds, rp.pass, 0, &alloc, fbs.len());
 
   let mut text = imgui::text::Text::new(&gui);
 

@@ -70,8 +70,8 @@ pub struct ImGui {
   pub subpass: u32,
   pub alloc: vk::mem::Allocator,
   pub unused: vk::mem::UnusedResources,
+  pub font: Arc<Font>,
 
-  fonts: Arc<Mutex<HashMap<FontID, Arc<Font>>>>,
   pipe_text: Arc<Mutex<Cached<text::Pipeline>>>,
 
   pub ub_viewport: vk::Buffer,
@@ -80,12 +80,6 @@ pub struct ImGui {
 
 impl Drop for ImGui {
   fn drop(&mut self) {
-    let fonts = self.fonts.lock().unwrap();
-    for (_, f) in fonts.iter() {
-      vk::DestroyImageView(self.device, f.texview, std::ptr::null());
-      vk::DestroySampler(self.device, f.sampler, std::ptr::null());
-    }
-
     self.alloc.destroy(self.ub_viewport);
   }
 }
@@ -94,10 +88,10 @@ impl ImGui {
   pub fn new(
     device: vk::Device,
     queue_copy: vk::Queue,
-    cmds: vk::cmd::Pool,
+    cmds: &vk::cmd::Pool,
     pass: vk::RenderPass,
     subpass: u32,
-    alloc: vk::mem::Allocator,
+    alloc: &vk::mem::Allocator,
     inflight: usize,
   ) -> Self {
     let mut ub_viewport = vk::NULL_HANDLE;
@@ -110,13 +104,13 @@ impl ImGui {
     ImGui {
       device,
       queue_copy,
-      cmds,
+      cmds: cmds.clone(),
       pass,
       subpass,
-      alloc,
+      alloc: alloc.clone(),
       unused: vk::mem::UnusedResources::new(inflight),
+      font: Arc::new(font::dejavu_mono::new(device, alloc, queue_copy, cmds)),
 
-      fonts: Default::default(),
       pipe_text: Default::default(),
 
       ub_viewport,
@@ -124,12 +118,8 @@ impl ImGui {
     }
   }
 
-  pub fn get_font(&self, font: &FontID) -> Arc<Font> {
-    let mut fonts = self.fonts.lock().unwrap();
-    fonts
-      .entry(font.clone())
-      .or_insert_with(|| Arc::new(font::dejavu_mono::new(self.device, &self.alloc, self.queue_copy, &self.cmds)))
-      .clone()
+  pub fn get_font(&self) -> Arc<Font> {
+    self.font.clone()
   }
 
   pub fn get_pipe_text(&self) -> std::sync::MutexGuard<Cached<text::Pipeline>> {
@@ -155,7 +145,7 @@ impl ImGui {
 
 impl<'a> vk::cmd::commands::StreamPush for ImGui {
   fn enqueue(&self, cs: vk::cmd::Stream) -> vk::cmd::Stream {
-    self.unused.free(self.alloc.clone());
+    self.unused.destroy(self.alloc.clone());
     cs.push(&self.viewport)
   }
 }

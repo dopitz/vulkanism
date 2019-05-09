@@ -52,6 +52,12 @@ pub struct Font {
   pub char_height: f32,
 }
 
+impl Drop for Font {
+  fn drop(&mut self) {
+
+  }
+}
+
 impl Font {
   pub fn get(&self, c: char) -> Char {
     self.chars.get(&c).cloned().unwrap_or(Char {
@@ -98,13 +104,16 @@ impl<'a> TypeSet<'a> {
   pub fn compute<T: FontChar>(self, s: &str, buf: &mut [T]) {
     let mut off = self.offset;
     for (c, s) in s.chars().zip(buf.iter_mut()) {
+      if c == '\n' || c == '\r' {
+        off.x = self.offset.x;
+        off.y = off.y + self.size;
+      }
+
       let ch = self.font.get(c);
       s.set_tex(ch.tex00, ch.tex11);
       s.set_size(ch.size * self.size);
       s.set_position(off + ch.bearing * self.size);
       off += ch.advance * self.size;
-
-      println!("{:?}   {:?}   {:?}", ch.size * self.size, off + ch.bearing * self.size, ch.advance * self.size);
     }
   }
 }

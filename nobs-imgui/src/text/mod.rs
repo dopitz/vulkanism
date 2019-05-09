@@ -175,7 +175,7 @@ impl Text {
       )
     };
 
-    let font = gui.get_font(&FontID::new("curier", 12));
+    let font = gui.get_font();
     pipe::DsText::write(gui.device, ds_text.dset)
       .ub(|b| b.buffer(ub))
       .tex_sampler(|s| s.set(vk::IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, font.texview, font.sampler))
