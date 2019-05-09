@@ -1,6 +1,6 @@
-use vk;
-use crate::Block;
+use crate::block::Block;
 use crate::Error;
+use vk;
 
 use std::os::raw::c_void;
 
@@ -24,7 +24,15 @@ impl Mapped {
   /// Mapps the memory described by `block`
   pub fn new(device: vk::Device, block: Block) -> Result<Mapped, Error> {
     let mut ptr = std::ptr::null_mut();
-    vk_check!(vk::MapMemory(device, block.mem, block.beg + block.pad, block.size_padded(), 0, &mut ptr)).map_err(|_| Error::MapError)?;
+    vk_check!(vk::MapMemory(
+      device,
+      block.mem,
+      block.beg + block.pad,
+      block.size_padded(),
+      0,
+      &mut ptr
+    ))
+    .map_err(|_| Error::MapError)?;
     Ok(Mapped { device, block, ptr })
   }
 

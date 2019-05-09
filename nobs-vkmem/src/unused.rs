@@ -31,7 +31,7 @@ impl UnusedResources {
     imp.ring_buffer[i].push(resource);
   }
 
-  pub fn free(&self, mut alloc: Allocator) -> bool {
+  pub fn destroy(&self, mut alloc: Allocator) -> bool {
     let mut imp = self.imp.lock().unwrap();
     let i = (imp.ring_index + imp.ring_buffer.len() - 1) % imp.ring_buffer.len();
     let free = !imp.ring_buffer[i].is_empty();

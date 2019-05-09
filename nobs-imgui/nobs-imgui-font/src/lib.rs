@@ -52,6 +52,12 @@ pub struct Font {
   pub char_height: f32,
 }
 
+impl Drop for Font {
+  fn drop(&mut self) {
+
+  }
+}
+
 impl Font {
   pub fn get(&self, c: char) -> Char {
     self.chars.get(&c).cloned().unwrap_or(Char {
