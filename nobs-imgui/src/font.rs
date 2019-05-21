@@ -108,32 +108,3 @@ impl<'a> TypeSet<'a> {
     }
   }
 }
-
-
-//pub mod dejavu {
-//  use crate::font::Char;
-//  use crate::font::Font;
-//  use crate::ImGui;
-//  use vk::builder::*;
-//
-//  fnt::make_font! {
-//    font = "dejavu/DejaVuSans.ttf",
-//    margin = 16,
-//    char_height = 640,
-//    downsample = 16,
-//  }
-//}
-
-pub mod dejavu_mono {
-  use crate::font::Char;
-  use crate::font::Font;
-  use crate::ImGui;
-  use vk::builder::*;
-
-  fnt::make_font! {
-    font = "dejavu/DejaVuSansMono.ttf",
-    margin = 64,
-    char_height = 640,
-    downsample = 16,
-  }
-}

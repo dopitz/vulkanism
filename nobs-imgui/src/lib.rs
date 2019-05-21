@@ -109,7 +109,7 @@ impl ImGui {
       subpass,
       alloc: alloc.clone(),
       unused: vk::mem::UnusedResources::new(inflight),
-      font: Arc::new(font::dejavu_mono::new(device, alloc, queue_copy, cmds)),
+      font: Arc::new(font::dejavu_serif::new(device, alloc, queue_copy, cmds)),
 
       pipe_text: Default::default(),
 

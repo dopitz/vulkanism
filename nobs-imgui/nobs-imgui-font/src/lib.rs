@@ -119,18 +119,18 @@ impl<'a> TypeSet<'a> {
 }
 
 
-pub mod dejavu {
-  use crate::Char;
-  use crate::Font;
-  use vk::builder::*;
-
-  fnt::make_font! {
-    font = "fonts/DejaVuSans.ttf",
-    margin = 64,
-    char_height = 640,
-    downsample = 16,
-  }
-}
+//pub mod dejavu {
+//  use crate::Char;
+//  use crate::Font;
+//  use vk::builder::*;
+//
+//  fnt::make_font! {
+//    font = "fonts/DejaVuSans.ttf",
+//    margin = 64,
+//    char_height = 640,
+//    downsample = 16,
+//  }
+//}
 
 pub mod dejavu_mono {
   use crate::Char;
@@ -141,7 +141,7 @@ pub mod dejavu_mono {
     font = "fonts/DejaVuSansMono.ttf",
     margin = 64,
     char_height = 640,
-    downsample = 16,
+    downsample = 32,
   }
 }
 
@@ -154,6 +154,6 @@ pub mod dejavu_serif {
     font = "fonts/DejaVuSerif.ttf",
     margin = 64,
     char_height = 640,
-    downsample = 16,
+    downsample = 32,
   }
 }

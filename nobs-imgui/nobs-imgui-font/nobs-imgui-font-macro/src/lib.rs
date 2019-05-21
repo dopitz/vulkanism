@@ -106,7 +106,7 @@ impl Bitmap {
     let mut to = vec2!(0);
     let mut row_height = 0;
 
-    let scale = vec2!(1.0 / (char_height) as f32);
+    let scale = vec2!(1.0 / (char_height + 2 * margin) as f32);
     //let margin = (margin.into() * scale).into();
 
     //bm.resize(pitch * char_height, 0u8);
