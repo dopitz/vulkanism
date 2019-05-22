@@ -83,6 +83,9 @@ impl ImageBarrier {
     }
   }
 
+  pub fn to_shader_read(img: vk::Image) -> Self {
+    Self::new(img).to(vk::IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, vk::ACCESS_SHADER_READ_BIT)
+  }
   pub fn to_color_attachment(img: vk::Image) -> Self {
     Self::new(img).to(vk::IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, vk::ACCESS_COLOR_ATTACHMENT_WRITE_BIT)
   }

@@ -67,6 +67,16 @@ impl ImageViewBuilder {
     self.info.subresourceRange.aspectMask = aspect;
     self
   }
+  pub fn mip_levels(mut self, base_level: u32, count: u32) -> Self {
+    self.info.subresourceRange.baseMipLevel = base_level;
+    self.info.subresourceRange.levelCount = count;
+    self
+  }
+  pub fn array_layers(mut self, base_layer: u32, count: u32) -> Self {
+    self.info.subresourceRange.baseArrayLayer = base_layer;
+    self.info.subresourceRange.layerCount = count;
+    self
+  }
 
   pub fn create(&self, device: vk::Device) -> Result<vk::ImageView, vk::Error> {
     let mut view = vk::NULL_HANDLE;

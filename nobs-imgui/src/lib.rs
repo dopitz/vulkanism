@@ -6,11 +6,10 @@ extern crate nobs_imgui_font as font;
 
 //mod font;
 
-pub mod sizebounds;
+pub mod rect;
 pub mod text;
 pub mod window;
 
-use std::collections::HashMap;
 use std::sync::Arc;
 use std::sync::Mutex;
 
@@ -109,7 +108,7 @@ impl ImGui {
       subpass,
       alloc: alloc.clone(),
       unused: vk::mem::UnusedResources::new(inflight),
-      font: Arc::new(font::dejavu_serif::new(device, alloc, queue_copy, cmds)),
+      font: Arc::new(font::dejavu_mono::new(device, alloc, queue_copy, cmds)),
 
       pipe_text: Default::default(),
 

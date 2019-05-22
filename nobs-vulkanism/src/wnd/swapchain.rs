@@ -1,4 +1,6 @@
 use vk;
+use vk::cmd::commands::StreamPush;
+use vk::cmd::Stream;
 
 /// Result from [struct.Swapchain.html#method.next_image]
 ///
@@ -9,6 +11,25 @@ use vk;
 pub struct NextImage {
   pub signal: vk::Semaphore,
   pub index: u32,
+}
+
+/// Wrapper around the vanalli blit command, that also transitions image layouts
+///
+/// Transitions layouts of the `src` and `dst` image to `vk::IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL` and `vk::IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL` respectively.
+/// Then performs the blit command.
+/// Transitions the layout of `dst` to `vk::IMAGE_LAYOUT_PRESENT_SRC_KHR`.
+pub struct Blit {
+  pub blit: vk::cmd::commands::Blit,
+}
+
+impl StreamPush for Blit {
+  fn enqueue(&self, cs: Stream) -> Stream {
+    use vk::cmd::commands::ImageBarrier;
+    cs.push(&ImageBarrier::to_transfer_src(self.blit.im_src))
+      .push(&ImageBarrier::to_transfer_dst(self.blit.im_dst))
+      .push(&self.blit)
+      .push(&ImageBarrier::to_present(self.blit.im_dst))
+  }
 }
 
 /// Wrapper around a vulkan swapchain
@@ -54,15 +75,18 @@ impl Swapchain {
     NextImage { signal, index }
   }
 
-  /// Returns a [blit](../../cmd/commands/struct.Blit.html) command
+  /// Returns a [blit](struct.Blit.html) command
   ///
   /// The command is configured to blit the specified `src` image to the swapchain image at position `index`.
-  pub fn blit(&self, index: u32, src: vk::Image) -> vk::cmd::commands::Blit {
-    vk::cmd::commands::Blit::new()
-      .src(src)
-      .src_offset_end(self.extent.width as i32, self.extent.height as i32, 1)
-      .dst(self.images[index as usize])
-      .dst_offset_end(self.extent.width as i32, self.extent.height as i32, 1)
+  /// [Blit](struct.Blit.html) automatically handles layout transitions of the images and ensures that `src` is in `vk::IMAGE_LAYOUT_PRESENT_SRC_KHR` after blitting.
+  pub fn blit(&self, index: u32, src: vk::Image) -> Blit {
+    Blit {
+      blit: vk::cmd::commands::Blit::new()
+        .src(src)
+        .src_offset_end(self.extent.width as i32, self.extent.height as i32, 1)
+        .dst(self.images[index as usize])
+        .dst_offset_end(self.extent.width as i32, self.extent.height as i32, 1),
+    }
   }
 
   /// Presents a swapchain image

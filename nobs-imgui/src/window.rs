@@ -1,7 +1,7 @@
 use vk;
 use vk::builder::Buildable;
 
-use crate::sizebounds::SizeBounds;
+use crate::rect::Rect;
 
 pub trait Component: vk::cmd::commands::StreamPush {
   fn add_compontent(&mut self, wnd: &mut Window);
@@ -11,7 +11,7 @@ pub struct Window<'a> {
   pub device: vk::Device,
   pub ub_viewport: vk::Buffer,
 
-  pub bounds: SizeBounds,
+  pub rect: Rect,
 
   scissor: vk::cmd::commands::Scissor,
 
@@ -23,7 +23,7 @@ impl<'a> Window<'a> {
     Self {
       device,
       ub_viewport,
-      bounds: Default::default(),
+      rect: Default::default(),
       scissor: vk::cmd::commands::Scissor::with_size(0, 0),
       components: Default::default(),
     }
@@ -31,18 +31,18 @@ impl<'a> Window<'a> {
 
   pub fn size(mut self, w: u32, h: u32) -> Self {
     self.scissor.rect.extent = vk::Extent2D::build().set(w, h).extent;
-    self.bounds.size = vkm::Vec2::new(w, h);
+    self.rect.size = vkm::Vec2::new(w, h);
     self
   }
 
   pub fn position(mut self, x: i32, y: i32) -> Self {
     self.scissor.rect.offset = vk::Offset2D::build().set(x, y).offset;
-    self.bounds.position = vkm::Vec2::new(x, y);
+    self.rect.position = vkm::Vec2::new(x, y);
     self
   }
 
-  pub fn get_next_bounds(&mut self) -> SizeBounds {
-    self.bounds
+  pub fn get_next_bounds(&mut self) -> Rect {
+    self.rect
   }
 
   pub fn push(mut self, c: &'a mut Component) -> Self {

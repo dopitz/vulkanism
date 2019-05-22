@@ -2,10 +2,9 @@ use vk;
 use vk::builder::Buildable;
 use vk::cmd;
 use vk::pipes::descriptor;
-use vkm;
 
 use crate::font::*;
-use crate::sizebounds::SizeBounds;
+use crate::rect::Rect;
 use crate::window::Window;
 use crate::ImGui;
 
@@ -25,6 +24,7 @@ mod pipe {
     dset_name[1] = "DsText",
   }
 
+  #[derive(Debug)]
   #[repr(C)]
   pub struct Vertex {
     pub pos: vkm::Vec2f,
@@ -134,7 +134,7 @@ pub struct Text {
   unused: vk::mem::UnusedResources,
 
   ub_viewport: vk::Buffer,
-  bounds: SizeBounds,
+  rect: Rect,
 
   dirty: bool,
   text: String,
@@ -187,7 +187,7 @@ impl Text {
       unused: gui.unused.clone(),
 
       ub_viewport,
-      bounds: Default::default(),
+      rect: Default::default(),
 
       dirty: true,
       text: Default::default(),
@@ -247,7 +247,8 @@ impl Text {
     let mut map = self.alloc.get_mapped(self.vb).unwrap();
     let svb = map.as_slice_mut::<pipe::Vertex>();
 
-    TypeSet::new(&*self.font).offset(vec2!(250.0)).size(50.0).compute(&self.text, svb);
+    //TypeSet::new(&*self.font).offset(vec2!(250.0)).size(150.0).compute(&self.text, svb);
+    TypeSet::new(&*self.font).offset(vec2!(250.0)).size(20.0).compute(&self.text, svb);
 
     self.dirty = false;
   }
@@ -268,13 +269,13 @@ impl crate::window::Component for Text {
         .update();
     }
 
-    let bounds = wnd.get_next_bounds();
-    if self.bounds != bounds {
-      self.bounds = bounds;
+    let rect = wnd.get_next_bounds();
+    if self.rect != rect {
+      self.rect = rect;
 
       let mut map = self.alloc.get_mapped(self.ub).unwrap();
       let data = map.as_slice_mut::<pipe::Ub>();
-      data[0].offset = bounds.position;
+      data[0].offset = rect.position;
     }
 
     self.update_vb();

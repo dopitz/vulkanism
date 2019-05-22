@@ -27,7 +27,7 @@ impl Default for SamplerBuilder {
       compareOp: vk::COMPARE_OP_ALWAYS,
       mipLodBias: 0.0,
       minLod: 0.0,
-      maxLod: 0.0,
+      maxLod: 1.0,
       },
     }
   }
@@ -92,7 +92,7 @@ impl SamplerBuilder {
   }
 
   pub fn min_lod(mut self, lod: f32) -> Self {
-    self.info.maxLod = lod;
+    self.info.minLod = lod;
     self
   }
 

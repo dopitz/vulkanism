@@ -1,83 +1,14 @@
-use super::ImageBarrier;
 use super::Stream;
 use super::StreamPush;
 use vk;
 
-/// Begins a render pass
-#[derive(Clone, Copy)]
-pub struct RenderpassBegin {
-  pub info: vk::RenderPassBeginInfo,
-  pub contents: vk::SubpassContents,
-}
-
-impl RenderpassBegin {
-  pub fn new(pass: vk::RenderPass, framebuffer: vk::Framebuffer) -> RenderpassBegin {
-    Self {
-      info: vk::RenderPassBeginInfo {
-        sType: vk::STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
-        pNext: std::ptr::null(),
-        renderPass: pass,
-        framebuffer: framebuffer,
-        renderArea: vk::Rect2D {
-          offset: vk::Offset2D { x: 0, y: 0 },
-          extent: vk::Extent2D { width: 0, height: 0 },
-        },
-        clearValueCount: 0,
-        pClearValues: std::ptr::null(),
-      },
-      contents: vk::SUBPASS_CONTENTS_INLINE,
-    }
-  }
-
-  pub fn contents(mut self, contents: vk::SubpassContents) -> Self {
-    self.contents = contents;
-    self
-  }
-
-  pub fn offset(mut self, offset: vk::Offset2D) -> Self {
-    self.info.renderArea.offset = offset;
-    self
-  }
-  pub fn extent(mut self, extent: vk::Extent2D) -> Self {
-    self.info.renderArea.extent = extent;
-    self
-  }
-  pub fn area(mut self, area: vk::Rect2D) -> Self {
-    self.info.renderArea = area;
-    self
-  }
-
-  pub fn clear(mut self, clear: &[vk::ClearValue]) -> Self {
-    self.info.clearValueCount = clear.len() as u32;
-    self.info.pClearValues = clear.as_ptr();
-    self
-  }
-}
-
-impl StreamPush for RenderpassBegin {
-  fn enqueue(&self, cs: Stream) -> Stream {
-    vk::CmdBeginRenderPass(cs.buffer, &self.info, self.contents);
-    cs
-  }
-}
-
-/// Ends a render pass
-pub struct RenderpassEnd {}
-
-impl StreamPush for RenderpassEnd {
-  fn enqueue(&self, cs: Stream) -> Stream {
-    vk::CmdEndRenderPass(cs.buffer);
-    cs
-  }
-}
-
-/// Blits src to dst
+/// Blit command for copying, scaling and filtering an image
 #[derive(Clone, Copy)]
 pub struct Blit {
-  region: vk::ImageBlit,
-  src: vk::Image,
-  dst: vk::Image,
-  filter: vk::Filter,
+  pub region: vk::ImageBlit,
+  pub im_src: vk::Image,
+  pub im_dst: vk::Image,
+  pub im_filter: vk::Filter,
 }
 
 impl Blit {
@@ -99,14 +30,14 @@ impl Blit {
         },
         dstOffsets: [vk::Offset3D { x: 0, y: 0, z: 0 }, vk::Offset3D { x: 0, y: 0, z: 0 }],
       },
-      src: vk::NULL_HANDLE,
-      dst: vk::NULL_HANDLE,
-      filter: vk::FILTER_LINEAR,
+      im_src: vk::NULL_HANDLE,
+      im_dst: vk::NULL_HANDLE,
+      im_filter: vk::FILTER_LINEAR,
     }
   }
 
   pub fn src(mut self, img: vk::Image) -> Self {
-    self.src = img;
+    self.im_src = img;
     self
   }
 
@@ -126,7 +57,7 @@ impl Blit {
   }
 
   pub fn dst(mut self, img: vk::Image) -> Self {
-    self.dst = img;
+    self.im_dst = img;
     self
   }
 
@@ -146,29 +77,24 @@ impl Blit {
   }
 
   pub fn filter(mut self, filter: vk::Filter) -> Self {
-    self.filter = filter;
+    self.im_filter = filter;
     self
   }
 }
 
 impl StreamPush for Blit {
   fn enqueue(&self, cs: Stream) -> Stream {
-    let cs = cs
-      .push(&ImageBarrier::to_transfer_src(self.src))
-      .push(&ImageBarrier::to_transfer_dst(self.dst));
-
     vk::CmdBlitImage(
       cs.buffer,
-      self.src,
+      self.im_src,
       vk::IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-      self.dst,
+      self.im_dst,
       vk::IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
       1,
       &self.region,
-      self.filter,
+      self.im_filter,
     );
-
-    cs.push(&ImageBarrier::to_present(self.dst))
+    cs
   }
 }
 

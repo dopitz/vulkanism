@@ -1,18 +1,18 @@
 use vkm;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct SizeBounds {
+pub struct Rect {
   pub position: vkm::Vec2i,
   pub size: vkm::Vec2u,
 }
 
-impl Default for SizeBounds {
+impl Default for Rect {
   fn default() -> Self {
     Self::from_rect(0, 0, 0, 0)
   }
 }
 
-impl SizeBounds {
+impl Rect {
   pub fn new(position: vkm::Vec2i, size: vkm::Vec2u) -> Self {
     Self { position, size }
   }

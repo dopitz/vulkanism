@@ -3,10 +3,6 @@ extern crate nobs_vulkanism_headless as vk;
 extern crate nobs_vkmath as vkm;
 extern crate nobs_imgui_font_macro as fnt;
 
-use vk::builder::Buildable;
-use vk::cmd;
-use vk::mem;
-
 #[derive(Debug, Clone, Hash, PartialEq, Eq)]
 pub struct FontID {
   name: String,
@@ -49,12 +45,11 @@ pub struct Font {
   pub sampler: vk::Sampler,
 
   pub chars: std::collections::HashMap<char, Char>,
-  pub char_height: f32,
 }
 
 impl Drop for Font {
   fn drop(&mut self) {
-
+    
   }
 }
 
@@ -86,7 +81,7 @@ impl<'a> TypeSet<'a> {
   pub fn new(font: &'a Font) -> Self {
     Self {
       font,
-      size: 12.0 * font.char_height,
+      size: 12.0,
       offset: vec2!(0.0),
     }
   }
@@ -119,18 +114,15 @@ impl<'a> TypeSet<'a> {
 }
 
 
-//pub mod dejavu {
-//  use crate::Char;
-//  use crate::Font;
-//  use vk::builder::*;
-//
-//  fnt::make_font! {
-//    font = "fonts/DejaVuSans.ttf",
-//    margin = 64,
-//    char_height = 640,
-//    downsample = 16,
-//  }
-//}
+pub mod dejavu {
+  use crate::Char;
+  use crate::Font;
+  use vk::builder::*;
+
+  fnt::make_font! {
+    font = "fonts/DejaVuSans.ttf",
+  }
+}
 
 pub mod dejavu_mono {
   use crate::Char;
@@ -139,9 +131,6 @@ pub mod dejavu_mono {
 
   fnt::make_font! {
     font = "fonts/DejaVuSansMono.ttf",
-    margin = 64,
-    char_height = 640,
-    downsample = 32,
   }
 }
 
@@ -152,8 +141,5 @@ pub mod dejavu_serif {
 
   fnt::make_font! {
     font = "fonts/DejaVuSerif.ttf",
-    margin = 64,
-    char_height = 640,
-    downsample = 32,
   }
 }

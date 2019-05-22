@@ -16,7 +16,6 @@ pub struct BindInfo {
   pub handle: Handle<u64>,
   pub properties: vk::MemoryPropertyFlags,
   pub linear: bool,
-  pub size: Option<vk::DeviceSize>,
 }
 
 impl BindInfo {
@@ -30,22 +29,6 @@ impl BindInfo {
       handle,
       properties,
       linear,
-      size: None,
-    }
-  }
-
-  /// Create BindInfo with the specified memory properties and explicit size in bytes
-  ///
-  /// ## Arguments
-  /// *`handle` - the handle that needs a memory binding
-  /// *`size` - the actual size of the resource (in bytes)
-  /// *`properties` - the memory properties indicating if the resource is device local or host accessible
-  pub fn with_size(handle: Handle<u64>, properties: vk::MemoryPropertyFlags, linear: bool, size: vk::DeviceSize) -> Self {
-    Self {
-      handle,
-      properties,
-      linear,
-      size: Some(size),
     }
   }
 }
@@ -69,10 +52,7 @@ impl BindInfoInner {
       Handle::Buffer(b) => vk::GetBufferMemoryRequirements(device, b, &mut requirements),
     }
     let handle = info.handle;
-    let size = match info.size {
-      Some(size) => size,
-      None => requirements.size,
-    };
+    let size = requirements.size;
 
     Self {
       handle,
