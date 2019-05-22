@@ -151,9 +151,9 @@ impl Drop for Text {
   fn drop(&mut self) {
     self.mem.trash.push(self.ub);
     self.mem.trash.push(self.vb);
-    let p = self.gui.get_pipe_text().pool;
-    p.free_dset(self.ds_viewport);
-    p.free_dset(self.ds_text);
+    //let p = self.gui.get_pipe_text().pool;
+    //p.free_dset(self.ds_viewport);
+    //p.free_dset(self.ds_text);
   }
 }
 

@@ -10,6 +10,7 @@ pub mod rect;
 pub mod text;
 pub mod window;
 
+use std::collections::HashMap;
 use std::sync::Arc;
 use std::sync::Mutex;
 
@@ -70,6 +71,7 @@ pub struct ImGui {
   pub mem: vk::mem::Mem,
   pub font: Arc<Font>,
 
+  pipes: Arc<Mutex<HashMap<String, Arc<(vk::pipes::Pipeline, vk::pipes::descriptor::Pool)>>>>,
   pipe_text: Arc<Mutex<Cached<text::Pipeline>>>,
 
   pub ub_viewport: vk::Buffer,
@@ -91,7 +93,6 @@ impl ImGui {
     subpass: u32,
     mem: vk::mem::Mem,
   ) -> Self {
-
     let mut mem = mem.clone();
     let font = Arc::new(font::dejavu_mono::new(device, &mem.alloc, queue_copy, &cmds));
 
@@ -102,7 +103,6 @@ impl ImGui {
       .bind(&mut mem.alloc, vk::mem::BindType::Block)
       .unwrap();
 
-
     ImGui {
       device,
       queue_copy,
@@ -112,6 +112,7 @@ impl ImGui {
       mem,
       font,
 
+      pipes: Arc::new(Mutex::new(HashMap::new())),
       pipe_text: Default::default(),
 
       ub_viewport,
@@ -121,6 +122,22 @@ impl ImGui {
 
   pub fn get_font(&self) -> Arc<Font> {
     self.font.clone()
+  }
+
+  pub fn get_pipeline<F: FnOnce(&ImGui) -> (vk::pipes::Pipeline, vk::pipes::descriptor::Pool)>(
+    &self,
+    ident: &str,
+    create: F,
+  ) -> Arc<(vk::pipes::Pipeline, vk::pipes::descriptor::Pool)> {
+    let mut p = self.pipes.lock().unwrap();
+    match p.get_mut(ident) {
+      Some(x) => x.clone(),
+      None => {
+        let x = Arc::new(create(&self));
+        p.insert(ident.to_string(), x.clone());
+        x
+      }
+    }
   }
 
   pub fn get_pipe_text(&self) -> std::sync::MutexGuard<Cached<text::Pipeline>> {
