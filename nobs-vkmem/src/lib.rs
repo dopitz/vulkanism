@@ -30,7 +30,7 @@ mod handle;
 mod mapped;
 mod memtype;
 mod table;
-mod unused;
+mod trash;
 
 pub use allocator::*;
 pub use bindinfo::BindInfo;
@@ -41,7 +41,7 @@ pub use builder::Resource;
 pub use handle::Handle;
 pub use mapped::Mapped;
 pub use memtype::Memtype;
-pub use unused::UnusedResources;
+pub use trash::Trash;
 
 /// Errors that can be occure when using this crate
 #[derive(Debug)]
@@ -68,4 +68,19 @@ pub enum Error {
   AlreadyBound,
   /// indicates, that the requested memory region could not be mapped
   MapError,
+}
+
+#[derive(Clone)]
+pub struct Mem {
+  pub alloc: Allocator,
+  pub trash: Trash,
+}
+
+impl Mem {
+  pub fn new(alloc: Allocator, inflight: usize) -> Self {
+    Self {
+      alloc: alloc.clone(),
+      trash: Trash::new(alloc, inflight)
+    }
+  }
 }

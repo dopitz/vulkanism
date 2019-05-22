@@ -130,8 +130,7 @@ impl Pipeline {
 
 pub struct Text {
   device: vk::Device,
-  alloc: vk::mem::Allocator,
-  unused: vk::mem::UnusedResources,
+  mem: vk::mem::Mem,
 
   ub_viewport: vk::Buffer,
   rect: Rect,
@@ -150,7 +149,11 @@ pub struct Text {
 
 impl Drop for Text {
   fn drop(&mut self) {
-    self.alloc.destroy_many(&[self.ub, self.vb]);
+    self.mem.trash.push(self.ub);
+    self.mem.trash.push(self.vb);
+    let p = self.gui.get_pipe_text().pool;
+    p.free_dset(self.ds_viewport);
+    p.free_dset(self.ds_text);
   }
 }
 
@@ -159,12 +162,17 @@ impl Text {
     let ub_viewport = vk::NULL_HANDLE;
     let vb = vk::NULL_HANDLE;
 
+    let device = gui.device;
+    let mut mem = gui.mem.clone();
+
     let mut ub = vk::NULL_HANDLE;
     vk::mem::Buffer::new(&mut ub)
       .uniform_buffer(std::mem::size_of::<pipe::Ub>() as vk::DeviceSize)
       .devicelocal(false)
-      .bind(&mut gui.alloc.clone(), vk::mem::BindType::Block)
+      .bind(&mut mem.alloc, vk::mem::BindType::Block)
       .unwrap();
+
+    println!("{:?}", module_path!());
 
     let (pipe, ds_viewport, ds_text) = {
       let mut p = gui.get_pipe_text();
@@ -176,15 +184,14 @@ impl Text {
     };
 
     let font = gui.get_font();
-    pipe::DsText::write(gui.device, ds_text.dset)
+    pipe::DsText::write(device, ds_text.dset)
       .ub(|b| b.buffer(ub))
       .tex_sampler(|s| s.set(vk::IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, font.texview, font.sampler))
       .update();
 
     Text {
-      device: gui.device,
-      alloc: gui.alloc.clone(),
-      unused: gui.unused.clone(),
+      device,
+      mem,
 
       ub_viewport,
       rect: Default::default(),
@@ -228,13 +235,13 @@ impl Text {
 
     // create new buffer
     if self.text.len() > self.draw.instance_count as usize {
-      self.unused.push(self.vb);
+      self.mem.trash.push(self.vb);
       self.vb = vk::NULL_HANDLE;
 
       vk::mem::Buffer::new(&mut self.vb)
         .vertex_buffer((self.text.len() * std::mem::size_of::<pipe::Vertex>()) as vk::DeviceSize)
         .devicelocal(false)
-        .bind(&mut self.alloc.clone(), vk::mem::BindType::Block)
+        .bind(&mut self.mem.alloc, vk::mem::BindType::Block)
         .unwrap();
 
       self.draw = cmd::commands::Draw::default()
@@ -244,7 +251,7 @@ impl Text {
         .vertex_count(4);
     }
 
-    let mut map = self.alloc.get_mapped(self.vb).unwrap();
+    let mut map = self.mem.alloc.get_mapped(self.vb).unwrap();
     let svb = map.as_slice_mut::<pipe::Vertex>();
 
     //TypeSet::new(&*self.font).offset(vec2!(250.0)).size(150.0).compute(&self.text, svb);
@@ -273,7 +280,7 @@ impl crate::window::Component for Text {
     if self.rect != rect {
       self.rect = rect;
 
-      let mut map = self.alloc.get_mapped(self.ub).unwrap();
+      let mut map = self.mem.alloc.get_mapped(self.ub).unwrap();
       let data = map.as_slice_mut::<pipe::Ub>();
       data[0].offset = rect.position;
     }

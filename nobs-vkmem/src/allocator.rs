@@ -10,7 +10,6 @@ use crate::Error;
 use crate::Handle;
 use crate::Mapped;
 use crate::Memtype;
-use crate::UnusedResources;
 
 /// Defines meta information for the [Allocator](struct.Allocator.html)
 ///

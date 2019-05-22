@@ -67,8 +67,7 @@ pub struct ImGui {
   pub cmds: vk::cmd::Pool,
   pub pass: vk::RenderPass,
   pub subpass: u32,
-  pub alloc: vk::mem::Allocator,
-  pub unused: vk::mem::UnusedResources,
+  pub mem: vk::mem::Mem,
   pub font: Arc<Font>,
 
   pipe_text: Arc<Mutex<Cached<text::Pipeline>>>,
@@ -79,7 +78,7 @@ pub struct ImGui {
 
 impl Drop for ImGui {
   fn drop(&mut self) {
-    self.alloc.destroy(self.ub_viewport);
+    self.mem.alloc.destroy(self.ub_viewport);
   }
 }
 
@@ -87,28 +86,31 @@ impl ImGui {
   pub fn new(
     device: vk::Device,
     queue_copy: vk::Queue,
-    cmds: &vk::cmd::Pool,
+    cmds: vk::cmd::Pool,
     pass: vk::RenderPass,
     subpass: u32,
-    alloc: &vk::mem::Allocator,
-    inflight: usize,
+    mem: vk::mem::Mem,
   ) -> Self {
+
+    let mut mem = mem.clone();
+    let font = Arc::new(font::dejavu_mono::new(device, &mem.alloc, queue_copy, &cmds));
+
     let mut ub_viewport = vk::NULL_HANDLE;
     vk::mem::Buffer::new(&mut ub_viewport)
       .uniform_buffer(2 * std::mem::size_of::<f32>() as vk::DeviceSize)
       .devicelocal(false)
-      .bind(&mut alloc.clone(), vk::mem::BindType::Block)
+      .bind(&mut mem.alloc, vk::mem::BindType::Block)
       .unwrap();
+
 
     ImGui {
       device,
       queue_copy,
-      cmds: cmds.clone(),
+      cmds,
       pass,
       subpass,
-      alloc: alloc.clone(),
-      unused: vk::mem::UnusedResources::new(inflight),
-      font: Arc::new(font::dejavu_mono::new(device, alloc, queue_copy, cmds)),
+      mem,
+      font,
 
       pipe_text: Default::default(),
 
@@ -130,7 +132,7 @@ impl ImGui {
   }
 
   pub fn resize(&mut self, extent: vk::Extent2D) {
-    let mut map = self.alloc.get_mapped(self.ub_viewport).unwrap();
+    let mut map = self.mem.alloc.get_mapped(self.ub_viewport).unwrap();
     let data = map.as_slice_mut::<u32>();
     data[0] = extent.width as u32;
     data[1] = extent.height as u32;
@@ -144,7 +146,7 @@ impl ImGui {
 
 impl<'a> vk::cmd::commands::StreamPush for ImGui {
   fn enqueue(&self, cs: vk::cmd::Stream) -> vk::cmd::Stream {
-    self.unused.destroy(self.alloc.clone());
+    self.mem.trash.clean();
     cs.push(&self.viewport)
   }
 }
