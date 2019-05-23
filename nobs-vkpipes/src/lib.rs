@@ -82,7 +82,6 @@ pub use nobs_vkpipes_macro::pipeline;
 pub use nobs_vkpipes_macro::shader;
 
 pub mod pipeline;
-pub use pipeline::Pipeline;
 pub use pipeline::builder::compute::Compute as ComputeBuilder;
 pub use pipeline::builder::graphics::blend::AttachmentBuilder as BlendAttachment;
 pub use pipeline::builder::graphics::blend::Builder as Blend;
@@ -95,8 +94,12 @@ pub use pipeline::builder::graphics::tesselation::Builder as Tesselation;
 pub use pipeline::builder::graphics::vertex_input::Builder as VertexInput;
 pub use pipeline::builder::graphics::viewport::Builder as Viewport;
 pub use pipeline::builder::graphics::Graphics as GraphicsBuilder;
+pub use pipeline::Pipeline;
 
 pub mod descriptor;
+pub use descriptor::DescriptorLayout;
+pub use descriptor::DescriptorPool;
+pub use descriptor::DescriptorSizes;
 
 #[derive(Debug)]
 pub enum Error {

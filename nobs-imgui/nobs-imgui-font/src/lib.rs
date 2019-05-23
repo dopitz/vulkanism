@@ -3,6 +3,8 @@ extern crate nobs_vulkanism_headless as vk;
 extern crate nobs_vkmath as vkm;
 extern crate nobs_imgui_font_macro as fnt;
 
+use std::collections::HashMap;
+
 #[derive(Debug, Clone, Hash, PartialEq, Eq)]
 pub struct FontID {
   name: String,
@@ -40,20 +42,43 @@ impl std::ops::Mul<f32> for Char {
 }
 
 pub struct Font {
+  device: vk::Device,
+  mem: vk::mem::Mem,
+
   pub tex: vk::Image,
   pub texview: vk::ImageView,
   pub sampler: vk::Sampler,
 
-  pub chars: std::collections::HashMap<char, Char>,
+  pub chars: HashMap<char, Char>,
 }
 
 impl Drop for Font {
   fn drop(&mut self) {
-    
+    self.mem.trash.push(self.tex);
+    vk::DestroyImageView(self.device, self.texview, std::ptr::null());
+    vk::DestroySampler(self.device, self.sampler, std::ptr::null());
   }
 }
 
 impl Font {
+  pub fn new(
+    device: vk::Device,
+    mem: vk::mem::Mem,
+    tex: vk::Image,
+    texview: vk::ImageView,
+    sampler: vk::Sampler,
+    chars: HashMap<char, Char>,
+  ) -> Self {
+    Self {
+      device,
+      mem,
+      tex,
+      texview,
+      sampler,
+      chars,
+    }
+  }
+
   pub fn get(&self, c: char) -> Char {
     self.chars.get(&c).cloned().unwrap_or(Char {
       tex00: vec2!(0.0),
@@ -112,7 +137,6 @@ impl<'a> TypeSet<'a> {
     }
   }
 }
-
 
 pub mod dejavu {
   use crate::Char;

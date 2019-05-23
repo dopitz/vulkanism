@@ -1,136 +1,21 @@
-use vk;
-use vk::builder::Buildable;
-use vk::cmd;
-use vk::pipes::descriptor;
+mod pipeline;
+use pipeline as pipe;
 
+use crate::cachedpipeline::*;
 use crate::font::*;
 use crate::rect::Rect;
 use crate::window::Window;
 use crate::ImGui;
 
-mod pipe {
-  vk::pipes::pipeline! {
-    stage = {
-      ty = "vert",
-      glsl = "src/text/text.vert",
-    }
-
-    stage = {
-      ty = "frag",
-      glsl = "src/text/text.frag",
-    }
-
-    dset_name[0] = "DsViewport",
-    dset_name[1] = "DsText",
-  }
-
-  #[derive(Debug)]
-  #[repr(C)]
-  pub struct Vertex {
-    pub pos: vkm::Vec2f,
-    pub size: vkm::Vec2f,
-    pub tex_bl: vkm::Vec2f,
-    pub tex_tr: vkm::Vec2f,
-  }
-
-  impl crate::font::FontChar for Vertex {
-    fn set_position(&mut self, p: vkm::Vec2f) {
-      self.pos = p;
-    }
-    fn set_size(&mut self, s: vkm::Vec2f) {
-      self.size = s;
-    }
-    fn set_tex(&mut self, t00: vkm::Vec2f, t11: vkm::Vec2f) {
-      self.tex_bl = t00;
-      self.tex_tr = t11;
-    }
-  }
-
-  #[repr(C)]
-  pub struct Ub {
-    pub offset: vkm::Vec2i,
-  }
-}
-
-pub struct Pipeline {
-  pipe: vk::pipes::Pipeline,
-  pool: descriptor::Pool,
-}
-
-impl Pipeline {
-  pub fn new(device: vk::Device, pass: vk::RenderPass, subpass: u32) -> Self {
-    let pipe = pipe::new(device, pass, subpass)
-      .vertex_input(
-        vk::PipelineVertexInputStateCreateInfo::build()
-          .push_binding(
-            vk::VertexInputBindingDescription::build()
-              .binding(0)
-              .input_rate(vk::VERTEX_INPUT_RATE_INSTANCE)
-              .stride(std::mem::size_of::<pipe::Vertex>() as u32)
-              .binding,
-          )
-          .push_attribute(
-            vk::VertexInputAttributeDescription::build()
-              .binding(0)
-              .location(0)
-              .format(vk::FORMAT_R32G32_SFLOAT)
-              .attribute,
-          )
-          .push_attribute(
-            vk::VertexInputAttributeDescription::build()
-              .binding(0)
-              .location(1)
-              .format(vk::FORMAT_R32G32_SFLOAT)
-              .offset(2 * std::mem::size_of::<f32>() as u32)
-              .attribute,
-          )
-          .push_attribute(
-            vk::VertexInputAttributeDescription::build()
-              .binding(0)
-              .location(2)
-              .format(vk::FORMAT_R32G32_SFLOAT)
-              .offset(4 * std::mem::size_of::<f32>() as u32)
-              .attribute,
-          )
-          .push_attribute(
-            vk::VertexInputAttributeDescription::build()
-              .binding(0)
-              .location(3)
-              .format(vk::FORMAT_R32G32_SFLOAT)
-              .offset(6 * std::mem::size_of::<f32>() as u32)
-              .attribute,
-          ),
-      )
-      .input_assembly(vk::PipelineInputAssemblyStateCreateInfo::build().topology(vk::PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP))
-      .dynamic(
-        vk::PipelineDynamicStateCreateInfo::build()
-          .push_state(vk::DYNAMIC_STATE_VIEWPORT)
-          .push_state(vk::DYNAMIC_STATE_SCISSOR),
-      )
-      .blend(vk::PipelineColorBlendStateCreateInfo::build().push_attachment(vk::PipelineColorBlendAttachmentState::build()))
-      .create()
-      .unwrap();
-
-    let pool = descriptor::Pool::new(
-      device,
-      descriptor::Pool::new_capacity().add(&pipe.dsets[0], 1).add(&pipe.dsets[1], 1),
-    );
-
-    Self { pipe, pool }
-  }
-
-  pub fn new_ds_viewport(&mut self) -> Result<vk::DescriptorSet, vk::pipes::Error> {
-    self.pool.new_dset(&self.pipe.dsets[0])
-  }
-
-  pub fn new_ds_text(&mut self) -> Result<vk::DescriptorSet, vk::pipes::Error> {
-    self.pool.new_dset(&self.pipe.dsets[1])
-  }
-}
+use vk;
+use vk::cmd;
+use vk::cmd::commands as cmds;
 
 pub struct Text {
   device: vk::Device,
   mem: vk::mem::Mem,
+
+  gui: ImGui,
 
   ub_viewport: vk::Buffer,
   rect: Rect,
@@ -141,19 +26,19 @@ pub struct Text {
   vb: vk::Buffer,
   ub: vk::Buffer,
 
-  pipe: vk::cmd::commands::BindPipeline,
-  ds_viewport: vk::cmd::commands::BindDset,
-  ds_text: vk::cmd::commands::BindDset,
-  draw: cmd::commands::DrawVertices,
+  pipe: cmds::BindPipeline,
+  ds_viewport: cmds::BindDset,
+  ds_text: cmds::BindDset,
+  draw: cmds::DrawVertices,
 }
 
 impl Drop for Text {
   fn drop(&mut self) {
     self.mem.trash.push(self.ub);
     self.mem.trash.push(self.vb);
-    //let p = self.gui.get_pipe_text().pool;
-    //p.free_dset(self.ds_viewport);
-    //p.free_dset(self.ds_text);
+    let p = &self.gui.get_pipeline::<pipe::Pipeline>().get_cache().pool;
+    p.free_dset(self.ds_viewport.dset);
+    p.free_dset(self.ds_text.dset);
   }
 }
 
@@ -162,8 +47,8 @@ impl Text {
     let ub_viewport = vk::NULL_HANDLE;
     let vb = vk::NULL_HANDLE;
 
-    let device = gui.device;
-    let mut mem = gui.mem.clone();
+    let device = gui.get_device();
+    let mut mem = gui.get_mem();
 
     let mut ub = vk::NULL_HANDLE;
     vk::mem::Buffer::new(&mut ub)
@@ -175,11 +60,21 @@ impl Text {
     println!("{:?}", module_path!());
 
     let (pipe, ds_viewport, ds_text) = {
-      let mut p = gui.get_pipe_text();
+      let mut p = gui.get_pipeline::<pipe::Pipeline>();
       (
-        cmd::commands::BindPipeline::graphics(p.pipe.handle),
-        cmd::commands::BindDset::new(vk::PIPELINE_BIND_POINT_GRAPHICS, p.pipe.layout, 0, p.new_ds_viewport().unwrap()),
-        cmd::commands::BindDset::new(vk::PIPELINE_BIND_POINT_GRAPHICS, p.pipe.layout, 1, p.new_ds_text().unwrap()),
+        cmds::BindPipeline::graphics(p.get_cache().pipe.handle),
+        cmds::BindDset::new(
+          vk::PIPELINE_BIND_POINT_GRAPHICS,
+          p.get_cache().pipe.layout,
+          0,
+          p.new_ds_viewport().unwrap(),
+        ),
+        cmds::BindDset::new(
+          vk::PIPELINE_BIND_POINT_GRAPHICS,
+          p.get_cache().pipe.layout,
+          1,
+          p.new_ds_text().unwrap(),
+        ),
       )
     };
 
@@ -192,6 +87,7 @@ impl Text {
     Text {
       device,
       mem,
+      gui: gui.clone(),
 
       ub_viewport,
       rect: Default::default(),
@@ -205,7 +101,7 @@ impl Text {
       pipe,
       ds_viewport,
       ds_text,
-      draw: cmd::commands::Draw::default().vertices().instance_count(0),
+      draw: cmds::Draw::default().vertices().instance_count(0),
     }
   }
 
@@ -244,7 +140,7 @@ impl Text {
         .bind(&mut self.mem.alloc, vk::mem::BindType::Block)
         .unwrap();
 
-      self.draw = cmd::commands::Draw::default()
+      self.draw = cmds::Draw::default()
         .push(self.vb, 0)
         .vertices()
         .instance_count(self.text.len() as u32)
@@ -261,7 +157,7 @@ impl Text {
   }
 }
 
-impl vk::cmd::commands::StreamPush for Text {
+impl cmds::StreamPush for Text {
   fn enqueue(&self, cs: cmd::Stream) -> cmd::Stream {
     cs.push(&self.pipe).push(&self.ds_viewport).push(&self.ds_text).push(&self.draw)
   }

@@ -1,10 +1,10 @@
 use vk;
 
-use crate::descriptor::PoolSizes;
+use crate::DescriptorSizes;
 
 /// Descriptor layout with acompanying pool sizes
 #[derive(Debug, Clone, Copy)]
-pub struct Layout {
+pub struct DescriptorLayout {
   pub layout: vk::DescriptorSetLayout,
-  pub sizes: PoolSizes,
+  pub sizes: DescriptorSizes,
 }

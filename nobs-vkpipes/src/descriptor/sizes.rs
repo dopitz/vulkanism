@@ -1,24 +1,24 @@
 use vk;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub struct PoolSizes {
+pub struct DescriptorSizes {
   counts: [u32; 12],
   pub num_sets: u32,
 }
 
-impl std::ops::Index<vk::DescriptorType> for PoolSizes {
+impl std::ops::Index<vk::DescriptorType> for DescriptorSizes {
   type Output = u32;
   fn index(&self, dt: vk::DescriptorType) -> &u32 {
     self.counts.index(Self::get_index(dt))
   }
 }
-impl std::ops::IndexMut<vk::DescriptorType> for PoolSizes {
+impl std::ops::IndexMut<vk::DescriptorType> for DescriptorSizes {
   fn index_mut(&mut self, dt: vk::DescriptorType) -> &mut u32 {
     self.counts.index_mut(Self::get_index(dt))
   }
 }
 
-impl PoolSizes {
+impl DescriptorSizes {
   const DESCTYPE_X: vk::DescriptorType = vk::DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
 
   fn get_index(dt: vk::DescriptorType) -> usize {

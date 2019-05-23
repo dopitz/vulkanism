@@ -1,6 +1,6 @@
 pub mod builder;
 
-use crate::descriptor;
+use crate::DescriptorLayout;
 use vk;
 
 /// Binding for a uniform variable in a vulkan pipeline
@@ -19,7 +19,7 @@ pub struct Binding {
 pub struct Pipeline {
   pub device: vk::Device,
   pub handle: vk::Pipeline,
-  pub dsets: Vec<descriptor::Layout>,
+  pub dsets: Vec<DescriptorLayout>,
   pub layout: vk::PipelineLayout,
 }
 

@@ -1,8 +1,8 @@
 pub mod layout;
 pub mod pool;
-pub mod poolsizes;
+pub mod sizes;
 pub mod writes;
 
-pub use pool::Pool;
-pub use poolsizes::PoolSizes;
-pub use layout::Layout;
+pub use pool::DescriptorPool;
+pub use sizes::DescriptorSizes;
+pub use layout::DescriptorLayout;

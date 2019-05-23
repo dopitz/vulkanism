@@ -4,17 +4,12 @@ extern crate proc_macro;
 
 use std::collections::HashMap;
 use std::io::Write;
-use std::path::Path;
 use std::process::Command;
-use std::sync::Arc;
-use std::sync::Mutex;
 
 use proc_macro::TokenStream;
 use proc_macro::TokenTree;
 
 use vkm::*;
-
-const PATHS: &[&str] = &["/usr/share/fonts", "/usr/share/fonts/truetype"];
 
 fn parse<T: Iterator<Item = TokenTree>>(tokens: &mut T) -> String {
   tokens
@@ -142,7 +137,7 @@ impl FontBuilder {
     let face = lib.new_face(&self.path, 0).map_err(|_| "Could not load face")?;
     face.set_pixel_sizes(0, self.char_height as u32).unwrap();
 
-    let mut chars = self
+    let chars = self
       .chars
       .iter()
       .map(|&c| {
@@ -229,7 +224,7 @@ impl FontBuilder {
   }
 
   pub fn create(&self) -> Result<String, String> {
-    let (lib, face, chars) = self.load_chars()?;
+    let (_, face, chars) = self.load_chars()?;
     let (slot_size, tex_size) = self.compute_texture_dimensions(&chars);
     let (data, chars) = self.make_image(&face, &chars, slot_size, tex_size);
 
@@ -249,12 +244,12 @@ impl FontBuilder {
     let char_tbl = (0..256).into_iter().map(|c| c.to_string() + ", ").collect::<Vec<String>>();
     let s = format!(
       "
-      pub fn new(device: vk::Device, alloc: &vk::mem::Allocator, queue_copy: vk::Queue, cmds: &vk::cmd::Pool) -> Font {{
+      pub fn new(device: vk::Device, mut mem: vk::mem::Mem, copy_queue: vk::Queue, cmds: &vk::cmd::Pool) -> Font {{
         let mut tex = vk::NULL_HANDLE;
         vk::mem::Image::new(&mut tex)
           .texture2d({dimx}, {dimy}, vk::FORMAT_R8_UNORM)
           .mip_levels({mip_levels})
-          .bind(&mut alloc.clone(), vk::mem::BindType::Scatter)
+          .bind(&mut mem.alloc, vk::mem::BindType::Scatter)
           .unwrap();
 
         let texview = vk::ImageViewCreateInfo::build()
@@ -274,7 +269,7 @@ impl FontBuilder {
 
         let chars = CHARS.iter().fold(std::collections::HashMap::new(), |mut acc, (c, cp)| {{acc.entry(*c).or_insert(*cp); acc}});
 
-        let mut stage = vk::mem::Staging::new(&mut alloc.clone(), ({dimx} * {dimy}) as vk::DeviceSize).unwrap();
+        let mut stage = vk::mem::Staging::new(&mut mem.alloc, ({dimx} * {dimy}) as vk::DeviceSize).unwrap();
         let mut map = stage.map().unwrap();
         let data = map.as_slice_mut::<u8>();
 
@@ -314,14 +309,9 @@ impl FontBuilder {
         
 
         let mut batch = vk::cmd::AutoBatch::new(device).unwrap();
-        batch.push(cs).submit(queue_copy).0.sync().unwrap();
+        batch.push(cs).submit(copy_queue).0.sync().unwrap();
 
-        Font {{
-          tex,
-          texview,
-          sampler,
-          chars,
-        }}
+        Font::new(device, mem, tex, texview, sampler, chars)
       }}
 
       const CHARS : &[(char, Char)] = &[{chars}];

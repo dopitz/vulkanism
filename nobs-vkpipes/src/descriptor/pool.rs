@@ -1,5 +1,5 @@
-use crate::descriptor::Layout;
-use crate::descriptor::PoolSizes;
+use crate::DescriptorLayout;
+use crate::DescriptorSizes;
 use crate::Error;
 use vk;
 
@@ -7,21 +7,21 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use std::sync::Mutex;
 
-/// Builder for [PoolSizes](poolsizes/struct.PoolSizes.html).
+/// Builder for [DescriptorSizes](sizes/struct.DescriptorSizes.html).
 ///
-/// Lets one conveniently aggregate the needed number of descriptors by adding [Layouts](layout/struct.Layout.html)
+/// Lets one conveniently aggregate the needed number of descriptors by adding [Layouts](layout/struct.DescriptorLayout.html)
 pub struct PoolCapacity {
-  capacity: PoolSizes,
+  capacity: DescriptorSizes,
 }
 
 impl PoolCapacity {
-  /// Adds the [PoolSizes](poolsizes/struct.PoolSizes.html) of `layout` to the capacity.
+  /// Adds the [DescriptorSizes](sizes/struct.DescriptorSizes.html) of `layout` to the capacity.
   ///
   /// # Arguments
   /// * `layout` - Specifies the number of descriptors for a SINGLE desciptor set
   /// * `num_sets` - Number of descriptor sets of this type, that may be allocated in a single pool
   ///                Each descriptor count is multiplied by `num_sets` prior to adding to the capacity.
-  pub fn add(mut self, layout: &Layout, num_sets: u32) -> Self {
+  pub fn add(mut self, layout: &DescriptorLayout, num_sets: u32) -> Self {
     for (c, s) in self.capacity.iter_mut().zip(layout.sizes.iter()) {
       *c += num_sets * s
     }
@@ -32,11 +32,11 @@ impl PoolCapacity {
 
 struct PoolImpl {
   device: vk::Device,
-  capacity: PoolSizes,
+  capacity: DescriptorSizes,
   capacity_vec: Vec<vk::DescriptorPoolSize>,
-  pools: HashMap<vk::DescriptorPool, PoolSizes>,
+  pools: HashMap<vk::DescriptorPool, DescriptorSizes>,
   dsets: HashMap<vk::DescriptorSet, (vk::DescriptorPool, usize)>,
-  dset_types: HashMap<PoolSizes, usize>,
+  dset_types: HashMap<DescriptorSizes, usize>,
 }
 
 impl Drop for PoolImpl {
@@ -48,14 +48,14 @@ impl Drop for PoolImpl {
 }
 
 #[derive(Clone)]
-pub struct Pool {
+pub struct DescriptorPool {
   pool: Arc<Mutex<PoolImpl>>,
 }
 
-impl Pool {
+impl DescriptorPool {
   pub fn new_capacity() -> PoolCapacity {
     PoolCapacity {
-      capacity: PoolSizes::new(),
+      capacity: DescriptorSizes::new(),
     }
   }
 
@@ -74,7 +74,7 @@ impl Pool {
     }
   }
 
-  pub fn new_dset(&self, layout: &Layout) -> Result<vk::DescriptorSet, crate::Error> {
+  pub fn new_dset(&self, layout: &DescriptorLayout) -> Result<vk::DescriptorSet, crate::Error> {
     let mut pi = self.pool.lock().unwrap();
 
     // make sure the pools can allocate such a descriptor
@@ -93,7 +93,7 @@ impl Pool {
         let create_info = vk::DescriptorPoolCreateInfo {
           sType: vk::STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
           pNext: std::ptr::null(),
-          flags: 0,
+          flags: vk::DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
           poolSizeCount: pi.capacity_vec.len() as u32,
           pPoolSizes: pi.capacity_vec.as_ptr(),
           maxSets: pi.capacity.num_sets,
@@ -102,7 +102,7 @@ impl Pool {
         vk_check!(vk::CreateDescriptorPool(pi.device, &create_info, std::ptr::null(), &mut handle))
           .map_err(|e| Error::DescriptorPoolCreateFail(e))?;
 
-        pi.pools.insert(handle, PoolSizes::new());
+        pi.pools.insert(handle, DescriptorSizes::new());
         handle
       }
     };

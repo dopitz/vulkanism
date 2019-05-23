@@ -224,8 +224,8 @@ pub fn main() {
     batch.push(cs).submit(device.queues[0].handle).0.sync().unwrap();
   }
 
-  use vk::pipes::descriptor;
-  let mut descriptors = descriptor::Pool::new(device.handle, descriptor::Pool::new_capacity().add(&pipe.dsets[0], 1));
+  use vk::pipes::DescriptorPool;
+  let descriptors = DescriptorPool::new(device.handle, DescriptorPool::new_capacity().add(&pipe.dsets[0], 1));
   let ds = descriptors.new_dset(&pipe.dsets[0]).unwrap();
 
   tex::dset::write(device.handle, ds)
