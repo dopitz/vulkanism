@@ -92,6 +92,19 @@ impl Stream {
     o.enqueue(self)
   }
 
+  /// Pushes a lambda into a stream.
+  ///
+  /// Can be used to push complex command logic into stream.
+  pub fn push_fnmut<F: FnMut(Self) -> Self>(self, mut f: F) -> Self {
+    f(self)
+  }
+  /// Pushes a lambda into a stream.
+  ///
+  /// Can be used to push complex command logic into stream.
+  pub fn push_fn<F: Fn(Self) -> Self>(self, f: F) -> Self {
+    f(self)
+  }
+
   /// Returns the stream to the pool.
   ///
   /// This breaks up configuring the stream and returns it to the pool.

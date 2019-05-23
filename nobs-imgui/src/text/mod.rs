@@ -18,11 +18,12 @@ pub struct Text {
   gui: ImGui,
 
   ub_viewport: vk::Buffer,
-  rect: Rect,
+  position: vkm::Vec2i,
 
   dirty: bool,
   text: String,
   font: std::sync::Arc<Font>,
+  font_size: f32,
   vb: vk::Buffer,
   ub: vk::Buffer,
 
@@ -57,8 +58,6 @@ impl Text {
       .bind(&mut mem.alloc, vk::mem::BindType::Block)
       .unwrap();
 
-    println!("{:?}", module_path!());
-
     let (pipe, ds_viewport, ds_text) = {
       let mut p = gui.get_pipeline::<pipe::Pipeline>();
       (
@@ -90,11 +89,12 @@ impl Text {
       gui: gui.clone(),
 
       ub_viewport,
-      rect: Default::default(),
+      position: Default::default(),
 
       dirty: true,
       text: Default::default(),
       font,
+      font_size: 20.0,
       vb,
       ub,
 
@@ -103,6 +103,14 @@ impl Text {
       ds_text,
       draw: cmds::Draw::default().vertices().instance_count(0),
     }
+  }
+
+  pub fn text(&mut self, text: &str) -> &mut Self {
+    if self.text != text {
+      self.text = text.to_owned();
+      self.dirty = true;
+    }
+    self
   }
 
   pub fn font(&mut self, font: std::sync::Arc<Font>) -> &mut Self {
@@ -116,16 +124,20 @@ impl Text {
     self
   }
 
-  pub fn text(&mut self, text: &str) -> &mut Self {
-    if self.text != text {
-      self.text = text.to_owned();
+  pub fn font_size(&mut self, font_size: f32) -> &mut Self {
+    if self.font_size != font_size {
+      self.font_size = font_size;
       self.dirty = true;
     }
     self
   }
 
+  pub fn get_text(&self) -> String {
+    self.text.clone()
+  }
+
   fn update_vb(&mut self) {
-    if !self.dirty {
+    if !self.dirty || self.text.is_empty() {
       return;
     }
 
@@ -151,7 +163,7 @@ impl Text {
     let svb = map.as_slice_mut::<pipe::Vertex>();
 
     //TypeSet::new(&*self.font).offset(vec2!(250.0)).size(150.0).compute(&self.text, svb);
-    TypeSet::new(&*self.font).offset(vec2!(250.0)).size(20.0).compute(&self.text, svb);
+    TypeSet::new(&*self.font).offset(vec2!(0.0, self.font_size)).size(self.font_size).compute(&self.text, svb);
 
     self.dirty = false;
   }
@@ -159,7 +171,11 @@ impl Text {
 
 impl cmds::StreamPush for Text {
   fn enqueue(&self, cs: cmd::Stream) -> cmd::Stream {
-    cs.push(&self.pipe).push(&self.ds_viewport).push(&self.ds_text).push(&self.draw)
+    if !self.text.is_empty() {
+      cs.push(&self.pipe).push(&self.ds_viewport).push(&self.ds_text).push(&self.draw)
+    } else {
+      cs
+    }
   }
 }
 
@@ -173,8 +189,8 @@ impl crate::window::Component for Text {
     }
 
     let rect = wnd.get_next_bounds();
-    if self.rect != rect {
-      self.rect = rect;
+    if self.position != rect.position {
+      self.position = rect.position;
 
       let mut map = self.mem.alloc.get_mapped(self.ub).unwrap();
       let data = map.as_slice_mut::<pipe::Ub>();

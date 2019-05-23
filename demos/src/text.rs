@@ -109,17 +109,13 @@ pub fn main() {
 
   let (mut sc, mut rp, mut fbs) = resize(&pdevice, &device, &window, &mut alloc, None, None, None);
 
-  let mut gui = imgui::ImGui::new(device.handle, device.queues[0].handle, cmds.clone(), rp.pass, 0, vk::mem::Mem::new(alloc.clone(), fbs.len()));
-
-  let mut text = imgui::text::Text::new(&gui);
+  let mut gui = Gui::new(&device, cmds.clone(), rp.pass, vk::mem::Mem::new(alloc.clone(), fbs.len()));
 
   let mut resizeevent = false;
   let mut close = false;
 
   use vk::cmd::commands::*;
   let mut frame = vk::cmd::Frame::new(device.handle, fbs.len()).unwrap();
-
-  let mut t = "gab".to_owned();
 
   loop {
     events_loop.poll_events(|event| match event {
@@ -130,7 +126,7 @@ pub fn main() {
       winit::Event::WindowEvent {
         event: winit::WindowEvent::ReceivedCharacter(c),
         ..
-      } => t.push(c),
+      } => gui.input(c),
       winit::Event::WindowEvent {
         event: winit::WindowEvent::Resized(size),
         ..
@@ -157,7 +153,7 @@ pub fn main() {
       rp = nrp;
       fbs = nfbs;
 
-      gui.resize(sc.extent);
+      gui.gui.resize(sc.extent);
       resizeevent = false;
     }
 
@@ -170,8 +166,9 @@ pub fn main() {
       .unwrap()
       .push(&ImageBarrier::to_color_attachment(fb.images[0]))
       .push(&fb.begin())
-      .push(&gui)
-      .push(&gui.begin_window().push(text.text(&t)))
+      .push_fnmut(|cs| gui.render(cs))
+      //.push(&gui)
+      //.push(&gui.begin_window().push(text.text(&t)))
       .push(&fb.end())
       .push(&sc.blit(next.index, fb.images[0]));
 
@@ -189,4 +186,27 @@ pub fn main() {
 
   println!("{}", alloc.print_stats());
   frame.sync().unwrap();
+}
+
+struct Gui {
+  gui: imgui::ImGui,
+  text: imgui::text::Text,
+}
+
+impl Gui {
+  pub fn new(device: &vk::device::Device, cmds: vk::cmd::Pool, pass: vk::RenderPass, mem: vk::mem::Mem) -> Self {
+    let gui = imgui::ImGui::new(device.handle, device.queues[0].handle, cmds.clone(), pass, 0, mem);
+
+    let mut text = imgui::text::Text::new(&gui);
+    text.text("aoeu");
+    Self { gui, text }
+  }
+
+  pub fn input(&mut self, c: char) {
+    self.text.text(&format!("{}{}", self.text.get_text(), c));
+  }
+
+  pub fn render(&mut self, cs: vk::cmd::Stream) -> vk::cmd::Stream {
+    cs.push(&self.gui).push(&self.gui.begin_window().push(&mut self.text))
+  }
 }
