@@ -3,11 +3,24 @@ use crate::descriptor::PoolSizes;
 use crate::Error;
 use vk;
 
+use std::collections::HashMap;
+use std::sync::Arc;
+use std::sync::Mutex;
+
+/// Builder for [PoolSizes](poolsizes/struct.PoolSizes.html).
+///
+/// Lets one conveniently aggregate the needed number of descriptors by adding [Layouts](layout/struct.Layout.html)
 pub struct PoolCapacity {
   capacity: PoolSizes,
 }
 
 impl PoolCapacity {
+  /// Adds the [PoolSizes](poolsizes/struct.PoolSizes.html) of `layout` to the capacity.
+  ///
+  /// # Arguments
+  /// * `layout` - Specifies the number of descriptors for a SINGLE desciptor set
+  /// * `num_sets` - Number of descriptor sets of this type, that may be allocated in a single pool
+  ///                Each descriptor count is multiplied by `num_sets` prior to adding to the capacity.
   pub fn add(mut self, layout: &Layout, num_sets: u32) -> Self {
     for (c, s) in self.capacity.iter_mut().zip(layout.sizes.iter()) {
       *c += num_sets * s
@@ -17,16 +30,16 @@ impl PoolCapacity {
   }
 }
 
-pub struct Pool {
-  pub device: vk::Device,
+struct PoolImpl {
+  device: vk::Device,
   capacity: PoolSizes,
   capacity_vec: Vec<vk::DescriptorPoolSize>,
-  pools: std::collections::HashMap<vk::DescriptorPool, PoolSizes>,
-  dsets: std::collections::HashMap<vk::DescriptorSet, (vk::DescriptorPool, usize)>,
-  dset_types: std::collections::HashMap<PoolSizes, usize>,
+  pools: HashMap<vk::DescriptorPool, PoolSizes>,
+  dsets: HashMap<vk::DescriptorSet, (vk::DescriptorPool, usize)>,
+  dset_types: HashMap<PoolSizes, usize>,
 }
 
-impl Drop for Pool {
+impl Drop for PoolImpl {
   fn drop(&mut self) {
     for (p, _) in self.pools.iter() {
       vk::DestroyDescriptorPool(self.device, *p, std::ptr::null());
@@ -34,24 +47,12 @@ impl Drop for Pool {
   }
 }
 
+#[derive(Clone)]
+pub struct Pool {
+  pool: Arc<Mutex<PoolImpl>>,
+}
+
 impl Pool {
-  fn create_pool(&mut self) -> Result<vk::DescriptorPool, vk::Error> {
-    // create new pool
-    let create_info = vk::DescriptorPoolCreateInfo {
-      sType: vk::STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
-      pNext: std::ptr::null(),
-      flags: 0,
-      poolSizeCount: self.capacity_vec.len() as u32,
-      pPoolSizes: self.capacity_vec.as_ptr(),
-      maxSets: self.capacity.num_sets,
-    };
-    let mut handle = vk::NULL_HANDLE;
-    vk_check!(vk::CreateDescriptorPool(self.device, &create_info, std::ptr::null(), &mut handle))?;
-
-    self.pools.insert(handle, PoolSizes::new());
-    Ok(handle)
-  }
-
   pub fn new_capacity() -> PoolCapacity {
     PoolCapacity {
       capacity: PoolSizes::new(),
@@ -61,34 +62,49 @@ impl Pool {
   pub fn new(device: vk::Device, capacity: PoolCapacity) -> Self {
     let capacity = capacity.capacity;
     let capacity_vec = capacity.to_pool_sizes();
-    Pool {
-      device,
-      capacity,
-      capacity_vec,
-      pools: Default::default(),
-      dsets: Default::default(),
-      dset_types: Default::default(),
+    Self {
+      pool: Arc::new(Mutex::new(PoolImpl {
+        device,
+        capacity,
+        capacity_vec,
+        pools: Default::default(),
+        dsets: Default::default(),
+        dset_types: Default::default(),
+      })),
     }
   }
 
-  pub fn new_dset(&mut self, layout: &Layout) -> Result<vk::DescriptorSet, crate::Error> {
+  pub fn new_dset(&self, layout: &Layout) -> Result<vk::DescriptorSet, crate::Error> {
+    let mut pi = self.pool.lock().unwrap();
+
     // make sure the pools can allocate such a descriptor
-    if !self
-      .capacity
-      .iter()
-      .zip(layout.sizes.iter())
-      .fold(true, |acc, (c, s)| acc && s <= c)
-    {
+    if !pi.capacity.iter().zip(layout.sizes.iter()).fold(true, |acc, (c, s)| acc && s <= c) {
       Err(crate::Error::InvalidDescriptorCount)?;
     }
 
     // find the first pool with enough space to hold the descriptor
-    let pool = match self.pools.iter().find(|(_, pool_sizes)| {
+    let pool = match pi.pools.iter().find(|(_, pool_sizes)| {
       let sum = pool_sizes.iter().zip(layout.sizes.iter()).map(|(p, s)| p + s);
-      self.capacity.iter().zip(sum).fold(true, |acc, (cap, sum)| acc && sum <= *cap)
+      pi.capacity.iter().zip(sum).fold(true, |acc, (cap, sum)| acc && sum <= *cap)
     }) {
       Some((p, _)) => *p,
-      None => self.create_pool().map_err(|e| Error::DescriptorPoolCreateFail(e))?,
+      None => {
+        // create new pool
+        let create_info = vk::DescriptorPoolCreateInfo {
+          sType: vk::STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
+          pNext: std::ptr::null(),
+          flags: 0,
+          poolSizeCount: pi.capacity_vec.len() as u32,
+          pPoolSizes: pi.capacity_vec.as_ptr(),
+          maxSets: pi.capacity.num_sets,
+        };
+        let mut handle = vk::NULL_HANDLE;
+        vk_check!(vk::CreateDescriptorPool(pi.device, &create_info, std::ptr::null(), &mut handle))
+          .map_err(|e| Error::DescriptorPoolCreateFail(e))?;
+
+        pi.pools.insert(handle, PoolSizes::new());
+        handle
+      }
     };
 
     // create the descriptor set
@@ -101,28 +117,30 @@ impl Pool {
     };
 
     let mut handle = vk::NULL_HANDLE;
-    vk_check!(vk::AllocateDescriptorSets(self.device, &create_info, &mut handle)).map_err(|e| Error::DescriptorSetCreateFail(e))?;
+    vk_check!(vk::AllocateDescriptorSets(pi.device, &create_info, &mut handle)).map_err(|e| Error::DescriptorSetCreateFail(e))?;
 
     // update the descriptor counts in the pool
-    let pool_sizes = self.pools.get_mut(&pool).unwrap();
+    let pool_sizes = pi.pools.get_mut(&pool).unwrap();
     for (c, s) in pool_sizes.iter_mut().zip(layout.sizes.iter()) {
       *c += s;
     }
 
     // register descriptor set
-    let id = self.dset_types.len();
-    let id = *self.dset_types.entry(layout.sizes).or_insert(id);
-    self.dsets.insert(handle, (pool, id));
+    let id = pi.dset_types.len();
+    let id = *pi.dset_types.entry(layout.sizes).or_insert(id);
+    pi.dsets.insert(handle, (pool, id));
 
     Ok(handle)
   }
 
-  pub fn free_dset(&mut self, dset: vk::DescriptorSet) {
-    if let Some((p, id)) = self.dsets.remove(&dset) {
-      vk_uncheck!(vk::FreeDescriptorSets(self.device, p, 1, &dset));
+  pub fn free_dset(&self, dset: vk::DescriptorSet) {
+    let mut pi = self.pool.lock().unwrap();
 
-      let dset_sizes = self.dset_types.iter().find(|(_, i)| **i == id).map(|(sizes, _)| sizes).unwrap();
-      let pool_sizes = self.pools.get_mut(&p).unwrap();
+    if let Some((p, id)) = pi.dsets.remove(&dset) {
+      vk_uncheck!(vk::FreeDescriptorSets(pi.device, p, 1, &dset));
+
+      let dset_sizes = pi.dset_types.iter().find(|(_, i)| **i == id).map(|(sizes, _)| sizes).cloned().unwrap();
+      let pool_sizes = pi.pools.get_mut(&p).unwrap();
       for (c, s) in pool_sizes.iter_mut().zip(dset_sizes.iter()) {
         *c -= s;
       }
