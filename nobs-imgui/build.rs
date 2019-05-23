@@ -6,6 +6,6 @@ fn main() {
   ShaderUsage::new()
     .uses("src/text/text.vert")
     .uses("src/text/text.frag")
-    .depends("src/text/mod.rs");
+    .depends("src/text/pipeline.rs");
 }
 

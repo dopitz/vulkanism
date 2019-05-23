@@ -3,7 +3,7 @@ use pipeline as pipe;
 
 use crate::cachedpipeline::*;
 use crate::font::*;
-use crate::rect::Rect;
+use crate::sprite::*;
 use crate::window::Window;
 use crate::ImGui;
 
@@ -163,7 +163,10 @@ impl Text {
     let svb = map.as_slice_mut::<pipe::Vertex>();
 
     //TypeSet::new(&*self.font).offset(vec2!(250.0)).size(150.0).compute(&self.text, svb);
-    TypeSet::new(&*self.font).offset(vec2!(0.0, self.font_size)).size(self.font_size).compute(&self.text, svb);
+    TypeSet::new(&*self.font)
+      .offset(vec2!(0.0, self.font_size))
+      .size(self.font_size)
+      .compute(&self.text, svb);
 
     self.dirty = false;
   }

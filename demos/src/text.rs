@@ -117,33 +117,38 @@ pub fn main() {
   use vk::cmd::commands::*;
   let mut frame = vk::cmd::Frame::new(device.handle, fbs.len()).unwrap();
 
-  loop {
-    events_loop.poll_events(|event| match event {
-      winit::Event::WindowEvent {
-        event: winit::WindowEvent::CloseRequested,
-        ..
-      } => close = true,
-      winit::Event::WindowEvent {
-        event: winit::WindowEvent::ReceivedCharacter(c),
-        ..
-      } => gui.input(c),
-      winit::Event::WindowEvent {
-        event: winit::WindowEvent::Resized(size),
-        ..
-      } => {
-        println!("RESIZE       {:?}", size);
-        println!("EVENT        {:?}", event);
-        println!("DPI          {:?}", window.window.get_hidpi_factor());
+  let mut inp = imgui::input::Input::default();
 
-        resizeevent = true;
+  loop {
+    events_loop.poll_events(|event| {
+      match event {
+        winit::Event::WindowEvent {
+          event: winit::WindowEvent::CloseRequested,
+          ..
+        } => close = true,
+        winit::Event::WindowEvent {
+          event: winit::WindowEvent::ReceivedCharacter(c),
+          ..
+        } => gui.input(c),
+        winit::Event::WindowEvent {
+          event: winit::WindowEvent::Resized(size),
+          ..
+        } => {
+          println!("RESIZE       {:?}", size);
+          println!("EVENT        {:?}", event);
+          println!("DPI          {:?}", window.window.get_hidpi_factor());
+
+          resizeevent = true;
+        }
+        winit::Event::WindowEvent {
+          event: winit::WindowEvent::HiDpiFactorChanged(dpi),
+          ..
+        } => {
+          println!("DPI       {:?}", dpi);
+        }
+        _ => (),
       }
-      winit::Event::WindowEvent {
-        event: winit::WindowEvent::HiDpiFactorChanged(dpi),
-        ..
-      } => {
-        println!("DPI       {:?}", dpi);
-      }
-      _ => (),
+      println!("{:?}", inp.parse(event));
     });
 
     if resizeevent {
