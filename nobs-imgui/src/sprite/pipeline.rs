@@ -8,12 +8,12 @@ mod pipe {
   vk::pipes::pipeline! {
     stage = {
       ty = "vert",
-      glsl = "src/text/text.vert",
+      glsl = "src/sprite/sprite.vert",
     }
 
     stage = {
       ty = "frag",
-      glsl = "src/text/text.frag",
+      glsl = "src/sprite/sprite.frag",
     }
 
     dset_name[0] = "DsViewport",
@@ -132,15 +132,12 @@ impl CacheablePipeline for Pipeline {
 }
 
 impl Pipeline {
-  pub fn new_ds_viewport(&mut self) -> Result<vk::DescriptorSet, vk::pipes::Error> {
-    self.pipe.pool.new_dset(&self.pipe.pipe.dsets[0])
-  }
-  pub fn free_ds_viewport(&mut self) {}
-
-  pub fn new_ds_text(&mut self) -> Result<vk::DescriptorSet, vk::pipes::Error> {
+  pub fn new_ds_instance(&mut self) -> Result<vk::DescriptorSet, vk::pipes::Error> {
     self.pipe.pool.new_dset(&self.pipe.pipe.dsets[1])
   }
-  pub fn free_ds_text(&mut self) {}
+  pub fn free_ds(&mut self, dset: vk::DescriptorSet) {
+    self.pipe.pool.free_dset(dset);
+  }
 }
 
 pub use pipe::DsText;

@@ -109,7 +109,7 @@ pub fn main() {
 
   let (mut sc, mut rp, mut fbs) = resize(&pdevice, &device, &window, &mut alloc, None, None, None);
 
-  let mut gui = Gui::new(&device, cmds.clone(), rp.pass, vk::mem::Mem::new(alloc.clone(), fbs.len()));
+  let mut gui = Gui::new(&device, cmds.clone(), rp.pass, vk::mem::Mem::new(alloc.clone(), fbs.len() + 2));
 
   let mut resizeevent = false;
   let mut close = false;
@@ -148,7 +148,7 @@ pub fn main() {
         }
         _ => (),
       }
-      println!("{:?}", inp.parse(event));
+      //println!("{:?}", inp.parse(event));
     });
 
     if resizeevent {
@@ -196,6 +196,9 @@ pub fn main() {
 struct Gui {
   gui: imgui::ImGui,
   text: imgui::text::Text,
+
+  tt: String,
+
 }
 
 impl Gui {
@@ -204,14 +207,17 @@ impl Gui {
 
     let mut text = imgui::text::Text::new(&gui);
     text.text("aoeu");
-    Self { gui, text }
+    Self { gui, text , tt: Default::default()}
   }
 
   pub fn input(&mut self, c: char) {
     self.text.text(&format!("{}{}", self.text.get_text(), c));
+    self.tt.push(c);
   }
 
   pub fn render(&mut self, cs: vk::cmd::Stream) -> vk::cmd::Stream {
-    cs.push(&self.gui).push(&self.gui.begin_window().push(&mut self.text))
+    cs.push(&self.gui).push(&self.gui.begin_window()).push(&self.text)
+    //cs.push(&self.gui).push(&self.gui.begin_window()).push(self.text.text(&self.tt))
+    //cs.push(&self.gui).push(&self.text)
   }
 }

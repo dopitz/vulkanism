@@ -95,18 +95,31 @@ impl ImGui {
     self.gui.font.clone()
   }
   pub fn get_pipeline<T: CacheablePipeline>(&self) -> T {
+    self.get_pipeline_setup(|_| {})
+  }
+  pub fn get_pipeline_setup<T: CacheablePipeline, F: FnOnce(&mut [vk::DescriptorSet])>(&self, setup: F) -> T {
     let gui = &self.gui;
-    let mut p = gui.pipes.lock().unwrap();
+    let mut pipes = gui.pipes.lock().unwrap();
     let ident = T::get_ident();
-    let p = match p.get_mut(ident) {
-      Some(x) => x.clone(),
+    let p = match pipes.get_mut(ident) {
+      Some(p) => p.clone(),
       None => {
-        let x = Arc::new(T::create_cache(gui.device, gui.pass, gui.subpass));
-        p.insert(ident.to_string(), x.clone());
-        x
+        let mut p = T::create_cache(gui.device, gui.pass, gui.subpass);
+        if let Some((_, ref mut dsets)) = p.shared {
+          setup(dsets);
+        }
+        let p = Arc::new(p);
+        pipes.insert(ident.to_string(), p.clone());
+        p
       }
     };
     T::from_cache(p)
+  }
+  pub fn get_ub_viewport(&self) -> vk::Buffer {
+    self.gui.vp.lock().unwrap().ub
+  }
+  pub fn get_viewport(&self) -> vk::cmd::commands::Viewport {
+    self.gui.vp.lock().unwrap().cmd
   }
 
   pub fn resize(&mut self, extent: vk::Extent2D) {

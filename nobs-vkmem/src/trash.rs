@@ -35,16 +35,15 @@ impl Trash {
 
   pub fn clean(&self) -> bool {
     let mut imp = self.imp.lock().unwrap();
-    let i = (imp.ring_index + imp.ring_buffer.len() - 1) % imp.ring_buffer.len();
-    let free = !imp.ring_buffer[i].is_empty();
+    let next = (imp.ring_index + 1) % imp.ring_buffer.len();
+    let free = !imp.ring_buffer[next].is_empty();
 
-    if !imp.ring_buffer[i].is_empty() {
-      imp.alloc.clone().destroy_many(&imp.ring_buffer[i]);
-      imp.ring_buffer[i].clear();
+    if !imp.ring_buffer[next].is_empty() {
+      imp.alloc.clone().destroy_many(&imp.ring_buffer[next]);
+      imp.ring_buffer[next].clear();
     }
 
-    imp.ring_index = (imp.ring_index + 1) % imp.ring_buffer.len();
-
+    imp.ring_index = next;
     free
   }
 }

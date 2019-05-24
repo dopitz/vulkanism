@@ -98,42 +98,44 @@ pub trait FontChar {
 
 pub struct TypeSet<'a> {
   font: &'a Font,
-  size: f32,
-  offset: vkm::Vec2f,
+  size: u32,
+  offset: vkm::Vec2i,
 }
 
 impl<'a> TypeSet<'a> {
   pub fn new(font: &'a Font) -> Self {
     Self {
       font,
-      size: 12.0,
-      offset: vec2!(0.0),
+      size: 12,
+      offset: vec2!(0),
     }
   }
 
-  pub fn size(mut self, s: f32) -> Self {
+  pub fn size(mut self, s: u32) -> Self {
     self.size = s;
     self
   }
 
-  pub fn offset(mut self, o: vkm::Vec2f) -> Self {
+  pub fn offset(mut self, o: vkm::Vec2i) -> Self {
     self.offset = o;
     self
   }
 
   pub fn compute<T: FontChar>(self, s: &str, buf: &mut [T]) {
-    let mut off = self.offset;
+    let size = self.size as f32;
+    let offset = self.offset.into();
+    let mut off = offset;
     for (c, s) in s.chars().zip(buf.iter_mut()) {
       if c == '\n' || c == '\r' {
-        off.x = self.offset.x;
-        off.y = off.y + self.size;
+        off.x = offset.x;
+        off.y = off.y + size;
       }
 
       let ch = self.font.get(c);
       s.set_tex(ch.tex00, ch.tex11);
-      s.set_size(ch.size * self.size);
-      s.set_position(off + ch.bearing * self.size);
-      off += ch.advance * self.size;
+      s.set_size(ch.size * size);
+      s.set_position(off + ch.bearing * size);
+      off += ch.advance * size;
     }
   }
 }
