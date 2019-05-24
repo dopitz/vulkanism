@@ -32,6 +32,10 @@ impl TextBox {
   }
 
   pub fn rect(&mut self, rect: Rect) -> &mut Self {
+    if Rect::from_vkrect(self.rect.rect) != rect {
+      self.text.position(rect.position);
+      self.rect.rect = rect.to_vkrect();
+    }
     self
   }
 
@@ -46,24 +50,8 @@ impl cmds::StreamPush for TextBox {
   }
 }
 
-//impl crate::window::Component for Text {
-//  fn add_compontent(&mut self, wnd: &mut Window) {
-//    if self.ub_viewport != wnd.ub_viewport {
-//      self.ub_viewport = wnd.ub_viewport;
-//      pipe::DsViewport::write(wnd.device, self.ds_viewport.dset)
-//        .ub_viewport(|b| b.buffer(self.ub_viewport))
-//        .update();
-//    }
-//
-//    let rect = wnd.get_next_bounds();
-//    if self.position != rect.position {
-//      self.position = rect.position;
-//
-//      let mut map = self.mem.alloc.get_mapped(self.ub).unwrap();
-//      let data = map.as_slice_mut::<pipe::Ub>();
-//      data[0].offset = rect.position;
-//    }
-//
-//    self.update_vb();
-//  }
-//}
+impl crate::window::Component for TextBox {
+  fn add_compontent(&mut self, wnd: &mut Window) {
+    self.rect(wnd.get_next_bounds());
+  }
+}
