@@ -1,5 +1,7 @@
 extern crate nobs_imgui as imgui;
 extern crate nobs_vulkanism as vk;
+#[macro_use]
+extern crate nobs_vkmath as vkm;
 
 use vk::builder::Buildable;
 use vk::winit;
@@ -195,19 +197,19 @@ pub fn main() {
 
 struct Gui {
   gui: imgui::ImGui,
-  text: imgui::text::Text,
+  //text: imgui::text::Text,
+  text: imgui::textbox::TextBox,
 
   tt: String,
-
 }
 
 impl Gui {
   pub fn new(device: &vk::device::Device, cmds: vk::cmd::Pool, pass: vk::RenderPass, mem: vk::mem::Mem) -> Self {
     let gui = imgui::ImGui::new(device.handle, device.queues[0].handle, cmds.clone(), pass, 0, mem);
 
-    let mut text = imgui::text::Text::new(&gui);
-    text.font(gui.get_font(), 70);
-    text.text("aoeu");
+    let mut text = imgui::textbox::TextBox::new(&gui);
+    text.text("aoeu").rect(imgui::rect::Rect::new(vec2!(200,200), vec2!(500, 200)));
+    text.typeset(text.get_typeset().size(70).cursor(Some(vec2!(1,0))));
     Self { gui, text , tt: Default::default()}
   }
 

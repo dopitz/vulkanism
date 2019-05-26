@@ -4,6 +4,7 @@ extern crate nobs_vkmath as vkm;
 extern crate nobs_imgui_font_macro as fnt;
 
 use std::collections::HashMap;
+use std::sync::Arc;
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq)]
 pub struct FontID {
@@ -96,30 +97,39 @@ pub trait FontChar {
   fn set_tex(&mut self, t00: vkm::Vec2f, t11: vkm::Vec2f);
 }
 
-pub struct TypeSet<'a> {
-  font: &'a Font,
-  size: u32,
-  offset: vkm::Vec2i,
-  cursor: Option<vkm::Vec2u>,
+#[derive(Clone)]
+pub struct TypeSet {
+  pub font: Arc<Font>,
+  pub size: u32,
+  pub offset: vkm::Vec2i,
+  pub cursor: Option<vkm::Vec2u>,
 }
 
-impl<'a> TypeSet<'a> {
-  pub fn new(font: &'a Font) -> Self {
+impl TypeSet {
+  pub fn new(font: Arc<Font>) -> Self {
     Self {
       font,
       size: 12,
-      offset: vec2!(0),
+      offset: vec2!(0, 12),
       cursor: None,
     }
   }
 
+  pub fn font(mut self, f: Arc<Font>) -> Self {
+    self.font = f;
+    self
+  }
+
   pub fn size(mut self, s: u32) -> Self {
+    self.offset.y -= self.size as i32;
     self.size = s;
+    self.offset.y += self.size as i32;
     self
   }
 
   pub fn offset(mut self, o: vkm::Vec2i) -> Self {
     self.offset = o;
+    self.offset.y += self.size as i32;
     self
   }
 
@@ -128,7 +138,7 @@ impl<'a> TypeSet<'a> {
     self
   }
 
-  pub fn compute<T: FontChar>(self, s: &str, buf: &mut [T]) {
+  pub fn compute<T: FontChar>(&mut self, s: &str, buf: &mut [T]) {
     let size = self.size as f32;
     let offset = self.offset.into();
     let mut off = offset;
@@ -165,6 +175,13 @@ impl<'a> TypeSet<'a> {
     }
   }
 }
+
+impl PartialEq for TypeSet {
+  fn eq(&self, other: &Self) -> bool {
+    Arc::ptr_eq(&self.font, &other.font) && self.size == other.size && self.offset == other.offset && self.cursor == other.cursor
+  }
+}
+impl Eq for TypeSet {}
 
 pub mod dejavu {
   use crate::Char;

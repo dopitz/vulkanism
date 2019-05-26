@@ -16,21 +16,23 @@ pub struct Text {
   sprites: sprite::Sprites,
 
   text: String,
-  font: std::sync::Arc<Font>,
-  font_size: u32,
+  typeset: TypeSet,
 }
 
 impl Text {
   pub fn new(gui: &ImGui) -> Self {
     let sprites = sprite::Sprites::new(gui);
-    let font = gui.get_font();
-    let font_size = 20;
+    let typeset = TypeSet::new(gui.get_font());
     Self {
       sprites,
       text: "".to_string(),
-      font,
-      font_size,
+      typeset,
     }
+  }
+
+  pub fn typesetter(&mut self, ts: TypeSet) -> &mut Self {
+    self.typeset = ts;
+    self
   }
 
   pub fn text(&mut self, text: &str) -> &mut Self {
@@ -52,14 +54,15 @@ impl Text {
     self.sprites.get_position()
   }
 
-  pub fn font(&mut self, font: std::sync::Arc<Font>, size: u32) -> &mut Self {
-    if !std::sync::Arc::ptr_eq(&self.font, &font) || self.font_size != size {
-      self.font = font;
-      self.font_size = size;
-      self.sprites.texture(self.font.texview, self.font.sampler);
+  pub fn typeset(&mut self, ts: TypeSet) -> &mut Self {
+    if self.typeset != ts {
+      self.typeset = ts;
       self.update_vb();
     }
     self
+  }
+  pub fn get_typeset(&self) -> TypeSet {
+    self.typeset.clone()
   }
 
   fn update_vb(&mut self) {
@@ -69,11 +72,7 @@ impl Text {
 
     let mut buffer: Vec<sprite::Vertex> = Vec::with_capacity(self.text.len() + 1);
     unsafe { buffer.set_len(self.text.len() + 1) };
-    TypeSet::new(&*self.font)
-      .offset(vec2!(0, self.font_size).into())
-      .size(self.font_size)
-      .cursor(Some(vec2!(1, 0)))
-      .compute(&self.text, &mut buffer);
+    self.typeset.compute(&self.text, &mut buffer);
 
     self.sprites.sprites(&buffer);
   }

@@ -25,10 +25,8 @@ impl TextBox {
     self.text.text(text);
     self
   }
-
-  pub fn font(&mut self, font: std::sync::Arc<Font>, size: u32) -> &mut Self {
-    self.text.font(font, size);
-    self
+  pub fn get_text(&self) -> String {
+    self.text.get_text()
   }
 
   pub fn rect(&mut self, rect: Rect) -> &mut Self {
@@ -39,8 +37,12 @@ impl TextBox {
     self
   }
 
-  pub fn get_text(&self) -> String {
-    self.text.get_text()
+  pub fn typeset(&mut self, ts: TypeSet) -> &mut Self {
+    self.text.typeset(ts);
+    self
+  }
+  pub fn get_typeset(&self) -> TypeSet {
+    self.text.get_typeset()
   }
 }
 
