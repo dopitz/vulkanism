@@ -177,24 +177,33 @@ impl Graphics {
 
     let (dsets, layout) = builder::create_layouts(self.device, &self.bindings);
 
+    let vertex_input = self.vertex_input.get();
+    let input_assembly = self.input_assembly.info;
+    let tesselation = self.tesselation.info;
+    let viewport = self.viewport.get();
+    let raster = self.raster.info;
+    let depth_stencil = self.depth_stencil.info;
+    let multisample = self.multisample.info;
+    let blend = self.blend.get();
+    let dynamic = self.dynamic.get();
     let create_info = vk::GraphicsPipelineCreateInfo {
       sType: vk::STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
       pNext: std::ptr::null(),
       flags: 0,
       stageCount: stages.len() as u32,
       pStages: stages.as_ptr(),
-      pVertexInputState: &self.vertex_input.get(),
-      pInputAssemblyState: &self.input_assembly.info,
-      pTessellationState: &self.tesselation.info,
-      pViewportState: &self.viewport.get(),
-      pRasterizationState: &self.raster.info,
-      pDepthStencilState: &self.depth_stencil.info,
-      pMultisampleState: &self.multisample.info,
-      pColorBlendState: &self.blend.get(),
+      pVertexInputState: &vertex_input,
+      pInputAssemblyState: &input_assembly,
+      pTessellationState: &tesselation,
+      pViewportState: &viewport,
+      pRasterizationState: &raster,
+      pDepthStencilState: &depth_stencil,
+      pMultisampleState: &multisample,
+      pColorBlendState: &blend,
       pDynamicState: if self.dynamic.states.is_empty() {
         std::ptr::null()
       } else {
-        &self.dynamic.get()
+        &dynamic
       },
       layout: layout,
       renderPass: self.pass,

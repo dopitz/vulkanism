@@ -206,6 +206,7 @@ impl Gui {
     let gui = imgui::ImGui::new(device.handle, device.queues[0].handle, cmds.clone(), pass, 0, mem);
 
     let mut text = imgui::text::Text::new(&gui);
+    text.font(gui.get_font(), 70);
     text.text("aoeu");
     Self { gui, text , tt: Default::default()}
   }

@@ -53,7 +53,7 @@ impl Text {
   }
 
   pub fn font(&mut self, font: std::sync::Arc<Font>, size: u32) -> &mut Self {
-    if !std::sync::Arc::ptr_eq(&self.font, &font) {
+    if !std::sync::Arc::ptr_eq(&self.font, &font) || self.font_size != size {
       self.font = font;
       self.font_size = size;
       self.sprites.texture(self.font.texview, self.font.sampler);
@@ -67,11 +67,12 @@ impl Text {
       return;
     }
 
-    let mut buffer = Vec::with_capacity(self.text.len());
-    unsafe { buffer.set_len(self.text.len()) };
+    let mut buffer: Vec<sprite::Vertex> = Vec::with_capacity(self.text.len() + 1);
+    unsafe { buffer.set_len(self.text.len() + 1) };
     TypeSet::new(&*self.font)
       .offset(vec2!(0, self.font_size).into())
       .size(self.font_size)
+      .cursor(Some(vec2!(1, 0)))
       .compute(&self.text, &mut buffer);
 
     self.sprites.sprites(&buffer);

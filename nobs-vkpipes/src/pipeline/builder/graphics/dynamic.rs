@@ -6,6 +6,7 @@ use vk;
 ///
 /// - count: `0`
 /// - states: none
+#[derive(Debug)]
 pub struct Builder {
   pub states: Vec<vk::DynamicState>,
   pub info: vk::PipelineDynamicStateCreateInfo,

@@ -100,6 +100,7 @@ pub struct TypeSet<'a> {
   font: &'a Font,
   size: u32,
   offset: vkm::Vec2i,
+  cursor: Option<vkm::Vec2u>,
 }
 
 impl<'a> TypeSet<'a> {
@@ -108,6 +109,7 @@ impl<'a> TypeSet<'a> {
       font,
       size: 12,
       offset: vec2!(0),
+      cursor: None,
     }
   }
 
@@ -121,14 +123,23 @@ impl<'a> TypeSet<'a> {
     self
   }
 
+  pub fn cursor(mut self, c: Option<vkm::Vec2u>) -> Self {
+    self.cursor = c;
+    self
+  }
+
   pub fn compute<T: FontChar>(self, s: &str, buf: &mut [T]) {
     let size = self.size as f32;
     let offset = self.offset.into();
     let mut off = offset;
+    let mut cp = vec2!(0, 0);
+    let mut co = vec2!(0.0, 0.0);
     for (c, s) in s.chars().zip(buf.iter_mut()) {
       if c == '\n' || c == '\r' {
         off.x = offset.x;
         off.y = off.y + size;
+        cp.x = 0;
+        cp.y += 1;
       }
 
       let ch = self.font.get(c);
@@ -136,6 +147,21 @@ impl<'a> TypeSet<'a> {
       s.set_size(ch.size * size);
       s.set_position(off + ch.bearing * size);
       off += ch.advance * size;
+
+      cp.x += 1;
+      if let Some(c) = self.cursor {
+        if c == cp {
+          co = off;
+        }
+      }
+    }
+
+    if self.cursor.is_some() {
+      let ch = self.font.get('|');
+      let s = &mut buf[s.len()];
+      s.set_tex(ch.tex00, ch.tex11);
+      s.set_size(ch.size * size);
+      s.set_position(co + vec2!(0.0, ch.bearing.y) * size);
     }
   }
 }
