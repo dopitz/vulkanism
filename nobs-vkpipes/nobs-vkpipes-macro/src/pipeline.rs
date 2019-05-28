@@ -157,43 +157,6 @@ impl Pipeline {
     )
   }
 
-  fn write_poolsizes(&self, bindings: &[Binding]) -> String {
-    let mut counts = bindings
-      .iter()
-      .fold(std::collections::HashMap::new(), |mut acc, b| {
-        *acc.entry(b.desctype).or_insert(0u32) += 1;
-        acc
-      })
-      .into_iter()
-      .fold(Vec::new(), |mut acc, (k, v)| {
-        acc.push(vk::DescriptorPoolSize {
-          typ: k,
-          descriptorCount: v,
-        });
-        acc
-      });
-
-    counts.sort_by_key(|s| s.typ);
-
-    format!(
-      "
-      pub const SIZES: [vk::DescriptorPoolSize; {}] = [
-        {}
-      ];
-      ",
-      counts.len(),
-      counts.iter().fold(String::new(), |acc, s| format!(
-        "{}\n
-        vk::DescriptorPoolSize {{
-          typ: {},
-          descriptorCount: {},
-        }},
-        ",
-        acc, s.typ, s.descriptorCount
-      ))
-    )
-  }
-
   fn write_descriptors(&self, descriptors: &HashMap<u32, Vec<Binding>>) -> String {
     descriptors.iter().fold(String::new(), |acc, (set, b)| {
       format!(
@@ -204,11 +167,12 @@ impl Pipeline {
           use {vkpipes_alias};
 
           use {vkpipes_alias}::pipeline::Binding;
-          use {vkpipes_alias}::descriptor::writes::*;
+          use {vkpipes_alias}::descriptor::writes::Writes;
+          use {vk_alias}::DescriptorBufferInfo;
+          use {vk_alias}::DescriptorImageInfo;
+          use {vk_alias}::BufferView;
 
           {bindings}
-
-          {sizes}
 
           pub fn write(device: vk::Device, dset: vk::DescriptorSet) -> Write {{
             Write::new(device, dset)
@@ -237,7 +201,6 @@ impl Pipeline {
         vk_alias = self.usings.get_vk(),
         vkpipes_alias = self.usings.get_pipes(),
         bindings = self.write_bindings(b),
-        sizes = self.write_poolsizes(b),
         name = self.dset_names[set],
         setter = b
           .iter()
@@ -309,7 +272,6 @@ impl Pipeline {
 
       {bindings}
 
-      {sizes}
       pub const NUM_SETS: u32 = {num_sets};
 
       {build}
@@ -319,7 +281,6 @@ impl Pipeline {
       vk_alias = self.usings.get_vk(),
       vkpipes_alias = self.usings.get_pipes(),
       bindings = self.write_bindings(&self.bindings),
-      sizes = self.write_poolsizes(&self.bindings),
       build = build,
       num_sets = descriptors.len(),
       stages = stages,

@@ -5,6 +5,7 @@ use crate::cachedpipeline::*;
 use crate::ImGui;
 
 use vk;
+use vk::builder::Buildable;
 use vk::cmd;
 use vk::cmd::commands as cmds;
 use vkm::Vec2i;
@@ -58,7 +59,7 @@ impl Sprites {
     let (pipe, ds_viewport, ds_instance) = {
       let mut p = gui.get_pipeline_setup::<pipe::Pipeline, _>(|dsets| {
         pipe::DsViewport::write(device, dsets[0])
-          .ub_viewport(|b| b.buffer(gui.get_ub_viewport()))
+          .ub_viewport(vk::DescriptorBufferInfo::build().buffer(gui.get_ub_viewport()).info)
           .update();
       });
       (
@@ -83,8 +84,12 @@ impl Sprites {
 
     let font = gui.get_font();
     pipe::DsText::write(device, ds_instance.dset)
-      .ub(|b| b.buffer(ub))
-      .tex_sampler(|s| s.set(vk::IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, font.texview, font.sampler))
+      .ub(vk::DescriptorBufferInfo::build().buffer(ub).info)
+      .tex_sampler(
+        vk::DescriptorImageInfo::build()
+          .set(vk::IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, font.texview, font.sampler)
+          .info,
+      )
       .update();
 
     Sprites {
@@ -124,7 +129,11 @@ impl Sprites {
       self.tex = tex;
       self.sampler = sampler;
       pipe::DsText::write(self.device, self.ds_instance.dset)
-        .tex_sampler(|s| s.set(vk::IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, tex, sampler))
+        .tex_sampler(
+          vk::DescriptorImageInfo::build()
+            .set(vk::IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, tex, sampler)
+            .info,
+        )
         .update();
     }
     self

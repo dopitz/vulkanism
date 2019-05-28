@@ -422,8 +422,12 @@ impl Spirv {
           },
           desctype: match self.get_descriptor_type(*target_id) {
             Ok(ty) => ty,
-            Err(_) => panic!("could not find descriptor type"),
+            Err(_) => panic!(
+              "could not find descriptor type\n\n{}",
+              self.instructions.iter().fold(String::new(), |acc, i| format!("{}\n{:?}", acc, i))
+            ),
           },
+          arrayelems: self.get_arraylen(*target_id),
           stageflags: stagebit,
         });
         acc
@@ -509,6 +513,12 @@ impl Spirv {
           Instruction::TypeSampledImage { result_id, image_type_id } if *result_id == id => {
             return get_type_recursive(spirv, *image_type_id, true);
           }
+          Instruction::TypePointer { result_id, type_id, .. } if *result_id == id => {
+            return get_type_recursive(spirv, *type_id, combined_sampler);
+          }
+          Instruction::TypeArray { result_id, type_id, .. } if *result_id == id => {
+            return get_type_recursive(spirv, *type_id, combined_sampler);
+          }
           Instruction::TypeSampler { result_id, .. } if *result_id == id => return Ok(vk::DESCRIPTOR_TYPE_SAMPLER),
           _ => (),
           // TODO: maybe more things in the future
@@ -519,6 +529,32 @@ impl Spirv {
     };
 
     get_type_recursive(&self, self.get_pointet_ty(id), false)
+  }
+
+  pub fn get_arraylen(&self, id: u32) -> u32 {
+    let ptrty_id = self.get_pointet_ty(id);
+
+    match self
+      .instructions
+      .iter()
+      .filter_map(|i| match i {
+        &Instruction::TypeArray { result_id, length_id, .. } if result_id == ptrty_id => Some(length_id),
+        _ => None,
+      })
+      .next()
+      .and_then(|len_id| {
+        self
+          .instructions
+          .iter()
+          .filter_map(|i| match i {
+            &Instruction::Constant { result_id, ref data, .. } if result_id == len_id => Some(data[0]),
+            _ => None,
+          })
+          .next()
+      }) {
+      Some(len) => len,
+      None => 1,
+    }
   }
 
   pub fn get_pointet_ty(&self, id: u32) -> u32 {

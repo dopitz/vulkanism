@@ -1,13 +1,13 @@
 use vk;
 
 /// Builder for a descriptor buffer info to write a buffer binding
-/// 
-/// Default initialized to 
-///  - buffer: vk::NULL_HANDLE 
-///  - offset: 0 
+///
+/// Default initialized to
+///  - buffer: vk::NULL_HANDLE
+///  - offset: 0
 ///  - range: vk::WHOLE_SIZE
 pub struct DescriptorBufferInfoBuilder {
-  info: vk::DescriptorBufferInfo,
+  pub info: vk::DescriptorBufferInfo,
 }
 
 impl DescriptorBufferInfoBuilder {
@@ -39,11 +39,6 @@ impl DescriptorBufferInfoBuilder {
     self.info.range = range;
     self
   }
-
-  /// Gets the configured `vk::DescriptorBufferInfo`, consumes the builder
-  pub fn get(self) -> vk::DescriptorBufferInfo {
-    self.info
-  }
 }
 
 impl Default for DescriptorBufferInfoBuilder {
@@ -58,14 +53,16 @@ impl Default for DescriptorBufferInfoBuilder {
   }
 }
 
+vk_builder!(vk::DescriptorBufferInfo, DescriptorBufferInfoBuilder);
+
 /// Builder for a descriptor image info to write an image binding
-/// 
-/// Default initialized to 
-///  - image view: `vk::NULL_HANDLE` 
+///
+/// Default initialized to
+///  - image view: `vk::NULL_HANDLE`
 ///  - sampler: `vk::NULL_HANDLE`
 ///  - layout: `vk::IMAGE_LAYOUT_UNDEFINED`
 pub struct DescriptorImageInfoBuilder {
-  info: vk::DescriptorImageInfo,
+  pub info: vk::DescriptorImageInfo,
 }
 
 impl DescriptorImageInfoBuilder {
@@ -112,11 +109,6 @@ impl DescriptorImageInfoBuilder {
     self.info.sampler = sampler;
     self
   }
-
-  /// Gets the configured `vk::DescriptorImageInfo`, consumes the builder
-  pub fn get(self) -> vk::DescriptorImageInfo {
-    self.info
-  }
 }
 
 impl Default for DescriptorImageInfoBuilder {
@@ -124,6 +116,8 @@ impl Default for DescriptorImageInfoBuilder {
     Self::with_layout(vk::IMAGE_LAYOUT_UNDEFINED)
   }
 }
+
+vk_builder!(vk::DescriptorImageInfo, DescriptorImageInfoBuilder);
 
 enum WriteOffset {
   Buffer(isize),
@@ -163,8 +157,13 @@ impl Writes {
     }
   }
 
-  /// Sets the sepecified buffer for the binding, array element and descriptor type
-  pub fn push_buffer(&mut self, binding: u32, array_elem: u32, ty: vk::DescriptorType, info: vk::DescriptorBufferInfo) {
+  /// Sets the sepecified buffer for the binding and derscriptor type, at array element
+  pub fn buffer(&mut self, binding: u32, array_elem: u32, ty: vk::DescriptorType, info: vk::DescriptorBufferInfo) {
+    self.buffers(binding, array_elem, ty, &[info])
+  }
+
+  /// Sets the sepecified buffers for the binding and descriptor type, starting at array element
+  pub fn buffers(&mut self, binding: u32, array_elem: u32, ty: vk::DescriptorType, infos: &[vk::DescriptorBufferInfo]) {
     self.writes.push(vk::WriteDescriptorSet {
       sType: vk::STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
       pNext: std::ptr::null(),
@@ -172,7 +171,7 @@ impl Writes {
       dstBinding: binding,
       dstArrayElement: array_elem,
       descriptorType: ty,
-      descriptorCount: 1,
+      descriptorCount: infos.len() as u32,
       pBufferInfo: std::ptr::null(),
       pImageInfo: std::ptr::null(),
       pTexelBufferView: std::ptr::null(),
@@ -187,11 +186,18 @@ impl Writes {
     );
 
     self.write_offsets.push(WriteOffset::Buffer(self.buffer_infos.len() as isize));
-    self.buffer_infos.push(info);
+    for info in infos.iter() {
+      self.buffer_infos.push(*info);
+    }
   }
 
-  /// Sets the sepecified image for the binding, array element and descriptor type
-  pub fn push_image(&mut self, binding: u32, array_elem: u32, ty: vk::DescriptorType, info: vk::DescriptorImageInfo) {
+  /// Sets the sepecified image for the binding and derscriptor type, at array element
+  pub fn image(&mut self, binding: u32, array_elem: u32, ty: vk::DescriptorType, info: vk::DescriptorImageInfo) {
+    self.images(binding, array_elem, ty, &[info]);
+  }
+
+  /// Sets the sepecified image for the binding and descriptor type, starting at array element
+  pub fn images(&mut self, binding: u32, array_elem: u32, ty: vk::DescriptorType, infos: &[vk::DescriptorImageInfo]) {
     self.writes.push(vk::WriteDescriptorSet {
       sType: vk::STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
       pNext: std::ptr::null(),
@@ -199,7 +205,7 @@ impl Writes {
       dstBinding: binding,
       dstArrayElement: array_elem,
       descriptorType: ty,
-      descriptorCount: 1,
+      descriptorCount: infos.len() as u32,
       pBufferInfo: std::ptr::null(),
       pImageInfo: std::ptr::null(),
       pTexelBufferView: std::ptr::null(),
@@ -214,11 +220,18 @@ impl Writes {
     );
 
     self.write_offsets.push(WriteOffset::Image(self.image_infos.len() as isize));
-    self.image_infos.push(info);
+    for info in infos.iter() {
+      self.image_infos.push(*info);
+    }
   }
 
   /// Sets the sepecified buffer view for the binding, array element and descriptor type
-  pub fn push_bufferview(&mut self, binding: u32, array_elem: u32, ty: vk::DescriptorType, info: vk::BufferView) {
+  pub fn bufferview(&mut self, binding: u32, array_elem: u32, ty: vk::DescriptorType, view: vk::BufferView) {
+    self.bufferviews(binding, array_elem, ty, &[view]);
+  }
+
+  /// Sets the sepecified buffer view for the binding, array element and descriptor type
+  pub fn bufferviews(&mut self, binding: u32, array_elem: u32, ty: vk::DescriptorType, views: &[vk::BufferView]) {
     self.writes.push(vk::WriteDescriptorSet {
       sType: vk::STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
       pNext: std::ptr::null(),
@@ -226,7 +239,7 @@ impl Writes {
       dstBinding: binding,
       dstArrayElement: array_elem,
       descriptorType: ty,
-      descriptorCount: 1,
+      descriptorCount: views.len() as u32,
       pBufferInfo: std::ptr::null(),
       pImageInfo: std::ptr::null(),
       pTexelBufferView: std::ptr::null(),
@@ -235,37 +248,9 @@ impl Writes {
     debug_assert!(ty & (vk::DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER | vk::DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER) != 0);
 
     self.write_offsets.push(WriteOffset::BufferView(self.buffer_views.len() as isize));
-    self.buffer_views.push(info);
-  }
-
-  /// Adds a new buffer write for the specified binding and array with the builder returned by the lambda
-  pub fn buffer<F: Fn(DescriptorBufferInfoBuilder) -> DescriptorBufferInfoBuilder>(
-    &mut self,
-    binding: u32,
-    array_elem: u32,
-    ty: vk::DescriptorType,
-    f: F,
-  ) -> &mut Self {
-    self.push_buffer(binding, array_elem, ty, f(DescriptorBufferInfoBuilder::default()).get());
-    self
-  }
-
-  /// Adds a new image write for the specified binding and array with the builder returned by the lambda
-  pub fn image<F: Fn(DescriptorImageInfoBuilder) -> DescriptorImageInfoBuilder>(
-    &mut self,
-    binding: u32,
-    array_elem: u32,
-    ty: vk::DescriptorType,
-    f: F,
-  ) -> & mut Self {
-    self.push_image(binding, array_elem, ty, f(DescriptorImageInfoBuilder::default()).get());
-    self
-  }
-
-  /// Adds a new buffer view write for the specified binding and array
-  pub fn buffer_view(&mut self, binding: u32, array_elem: u32, ty: vk::DescriptorType, view: vk::BufferView) -> &mut Self {
-    self.push_bufferview(binding, array_elem, ty, view);
-    self
+    for view in views.iter() {
+      self.buffer_views.push(*view);
+    }
   }
 
   /// Updates the descriptor set with the configured writes
@@ -278,12 +263,6 @@ impl Writes {
       }
     }
 
-    vk::UpdateDescriptorSets(
-      self.device,
-      self.writes.len() as u32,
-      self.writes.as_ptr(),
-      0,
-      std::ptr::null(),
-    );
+    vk::UpdateDescriptorSets(self.device, self.writes.len() as u32, self.writes.as_ptr(), 0, std::ptr::null());
   }
 }

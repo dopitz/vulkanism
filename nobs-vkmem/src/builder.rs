@@ -288,13 +288,26 @@ impl<'a> Buffer<'a> {
   /// Makro configuration for setting up vertex buffers
   ///
   /// Sets
-  ///  - devicelokal: 'true'
+  ///  - devicelocal: 'true'
   ///  - usage: `vk::BUFFER_USAGE_VERTEX_BUFFER_BIT | vk::BUFFER_USAGE_TRANSFER_DST_BIT`
   ///  - size: as specified
   pub fn vertex_buffer(self, size: vk::DeviceSize) -> Self {
     self
       .devicelocal(true)
       .usage(vk::BUFFER_USAGE_VERTEX_BUFFER_BIT | vk::BUFFER_USAGE_TRANSFER_DST_BIT)
+      .size(size)
+  }
+
+  /// Makro configuration for setting up index buffers
+  ///
+  /// Sets
+  ///  - devicelocal: 'true'
+  ///  - usage: `vk::BUFFER_USAGE_VERTEX_BUFFER_BIT | vk::BUFFER_USAGE_TRANSFER_DST_BIT`
+  ///  - size: as specified
+  pub fn index_buffer(self, size: vk::DeviceSize) -> Self {
+    self
+      .devicelocal(true)
+      .usage(vk::BUFFER_USAGE_INDEX_BUFFER_BIT | vk::BUFFER_USAGE_TRANSFER_DST_BIT)
       .size(size)
   }
 

@@ -304,7 +304,7 @@ pub fn main() {
     let i = frame.next().unwrap();
     let next = sc.next_image();
     let fb = &fbs[i];
-
+    
     let cs = cmds
       .begin_stream()
       .unwrap()

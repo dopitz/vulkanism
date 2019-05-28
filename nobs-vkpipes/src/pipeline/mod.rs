@@ -10,6 +10,7 @@ pub struct Binding {
   pub binding: u32,
   pub descset: u32,
   pub desctype: vk::DescriptorType,
+  pub arrayelems: u32,
   pub stageflags: vk::ShaderStageFlagBits,
 }
 

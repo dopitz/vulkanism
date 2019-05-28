@@ -269,7 +269,7 @@ impl FontBuilder {
 
         let chars = CHARS.iter().fold(std::collections::HashMap::new(), |mut acc, (c, cp)| {{acc.entry(*c).or_insert(*cp); acc}});
 
-        let mut stage = vk::mem::Staging::new(&mut mem.alloc, ({dimx} * {dimy}) as vk::DeviceSize).unwrap();
+        let mut stage = vk::mem::Staging::new(mem.clone(), ({dimx} * {dimy}) as vk::DeviceSize).unwrap();
         let mut map = stage.map().unwrap();
         let data = map.as_slice_mut::<u8>();
 
@@ -286,7 +286,7 @@ impl FontBuilder {
           ),
         );
 
-        let  (mut w, mut h) = ({dimx}, {dimy});
+        let (mut w, mut h) = ({dimx}, {dimy});
 
         for l in 1..{mip_levels} {{
           cs = cs

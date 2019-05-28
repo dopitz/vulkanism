@@ -51,7 +51,7 @@ fn create_pipeline_layout(device: vk::Device, dset_layouts: &[vk::DescriptorSetL
 
 fn create_pool_sizes(bindings: &[Binding]) -> Vec<vk::DescriptorPoolSize> {
   let counts = bindings.iter().fold(std::collections::HashMap::new(), |mut acc, b| {
-    *acc.entry(b.desctype).or_insert(0u32) += 1;
+    *acc.entry(b.desctype).or_insert(0u32) += b.arrayelems;
     acc
   });
 

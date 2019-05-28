@@ -91,6 +91,16 @@ impl Stream {
   pub fn push<T: StreamPush>(self, o: &T) -> Self {
     o.enqueue(self)
   }
+  /// Pushes a command contained in the option into a stream. NOP if the Option is None.
+  ///
+  /// Any struct implementing the [StreamPush](commands/trait.StreamPush.html) trait can be pushed into the stream.
+  /// This can be used to build more complex commands from many primitive ones and be able to push them with one call.
+  pub fn push_if<T: StreamPush>(self, o: &Option<T>) -> Self {
+    match o {
+      Some(c) => c.enqueue(self),
+      None => self,
+    }
+  }
 
   /// Pushes a lambda into a stream.
   ///

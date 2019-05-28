@@ -110,8 +110,9 @@ pub fn main() {
   let cmds = vk::cmd::Pool::new(device.handle, device.queues[0].family).unwrap();
 
   let (mut sc, mut rp, mut fbs) = resize(&pdevice, &device, &window, &mut alloc, None, None, None);
+  let mut mem = vk::mem::Mem::new(alloc.clone(), fbs.len());
 
-  let mut gui = Gui::new(&device, cmds.clone(), rp.pass, vk::mem::Mem::new(alloc.clone(), fbs.len() + 2));
+  let mut gui = Gui::new(&device, cmds.clone(), rp.pass, mem.clone());
 
   let mut resizeevent = false;
   let mut close = false;
@@ -163,6 +164,8 @@ pub fn main() {
       gui.gui.resize(sc.extent);
       resizeevent = false;
     }
+
+    mem.trash.clean();
 
     let i = frame.next().unwrap();
     let next = sc.next_image();

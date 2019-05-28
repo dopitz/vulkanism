@@ -143,7 +143,6 @@ impl ImGui {
 
 impl<'a> vk::cmd::commands::StreamPush for ImGui {
   fn enqueue(&self, cs: vk::cmd::Stream) -> vk::cmd::Stream {
-    self.gui.mem.trash.clean();
     cs.push(&self.gui.vp.lock().unwrap().cmd)
   }
 }

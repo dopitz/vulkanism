@@ -5,6 +5,7 @@ use vk;
 use vk::builder::Buildable;
 
 /// Copies memory from one buffer to another
+#[derive(Clone, Copy, Debug)]
 pub struct BufferCopy {
   pub src: vk::Buffer,
   pub dst: vk::Buffer,
@@ -62,6 +63,7 @@ impl BufferCopyBuilder {
 }
 
 /// Copies memory from a buffer to an image
+#[derive(Clone, Copy, Debug)]
 pub struct BufferImageCopy {
   pub src: vk::Buffer,
   pub dst: vk::Image,
@@ -69,6 +71,7 @@ pub struct BufferImageCopy {
 }
 
 /// Copies memory from an image to a buffer
+#[derive(Clone, Copy, Debug)]
 pub struct ImageBufferCopy {
   pub src: vk::Image,
   pub dst: vk::Buffer,
@@ -175,6 +178,7 @@ impl BufferImageCopyBuilder {
 }
 
 /// Copies memory from one image to another
+#[derive(Clone, Copy, Debug)]
 pub struct ImageCopy {
   pub src: vk::Image,
   pub dst: vk::Image,

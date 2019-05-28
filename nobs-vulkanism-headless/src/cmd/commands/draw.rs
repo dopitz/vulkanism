@@ -3,13 +3,13 @@ use super::StreamPush;
 use vk;
 
 /// Binds vertex buffers to command stream
-#[derive(Default, Clone)]
+#[derive(Default, Clone, Debug)]
 pub struct BindVertexBuffers {
   pub buffers: Vec<vk::Buffer>,
   pub offsets: Vec<vk::DeviceSize>,
 }
 /// Binds vertex buffers and issues draw call
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct DrawVertices {
   pub vertex_buffers: BindVertexBuffers,
   pub vertex_count: u32,
@@ -18,7 +18,7 @@ pub struct DrawVertices {
   pub first_instance: u32,
 }
 /// Bind vertex buffers and issues an indexed draw call
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct DrawIndexed {
   pub vertex_buffers: BindVertexBuffers,
   pub index_count: u32,
@@ -32,7 +32,7 @@ pub struct DrawIndexed {
   pub index_type: vk::IndexType,
 }
 /// Binds vertex buffers and issues an indirect draw call
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct DrawIndirect {
   pub vertex_buffers: BindVertexBuffers,
   pub count: u32,
