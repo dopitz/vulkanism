@@ -1,5 +1,4 @@
 use vk;
-use vk::builder::Buildable;
 use vkm;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

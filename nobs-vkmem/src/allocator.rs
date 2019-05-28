@@ -156,7 +156,7 @@ impl AllocatorSizes {
           index: memtype_idx_hostaccess,
           linear: true,
         },
-        vk::DeviceSize::max(minsize, 1 << 18),
+        vk::DeviceSize::max(minsize, 1 << 21),
       );
     }
 

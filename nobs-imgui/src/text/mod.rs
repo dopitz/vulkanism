@@ -1,7 +1,5 @@
-use crate::cachedpipeline::*;
 use crate::font::*;
 use crate::sprite;
-use crate::window::Window;
 use crate::ImGui;
 
 use vk;
