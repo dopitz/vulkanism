@@ -94,7 +94,7 @@ impl AttachmentBuilder {
     self.info.blendEnable = enable;
     self
   }
-  pub fn coloc_write_mask(mut self, mask: vk::ColorComponentFlags) -> Self {
+  pub fn color_write_mask(mut self, mask: vk::ColorComponentFlags) -> Self {
     self.info.colorWriteMask = mask;
     self
   }

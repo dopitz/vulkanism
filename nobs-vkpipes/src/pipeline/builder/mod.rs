@@ -13,7 +13,7 @@ fn create_descriptor_layout(device: vk::Device, bindings: &[Binding]) -> vk::Des
     .map(|b| vk::DescriptorSetLayoutBinding {
       binding: b.binding,
       descriptorType: b.desctype,
-      descriptorCount: 1,
+      descriptorCount: b.arrayelems,
       stageFlags: b.stageflags,
       pImmutableSamplers: std::ptr::null(),
     })

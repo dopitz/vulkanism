@@ -1,6 +1,3 @@
-mod pipeline;
-use pipeline as pipe;
-
 use crate::cachedpipeline::*;
 use crate::font::*;
 use crate::sprite;

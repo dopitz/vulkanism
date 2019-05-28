@@ -105,7 +105,13 @@ impl CacheablePipeline for Pipeline {
           .push_state(vk::DYNAMIC_STATE_VIEWPORT)
           .push_state(vk::DYNAMIC_STATE_SCISSOR),
       )
-      .blend(vk::PipelineColorBlendStateCreateInfo::build().push_attachment(vk::PipelineColorBlendAttachmentState::build()))
+      .blend(vk::PipelineColorBlendStateCreateInfo::build().push_attachment(
+        vk::PipelineColorBlendAttachmentState::build().enable(vk::TRUE).color_and_alpha(
+          vk::BLEND_FACTOR_SRC_ALPHA,
+          vk::BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
+          vk::BLEND_OP_ADD,
+        ),
+      ))
       .create()
       .unwrap();
 
