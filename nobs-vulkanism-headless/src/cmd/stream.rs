@@ -36,9 +36,26 @@ impl StreamCache {
 ///
 /// When we are done building the command stream, we push it into a batch ([BatchSubmit](struct.BatchSubmit.html), [AutoBatch](struct.AutoBatch.html), [Frame](struct.Frame.html)).
 /// The batch can then submit all streams with one queue submit call. This is useful, since queue submit calls are very overhead heavy.
+///
+/// Letting the [Stream](struct.Stream.html) go out of scope will call [drop](struct.Stream.html#method.drop). This will redeem the Stream to the pool without subitting it.
 pub struct Stream {
   pub buffer: vk::CommandBuffer,
   streams: Weak<Mutex<StreamCache>>,
+}
+
+impl Drop for Stream {
+  /// Returns the stream to the pool.
+  ///
+  /// This breaks up configuring the stream and returns it to the pool.
+  /// No vulkan commands are submitted, the command buffer can be reused again.
+  fn drop(&mut self) {
+    if let Some(streams) = self.streams.upgrade() {
+      streams.lock().unwrap().streams.push(Self {
+        buffer: self.buffer,
+        streams: self.streams.clone(),
+      });
+    }
+  }
 }
 
 impl Stream {
@@ -113,15 +130,5 @@ impl Stream {
   /// Can be used to push complex command logic into stream.
   pub fn push_fn<F: Fn(Self) -> Self>(self, f: F) -> Self {
     f(self)
-  }
-
-  /// Returns the stream to the pool.
-  ///
-  /// This breaks up configuring the stream and returns it to the pool.
-  /// No vulkan commands are submitted, the command buffer can be reused again.
-  pub fn waive(self) {
-    if let Some(streams) = self.streams.upgrade() {
-      streams.lock().unwrap().streams.push(self)
-    }
   }
 }

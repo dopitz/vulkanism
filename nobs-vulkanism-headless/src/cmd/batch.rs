@@ -125,10 +125,6 @@ impl Batch {
   }
 
   pub fn clear(&mut self) {
-    while let Some(stream) = self.streams.pop() {
-      stream.waive();
-    }
-
     self.streams.clear();
     self.buffers.clear();
     self.wait_signals.clear();
