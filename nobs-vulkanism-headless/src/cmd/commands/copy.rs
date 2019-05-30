@@ -96,11 +96,11 @@ impl StreamPush for BufferImageCopy {
 impl StreamPush for ImageBufferCopy {
   fn enqueue(&self, cs: Stream) -> Stream {
     let cs = cs.push(&ImageBarrier::to_transfer_src(self.src));
-    vk::CmdCopyBufferToImage(
+    vk::CmdCopyImageToBuffer(
       cs.buffer,
       self.src,
-      self.dst,
       vk::IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+      self.dst,
       1,
       &self.region,
     );

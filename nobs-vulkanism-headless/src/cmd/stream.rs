@@ -5,6 +5,7 @@ use std::sync::Weak;
 use vk;
 
 use crate::cmd::commands::StreamPush;
+use crate::cmd::commands::StreamPushMut;
 use crate::cmd::Error;
 
 pub struct StreamCache {
@@ -108,13 +109,28 @@ impl Stream {
   pub fn push<T: StreamPush>(self, o: &T) -> Self {
     o.enqueue(self)
   }
+  /// Pushes a command into a stream.
+  ///
+  /// See [push](struct.Stream.html#method.push). Calls to a mutable version, so that the pushed command can be modified.
+  pub fn push_mut<T: StreamPushMut>(self, o: &mut T) -> Self {
+    o.enqueue_mut(self)
+  }
   /// Pushes a command contained in the option into a stream. NOP if the Option is None.
   ///
   /// Any struct implementing the [StreamPush](commands/trait.StreamPush.html) trait can be pushed into the stream.
   /// This can be used to build more complex commands from many primitive ones and be able to push them with one call.
   pub fn push_if<T: StreamPush>(self, o: &Option<T>) -> Self {
     match o {
-      Some(c) => c.enqueue(self),
+      Some(ref c) => c.enqueue(self),
+      None => self,
+    }
+  }
+  /// Pushes a command into a stream.
+  ///
+  /// See [push_if](struct.Stream.html#method.push_if). Calls to a mutable version, so that the pushed command can be modified.
+  pub fn push_if_mut<T: StreamPushMut>(self, o: &mut Option<T>) -> Self {
+    match o {
+      Some(ref mut c) => c.enqueue_mut(self),
       None => self,
     }
   }

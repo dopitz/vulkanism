@@ -20,3 +20,7 @@ use super::Stream;
 pub trait StreamPush {
   fn enqueue(&self, cs: Stream) -> Stream;
 }
+
+pub trait StreamPushMut {
+  fn enqueue_mut(&mut self, cs: Stream) -> Stream;
+}
