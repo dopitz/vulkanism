@@ -2,8 +2,6 @@ use crate::block::Block;
 use crate::Error;
 use vk;
 
-use std::os::raw::c_void;
-
 /// A mapped memory region
 ///
 /// Automatically unmapps the memory when the instance goes out of scope
@@ -11,7 +9,7 @@ use std::os::raw::c_void;
 pub struct Mapped {
   device: vk::Device,
   block: Block,
-  ptr: *mut c_void,
+  ptr: *mut u8,
 }
 
 impl Drop for Mapped {
@@ -33,27 +31,42 @@ impl Mapped {
       &mut ptr
     ))
     .map_err(|_| Error::MapError)?;
-    Ok(Mapped { device, block, ptr })
+    Ok(Mapped {
+      device,
+      block,
+      ptr: unsafe { std::mem::transmute(ptr) },
+    })
   }
 
   /// Copies memory from the mapped region on the device to `dst`
-  pub fn device_to_host<T>(&self, dst: &mut T) {
-    unsafe { std::ptr::copy_nonoverlapping(self.ptr, std::mem::transmute(dst), self.block.size_padded() as usize) };
+  pub fn device_to_host<T>(&self) -> T {
+    unsafe {
+      let mut dst = std::mem::uninitialized::<T>();
+      std::ptr::copy_nonoverlapping(self.ptr, std::mem::transmute(&mut dst), self.block.size_padded() as usize);
+      dst
+    }
+  }
+  pub fn device_to_host_slice<T>(&self, dst: &mut [T]) {
+    unsafe { std::ptr::copy_nonoverlapping(self.ptr, std::mem::transmute(dst.as_mut_ptr()), self.block.size_padded() as usize) };
   }
 
   /// Copies memory from `src` to the mapped region on the device
   pub fn host_to_device<T>(&self, src: &T) {
     unsafe { std::ptr::copy_nonoverlapping(std::mem::transmute(src), self.ptr, self.block.size_padded() as usize) };
   }
+  /// Copies memory from `src` to the mapped region on the device
+  pub fn host_to_device_slice<T>(&self, src: &[T]) {
+    unsafe { std::ptr::copy_nonoverlapping(std::mem::transmute(src.as_ptr()), self.ptr, self.block.size_padded() as usize) };
+  }
 
   /// Get a pointer to the mapped memory
   pub fn as_ptr<T>(&self) -> *const T {
-    unsafe { std::mem::transmute::<*const c_void, *const T>(self.ptr) }
+    unsafe { std::mem::transmute(self.ptr) }
   }
 
   /// Get a mutable pointer to the mapped memory
   pub fn as_ptr_mut<T>(&mut self) -> *mut T {
-    unsafe { std::mem::transmute::<*mut c_void, *mut T>(self.ptr) }
+    unsafe { std::mem::transmute(self.ptr) }
   }
 
   /// Get a slice from the mapped memory

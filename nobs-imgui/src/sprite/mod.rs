@@ -36,9 +36,7 @@ impl Drop for Sprites {
     self
       .gui
       .get_pipeline::<pipe::Pipeline>()
-      .get_cache()
-      .pool
-      .free_dset(self.ds_instance.dset);
+      .free_ds(self.ds_instance.dset);
   }
 }
 
