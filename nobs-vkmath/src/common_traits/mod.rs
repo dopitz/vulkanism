@@ -92,6 +92,7 @@ macro_rules! vec_into {
 vec_into!(i8, i16);
 vec_into!(i8, i32);
 vec_into!(i8, i64);
+vec_into!(i8, isize);
 vec_into!(i8, u8);
 vec_into!(i8, u16);
 vec_into!(i8, u32);
@@ -102,6 +103,7 @@ vec_into!(i8, f64);
 
 vec_into!(i16, i32);
 vec_into!(i16, i64);
+vec_into!(i16, isize);
 vec_into!(i16, u8);
 vec_into!(i16, u16);
 vec_into!(i16, u32);
@@ -111,6 +113,7 @@ vec_into!(i16, f32);
 vec_into!(i16, f64);
 
 vec_into!(i32, i64);
+vec_into!(i32, isize);
 vec_into!(i32, u8);
 vec_into!(i32, u16);
 vec_into!(i32, u32);
@@ -119,6 +122,7 @@ vec_into!(i32, usize);
 vec_into!(i32, f32);
 vec_into!(i32, f64);
 
+vec_into!(i64, isize);
 vec_into!(i64, u8);
 vec_into!(i64, u16);
 vec_into!(i64, u32);
@@ -127,22 +131,38 @@ vec_into!(i64, usize);
 vec_into!(i64, f32);
 vec_into!(i64, f64);
 
+vec_into!(isize, u8);
+vec_into!(isize, u16);
+vec_into!(isize, u32);
+vec_into!(isize, u64);
+vec_into!(isize, usize);
+vec_into!(isize, f32);
+vec_into!(isize, f64);
+
+vec_into!(u8, u16);
+vec_into!(u8, u32);
+vec_into!(u8, u64);
 vec_into!(u8, usize);
+vec_into!(u8, f32);
+vec_into!(u8, f64);
+
+vec_into!(u16, u32);
+vec_into!(u16, u64);
 vec_into!(u16, usize);
+vec_into!(u16, f32);
+vec_into!(u16, f64);
+
+vec_into!(u32, u64);
 vec_into!(u32, usize);
+vec_into!(u32, f32);
+vec_into!(u32, f64);
+
 vec_into!(u64, usize);
+vec_into!(u64, f32);
+vec_into!(u64, f64);
 
-vec_into!(f32, u8);
-vec_into!(f32, u16);
-vec_into!(f32, u32);
-vec_into!(f32, u64);
-vec_into!(f32, usize);
-
-vec_into!(f64, u8);
-vec_into!(f64, u16);
-vec_into!(f64, u32);
-vec_into!(f64, u64);
-vec_into!(f64, usize);
+vec_into!(usize, f32);
+vec_into!(usize, f64);
 
 pub trait Identity {
   type Output;
