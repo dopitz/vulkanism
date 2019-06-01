@@ -101,6 +101,11 @@ pub use descriptor::DescriptorLayout;
 pub use descriptor::DescriptorPool;
 pub use descriptor::DescriptorSizes;
 
+pub mod cache;
+pub use cache::Cache;
+pub use cache::CachedPipeline;
+pub use cache::PipelineId;
+
 #[derive(Debug)]
 pub enum Error {
   InvalidShaderModule,

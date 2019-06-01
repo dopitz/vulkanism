@@ -1,16 +1,11 @@
-mod pipeline;
-use pipeline as pipe;
-
-use crate::cachedpipeline::*;
-use crate::ImGui;
-
 use vk;
-use vk::builder::Buildable;
 use vk::cmd;
 use vk::cmd::commands as cmds;
 use vkm::Vec2i;
 
-pub use pipe::Vertex;
+use super::pipeline::*;
+use crate::pipeid::*;
+use crate::ImGui;
 
 pub struct Sprites {
   device: vk::Device,
@@ -23,9 +18,7 @@ pub struct Sprites {
   vb: vk::Buffer,
   ub: vk::Buffer,
 
-  pipe: cmds::BindPipeline,
-  ds_viewport: cmds::BindDset,
-  ds_instance: cmds::BindDset,
+  pipe: Pipeline,
   draw: cmds::DrawVertices,
 }
 
@@ -33,10 +26,7 @@ impl Drop for Sprites {
   fn drop(&mut self) {
     self.gui.get_mem().trash.push(self.ub);
     self.gui.get_mem().trash.push(self.vb);
-    self
-      .gui
-      .get_pipeline::<pipe::Pipeline>()
-      .free_ds(self.ds_instance.dset);
+    self.gui.get_pipe(PipeId::Sprites).dsets.free_dset(self.pipe.bind_ds_instance.dset);
   }
 }
 
@@ -49,46 +39,15 @@ impl Sprites {
 
     let mut ub = vk::NULL_HANDLE;
     vk::mem::Buffer::new(&mut ub)
-      .uniform_buffer(std::mem::size_of::<pipe::Ub>() as vk::DeviceSize)
+      .uniform_buffer(std::mem::size_of::<UbViewport>() as vk::DeviceSize)
       .devicelocal(false)
       .bind(&mut mem.alloc, vk::mem::BindType::Block)
       .unwrap();
 
-    let (pipe, ds_viewport, ds_instance) = {
-      let mut p = gui.get_pipeline_setup::<pipe::Pipeline, _>(|dsets| {
-        pipe::DsViewport::write(device, dsets[0])
-          .ub_viewport(vk::DescriptorBufferInfo::build().buffer(gui.get_ub_viewport()).info)
-          .update();
-      });
-      (
-        cmds::BindPipeline::graphics(p.get_cache().pipe.handle),
-        cmds::BindDset::new(
-          vk::PIPELINE_BIND_POINT_GRAPHICS,
-          p.get_cache().pipe.layout,
-          0,
-          match p.get_cache().shared {
-            Some((_, ref ds)) => ds[0],
-            None => panic!("should never happen"),
-          },
-        ),
-        cmds::BindDset::new(
-          vk::PIPELINE_BIND_POINT_GRAPHICS,
-          p.get_cache().pipe.layout,
-          1,
-          p.new_ds_instance().unwrap(),
-        ),
-      )
-    };
-
     let font = gui.get_font();
-    pipe::DsText::write(device, ds_instance.dset)
-      .ub(vk::DescriptorBufferInfo::build().buffer(ub).info)
-      .tex_sampler(
-        vk::DescriptorImageInfo::build()
-          .set(vk::IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, font.texview, font.sampler)
-          .info,
-      )
-      .update();
+
+    let pipe = Pipeline::new(gui.get_pipe(PipeId::Sprites));
+    pipe.update_dsets(device, ub, font.texview, font.sampler);
 
     Sprites {
       device,
@@ -96,14 +55,12 @@ impl Sprites {
 
       position: Default::default(),
 
-      tex: vk::NULL_HANDLE,
-      sampler: vk::NULL_HANDLE,
+      tex: font.texview,
+      sampler: font.sampler,
       vb,
       ub,
 
       pipe,
-      ds_viewport,
-      ds_instance,
       draw: cmds::Draw::new().vertices().instance_count(0),
     }
   }
@@ -113,7 +70,7 @@ impl Sprites {
       self.position = pos;
 
       let mut map = self.gui.get_mem().alloc.get_mapped(self.ub).unwrap();
-      let data = map.as_slice_mut::<pipe::Ub>();
+      let data = map.as_slice_mut::<UbViewport>();
       data[0].offset = pos;
     }
     self
@@ -126,13 +83,7 @@ impl Sprites {
     if self.tex != tex || self.sampler != sampler {
       self.tex = tex;
       self.sampler = sampler;
-      pipe::DsText::write(self.device, self.ds_instance.dset)
-        .tex_sampler(
-          vk::DescriptorImageInfo::build()
-            .set(vk::IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, tex, sampler)
-            .info,
-        )
-        .update();
+      self.pipe.update_dsets(self.device, self.ub, tex, sampler);
     }
     self
   }
@@ -170,7 +121,7 @@ impl Sprites {
 impl cmds::StreamPush for Sprites {
   fn enqueue(&self, cs: cmd::Stream) -> cmd::Stream {
     if self.draw.instance_count > 0 {
-      cs.push(&self.pipe).push(&self.ds_viewport).push(&self.ds_instance).push(&self.draw)
+      cs.push(&self.pipe).push(&self.draw)
     } else {
       cs
     }

@@ -4,8 +4,8 @@ use vk::pipes::build::*;
 
 fn main() {
   ShaderUsage::new()
-    .uses("src/sprite/sprite.vert")
-    .uses("src/sprite/sprite.frag")
-    .depends("src/sprite/pipeline.rs");
+    .uses("src/sprites/sprites.vert")
+    .uses("src/sprites/sprites.frag")
+    .depends("src/sprites/pipeline.rs");
 }
 

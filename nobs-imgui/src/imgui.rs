@@ -1,11 +1,10 @@
-use font::*;
-
-use std::collections::HashMap;
 use std::sync::Arc;
 use std::sync::Mutex;
 
-use crate::cachedpipeline::*;
+use crate::pipeid::*;
 use crate::window;
+use font::*;
+use vk::pipes::CachedPipeline;
 
 struct Viewport {
   ub: vk::Buffer,
@@ -13,15 +12,15 @@ struct Viewport {
 }
 
 struct ImGuiImpl {
-  pub device: vk::Device,
-  pub copy_queue: vk::Queue,
-  pub cmds: vk::cmd::Pool,
-  pub pass: vk::RenderPass,
-  pub subpass: u32,
-  pub mem: vk::mem::Mem,
-  pub font: Arc<Font>,
+  device: vk::Device,
+  copy_queue: vk::Queue,
+  cmds: vk::cmd::Pool,
+  pass: vk::RenderPass,
+  subpass: u32,
+  mem: vk::mem::Mem,
+  font: Arc<Font>,
 
-  pipes: Mutex<HashMap<String, Arc<CachedPipeline>>>,
+  pipes: PipeCache,
   vp: Mutex<Viewport>,
 }
 
@@ -64,7 +63,12 @@ impl ImGui {
         mem,
         font,
 
-        pipes: Mutex::new(HashMap::new()),
+        pipes: PipeCache::new(&PipeCreateInfo {
+          device,
+          pass,
+          subpass,
+          ub_viewport,
+        }),
         vp: Mutex::new(Viewport {
           ub: ub_viewport,
           cmd: vk::cmd::commands::Viewport::with_size(0.0, 0.0),
@@ -94,26 +98,8 @@ impl ImGui {
   pub fn get_font(&self) -> Arc<Font> {
     self.gui.font.clone()
   }
-  pub fn get_pipeline<T: CacheablePipeline>(&self) -> T {
-    self.get_pipeline_setup(|_| {})
-  }
-  pub fn get_pipeline_setup<T: CacheablePipeline, F: FnOnce(&mut [vk::DescriptorSet])>(&self, setup: F) -> T {
-    let gui = &self.gui;
-    let mut pipes = gui.pipes.lock().unwrap();
-    let ident = T::get_ident();
-    let p = match pipes.get_mut(ident) {
-      Some(p) => p.clone(),
-      None => {
-        let mut p = T::create_cache(gui.device, gui.pass, gui.subpass);
-        if let Some((_, ref mut dsets)) = p.shared {
-          setup(dsets);
-        }
-        let p = Arc::new(p);
-        pipes.insert(ident.to_string(), p.clone());
-        p
-      }
-    };
-    T::from_cache(p)
+  pub fn get_pipe(&self, id: PipeId) -> &CachedPipeline {
+    &self.gui.pipes[id]
   }
   pub fn get_ub_viewport(&self) -> vk::Buffer {
     self.gui.vp.lock().unwrap().ub

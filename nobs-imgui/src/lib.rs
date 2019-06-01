@@ -6,10 +6,11 @@ extern crate nobs_imgui_font as font;
 extern crate winit;
 
 pub mod cachedpipeline;
+pub mod pipeid;
 pub mod input;
 pub mod rect;
 pub mod text;
-pub mod sprite;
+pub mod sprites;
 pub mod textbox;
 pub mod window;
 

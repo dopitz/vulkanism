@@ -1,5 +1,5 @@
 use crate::font::*;
-use crate::sprite;
+use crate::sprites;
 use crate::ImGui;
 
 use vk;
@@ -8,7 +8,7 @@ use vk::cmd::commands as cmds;
 use vkm::Vec2i;
 
 pub struct Text {
-  sprites: sprite::Sprites,
+  sprites: sprites::Sprites,
 
   text: String,
   typeset: TypeSet,
@@ -16,7 +16,7 @@ pub struct Text {
 
 impl Text {
   pub fn new(gui: &ImGui) -> Self {
-    let sprites = sprite::Sprites::new(gui);
+    let sprites = sprites::Sprites::new(gui);
     let typeset = TypeSet::new(gui.get_font());
     Self {
       sprites,
@@ -65,7 +65,7 @@ impl Text {
       return;
     }
 
-    let mut buffer: Vec<sprite::Vertex> = Vec::with_capacity(self.text.len() + 1);
+    let mut buffer: Vec<sprites::Vertex> = Vec::with_capacity(self.text.len() + 1);
     unsafe { buffer.set_len(self.text.len() + 1) };
     let size = self.typeset.compute(&self.text, &mut buffer);
 
