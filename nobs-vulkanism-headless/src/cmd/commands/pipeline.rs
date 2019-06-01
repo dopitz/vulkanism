@@ -3,6 +3,7 @@ use super::StreamPush;
 use vk;
 
 /// Binds a pipeline to a command stream
+#[derive(Debug)]
 pub struct BindPipeline {
   pub bindpoint: vk::PipelineBindPoint,
   pub pipeline: vk::Pipeline,
@@ -34,6 +35,7 @@ impl StreamPush for BindPipeline {
 }
 
 /// Binds a descriptor set to a command stream
+#[derive(Debug)]
 pub struct BindDset {
   pub bindpoint: vk::PipelineBindPoint,
   pub layout: vk::PipelineLayout,
@@ -69,7 +71,7 @@ impl StreamPush for BindDset {
 }
 
 /// Sets a viewport for the command stream
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub struct Viewport {
   pub vp: vk::Viewport,
 }
@@ -113,7 +115,7 @@ impl StreamPush for Viewport {
 }
 
 /// Sets a scissor rect for the command stream
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub struct Scissor {
   pub rect: vk::Rect2D,
 }

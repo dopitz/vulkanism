@@ -104,7 +104,7 @@ impl Sprites {
       pipe,
       ds_viewport,
       ds_instance,
-      draw: cmds::Draw::default().vertices().instance_count(0),
+      draw: cmds::Draw::new().vertices().instance_count(0),
     }
   }
 
@@ -160,7 +160,7 @@ impl Sprites {
     }
 
     // configure the draw call
-    self.draw = cmds::Draw::default()
+    self.draw = cmds::Draw::new()
       .push(self.vb, 0)
       .vertices()
       .instance_count(sprites.len() as u32)

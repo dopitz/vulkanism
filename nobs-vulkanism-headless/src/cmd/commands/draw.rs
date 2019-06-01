@@ -3,7 +3,7 @@ use super::StreamPush;
 use vk;
 
 /// Binds vertex buffers to command stream
-#[derive(Default, Clone, Debug)]
+#[derive(Default, Debug)]
 pub struct BindVertexBuffers {
   pub buffers: Vec<vk::Buffer>,
   pub offsets: Vec<vk::DeviceSize>,
@@ -45,7 +45,66 @@ pub struct DrawIndirect {
   pub index_type: vk::IndexType,
 }
 
-pub type Draw = BindVertexBuffers;
+#[derive(Debug)]
+pub enum Draw {
+  Vertices(DrawVertices),
+  Indexed(DrawIndexed),
+  Indirect(DrawIndirect),
+}
+
+impl Draw {
+  pub fn new() -> BindVertexBuffers {
+    BindVertexBuffers::default()
+  }
+
+  pub fn is_vertices(&self) -> bool {
+    match self {
+      Draw::Vertices(_) => true,
+      _ => false,
+    }
+  }
+  pub fn is_indexed(&self) -> bool {
+    match self {
+      Draw::Indexed(_) => true,
+      _ => false,
+    }
+  }
+  pub fn is_indirect(&self) -> bool {
+    match self {
+      Draw::Indirect(_) => true,
+      _ => false,
+    }
+  }
+
+  pub fn vertices(self) -> Option<DrawVertices> {
+    match self {
+      Draw::Vertices(d) => Some(d),
+      _ => None,
+    }
+  }
+  pub fn indexed(self) -> Option<DrawIndexed> {
+    match self {
+      Draw::Indexed(d) => Some(d),
+      _ => None,
+    }
+  }
+  pub fn indirect(self) -> Option<DrawIndirect> {
+    match self {
+      Draw::Indirect(d) => Some(d),
+      _ => None,
+    }
+  }
+}
+
+impl StreamPush for Draw {
+  fn enqueue(&self, cs: Stream) -> Stream {
+    match self {
+      Draw::Vertices(d) => cs.push(d),
+      Draw::Indexed(d) => cs.push(d),
+      Draw::Indirect(d) => cs.push(d),
+    }
+  }
+}
 
 impl BindVertexBuffers {
   pub fn push(mut self, buffer: vk::Buffer, offset: vk::DeviceSize) -> Self {
