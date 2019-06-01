@@ -123,7 +123,7 @@ pub fn main() {
   let mut x = 'x';
 
   use vk::cmd::commands::*;
-  let draw = Draw::default().vertices().vertex_count(3);
+  let draw = Draw::new().vertices().vertex_count(3);
   let mut frame = vk::cmd::Frame::new(device.handle, fbs.len()).unwrap();
 
   loop {

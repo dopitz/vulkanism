@@ -98,10 +98,10 @@ impl Table {
 
     for i in infos.iter() {
       let pad = Self::get_padding(size, i.requirements.alignment);
-      if size + pad + i.size > maxsize {
+      if size + pad + i.requirements.size > maxsize {
         break;
       }
-      size += pad + i.size;
+      size += pad + i.requirements.size; 
       count += 1;
     }
 
@@ -130,7 +130,9 @@ impl Table {
 
       if let Some((b, _)) = self
         .free
+        // find Blocks that are large enough
         .range(Block::new(0, 0, size, 0)..)
+        // skip Blocks that are to small when padding is added in front
         .skip_while(|(b, _)| groups.iter().any(|g: &Group| **b == g.block) || b.size() - Self::get_padding(b.beg, alignment) < size)
         .next()
         .map(|(b, n)| (*b, n.clone()))
@@ -179,7 +181,7 @@ impl Table {
       for i in infos.iter() {
         let pad = Self::get_padding(offset, i.requirements.alignment);
 
-        blocks.push(Block::new(mem, offset, offset + pad + i.size, pad));
+        blocks.push(Block::new(mem, offset, offset + pad + i.requirements.size, pad));
 
         match i.handle {
           Handle::Buffer(h) => vk_check!(vk::BindBufferMemory(self.device, h, mem, offset + pad)),
@@ -187,7 +189,7 @@ impl Table {
         }
         .map_err(|_| Error::BindMemoryFailed)?;
 
-        offset = offset + pad + i.size;
+        offset = offset + pad + i.requirements.size;
       }
     }
 
@@ -275,18 +277,6 @@ impl Table {
 
     let mut groups: Vec<Group> = Vec::new();
 
-    //println!("PAGE");
-    //for (_, p) in self.pages.iter() {
-    //  for (b, n) in p.iter() {
-    //    println!("{:?}  {:?}", b, n.node);
-    //  }
-    //}
-    //println!("FREE");
-    //for (b, n) in self.free.iter() {
-    //  println!("{:?}  {:?}", b, n);
-    //}
-    //println!("\n");
-
     // build continuous free blocks to insert
     for b in blocks {
       let node = self.remove(BlockType::Occupied(b)).unwrap();
@@ -314,6 +304,7 @@ impl Table {
     for i in 0..groups.len() {
       let mut group = groups[i].clone();
 
+      // append preceding free blocks
       loop {
         match group.node.prev {
           Some(BlockType::Free(b)) => {
@@ -326,6 +317,7 @@ impl Table {
         };
       }
 
+      // append trailing free blocks
       loop {
         match group.node.next {
           Some(BlockType::Free(b)) => {
@@ -338,6 +330,7 @@ impl Table {
         };
       }
 
+      // also free the padding of the next trayling occupied block
       if let Some(BlockType::Occupied(next)) = groups[i].node.next {
         group.block.end = next.beg + next.pad;
         if let Some(binding) = self.pages.get_mut(&next.mem).and_then(|p| p.remove(&next)) {
@@ -415,7 +408,8 @@ impl Table {
     let empty = self
       .pages
       .iter()
-      .filter_map(|(mem, blocks)| if blocks.is_empty() { Some(*mem) } else { None }).collect::<Vec<_>>();
+      .filter_map(|(mem, blocks)| if blocks.is_empty() { Some(*mem) } else { None })
+      .collect::<Vec<_>>();
 
     for mem in empty {
       vk::FreeMemory(self.device, mem, std::ptr::null());

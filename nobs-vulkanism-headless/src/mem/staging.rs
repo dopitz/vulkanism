@@ -52,6 +52,7 @@ impl Staging {
     }
   }
 
+
   pub fn map(&mut self) -> Option<mem::Mapped> {
     self.mem.alloc.get_mapped_region(self.buffer, self.offset, self.size)
   }
@@ -81,12 +82,11 @@ impl Staging {
 
 pub struct StagingFrame {
   stage: Staging,
-  offset: vk::DeviceSize,
 }
 
 impl StagingFrame {
   pub fn new(stage: Staging) -> Self {
-    Self { stage, offset: 0 }
+    Self { stage }
   }
 
   pub fn next(&mut self, size: vk::DeviceSize) -> Result<Staging, mem::Error> {

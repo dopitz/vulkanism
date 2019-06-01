@@ -1,5 +1,7 @@
 extern crate nobs_vulkanism as vk;
 
+use vk::builder::Buildable;
+
 mod make_sequence {
   vk::pipes::pipeline! {
     include = ["global", "everything"],
@@ -14,6 +16,8 @@ mod make_sequence {
     }
   }
 
+  #[repr(C)]
+  #[derive(Debug)]
   pub struct Ub {
     pub num_elems: u32,
     pub i_first: u32,
@@ -66,8 +70,10 @@ pub fn main() {
     .unwrap();
 
   make_sequence::dset::write(device.handle, ds)
-    .Ub(|b| b.buffer(buf_ub))
-    .b_out(|b| b.buffer(buf_out))
+    .Ub(vk::DescriptorBufferInfo::build().buffer(buf_ub).info)
+    .b_out(vk::DescriptorBufferInfo::build().buffer(buf_out).info)
+    //.Ub(|b| b.buffer(buf_ub))
+    //.b_out(|b| b.buffer(buf_out))
     .update();
 
   let cpool = vk::cmd::Pool::new(device.handle, device.queues[0].family).unwrap();
@@ -83,8 +89,9 @@ pub fn main() {
   }
   {
     let mapped = allocator.get_mapped(buf_ub).unwrap();
-    let mut ubb: make_sequence::Ub = unsafe { std::mem::uninitialized() };
-    mapped.device_to_host(&mut ubb);
+    //let mut ubb: make_sequence::Ub = unsafe { std::mem::uninitialized() };
+    let ubb = mapped.device_to_host::<make_sequence::Ub>();
+    println!("{:?}", ubb);
   }
 
   use vk::cmd::commands::*;
@@ -112,7 +119,7 @@ pub fn main() {
 
   println!("{}", allocator.print_stats());
   {
-    let mapped = allocator.get_mapped_region(buf_out, 0, 100 * 4).unwrap();
+    let mapped = allocator.get_mapped_region(buf_out, 8, 100 * 4 - 8).unwrap();
     println!("{:?}", mapped);
     let v = mapped.as_slice::<u32>();
     println!("{:?}", v);

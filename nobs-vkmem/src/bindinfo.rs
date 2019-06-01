@@ -4,13 +4,10 @@ use crate::Handle;
 
 /// Bundles all information for the [Allocator](struct.Allocator.html) to perform a resource memory binding.
 ///
-/// It is possible to additionally specify the size of the resource in bytes ([with_size](struct.BindInfo.html#method.with_size)).
-/// This size only matters, if the resource is a buffer that will be mapped into host accessible memory.
-/// If no size is specified with the constructor the size for the memory binding will be retrieved from the buffer's `vk::MemoryRequirements`,
-/// which might include a padding at the end. If the buffer is then mapped with [get_mapped](struct.Allocator.html#method.get_mapped) the retured
-/// [Mapped](mapped/struct.Mapped.html) will contain the buffer including padding. By specifying an explicit size this can be circumvented.
+/// The size of the resource is determined by `vk::MemoryRequirements`. 
+/// Note tha this size may be larger than the actual requested one (e.g. it might be a multiple of 256 bytes for host accassable buffers).
 ///
-/// When the builders [Buffer](builder/struct.Buffer.html) and [Image](builder/struct.Image.html) are used resources will allways be submitted with their actual size.
+/// This needs to be accounted for when mapping the buffer with [Mapped](mapped/struct.Mapped.html).
 #[derive(Debug, Clone, Copy)]
 pub struct BindInfo {
   pub handle: Handle<u64>,
@@ -36,11 +33,8 @@ impl BindInfo {
 /// Internal bind info used only by PageTable
 ///
 /// Implements conversion from the public [BindInfo](../struct.BindInfo.html).
-/// The `size` field may be smaller than the `requirements.size`, in case the public BindInfo specified it.
-/// Otherwise these two sizes will be equal.
 pub struct BindInfoInner {
   pub handle: Handle<u64>,
-  pub size: vk::DeviceSize,
   pub requirements: vk::MemoryRequirements,
 }
 
@@ -52,11 +46,9 @@ impl BindInfoInner {
       Handle::Buffer(b) => vk::GetBufferMemoryRequirements(device, b, &mut requirements),
     }
     let handle = info.handle;
-    let size = requirements.size;
 
     Self {
       handle,
-      size,
       requirements,
     }
   }

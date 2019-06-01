@@ -131,6 +131,7 @@ pub fn main() {
   let cmds = vk::cmd::Pool::new(device.handle, device.queues[0].family).unwrap();
 
   let (mut sc, rp, fbs) = setup_rendertargets(&pdevice, &device, &window, &mut alloc);
+  let mut mem = vk::mem::Mem::new(alloc, fbs.len());
 
   let pipe = tex::new(device.handle, rp.pass, 0)
     .vertex_input(
@@ -169,7 +170,7 @@ pub fn main() {
     .uniform_buffer(std::mem::size_of::<tex::UbTransform>() as vk::DeviceSize)
     .new_image(&mut texture)
     .texture2d(256, 256, vk::FORMAT_R8G8B8A8_UNORM)
-    .bind(&mut alloc, vk::mem::BindType::Block)
+    .bind(&mut mem.alloc, vk::mem::BindType::Block)
     .unwrap();
 
   let texview = vk::ImageViewCreateInfo::build()
@@ -178,7 +179,7 @@ pub fn main() {
     .unwrap();
   let sampler = vk::SamplerCreateInfo::build().create(device.handle).unwrap();
 
-  let mut stage = vk::mem::Staging::new(&mut alloc, 256 * 256 * 4).unwrap();
+  let mut stage = vk::mem::Staging::new(mem.clone(), 256 * 256 * 4).unwrap();
   {
     let mut map = stage
       .range(0, 3 * std::mem::size_of::<tex::Vertex>() as vk::DeviceSize)
@@ -229,8 +230,12 @@ pub fn main() {
   let ds = descriptors.new_dset(&pipe.dsets[0]).unwrap();
 
   tex::dset::write(device.handle, ds)
-    .ub_transform(|b| b.buffer(ub))
-    .tex_sampler(|s| s.set(vk::IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, texview, sampler))
+    .ub_transform(vk::DescriptorBufferInfo::build().buffer(ub).info)
+    .tex_sampler(
+      vk::DescriptorImageInfo::build()
+        .set(vk::IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, texview, sampler)
+        .info,
+    )
     .update();
 
   let t = std::time::SystemTime::now();
@@ -240,7 +245,7 @@ pub fn main() {
   let mut x = 'x';
 
   use vk::cmd::commands::*;
-  let draw = Draw::default().push(vb, 0).vertices().vertex_count(3);
+  let draw = Draw::new().push(vb, 0).vertices().vertex_count(3);
   let mut frame = vk::cmd::Frame::new(device.handle, fbs.len()).unwrap();
 
   let mut mvp = tex::UbTransform {
@@ -304,7 +309,7 @@ pub fn main() {
     let i = frame.next().unwrap();
     let next = sc.next_image();
     let fb = &fbs[i];
-    
+
     let cs = cmds
       .begin_stream()
       .unwrap()
@@ -336,7 +341,7 @@ pub fn main() {
   vk::DestroyImageView(device.handle, texview, std::ptr::null());
   vk::DestroySampler(device.handle, sampler, std::ptr::null());
 
-  println!("{}", alloc.print_stats());
+  println!("{}", mem.alloc.print_stats());
 
   let t = t.elapsed().unwrap();
   let t = t.as_secs() as f32 + t.subsec_millis() as f32 / 1000.0;

@@ -42,21 +42,21 @@ impl Mapped {
   pub fn device_to_host<T>(&self) -> T {
     unsafe {
       let mut dst = std::mem::uninitialized::<T>();
-      std::ptr::copy_nonoverlapping(self.ptr, std::mem::transmute(&mut dst), self.block.size_padded() as usize);
+      std::ptr::copy_nonoverlapping(self.ptr, std::mem::transmute(&mut dst), std::mem::size_of::<T>());
       dst
     }
   }
   pub fn device_to_host_slice<T>(&self, dst: &mut [T]) {
-    unsafe { std::ptr::copy_nonoverlapping(self.ptr, std::mem::transmute(dst.as_mut_ptr()), self.block.size_padded() as usize) };
+    unsafe { std::ptr::copy_nonoverlapping(self.ptr, std::mem::transmute(dst.as_mut_ptr()), std::mem::size_of::<T>() * dst.len()) };
   }
 
   /// Copies memory from `src` to the mapped region on the device
   pub fn host_to_device<T>(&self, src: &T) {
-    unsafe { std::ptr::copy_nonoverlapping(std::mem::transmute(src), self.ptr, self.block.size_padded() as usize) };
+    unsafe { std::ptr::copy_nonoverlapping(std::mem::transmute(src), self.ptr, std::mem::size_of::<T>()) };
   }
   /// Copies memory from `src` to the mapped region on the device
   pub fn host_to_device_slice<T>(&self, src: &[T]) {
-    unsafe { std::ptr::copy_nonoverlapping(std::mem::transmute(src.as_ptr()), self.ptr, self.block.size_padded() as usize) };
+    unsafe { std::ptr::copy_nonoverlapping(std::mem::transmute(src.as_ptr()), self.ptr, std::mem::size_of::<T>() * src.len()) };
   }
 
   /// Get a pointer to the mapped memory

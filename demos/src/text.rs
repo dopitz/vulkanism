@@ -110,7 +110,7 @@ pub fn main() {
   let cmds = vk::cmd::Pool::new(device.handle, device.queues[0].family).unwrap();
 
   let (mut sc, mut rp, mut fbs) = resize(&pdevice, &device, &window, &mut alloc, None, None, None);
-  let mut mem = vk::mem::Mem::new(alloc.clone(), fbs.len());
+  let mem = vk::mem::Mem::new(alloc.clone(), fbs.len() + 1);
 
   let mut gui = Gui::new(&device, cmds.clone(), rp.pass, mem.clone());
 
@@ -119,8 +119,6 @@ pub fn main() {
 
   use vk::cmd::commands::*;
   let mut frame = vk::cmd::Frame::new(device.handle, fbs.len()).unwrap();
-
-  let mut inp = imgui::input::Input::default();
 
   loop {
     events_loop.poll_events(|event| {

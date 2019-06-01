@@ -11,7 +11,6 @@ use shader::Builder as ShaderBuilder;
 use shader::Shader;
 use std::collections::HashMap;
 use usings::Usings;
-use vk;
 
 #[derive(Default, Debug)]
 pub struct Builder {
