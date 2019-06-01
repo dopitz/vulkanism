@@ -154,9 +154,7 @@ impl Sprites {
 
     // only copy if not empty
     if !sprites.is_empty() {
-      let mut map = mem.alloc.get_mapped(self.vb).unwrap();
-      let svb = map.as_slice_mut::<pipe::Vertex>();
-      unsafe { std::ptr::copy_nonoverlapping(sprites.as_ptr(), svb.as_mut_ptr(), svb.len()) };
+      mem.alloc.get_mapped(self.vb).unwrap().host_to_device_slice(sprites);
     }
 
     // configure the draw call

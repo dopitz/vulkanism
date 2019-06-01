@@ -138,7 +138,7 @@ impl TypeSet {
     self
   }
 
-  pub fn compute<T: FontChar>(&mut self, s: &str, buf: &mut [T]) {
+  pub fn compute<T: FontChar>(&mut self, s: &str, buf: &mut [T]) -> usize {
     let size = self.size as f32;
     let offset = self.offset.into();
     let mut off = offset;
@@ -172,6 +172,11 @@ impl TypeSet {
       s.set_tex(ch.tex00, ch.tex11);
       s.set_size(ch.size * size);
       s.set_position(co + vec2!(0.0, ch.bearing.y) * size);
+
+      buf.len()
+    }
+    else {
+      buf.len() - 1
     }
   }
 }

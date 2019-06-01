@@ -33,7 +33,7 @@ impl Text {
   pub fn text(&mut self, text: &str) -> &mut Self {
     if self.text != text {
       self.text = text.to_owned();
-      self.update_vb();
+      self.update_sprites();
     }
     self
   }
@@ -52,7 +52,7 @@ impl Text {
   pub fn typeset(&mut self, ts: TypeSet) -> &mut Self {
     if self.typeset != ts {
       self.typeset = ts;
-      self.update_vb();
+      self.update_sprites();
     }
     self
   }
@@ -60,16 +60,16 @@ impl Text {
     self.typeset.clone()
   }
 
-  fn update_vb(&mut self) {
+  fn update_sprites(&mut self) {
     if self.text.is_empty() {
       return;
     }
 
     let mut buffer: Vec<sprite::Vertex> = Vec::with_capacity(self.text.len() + 1);
     unsafe { buffer.set_len(self.text.len() + 1) };
-    self.typeset.compute(&self.text, &mut buffer);
+    let size = self.typeset.compute(&self.text, &mut buffer);
 
-    self.sprites.sprites(&buffer);
+    self.sprites.sprites(&buffer[0..size]);
   }
 }
 
