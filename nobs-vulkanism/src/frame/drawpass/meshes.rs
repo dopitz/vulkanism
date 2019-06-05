@@ -21,7 +21,7 @@ struct DrawMesh {
 }
 
 pub trait MeshId {
-  type Pass;
+  type Pass: Clone + Copy;
   fn filter(&self, p: Self::Pass) -> bool;
 }
 
@@ -49,6 +49,6 @@ impl<T: MeshId> Meshes<T> {
     self
       .meshes
       .iter()
-      .filter_map(|(id, draw)| if id.filter(pass) { Some(self.make_ref(draw)) } else { None })
+      .filter_map(move |(id, draw)| if id.filter(pass) { Some(self.make_ref(draw)) } else { None })
   }
 }
