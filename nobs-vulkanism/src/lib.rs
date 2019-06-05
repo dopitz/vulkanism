@@ -40,6 +40,7 @@
 extern crate nobs_vulkanism_headless as vk;
 pub extern crate winit;
 
+pub mod frame;
 pub mod wnd;
 
 pub use vk::*;

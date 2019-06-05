@@ -3,10 +3,13 @@ use super::StreamPush;
 use vk;
 
 /// Binds vertex buffers to command stream
-#[derive(Default, Debug)]
+#[derive(Debug)]
 pub struct BindVertexBuffers {
   pub buffers: Vec<vk::Buffer>,
   pub offsets: Vec<vk::DeviceSize>,
+  pub count: u32,
+  pub pbuffers: *const vk::Buffer,
+  pub poffsets: *const vk::DeviceSize,
 }
 /// Binds vertex buffers and issues draw call
 #[derive(Default, Debug)]
@@ -106,6 +109,18 @@ impl StreamPush for Draw {
   }
 }
 
+impl Default for BindVertexBuffers {
+  fn default() -> Self {
+    Self {
+      buffers: Default::default(),
+      offsets: Default::default(),
+      count: 0,
+      pbuffers: std::ptr::null(),
+      poffsets: std::ptr::null(),
+    }
+  }
+}
+
 impl BindVertexBuffers {
   pub fn push(mut self, buffer: vk::Buffer, offset: vk::DeviceSize) -> Self {
     self.buffers.push(buffer);
@@ -113,22 +128,44 @@ impl BindVertexBuffers {
     self
   }
 
-  pub fn vertices(self) -> DrawVertices {
+  pub fn set_buffers(mut self, count: u32, buffers: *const vk::Buffer, offsets: *const vk::DeviceSize) -> Self {
+    self.count = count;
+    self.pbuffers = buffers;
+    self.poffsets = offsets;
+    self
+  }
+
+  pub fn vertices(mut self) -> DrawVertices {
+    if !self.buffers.is_empty() {
+      self.count = self.buffers.len() as u32;
+      self.pbuffers = self.buffers.as_ptr();
+      self.poffsets = self.offsets.as_ptr();
+    }
     DrawVertices::new(self)
   }
 
-  pub fn indexed(self, indices: vk::Buffer) -> DrawIndexed {
+  pub fn indexed(mut self, indices: vk::Buffer) -> DrawIndexed {
+    if !self.buffers.is_empty() {
+      self.count = self.buffers.len() as u32;
+      self.pbuffers = self.buffers.as_ptr();
+      self.poffsets = self.offsets.as_ptr();
+    }
     DrawIndexed::new(self, indices)
   }
 
-  pub fn indirect(self, buffer: vk::Buffer) -> DrawIndirect {
+  pub fn indirect(mut self, buffer: vk::Buffer) -> DrawIndirect {
+    if !self.buffers.is_empty() {
+      self.count = self.buffers.len() as u32;
+      self.pbuffers = self.buffers.as_ptr();
+      self.poffsets = self.offsets.as_ptr();
+    }
     DrawIndirect::new(self, buffer)
   }
 }
 
 impl StreamPush for BindVertexBuffers {
   fn enqueue(&self, cs: Stream) -> Stream {
-    if !self.buffers.is_empty() {
+    if self.count > 0 {
       vk::CmdBindVertexBuffers(
         cs.buffer,
         0,
@@ -137,6 +174,7 @@ impl StreamPush for BindVertexBuffers {
         self.offsets.as_ptr(),
       );
     }
+
     cs
   }
 }
