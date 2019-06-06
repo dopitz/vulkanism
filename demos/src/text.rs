@@ -120,6 +120,12 @@ pub fn main() {
   use vk::cmd::commands::*;
   let mut frame = vk::cmd::Frame::new(device.handle, fbs.len()).unwrap();
 
+  println!("{:?}", std::mem::size_of::<vk::cmd::commands::Draw>());
+  println!("{:?}", std::mem::size_of::<vk::cmd::commands::DrawVertices<vk::cmd::commands::BindVertexBuffers>>());
+  println!("{:?}", std::mem::size_of::<vk::cmd::commands::DrawIndexed<vk::cmd::commands::BindVertexBuffers>>());
+  println!("{:?}", std::mem::size_of::<vk::cmd::commands::DrawIndirect<vk::cmd::commands::BindVertexBuffers>>());
+
+
   loop {
     events_loop.poll_events(|event| {
       match event {

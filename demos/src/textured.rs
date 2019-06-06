@@ -245,7 +245,7 @@ pub fn main() {
   let mut x = 'x';
 
   use vk::cmd::commands::*;
-  let draw = Draw::new().push(vb, 0).vertices().vertex_count(3);
+  let draw = DrawManaged::new().push(vb, 0).vertices().vertex_count(3);
   let mut frame = vk::cmd::Frame::new(device.handle, fbs.len()).unwrap();
 
   let mut mvp = tex::UbTransform {

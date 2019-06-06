@@ -19,7 +19,7 @@ pub struct Sprites {
   ub: vk::Buffer,
 
   pipe: Pipeline,
-  draw: cmds::DrawVertices,
+  draw: cmds::DrawVertices<cmds::BindVertexBuffersManaged>,
 }
 
 impl Drop for Sprites {
@@ -49,6 +49,8 @@ impl Sprites {
     let pipe = Pipeline::new(gui.get_pipe(PipeId::Sprites));
     pipe.update_dsets(device, ub, font.texview, font.sampler);
 
+    let draw= cmds::DrawManaged::new().vertices().instance_count(0);
+
     Sprites {
       device,
       gui: gui.clone(),
@@ -61,7 +63,7 @@ impl Sprites {
       ub,
 
       pipe,
-      draw: cmds::Draw::new().vertices().instance_count(0),
+      draw,
     }
   }
 
@@ -109,7 +111,7 @@ impl Sprites {
     }
 
     // configure the draw call
-    self.draw = cmds::Draw::new()
+    self.draw = cmds::DrawManaged::new()
       .push(self.vb, 0)
       .vertices()
       .instance_count(sprites.len() as u32)

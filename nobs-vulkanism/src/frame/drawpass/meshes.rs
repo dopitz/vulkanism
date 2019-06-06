@@ -1,6 +1,7 @@
 use vk::cmd::commands::BindDset;
 use vk::cmd::commands::BindPipeline;
 use vk::cmd::commands::Draw;
+use std::collections::HashMap;
 
 pub struct DrawMeshRef<'a> {
   pub pipe: BindPipeline,
@@ -8,7 +9,7 @@ pub struct DrawMeshRef<'a> {
   pub vb: &'a [vk::Buffer],
   pub ib: vk::Buffer,
   pub cmd: vk::Buffer,
-  //pub draw: Draw,
+  pub draw: &'a Draw,
 }
 
 struct DrawMesh {
@@ -21,7 +22,7 @@ struct DrawMesh {
 }
 
 pub trait MeshId {
-  type Pass: Clone + Copy;
+  type Pass: std::hash::Hash + PartialEq + Eq + Clone + Copy;
   fn filter(&self, p: Self::Pass) -> bool;
 }
 
@@ -34,14 +35,14 @@ pub struct Meshes<T: MeshId> {
 }
 
 impl<T: MeshId> Meshes<T> {
-  fn make_ref<'a>(&'a self, draw: &DrawMesh) -> DrawMeshRef<'a> {
+  fn make_ref<'a>(&'a self, draw: &'a DrawMesh) -> DrawMeshRef<'a> {
     DrawMeshRef {
       pipe: self.pipes[draw.pipe],
       dset: &self.dsets[draw.dset.0..draw.dset.1],
       vb: &self.buffers[draw.vb.0..draw.vb.1],
       ib: self.buffers[draw.ib],
       cmd: self.buffers[draw.cmd],
-      //draw: draw.draw,
+      draw: &draw.draw,
     }
   }
 
@@ -50,5 +51,35 @@ impl<T: MeshId> Meshes<T> {
       .meshes
       .iter()
       .filter_map(move |(id, draw)| if id.filter(pass) { Some(self.make_ref(draw)) } else { None })
+  }
+}
+
+
+struct MeshBuilderPass {
+  pipe: BindPipeline,
+  dset: Vec<BindDset>,
+  vb: Vec<vk::Buffer>,
+  ib: Option<vk::Buffer>,
+  cmd: Option<vk::Buffer>,
+  draw: Draw,
+}
+
+pub struct MeshBuilder<T: MeshId> {
+  passes: HashMap<T::Pass, MeshBuilderPass>,
+}
+
+impl MeshBuilder {
+  pub fn add(self, &mut Meshes) {
+    
+  //  let mut draw = DrawMesh {
+  //pub pipe: usize,
+  //pub dset: (usize, usize),
+  //pub vb: (usize, usize),
+  //pub ib: usize,
+  //pub cmd: usize,
+  //pub draw: Draw,
+
+  //  }
+
   }
 }
