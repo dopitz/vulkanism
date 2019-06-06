@@ -68,8 +68,8 @@ pub struct MeshBuilder<T: MeshId> {
   passes: HashMap<T::Pass, MeshBuilderPass>,
 }
 
-impl MeshBuilder {
-  pub fn add(self, &mut Meshes) {
+impl<T: MeshId> MeshBuilder<T> {
+  pub fn add(self, meshes: &mut Meshes<T>) {
     
   //  let mut draw = DrawMesh {
   //pub pipe: usize,

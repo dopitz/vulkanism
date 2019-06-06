@@ -1,6 +1,6 @@
+use super::bindvertexbuffer::BindVertexBuffersTrait;
 use super::BindVertexBuffers;
 use super::BindVertexBuffersManaged;
-use super::bindvertexbuffer::BindVertexBuffersTrait;
 use super::DrawIndexed;
 use super::DrawIndirect;
 use super::DrawVertices;
@@ -68,5 +68,21 @@ impl<T: BindVertexBuffersTrait> StreamPush for DrawKind<T> {
       DrawKind::Indexed(d) => cs.push(d),
       DrawKind::Indirect(d) => cs.push(d),
     }
+  }
+}
+
+impl<T: BindVertexBuffersTrait> From<DrawVertices<T>> for DrawKind<T> {
+  fn from(vertices: DrawVertices<T>) -> Self {
+    DrawKind::Vertices(vertices)
+  }
+}
+impl<T: BindVertexBuffersTrait> From<DrawIndexed<T>> for DrawKind<T> {
+  fn from(indexed: DrawIndexed<T>) -> Self {
+    DrawKind::Indexed(indexed)
+  }
+}
+impl<T: BindVertexBuffersTrait> From<DrawIndirect<T>> for DrawKind<T> {
+  fn from(indirect: DrawIndirect<T>) -> Self {
+    DrawKind::Indirect(indirect)
   }
 }
