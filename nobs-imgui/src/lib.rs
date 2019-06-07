@@ -5,7 +5,6 @@ extern crate freetype;
 extern crate nobs_imgui_font as font;
 extern crate winit;
 
-pub mod cachedpipeline;
 pub mod pipeid;
 pub mod input;
 pub mod rect;

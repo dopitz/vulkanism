@@ -1,4 +1,5 @@
 use super::Pass;
+use super::PassId;
 use crate::fb::Framebuffer;
 use crate::wnd::swapchain::NextImage;
 use crate::wnd::Swapchain;
@@ -17,7 +18,7 @@ impl<'a> Frame<'a> {
     Self { cmds, frame, sc, fb, next }
   }
 
-  pub fn push<T: Pass>(mut self, mut pass: T) -> Self {
+  pub fn push<P: PassId, T: Pass<P>>(mut self, mut pass: T) -> Self {
     pass.run(self.cmds.clone(), &mut self.frame);
     self
   }

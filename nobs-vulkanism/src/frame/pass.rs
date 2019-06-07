@@ -6,6 +6,7 @@ pub trait PassId: std::hash::Hash + PartialEq + Eq + Clone + Copy {
 
 pub trait PassMask<T: PassId>: std::hash::Hash + PartialEq + Eq + Clone + Copy {
   fn contains(&self, id: T) -> bool;
+  fn is_empty(self) -> bool;
   fn add(self, id: T) -> Self;
   fn remove(self, id: T) -> Self;
 }
@@ -31,6 +32,9 @@ impl PassMask<MyPassId> for MyPassMask {
   fn contains(&self, id: MyPassId) -> bool {
     (self.mask & id as u8) != 0
   }
+  fn is_empty(&self) -> bool {
+    self.mask != 0
+  }
   fn add(self, id: MyPassId) -> Self {
     Self {
       mask: self.mask & id as u8,
@@ -43,7 +47,7 @@ impl PassMask<MyPassId> for MyPassMask {
   }
 }
 
-pub trait Pass {
+pub trait Pass<T: PassId> {
   fn run(&mut self, cmds: vk::cmd::Pool, batch: &mut vk::cmd::Frame);
 
   fn resize(mut self, size: vk::Extent2D) -> Self;

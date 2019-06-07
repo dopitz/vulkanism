@@ -2,6 +2,8 @@ use vk::cmd::commands::BindDset;
 use vk::cmd::commands::BindPipeline;
 use vk::cmd::commands::Draw;
 use std::collections::HashMap;
+use super::super::PassId;
+use super::super::PassMask;
 
 pub struct DrawMeshRef<'a> {
   pub pipe: BindPipeline,
@@ -21,20 +23,21 @@ struct DrawMesh {
   pub draw: Draw,
 }
 
-pub trait MeshId {
-  type Pass: std::hash::Hash + PartialEq + Eq + Clone + Copy;
-  fn filter(&self, p: Self::Pass) -> bool;
+pub struct MeshId<T: PassId> {
+  mesh: usize,
+  pass: T,
 }
 
-pub struct Meshes<T: MeshId> {
+pub struct Meshes<T: PassId> {
   buffers: Vec<vk::Buffer>,
   dsets: Vec<BindDset>,
   pipes: Vec<BindPipeline>,
 
-  meshes: Vec<(T, DrawMesh)>,
+  meshes: Vec<MeshId<T>>,
+  draws: HashMap<T::Mask, Vec<DrawMesh>>,
 }
 
-impl<T: MeshId> Meshes<T> {
+impl<T: PassId> Meshes<T> {
   fn make_ref<'a>(&'a self, draw: &'a DrawMesh) -> DrawMeshRef<'a> {
     DrawMeshRef {
       pipe: self.pipes[draw.pipe],
@@ -46,11 +49,11 @@ impl<T: MeshId> Meshes<T> {
     }
   }
 
-  pub fn filter_pass<'a>(&'a self, pass: T::Pass) -> impl Iterator<Item = DrawMeshRef<'a>> {
+  pub fn filter_pass<'a>(&'a self, pass: T) -> impl Iterator<Item = DrawMeshRef<'a>> {
     self
-      .meshes
+      .draws
       .iter()
-      .filter_map(move |(id, draw)| if id.filter(pass) { Some(self.make_ref(draw)) } else { None })
+      .filter_map(move |(passes, draw)| if passes.contains(pass) { Some(self.make_ref(draw)) } else { None })
   }
 }
 
@@ -64,11 +67,11 @@ struct MeshBuilderPass {
   draw: Draw,
 }
 
-pub struct MeshBuilder<T: MeshId> {
-  passes: HashMap<T::Pass, MeshBuilderPass>,
+pub struct MeshBuilder<T: PassId> {
+  passes: HashMap<T, MeshBuilderPass>,
 }
 
-impl<T: MeshId> MeshBuilder<T> {
+impl<T: PassId> MeshBuilder<T> {
   pub fn add(self, meshes: &mut Meshes<T>) {
     
   //  let mut draw = DrawMesh {

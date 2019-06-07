@@ -4,8 +4,8 @@ mod pass;
 
 pub use frame::Frame;
 pub use pass::Pass;
-
-
+pub use pass::PassId;
+pub use pass::PassMask;
 
 //use vk::cmd::Stream;
 //

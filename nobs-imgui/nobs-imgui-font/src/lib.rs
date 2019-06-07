@@ -6,21 +6,6 @@ extern crate nobs_imgui_font_macro as fnt;
 use std::collections::HashMap;
 use std::sync::Arc;
 
-#[derive(Debug, Clone, Hash, PartialEq, Eq)]
-pub struct FontID {
-  name: String,
-  size: u32,
-}
-
-impl FontID {
-  pub fn new(name: &str, size: u32) -> Self {
-    Self {
-      name: name.to_owned(),
-      size,
-    }
-  }
-}
-
 #[derive(Clone, Copy, Debug)]
 pub struct Char {
   pub tex00: vkm::Vec2f,
