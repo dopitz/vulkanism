@@ -1,6 +1,7 @@
 use vk;
 use vk::cmd;
-use vk::cmd::commands as cmds;
+use vk::cmd::commands::DrawManaged;
+use vk::cmd::commands::DrawVertices;
 use vkm::Vec2i;
 
 use super::pipeline::*;
@@ -20,7 +21,6 @@ pub struct Sprites {
   mesh: Option<usize>,
 
   pipe: Pipeline,
-  draw: cmds::DrawManaged,
 }
 
 impl Drop for Sprites {
@@ -50,8 +50,6 @@ impl Sprites {
     let pipe = Pipeline::new(gui.get_pipe(PipeId::Sprites));
     pipe.update_dsets(device, ub, font.texview, font.sampler);
 
-    let draw = Default::default();
-
     Sprites {
       device,
       gui: gui.clone(),
@@ -65,7 +63,6 @@ impl Sprites {
       mesh: None,
 
       pipe,
-      draw,
     }
   }
 
@@ -96,15 +93,19 @@ impl Sprites {
     let mut mem = self.gui.get_mem();
 
     // create new buffer if capacity of cached one is not enough
-    if sprites.len() > self.draw.draw.vertices().unwrap().instance_count as usize {
-      mem.trash.push(self.vb);
-      self.vb = vk::NULL_HANDLE;
 
-      vk::mem::Buffer::new(&mut self.vb)
-        .vertex_buffer((sprites.len() * std::mem::size_of::<Vertex>()) as vk::DeviceSize)
-        .devicelocal(false)
-        .bind(&mut mem.alloc, vk::mem::BindType::Block)
-        .unwrap();
+    if let Some(m) = self.mesh {
+      let m = self.gui.get_mesh(m);
+      if sprites.len() > m.draw.draw.vertices().unwrap().instance_count as usize {
+        mem.trash.push(self.vb);
+        self.vb = vk::NULL_HANDLE;
+
+        vk::mem::Buffer::new(&mut self.vb)
+          .vertex_buffer((sprites.len() * std::mem::size_of::<Vertex>()) as vk::DeviceSize)
+          .devicelocal(false)
+          .bind(&mut mem.alloc, vk::mem::BindType::Block)
+          .unwrap();
+      }
     }
 
     // only copy if not empty
@@ -115,28 +116,15 @@ impl Sprites {
     if let Some(mesh) = self.mesh {
       self.gui.remove_mesh(mesh);
     }
-    println!("{:x?}", self.vb);
     self.mesh = Some(self.gui.new_mesh(
       self.pipe.bind_pipe,
       &[self.pipe.bind_ds_viewport, self.pipe.bind_ds_instance],
-      cmds::DrawManaged::new(
+      DrawManaged::new(
         [(self.vb, 0)].iter().into(),
-        cmds::DrawVertices::with_vertices(4).instance_count(sprites.len() as u32).into(),
+        DrawVertices::with_vertices(4).instance_count(sprites.len() as u32).into(),
       ),
     ));
 
-    // configure the draw call
-    self.draw = cmds::DrawManaged::new(
-      [(self.vb, 0)].iter().into(),
-      cmds::DrawVertices::with_vertices(4).instance_count(sprites.len() as u32).into(),
-    );
     self
-  }
-}
-
-impl cmds::StreamPush for Sprites {
-  fn enqueue(&self, cs: cmd::Stream) -> cmd::Stream {
-    cs
-    //cs.push(&self.pipe).push(&self.draw)
   }
 }

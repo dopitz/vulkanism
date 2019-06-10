@@ -45,7 +45,7 @@ impl<T: Clone + Copy> Default for BlockAlloc<T> {
 
 impl<T: Clone + Copy> BlockAlloc<T> {
   pub fn push(&mut self, elems: &[T]) -> (usize, bool) {
-    match self.free.iter().find(|b| b.count > elems.len()).cloned() {
+    match self.free.iter().find(|b| b.count >= elems.len()).cloned() {
       Some(b) => {
         for (dst, src) in self.data[b.index..b.index + b.count].iter_mut().zip(elems.iter()) {
           *dst = *src;
@@ -98,7 +98,7 @@ impl<T: Clone + Copy> BlockAlloc<T> {
   }
 
   pub fn contains(&self, index: usize) -> bool {
-    self.free.iter().any(|b| b.index <= index && index < b.index + b.count)
+    self.flag[index]
   }
 
   pub fn iter(&self) -> impl Iterator<Item = &T> + '_ {
@@ -145,18 +145,18 @@ pub struct DrawMesh {
   draw: Draw,
 }
 pub struct DrawMeshRef<'a> {
-  pipe: &'a BindPipeline,
-  dset: &'a [BindDset],
-  buffers: &'a [vk::Buffer],
-  offsets: &'a [vk::DeviceSize],
-  draw: &'a Draw,
+  pub pipe: &'a BindPipeline,
+  pub dset: &'a [BindDset],
+  pub buffers: &'a [vk::Buffer],
+  pub offsets: &'a [vk::DeviceSize],
+  pub draw: &'a Draw,
 }
 pub struct DrawMeshRefMut<'a> {
-  pipe: &'a mut BindPipeline,
-  dset: &'a mut [BindDset],
-  buffers: &'a mut [vk::Buffer],
-  offsets: &'a mut [vk::DeviceSize],
-  draw: &'a mut Draw,
+  pub pipe: &'a mut BindPipeline,
+  pub dset: &'a mut [BindDset],
+  pub buffers: &'a mut [vk::Buffer],
+  pub offsets: &'a mut [vk::DeviceSize],
+  pub draw: &'a mut Draw,
 }
 
 pub struct DrawPass {
@@ -189,11 +189,6 @@ impl DrawPass {
   }
 
   pub fn new_mesh(&mut self, pipe: BindPipeline, dsets: &[BindDset], draw: DrawManaged) -> usize {
-    //self.meshes.entry(mesh).and_modify(|passes| passes.add(pass));
-    //if let Some(d) = self.draws.get(&(mesh, pass)) {
-    //  self.remove_pass(mesh, pass);
-    //}
-
     // copy into draw pass allocators
     let (pipe, _) = self.pipes.push(&[pipe]);
     let (dset, _) = self.dsets.push(dsets);
@@ -216,14 +211,17 @@ impl DrawPass {
       self.update_bindvbs();
     }
 
-    println!("{:x?}", self.buffers[buffers]);
-    println!("{:x?}", unsafe {*self.meshes[mesh].draw.vbs.buffers});
-
     mesh
   }
 
   pub fn remove(&mut self, mesh: usize) -> bool {
     if self.meshes.contains(mesh) {
+      let m = self.meshes[mesh];
+      self.pipes.free(m.pipe, 1);
+      self.dsets.free(m.dset.0, m.dset.1);
+      self.buffers.free(m.buffers.0, m.buffers.1);
+      self.offsets.free(m.buffers.0, m.buffers.1);
+
       self.meshes.free(mesh, 1);
       true
     } else {

@@ -3,8 +3,6 @@ use crate::sprites;
 use crate::ImGui;
 
 use vk;
-use vk::cmd;
-use vk::cmd::commands as cmds;
 use vkm::Vec2i;
 
 pub struct Text {
@@ -70,11 +68,5 @@ impl Text {
     let size = self.typeset.compute(&self.text, &mut buffer);
 
     self.sprites.sprites(&buffer[0..size]);
-  }
-}
-
-impl cmds::StreamPush for Text {
-  fn enqueue(&self, cs: cmd::Stream) -> cmd::Stream {
-    cs.push(&self.sprites)
   }
 }

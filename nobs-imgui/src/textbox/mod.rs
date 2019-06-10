@@ -46,14 +46,14 @@ impl TextBox {
   }
 }
 
-impl cmds::StreamPush for TextBox {
-  fn enqueue(&self, cs: cmd::Stream) -> cmd::Stream {
-    cs.push(&self.rect).push(&self.text)
-  }
-}
-
-impl crate::window::Component for TextBox {
-  fn add_compontent(&mut self, wnd: &mut Window) {
-    self.rect(wnd.get_next_bounds());
-  }
-}
+//impl cmds::StreamPush for TextBox {
+//  fn enqueue(&self, cs: cmd::Stream) -> cmd::Stream {
+//    cs.push(&self.rect).push(&self.text)
+//  }
+//}
+//
+//impl crate::window::Component for TextBox {
+//  fn add_compontent(&mut self, wnd: &mut Window) {
+//    self.rect(wnd.get_next_bounds());
+//  }
+//}

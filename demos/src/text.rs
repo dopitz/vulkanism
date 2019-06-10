@@ -105,7 +105,7 @@ pub fn main() {
   let cmds = vk::cmd::Pool::new(device.handle, device.queues[0].family).unwrap();
 
   let (mut sc, mut rp, mut fb) = resize(&pdevice, &device, &window, &mut alloc, None, None, None);
-  let mem = vk::mem::Mem::new(alloc.clone(), 3);
+  let mem = vk::mem::Mem::new(alloc.clone(), 2);
 
   let mut gui = Gui::new(&device, cmds.clone(), sc.extent, fb.images[0], mem.clone());
 
@@ -150,8 +150,6 @@ pub fn main() {
     });
 
     if resizeevent {
-      println!("AOEUAOEUAOEUAOEUAOEU");
-
       frame.sync().unwrap();
       let (nsc, nrp, nfb) = resize(&pdevice, &device, &window, &mut alloc, Some(sc), Some(rp), Some(fb));
       sc = nsc;
@@ -190,7 +188,6 @@ pub fn main() {
     }
   }
 
-  println!("{}", alloc.print_stats());
   frame.sync().unwrap();
 }
 
@@ -224,7 +221,6 @@ impl Gui {
   pub fn render(&self, cs: vk::cmd::Stream) -> vk::cmd::Stream {
     cs.push(&self.gui)
       .push(&self.gui.begin_window())
-      .push(&self.text)
       .push(&self.gui.end())
 
     //cs.push(

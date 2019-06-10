@@ -10,6 +10,7 @@ use vk::cmd::commands::BindPipeline;
 use vk::cmd::commands::DrawManaged;
 use vk::cmd::Stream;
 use vk::pass::Pass;
+use vk::pass::DrawMeshRef;
 use vk::pipes::CachedPipeline;
 
 struct Viewport {
@@ -141,6 +142,10 @@ impl ImGui {
   }
   pub fn remove_mesh(&self, mesh: usize) -> bool {
     self.gui.draw.lock().unwrap().remove(mesh)
+  }
+
+  pub fn get_mesh<'a>(&'a self, mesh: usize) -> DrawMeshRef<'a> {
+    self.gui.draw.lock().unwrap().get(mesh)
   }
 
   pub fn begin_window<'a>(&self) -> window::Window<'a> {
