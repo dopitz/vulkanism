@@ -216,6 +216,9 @@ impl DrawPass {
       self.update_bindvbs();
     }
 
+    println!("{:x?}", self.buffers[buffers]);
+    println!("{:x?}", unsafe {*self.meshes[mesh].draw.vbs.buffers});
+
     mesh
   }
 

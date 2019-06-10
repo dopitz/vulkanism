@@ -17,6 +17,7 @@ pub struct Sprites {
   sampler: vk::Sampler,
   vb: vk::Buffer,
   ub: vk::Buffer,
+  mesh: Option<usize>,
 
   pipe: Pipeline,
   draw: cmds::DrawManaged,
@@ -61,6 +62,7 @@ impl Sprites {
       sampler: font.sampler,
       vb,
       ub,
+      mesh: None,
 
       pipe,
       draw,
@@ -110,6 +112,19 @@ impl Sprites {
       mem.alloc.get_mapped(self.vb).unwrap().host_to_device_slice(sprites);
     }
 
+    if let Some(mesh) = self.mesh {
+      self.gui.remove_mesh(mesh);
+    }
+    println!("{:x?}", self.vb);
+    self.mesh = Some(self.gui.new_mesh(
+      self.pipe.bind_pipe,
+      &[self.pipe.bind_ds_viewport, self.pipe.bind_ds_instance],
+      cmds::DrawManaged::new(
+        [(self.vb, 0)].iter().into(),
+        cmds::DrawVertices::with_vertices(4).instance_count(sprites.len() as u32).into(),
+      ),
+    ));
+
     // configure the draw call
     self.draw = cmds::DrawManaged::new(
       [(self.vb, 0)].iter().into(),
@@ -121,6 +136,7 @@ impl Sprites {
 
 impl cmds::StreamPush for Sprites {
   fn enqueue(&self, cs: cmd::Stream) -> cmd::Stream {
-    cs.push(&self.pipe).push(&self.draw)
+    cs
+    //cs.push(&self.pipe).push(&self.draw)
   }
 }

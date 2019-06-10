@@ -5,6 +5,10 @@ use crate::pipeid::*;
 use crate::window;
 use font::*;
 use vk::builder::Buildable;
+use vk::cmd::commands::BindDset;
+use vk::cmd::commands::BindPipeline;
+use vk::cmd::commands::DrawManaged;
+use vk::cmd::Stream;
 use vk::pass::Pass;
 use vk::pipes::CachedPipeline;
 
@@ -20,6 +24,8 @@ struct ImGuiImpl {
   fb: Mutex<vk::pass::Framebuffer>,
   mem: vk::mem::Mem,
   font: Arc<Font>,
+
+  draw: Mutex<vk::pass::DrawPass>,
 
   pipes: PipeCache,
   ub_viewport: Mutex<vk::Buffer>,
@@ -55,12 +61,11 @@ impl ImGui {
       .unwrap();
 
     {
-    let mut map = mem.alloc.get_mapped(ub_viewport).unwrap();
-    let data = map.as_slice_mut::<u32>();
-    data[0] = extent.width as u32;
-    data[1] = extent.height as u32;
+      let mut map = mem.alloc.get_mapped(ub_viewport).unwrap();
+      let data = map.as_slice_mut::<u32>();
+      data[0] = extent.width as u32;
+      data[1] = extent.height as u32;
     }
-
 
     let rp = vk::pass::Renderpass::build(device)
       .attachment(
@@ -96,6 +101,8 @@ impl ImGui {
         mem,
         font,
 
+        draw: Mutex::new(vk::pass::DrawPass::new()),
+
         pipes: PipeCache::new(&PipeCreateInfo {
           device,
           pass,
@@ -129,6 +136,13 @@ impl ImGui {
     *self.gui.ub_viewport.lock().unwrap()
   }
 
+  pub fn new_mesh(&self, pipe: BindPipeline, dsets: &[BindDset], draw: DrawManaged) -> usize {
+    self.gui.draw.lock().unwrap().new_mesh(pipe, dsets, draw)
+  }
+  pub fn remove_mesh(&self, mesh: usize) -> bool {
+    self.gui.draw.lock().unwrap().remove(mesh)
+  }
+
   pub fn begin_window<'a>(&self) -> window::Window<'a> {
     let ub = *self.gui.ub_viewport.lock().unwrap();
     let extent = self.gui.fb.lock().unwrap().extent;
@@ -154,10 +168,13 @@ impl Pass for ImGui {
 impl<'a> vk::cmd::commands::StreamPush for ImGui {
   fn enqueue(&self, cs: vk::cmd::Stream) -> vk::cmd::Stream {
     let fb = self.gui.fb.lock().unwrap();
+    let draw = &*self.gui.draw.lock().unwrap();
     cs.push(&vk::cmd::commands::ImageBarrier::to_color_attachment(fb.images[0]))
       .push(&fb.begin())
       .push(&vk::cmd::commands::Viewport::with_extent(fb.extent))
-      //.push(&fb.end())
+      .push(&vk::cmd::commands::Scissor::with_extent(fb.extent))
+      .push(draw)
+    //.push(&fb.end())
 
     //cs.push(&self.gui.vp.lock().unwrap().cmd)
   }

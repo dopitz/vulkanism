@@ -1,4 +1,5 @@
 use crate::cmd::commands::StreamPush;
+use crate::cmd::Stream;
 use vk;
 
 pub trait PassId: std::hash::Hash + PartialEq + Eq + Clone + Copy {
@@ -12,6 +13,6 @@ pub trait PassMask<T: PassId>: std::hash::Hash + Default + PartialEq + Eq + Clon
   fn remove(&mut self, id: T);
 }
 
-pub trait Pass : StreamPush {
+pub trait Pass: StreamPush {
   fn resize(&mut self, size: vk::Extent2D);
 }

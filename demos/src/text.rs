@@ -105,7 +105,7 @@ pub fn main() {
   let cmds = vk::cmd::Pool::new(device.handle, device.queues[0].family).unwrap();
 
   let (mut sc, mut rp, mut fb) = resize(&pdevice, &device, &window, &mut alloc, None, None, None);
-  let mem = vk::mem::Mem::new(alloc.clone(), 2);
+  let mem = vk::mem::Mem::new(alloc.clone(), 3);
 
   let mut gui = Gui::new(&device, cmds.clone(), sc.extent, fb.images[0], mem.clone());
 
@@ -226,6 +226,17 @@ impl Gui {
       .push(&self.gui.begin_window())
       .push(&self.text)
       .push(&self.gui.end())
+
+    //cs.push(
+    //  &self
+    //    .gui
+    //    .inline()
+    //    .push(&self.gui.begin_window())
+    //    .push(self.text)
+    //    .push(that)
+    //    .push(other),
+    //)
+
     //cs.push(&self.gui).push(&self.gui.begin_window()).push(self.text.text(&self.tt))
     //cs.push(&self.gui).push(&self.text)
   }
