@@ -4,9 +4,8 @@ use crate::cmd::Stream;
 use vk;
 
 /// Binds vertex buffers and issues an indirect draw call
-#[derive(Default, Debug)]
-pub struct DrawIndirect<T: BindVertexBuffersTrait> {
-  pub vertex_buffers: T,
+#[derive(Debug, Clone, Copy)]
+pub struct DrawIndirect {
   pub count: u32,
   pub offset: vk::DeviceSize,
   pub stride: u32,
@@ -17,28 +16,22 @@ pub struct DrawIndirect<T: BindVertexBuffersTrait> {
   pub index_type: vk::IndexType,
 }
 
-impl<T: BindVertexBuffersTrait> DrawIndirect<T> {
-  /// Creates a new builder for indirect drawing
-  ///
-  /// Default initializes:
-  ///  - `count = 0`
-  ///  - `offset = 0`
-  ///  - `stride = sizeof(vk::DrawIndirectCommand)`
-  ///  - `index_buffer = None`
-  pub fn new(vertex_buffers: T, buffer: vk::Buffer) -> Self {
+impl Default for DrawIndirect {
+  fn default() -> Self {
     Self {
-      vertex_buffers,
       count: 0,
       offset: 0,
       stride: std::mem::size_of::<vk::DrawIndirectCommand>() as u32,
-      buffer,
+      buffer: vk::NULL_HANDLE,
 
       index_buffer: None,
       index_offset: 0,
       index_type: vk::INDEX_TYPE_UINT16,
     }
   }
+}
 
+impl DrawIndirect {
   /// Set the builder for indexed indirect drawing
   ///
   /// Also sets the `stride` to teh required `sizeof(vk::DrawIndexedIndirectCommand)`
@@ -60,9 +53,8 @@ impl<T: BindVertexBuffersTrait> DrawIndirect<T> {
   }
 }
 
-impl<T: BindVertexBuffersTrait> StreamPush for DrawIndirect<T> {
+impl StreamPush for DrawIndirect {
   fn enqueue(&self, cs: Stream) -> Stream {
-    let cs = cs.push(&self.vertex_buffers);
     if let Some(indices) = self.index_buffer {
       vk::CmdBindIndexBuffer(cs.buffer, indices, self.index_offset, self.index_type);
       vk::CmdDrawIndexedIndirect(cs.buffer, self.buffer, self.offset, self.count, self.stride);

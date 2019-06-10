@@ -1,8 +1,6 @@
+use crate::pass::Error;
 use std::collections::HashMap;
-
 use vk;
-
-use crate::fb::Error;
 
 /// Managed vulkan rendepass
 ///
@@ -276,7 +274,7 @@ impl Builder {
   /// Adds an attachment at position `index`
   pub fn attachment(&mut self, index: u32, builder: AttachmentBuilder) -> &mut Self {
     let desc = self.attachments.entry(index).or_insert_with(|| builder.get());
-    if crate::fb::DEPTH_FORMATS.iter().find(|f| **f == desc.format).is_some() {
+    if crate::pass::DEPTH_FORMATS.iter().find(|f| **f == desc.format).is_some() {
       self.depth = Some(index);
     }
     self

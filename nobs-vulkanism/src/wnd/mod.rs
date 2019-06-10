@@ -6,6 +6,8 @@
 
 mod window;
 pub mod swapchain;
+mod present;
 
 pub use window::Window;
 pub use swapchain::Swapchain;
+pub use present::PresentFrame;

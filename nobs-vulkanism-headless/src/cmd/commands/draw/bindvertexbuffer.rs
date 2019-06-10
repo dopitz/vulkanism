@@ -29,18 +29,6 @@ impl BindVertexBuffers {
   pub fn new(count: u32, buffers: *const vk::Buffer, offsets: *const vk::DeviceSize) -> Self {
     Self { count, buffers, offsets }
   }
-
-  pub fn vertices(mut self) -> DrawVertices<Self> {
-    DrawVertices::new(self)
-  }
-
-  pub fn indexed(mut self, indices: vk::Buffer) -> DrawIndexed<Self> {
-    DrawIndexed::new(self, indices)
-  }
-
-  pub fn indirect(mut self, buffer: vk::Buffer) -> DrawIndirect<Self> {
-    DrawIndirect::new(self, buffer)
-  }
 }
 
 impl StreamPush for BindVertexBuffers {
@@ -48,46 +36,52 @@ impl StreamPush for BindVertexBuffers {
     if self.count > 0 {
       vk::CmdBindVertexBuffers(cs.buffer, 0, self.count, self.buffers, self.offsets);
     }
-
     cs
   }
 }
 
 impl BindVertexBuffersTrait for BindVertexBuffers {}
 
+impl From<(&[vk::Buffer], &[vk::DeviceSize])> for BindVertexBuffers {
+  fn from(buffers: (&[vk::Buffer], &[vk::DeviceSize])) -> Self {
+    Self {
+      count: buffers.0.len() as u32,
+      buffers: buffers.0.as_ptr(),
+      offsets: buffers.1.as_ptr(),
+    }
+  }
+}
+
 /// Binds vertex buffers to command stream
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct BindVertexBuffersManaged {
   pub buffers: Vec<vk::Buffer>,
   pub offsets: Vec<vk::DeviceSize>,
-  pub bind: BindVertexBuffers,
 }
 
 impl BindVertexBuffersManaged {
   pub fn push(mut self, buffer: vk::Buffer, offset: vk::DeviceSize) -> Self {
     self.buffers.push(buffer);
     self.offsets.push(offset);
-    self.bind = BindVertexBuffers::new(self.buffers.len() as u32, self.buffers.as_ptr(), self.offsets.as_ptr());
     self
-  }
-
-  pub fn vertices(mut self) -> DrawVertices<Self> {
-    DrawVertices::new(self)
-  }
-
-  pub fn indexed(mut self, indices: vk::Buffer) -> DrawIndexed<Self> {
-    DrawIndexed::new(self, indices)
-  }
-
-  pub fn indirect(mut self, buffer: vk::Buffer) -> DrawIndirect<Self> {
-    DrawIndirect::new(self, buffer)
   }
 }
 
 impl StreamPush for BindVertexBuffersManaged {
   fn enqueue(&self, cs: Stream) -> Stream {
-    cs.push(&self.bind)
+    cs.push(&BindVertexBuffers::new(
+      self.buffers.len() as u32,
+      self.buffers.as_ptr(),
+      self.offsets.as_ptr(),
+    ))
   }
 }
 
 impl BindVertexBuffersTrait for BindVertexBuffersManaged {}
+
+impl<'a, T: Iterator<Item = &'a (vk::Buffer, vk::DeviceSize)>> From<T> for BindVertexBuffersManaged {
+  fn from(buffers: T) -> Self {
+    let (buffers, offsets) = buffers.cloned().unzip();
+    Self { buffers, offsets }
+  }
+}

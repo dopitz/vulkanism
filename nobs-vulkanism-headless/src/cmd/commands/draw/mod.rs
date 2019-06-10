@@ -6,6 +6,7 @@ mod vertices;
 
 pub use bindvertexbuffer::BindVertexBuffers;
 pub use bindvertexbuffer::BindVertexBuffersManaged;
+pub use draw::DrawKind;
 pub use draw::Draw;
 pub use draw::DrawManaged;
 pub use indexed::DrawIndexed;

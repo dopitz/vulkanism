@@ -4,9 +4,8 @@ use crate::cmd::Stream;
 use vk;
 
 /// Bind vertex buffers and issues an indexed draw call
-#[derive(Default, Debug)]
-pub struct DrawIndexed<T: BindVertexBuffersTrait> {
-  pub vertex_buffers: T,
+#[derive(Debug, Clone, Copy)]
+pub struct DrawIndexed {
   pub index_count: u32,
   pub instance_count: u32,
   pub first_index: u32,
@@ -18,30 +17,30 @@ pub struct DrawIndexed<T: BindVertexBuffersTrait> {
   pub index_type: vk::IndexType,
 }
 
-impl<T: BindVertexBuffersTrait> DrawIndexed<T> {
-  /// Creates a new builder for indexed drawing
-  ///
-  /// Default initializes:
-  ///  - `index_count = 0`
-  ///  - `instance_count = 1`
-  ///  - `first_index = 0`
-  ///  - `vertex_offset = 0`
-  ///  - `first_instance = 0`
-  ///  - `index_buffer_offeset = 0`
-  ///  - `index_type = vk::INDEX_TYPE_UINT16`
-  pub fn new(vertex_buffers: T, index_buffer: vk::Buffer) -> Self {
+impl Default for DrawIndexed {
+  fn default() -> Self {
     Self {
-      vertex_buffers,
       index_count: 0,
       instance_count: 1,
       first_index: 0,
       vertex_offset: 0,
       first_instance: 0,
 
-      index_buffer,
+      index_buffer: vk::NULL_HANDLE,
       index_buffer_offset: 0,
       index_type: vk::INDEX_TYPE_UINT16,
     }
+  }
+}
+
+impl DrawIndexed {
+  pub fn new(index_buffer: vk::Buffer) -> Self {
+    let mut draw = Self::default();
+    draw.index_buffer = index_buffer;
+    draw
+  }
+  pub fn with_indices(index_buffer: vk::Buffer, index_count: u32) -> Self {
+    Self::new(index_buffer).index_count(index_count)
   }
 
   pub fn first_index(mut self, first: u32) -> Self {
@@ -87,9 +86,8 @@ impl<T: BindVertexBuffersTrait> DrawIndexed<T> {
   }
 }
 
-impl<T: BindVertexBuffersTrait> StreamPush for DrawIndexed<T> {
+impl StreamPush for DrawIndexed {
   fn enqueue(&self, cs: Stream) -> Stream {
-    let cs = cs.push(&self.vertex_buffers);
     vk::CmdBindIndexBuffer(cs.buffer, self.index_buffer, self.index_buffer_offset, self.index_type);
     vk::CmdDrawIndexed(
       cs.buffer,

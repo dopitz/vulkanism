@@ -5,8 +5,17 @@
 //! without having to manually create textures for all attachments.
 //! [Framebuffer](framebuffer/struct.Framebuffer.html) implements begin and end [commands](../cmd/index.html).
 
-pub mod framebuffer;
-pub mod renderpass;
+mod drawpass;
+mod frame;
+mod framebuffer;
+mod pass;
+mod renderpass;
+
+pub use drawpass::DrawPass;
+pub use frame::Frame;
+pub use pass::Pass;
+pub use pass::PassId;
+pub use pass::PassMask;
 
 pub use framebuffer::Framebuffer;
 pub use renderpass::Renderpass;

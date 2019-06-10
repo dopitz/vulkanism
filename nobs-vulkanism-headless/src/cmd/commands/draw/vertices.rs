@@ -1,29 +1,30 @@
-use super::bindvertexbuffer::BindVertexBuffersTrait;
 use crate::cmd::commands::StreamPush;
 use crate::cmd::Stream;
 
 /// Binds vertex buffers and issues draw call
-#[derive(Default, Debug)]
-pub struct DrawVertices<T: BindVertexBuffersTrait> {
-  pub vertex_buffers: T,
+#[derive(Debug, Clone, Copy)]
+pub struct DrawVertices {
   pub vertex_count: u32,
   pub instance_count: u32,
   pub first_vertex: u32,
   pub first_instance: u32,
 }
 
-impl<T: BindVertexBuffersTrait> DrawVertices<T> {
-  /// Creates a new builder for normal drawing
-  ///
-  /// Default initializes:
-  ///  - `index_count = 0`
-  ///  - `instance_count = 1`
-  ///  - `first_index = 0`
-  ///  - `first_instance = 0`
-  pub fn new(vertex_buffers: T) -> Self {
+impl Default for DrawVertices {
+  fn default() -> Self {
     Self {
-      vertex_buffers,
       vertex_count: 0,
+      instance_count: 1,
+      first_vertex: 0,
+      first_instance: 0,
+    }
+  }
+}
+
+impl DrawVertices {
+  pub fn with_vertices(vertex_count: u32) -> Self {
+    Self {
+      vertex_count,
       instance_count: 1,
       first_vertex: 0,
       first_instance: 0,
@@ -59,16 +60,18 @@ impl<T: BindVertexBuffersTrait> DrawVertices<T> {
   }
 }
 
-impl<T: BindVertexBuffersTrait> StreamPush for DrawVertices<T> {
+impl StreamPush for DrawVertices {
   fn enqueue(&self, cs: Stream) -> Stream {
-    let cs = cs.push(&self.vertex_buffers);
-    vk::CmdDraw(
-      cs.buffer,
-      self.vertex_count,
-      self.instance_count,
-      self.first_vertex,
-      self.first_instance,
-    );
+    if self.vertex_count > 0 && self.instance_count > 0 {
+      vk::CmdDraw(
+        cs.buffer,
+        self.vertex_count,
+        self.instance_count,
+        self.first_vertex,
+        self.first_instance,
+      );
+    }
     cs
   }
 }
+

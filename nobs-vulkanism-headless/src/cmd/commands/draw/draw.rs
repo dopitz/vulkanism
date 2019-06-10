@@ -7,21 +7,20 @@ use super::DrawVertices;
 use crate::cmd::commands::StreamPush;
 use crate::cmd::Stream;
 
-#[derive(Debug)]
-pub enum DrawKind<T: BindVertexBuffersTrait> {
-  Vertices(DrawVertices<T>),
-  Indexed(DrawIndexed<T>),
-  Indirect(DrawIndirect<T>),
+#[derive(Debug, Clone, Copy)]
+pub enum DrawKind {
+  Vertices(DrawVertices),
+  Indexed(DrawIndexed),
+  Indirect(DrawIndirect),
 }
 
-pub type Draw = DrawKind<BindVertexBuffers>;
-pub type DrawManaged = DrawKind<BindVertexBuffersManaged>;
-
-impl<T: BindVertexBuffersTrait> DrawKind<T> {
-  pub fn new() -> T {
-    T::default()
+impl Default for DrawKind {
+  fn default() -> Self {
+    DrawKind::Vertices(Default::default())
   }
+}
 
+impl DrawKind {
   pub fn is_vertices(&self) -> bool {
     match self {
       DrawKind::Vertices(_) => true,
@@ -41,19 +40,19 @@ impl<T: BindVertexBuffersTrait> DrawKind<T> {
     }
   }
 
-  pub fn vertices(self) -> Option<DrawVertices<T>> {
+  pub fn vertices(&self) -> Option<&DrawVertices> {
     match self {
       DrawKind::Vertices(d) => Some(d),
       _ => None,
     }
   }
-  pub fn indexed(self) -> Option<DrawIndexed<T>> {
+  pub fn indexed(&self) -> Option<&DrawIndexed> {
     match self {
       DrawKind::Indexed(d) => Some(d),
       _ => None,
     }
   }
-  pub fn indirect(self) -> Option<DrawIndirect<T>> {
+  pub fn indirect(&self) -> Option<&DrawIndirect> {
     match self {
       DrawKind::Indirect(d) => Some(d),
       _ => None,
@@ -61,7 +60,7 @@ impl<T: BindVertexBuffersTrait> DrawKind<T> {
   }
 }
 
-impl<T: BindVertexBuffersTrait> StreamPush for DrawKind<T> {
+impl StreamPush for DrawKind {
   fn enqueue(&self, cs: Stream) -> Stream {
     match self {
       DrawKind::Vertices(d) => cs.push(d),
@@ -71,18 +70,54 @@ impl<T: BindVertexBuffersTrait> StreamPush for DrawKind<T> {
   }
 }
 
-impl<T: BindVertexBuffersTrait> From<DrawVertices<T>> for DrawKind<T> {
-  fn from(vertices: DrawVertices<T>) -> Self {
+#[derive(Default, Debug, Clone, Copy)]
+pub struct Draw {
+  pub vbs: BindVertexBuffers,
+  pub draw: DrawKind,
+}
+
+impl Draw {
+  pub fn new(vbs: BindVertexBuffers, draw: DrawKind) -> Self {
+    Self { vbs, draw }
+  }
+}
+
+impl StreamPush for Draw {
+  fn enqueue(&self, cs: Stream) -> Stream {
+    cs.push(&self.vbs).push(&self.draw)
+  }
+}
+
+#[derive(Default, Debug, Clone)]
+pub struct DrawManaged {
+  pub vbs: BindVertexBuffersManaged,
+  pub draw: DrawKind,
+}
+
+impl DrawManaged {
+  pub fn new(vbs: BindVertexBuffersManaged, draw: DrawKind) -> Self {
+    Self { vbs, draw }
+  }
+}
+
+impl StreamPush for DrawManaged {
+  fn enqueue(&self, cs: Stream) -> Stream {
+    cs.push(&self.vbs).push(&self.draw)
+  }
+}
+
+impl From<DrawVertices> for DrawKind {
+  fn from(vertices: DrawVertices) -> Self {
     DrawKind::Vertices(vertices)
   }
 }
-impl<T: BindVertexBuffersTrait> From<DrawIndexed<T>> for DrawKind<T> {
-  fn from(indexed: DrawIndexed<T>) -> Self {
+impl From<DrawIndexed> for DrawKind {
+  fn from(indexed: DrawIndexed) -> Self {
     DrawKind::Indexed(indexed)
   }
 }
-impl<T: BindVertexBuffersTrait> From<DrawIndirect<T>> for DrawKind<T> {
-  fn from(indirect: DrawIndirect<T>) -> Self {
+impl From<DrawIndirect> for DrawKind {
+  fn from(indirect: DrawIndirect) -> Self {
     DrawKind::Indirect(indirect)
   }
 }

@@ -66,12 +66,12 @@ pub fn setup_rendertargets(
   device: &vk::device::Device,
   window: &vk::wnd::Window,
   alloc: &mut vk::mem::Allocator,
-) -> (vk::wnd::Swapchain, vk::fb::Renderpass, Vec<vk::fb::Framebuffer>) {
+) -> (vk::wnd::Swapchain, vk::pass::Renderpass, Vec<vk::pass::Framebuffer>) {
   let sc = vk::wnd::Swapchain::build(pdevice.handle, device.handle, window.surface).create();
 
-  let depth_format = vk::fb::select_depth_format(pdevice.handle, vk::fb::DEPTH_FORMATS).unwrap();
+  let depth_format = vk::pass::select_depth_format(pdevice.handle, vk::pass::DEPTH_FORMATS).unwrap();
 
-  let pass = vk::fb::Renderpass::build(device.handle)
+  let pass = vk::pass::Renderpass::build(device.handle)
     .attachment(0, vk::AttachmentDescription::build().format(vk::FORMAT_B8G8R8A8_UNORM))
     .attachment(1, vk::AttachmentDescription::build().format(depth_format))
     .subpass(
@@ -86,9 +86,9 @@ pub fn setup_rendertargets(
     .unwrap();
 
   let fbs = vec![
-    vk::fb::Framebuffer::build_from_pass(&pass, alloc).extent(sc.extent).create(),
-    vk::fb::Framebuffer::build_from_pass(&pass, alloc).extent(sc.extent).create(),
-    vk::fb::Framebuffer::build_from_pass(&pass, alloc).extent(sc.extent).create(),
+    vk::pass::Framebuffer::build_from_pass(&pass, alloc).extent(sc.extent).create(),
+    vk::pass::Framebuffer::build_from_pass(&pass, alloc).extent(sc.extent).create(),
+    vk::pass::Framebuffer::build_from_pass(&pass, alloc).extent(sc.extent).create(),
   ];
 
   //fbs[0].set_clear(&[vk::fb::clear_colorf32([1.0,0.0,0.0,1.0]), vk::fb::clear_depth(0.0)]);
@@ -123,7 +123,7 @@ pub fn main() {
   let mut x = 'x';
 
   use vk::cmd::commands::*;
-  let draw = Draw::new().vertices().vertex_count(3);
+  let draw = Draw::new(Default::default(), DrawVertices::with_vertices(3).into());
   let mut frame = vk::cmd::Frame::new(device.handle, fbs.len()).unwrap();
 
   loop {

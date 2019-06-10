@@ -3,7 +3,7 @@ use super::StreamPush;
 use vk;
 
 /// Binds a pipeline to a command stream
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct BindPipeline {
   pub bindpoint: vk::PipelineBindPoint,
   pub pipeline: vk::Pipeline,
@@ -35,7 +35,7 @@ impl StreamPush for BindPipeline {
 }
 
 /// Binds a descriptor set to a command stream
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct BindDset {
   pub bindpoint: vk::PipelineBindPoint,
   pub layout: vk::PipelineLayout,

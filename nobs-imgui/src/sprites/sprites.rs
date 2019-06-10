@@ -19,7 +19,7 @@ pub struct Sprites {
   ub: vk::Buffer,
 
   pipe: Pipeline,
-  draw: cmds::DrawVertices<cmds::BindVertexBuffersManaged>,
+  draw: cmds::DrawManaged,
 }
 
 impl Drop for Sprites {
@@ -49,7 +49,7 @@ impl Sprites {
     let pipe = Pipeline::new(gui.get_pipe(PipeId::Sprites));
     pipe.update_dsets(device, ub, font.texview, font.sampler);
 
-    let draw= cmds::DrawManaged::new().vertices().instance_count(0);
+    let draw = Default::default();
 
     Sprites {
       device,
@@ -94,7 +94,7 @@ impl Sprites {
     let mut mem = self.gui.get_mem();
 
     // create new buffer if capacity of cached one is not enough
-    if sprites.len() > self.draw.instance_count as usize {
+    if sprites.len() > self.draw.draw.vertices().unwrap().instance_count as usize {
       mem.trash.push(self.vb);
       self.vb = vk::NULL_HANDLE;
 
@@ -111,21 +111,16 @@ impl Sprites {
     }
 
     // configure the draw call
-    self.draw = cmds::DrawManaged::new()
-      .push(self.vb, 0)
-      .vertices()
-      .instance_count(sprites.len() as u32)
-      .vertex_count(4);
+    self.draw = cmds::DrawManaged::new(
+      [(self.vb, 0)].iter().into(),
+      cmds::DrawVertices::with_vertices(4).instance_count(sprites.len() as u32).into(),
+    );
     self
   }
 }
 
 impl cmds::StreamPush for Sprites {
   fn enqueue(&self, cs: cmd::Stream) -> cmd::Stream {
-    if self.draw.instance_count > 0 {
-      cs.push(&self.pipe).push(&self.draw)
-    } else {
-      cs
-    }
+    cs.push(&self.pipe).push(&self.draw)
   }
 }

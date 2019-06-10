@@ -4,6 +4,7 @@ extern crate nobs_vulkanism as vk;
 extern crate nobs_vkmath as vkm;
 
 use vk::builder::Buildable;
+use vk::pass::Pass;
 use vk::winit;
 
 pub fn setup_vulkan_window() -> (
@@ -56,31 +57,29 @@ pub fn resize(
   window: &vk::wnd::Window,
   alloc: &mut vk::mem::Allocator,
   sc: Option<vk::wnd::Swapchain>,
-  rp: Option<vk::fb::Renderpass>,
-  fbs: Option<Vec<vk::fb::Framebuffer>>,
-) -> (vk::wnd::Swapchain, vk::fb::Renderpass, Vec<vk::fb::Framebuffer>) {
+  rp: Option<vk::pass::Renderpass>,
+  fb: Option<vk::pass::Framebuffer>,
+) -> (vk::wnd::Swapchain, vk::pass::Renderpass, vk::pass::Framebuffer) {
   if sc.is_some() {
     sc.unwrap();
   }
   if rp.is_some() {
     rp.unwrap();
   }
-  if fbs.is_some() {
-    let fbs = fbs.unwrap();
+  if fb.is_some() {
+    let fb = fb.unwrap();
     let mut imgs = Vec::new();
-    for fb in fbs.iter() {
-      for i in fb.images.iter() {
-        imgs.push(*i);
-      }
+    for i in fb.images.iter() {
+      imgs.push(*i);
     }
     alloc.destroy_many(&imgs);
   }
 
   let sc = vk::wnd::Swapchain::build(pdevice.handle, device.handle, window.surface).create();
 
-  let depth_format = vk::fb::select_depth_format(pdevice.handle, vk::fb::DEPTH_FORMATS).unwrap();
+  let depth_format = vk::pass::select_depth_format(pdevice.handle, vk::pass::DEPTH_FORMATS).unwrap();
 
-  let pass = vk::fb::Renderpass::build(device.handle)
+  let pass = vk::pass::Renderpass::build(device.handle)
     .attachment(0, vk::AttachmentDescription::build().format(vk::FORMAT_B8G8R8A8_UNORM))
     .attachment(1, vk::AttachmentDescription::build().format(depth_format))
     .subpass(
@@ -94,13 +93,9 @@ pub fn resize(
     .create()
     .unwrap();
 
-  let fbs = vec![
-    vk::fb::Framebuffer::build_from_pass(&pass, alloc).extent(sc.extent).create(),
-    vk::fb::Framebuffer::build_from_pass(&pass, alloc).extent(sc.extent).create(),
-    vk::fb::Framebuffer::build_from_pass(&pass, alloc).extent(sc.extent).create(),
-  ];
+  let fb = vk::pass::Framebuffer::build_from_pass(&pass, alloc).extent(sc.extent).create();
 
-  (sc, pass, fbs)
+  (sc, pass, fb)
 }
 
 pub fn main() {
@@ -109,22 +104,16 @@ pub fn main() {
   let mut alloc = vk::mem::Allocator::new(pdevice.handle, device.handle);
   let cmds = vk::cmd::Pool::new(device.handle, device.queues[0].family).unwrap();
 
-  let (mut sc, mut rp, mut fbs) = resize(&pdevice, &device, &window, &mut alloc, None, None, None);
-  let mem = vk::mem::Mem::new(alloc.clone(), fbs.len() + 1);
+  let (mut sc, mut rp, mut fb) = resize(&pdevice, &device, &window, &mut alloc, None, None, None);
+  let mem = vk::mem::Mem::new(alloc.clone(), 2);
 
-  let mut gui = Gui::new(&device, cmds.clone(), rp.pass, mem.clone());
+  let mut gui = Gui::new(&device, cmds.clone(), sc.extent, fb.images[0], mem.clone());
 
   let mut resizeevent = false;
   let mut close = false;
 
   use vk::cmd::commands::*;
-  let mut frame = vk::cmd::Frame::new(device.handle, fbs.len()).unwrap();
-
-  println!("{:?}", std::mem::size_of::<vk::cmd::commands::Draw>());
-  println!("{:?}", std::mem::size_of::<vk::cmd::commands::DrawVertices<vk::cmd::commands::BindVertexBuffers>>());
-  println!("{:?}", std::mem::size_of::<vk::cmd::commands::DrawIndexed<vk::cmd::commands::BindVertexBuffers>>());
-  println!("{:?}", std::mem::size_of::<vk::cmd::commands::DrawIndirect<vk::cmd::commands::BindVertexBuffers>>());
-
+  let mut frame = vk::cmd::Frame::new(device.handle, 1).unwrap();
 
   loop {
     events_loop.poll_events(|event| {
@@ -145,7 +134,9 @@ pub fn main() {
           println!("EVENT        {:?}", event);
           println!("DPI          {:?}", window.window.get_hidpi_factor());
 
-          resizeevent = true;
+          if fb.extent.width != size.width as u32 || fb.extent.height != size.height as u32 {
+            resizeevent = true;
+          }
         }
         winit::Event::WindowEvent {
           event: winit::WindowEvent::HiDpiFactorChanged(dpi),
@@ -159,11 +150,13 @@ pub fn main() {
     });
 
     if resizeevent {
+      println!("AOEUAOEUAOEUAOEUAOEU");
+
       frame.sync().unwrap();
-      let (nsc, nrp, nfbs) = resize(&pdevice, &device, &window, &mut alloc, Some(sc), Some(rp), Some(fbs));
+      let (nsc, nrp, nfb) = resize(&pdevice, &device, &window, &mut alloc, Some(sc), Some(rp), Some(fb));
       sc = nsc;
       rp = nrp;
-      fbs = nfbs;
+      fb = nfb;
 
       gui.gui.resize(sc.extent);
       resizeevent = false;
@@ -173,17 +166,16 @@ pub fn main() {
 
     let i = frame.next().unwrap();
     let next = sc.next_image();
-    let fb = &fbs[i];
 
     let cs = cmds
       .begin_stream()
       .unwrap()
       .push(&ImageBarrier::to_color_attachment(fb.images[0]))
       .push(&fb.begin())
-      .push_fnmut(|cs| gui.render(cs))
       //.push(&gui)
       //.push(&gui.begin_window().push(text.text(&t)))
       .push(&fb.end())
+      .push_fnmut(|cs| gui.render(cs))
       .push(&sc.blit(next.index, fb.images[0]));
 
     let (_, wait) = frame
@@ -211,13 +203,17 @@ struct Gui {
 }
 
 impl Gui {
-  pub fn new(device: &vk::device::Device, cmds: vk::cmd::Pool, pass: vk::RenderPass, mem: vk::mem::Mem) -> Self {
-    let gui = imgui::ImGui::new(device.handle, device.queues[0].handle, cmds.clone(), pass, 0, mem);
+  pub fn new(device: &vk::device::Device, cmds: vk::cmd::Pool, extent: vk::Extent2D, target: vk::Image, mem: vk::mem::Mem) -> Self {
+    let gui = imgui::ImGui::new(device.handle, device.queues[0].handle, cmds.clone(), extent, target, mem);
 
     let mut text = imgui::textbox::TextBox::new(&gui);
-    text.text("aoeu").rect(imgui::rect::Rect::new(vec2!(200,200), vec2!(500, 200)));
-    text.typeset(text.get_typeset().size(70).cursor(Some(vec2!(1,0))));
-    Self { gui, text , tt: Default::default()}
+    text.text("aoeu").rect(imgui::rect::Rect::new(vec2!(200, 200), vec2!(500, 200)));
+    text.typeset(text.get_typeset().size(70).cursor(Some(vec2!(1, 0))));
+    Self {
+      gui,
+      text,
+      tt: Default::default(),
+    }
   }
 
   pub fn input(&mut self, c: char) {
@@ -225,8 +221,11 @@ impl Gui {
     self.tt.push(c);
   }
 
-  pub fn render(&mut self, cs: vk::cmd::Stream) -> vk::cmd::Stream {
-    cs.push(&self.gui).push(&self.gui.begin_window()).push(&self.text)
+  pub fn render(&self, cs: vk::cmd::Stream) -> vk::cmd::Stream {
+    cs.push(&self.gui)
+      .push(&self.gui.begin_window())
+      .push(&self.text)
+      .push(&self.gui.end())
     //cs.push(&self.gui).push(&self.gui.begin_window()).push(self.text.text(&self.tt))
     //cs.push(&self.gui).push(&self.text)
   }

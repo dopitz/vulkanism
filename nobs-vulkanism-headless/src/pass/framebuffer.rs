@@ -1,9 +1,8 @@
-use vk;
-
+use super::Renderpass;
 use crate::cmd::commands::RenderpassBegin;
 use crate::cmd::commands::RenderpassEnd;
-use crate::fb::Renderpass;
 use crate::mem;
+use vk;
 use vk::builder::Buildable;
 
 /// Wrapper for a vulkan framebuffer
@@ -178,7 +177,7 @@ impl<'a, 'b> RenderpassFramebufferBuilder<'a, 'b> {
   /// Images are created with the [Allocator](../../mem/struct.Allocator.html) that has been specified in the builders constructor.
   pub fn create(mut self) -> Framebuffer {
     fn is_depth(format: vk::Format) -> bool {
-      crate::fb::DEPTH_FORMATS.iter().find(|f| **f == format).is_some()
+      crate::pass::DEPTH_FORMATS.iter().find(|f| **f == format).is_some()
     }
 
     // create images for every one that was not set externally
@@ -226,8 +225,8 @@ impl<'a, 'b> RenderpassFramebufferBuilder<'a, 'b> {
         *i,
         *v,
         match is_depth(f) {
-          true => crate::fb::clear_depth(1.0),
-          false => crate::fb::clear_coloru32([0, 0, 0, 0]),
+          true => crate::pass::clear_depth(1.0),
+          false => crate::pass::clear_coloru32([0, 0, 0, 0]),
         },
       );
     }

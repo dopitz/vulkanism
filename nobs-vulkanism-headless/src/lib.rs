@@ -53,5 +53,5 @@ pub mod pipes {
 }
 
 pub mod cmd;
-pub mod fb;
+pub mod pass;
 pub mod util;
