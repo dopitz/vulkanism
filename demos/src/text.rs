@@ -215,8 +215,11 @@ impl Gui {
   }
 
   pub fn input(&mut self, c: char) {
+    let mut c = c;
+    if c == '\r' {
+      c = '\n';
+    }
     self.text.text(&format!("{}{}", self.text.get_text(), c));
-    self.tt.push(c);
   }
 
   pub fn render(&mut self, cs: vk::cmd::Stream) -> vk::cmd::Stream {

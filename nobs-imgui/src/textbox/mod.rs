@@ -8,13 +8,13 @@ use vk;
 use vk::cmd::commands as cmds;
 
 pub struct TextBox {
-  rect: cmds::Scissor,
+  rect: Rect,
   text: Text,
 }
 
 impl TextBox {
   pub fn new(gui: &ImGui) -> Self {
-    let rect = cmds::Scissor::with_size(200, 20);
+    let rect = Rect::from_rect(0, 0, 200, 20);
     let text = Text::new(gui);
 
     Self { rect, text }
@@ -28,14 +28,6 @@ impl TextBox {
     self.text.get_text()
   }
 
-  pub fn rect(&mut self, rect: Rect) -> &mut Self {
-    if Rect::from_vkrect(self.rect.rect) != rect {
-      self.text.position(rect.position);
-      self.rect.rect = rect.to_vkrect();
-    }
-    self
-  }
-
   pub fn typeset(&mut self, ts: TypeSet) -> &mut Self {
     self.text.typeset(ts);
     self
@@ -46,11 +38,21 @@ impl TextBox {
 }
 
 impl Component for TextBox {
-  fn rect(&mut self, rect: Rect) {
-    if Rect::from_vkrect(self.rect.rect) != rect {
+  fn rect(&mut self, rect: Rect) -> &mut Self {
+    if self.rect != rect {
       self.text.position(rect.position);
-      self.rect.rect = rect.to_vkrect();
+      self.rect = rect;
     }
+    self
+  }
+  fn get_rect(&self) -> Rect {
+    self.rect
+  }
+
+  fn get_size_hint(&self) -> vkm::Vec2u {
+    let w = 0;
+    let h = self.get_text().lines().count() as u32 * self.get_typeset().size as u32;
+    vec2!(w, h)
   }
 
   fn get_mesh(&self) -> usize {

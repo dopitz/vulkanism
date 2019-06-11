@@ -137,13 +137,6 @@ impl ImGui {
     *self.gui.ub_viewport.lock().unwrap()
   }
 
-  pub fn new_mesh(&self, pipe: BindPipeline, dsets: &[BindDset], draw: DrawManaged) -> usize {
-    self.gui.draw.lock().unwrap().new_mesh(pipe, dsets, draw)
-  }
-  pub fn remove_mesh(&self, mesh: usize) -> bool {
-    self.gui.draw.lock().unwrap().remove(mesh)
-  }
-
   pub fn get_meshes<'a>(&'a self) -> std::sync::MutexGuard<'a, DrawPass> {
     self.gui.draw.lock().unwrap()
   }

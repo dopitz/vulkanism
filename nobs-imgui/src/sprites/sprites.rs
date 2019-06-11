@@ -50,7 +50,7 @@ impl Sprites {
     let pipe = Pipeline::new(gui.get_pipe(PipeId::Sprites));
     pipe.update_dsets(device, ub, font.texview, font.sampler);
 
-    let mesh = gui.new_mesh(
+    let mesh = gui.get_meshes().new_mesh(
       pipe.bind_pipe,
       &[pipe.bind_ds_viewport, pipe.bind_ds_instance],
       DrawManaged::new([(vb, 0)].iter().into(), DrawVertices::with_vertices(4).instance_count(0).into()),
