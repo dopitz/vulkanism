@@ -73,6 +73,10 @@ impl Sprites {
     }
   }
 
+  pub fn get_mesh(&self) -> usize {
+    self.mesh
+  }
+
   pub fn position(&mut self, pos: Vec2i) -> &mut Self {
     if self.position != pos {
       self.position = pos;

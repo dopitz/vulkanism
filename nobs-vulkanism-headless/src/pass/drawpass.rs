@@ -158,6 +158,24 @@ pub struct DrawMeshRefMut<'a> {
   pub offsets: &'a mut [vk::DeviceSize],
   pub draw: &'a mut Draw,
 }
+impl<'a> StreamPush for DrawMeshRef<'a> {
+  fn enqueue(&self, mut cs: Stream) -> Stream {
+    cs = cs.push(self.pipe);
+    for ds in self.dset.iter() {
+      cs = cs.push(ds);
+    }
+    cs.push(self.draw)
+  }
+}
+impl<'a> StreamPush for DrawMeshRefMut<'a> {
+  fn enqueue(&self, mut cs: Stream) -> Stream {
+    cs = cs.push(self.pipe);
+    for ds in self.dset.iter() {
+      cs = cs.push(ds);
+    }
+    cs.push(self.draw)
+  }
+}
 
 pub struct DrawPass {
   pipes: BlockAlloc<BindPipeline>,

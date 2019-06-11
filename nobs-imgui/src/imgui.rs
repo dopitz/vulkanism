@@ -162,29 +162,19 @@ impl ImGui {
     data[1] = size.height as u32;
   }
 
-  pub fn begin_window<'a>(&self) -> window::Window<'a> {
-    let ub = *self.gui.ub_viewport.lock().unwrap();
+  pub fn begin_window(&self) -> window::Window {
     let extent = self.gui.fb.lock().unwrap().extent;
-    window::Window::new(self.gui.device, ub).size(extent.width, extent.height)
+    window::Window::new(self.clone()).size(extent.width, extent.height)
   }
-
-  pub fn end(&self) -> vk::cmd::commands::RenderpassEnd {
+  pub fn begin(&self, cs: Stream) -> Stream {
     let fb = self.gui.fb.lock().unwrap();
-    fb.end()
-  }
-}
-
-impl<'a> StreamPush for ImGui {
-  fn enqueue(&self, cs: Stream) -> Stream {
-    let fb = self.gui.fb.lock().unwrap();
-    let draw = &*self.gui.draw.lock().unwrap();
     cs.push(&vk::cmd::commands::ImageBarrier::to_color_attachment(fb.images[0]))
       .push(&fb.begin())
       .push(&vk::cmd::commands::Viewport::with_extent(fb.extent))
       .push(&vk::cmd::commands::Scissor::with_extent(fb.extent))
-      .push(draw)
-    //.push(&fb.end())
-
-    //cs.push(&self.gui.vp.lock().unwrap().cmd)
+  }
+  pub fn end(&self, cs: Stream) -> Stream {
+    let fb = self.gui.fb.lock().unwrap();
+    cs.push(&fb.end())
   }
 }

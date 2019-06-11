@@ -1,7 +1,7 @@
 use crate::font::*;
 use crate::rect::Rect;
 use crate::text::Text;
-use crate::window::Window;
+use crate::window::Component;
 use crate::ImGui;
 
 use vk;
@@ -45,14 +45,15 @@ impl TextBox {
   }
 }
 
-//impl cmds::StreamPush for TextBox {
-//  fn enqueue(&self, cs: cmd::Stream) -> cmd::Stream {
-//    cs.push(&self.rect).push(&self.text)
-//  }
-//}
-//
-//impl crate::window::Component for TextBox {
-//  fn add_compontent(&mut self, wnd: &mut Window) {
-//    self.rect(wnd.get_next_bounds());
-//  }
-//}
+impl Component for TextBox {
+  fn rect(&mut self, rect: Rect) {
+    if Rect::from_vkrect(self.rect.rect) != rect {
+      self.text.position(rect.position);
+      self.rect.rect = rect.to_vkrect();
+    }
+  }
+
+  fn get_mesh(&self) -> usize {
+    self.text.get_mesh()
+  }
+}

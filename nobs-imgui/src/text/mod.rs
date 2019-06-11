@@ -22,6 +22,10 @@ impl Text {
     }
   }
 
+  pub fn get_mesh(&self) -> usize {
+    self.sprites.get_mesh()
+  }
+
   pub fn typesetter(&mut self, ts: TypeSet) -> &mut Self {
     self.typeset = ts;
     self

@@ -134,6 +134,10 @@ impl Scissor {
       rect: vk::Rect2D { offset, extent },
     }
   }
+
+  pub fn with_rect(rect: vk::Rect2D) -> Self {
+    Self { rect }
+  }
 }
 
 impl StreamPush for Scissor {

@@ -205,7 +205,7 @@ impl Gui {
     let gui = imgui::ImGui::new(device.handle, device.queues[0].handle, cmds.clone(), extent, target, mem);
 
     let mut text = imgui::textbox::TextBox::new(&gui);
-    text.text("aoeu").rect(imgui::rect::Rect::new(vec2!(200, 200), vec2!(500, 200)));
+    text.text("aoeu");
     text.typeset(text.get_typeset().size(70).cursor(Some(vec2!(1, 0))));
     Self {
       gui,
@@ -219,22 +219,7 @@ impl Gui {
     self.tt.push(c);
   }
 
-  pub fn render(&self, cs: vk::cmd::Stream) -> vk::cmd::Stream {
-    cs.push(&self.gui)
-      .push(&self.gui.begin_window())
-      .push(&self.gui.end())
-
-    //cs.push(
-    //  &self
-    //    .gui
-    //    .inline()
-    //    .push(&self.gui.begin_window())
-    //    .push(self.text)
-    //    .push(that)
-    //    .push(other),
-    //)
-
-    //cs.push(&self.gui).push(&self.gui.begin_window()).push(self.text.text(&self.tt))
-    //cs.push(&self.gui).push(&self.text)
+  pub fn render(&mut self, cs: vk::cmd::Stream) -> vk::cmd::Stream {
+    cs.push(&self.gui.begin_window().position(200, 200).size(500, 200).push(&mut self.text))
   }
 }
