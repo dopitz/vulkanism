@@ -1,5 +1,4 @@
 use vk;
-use vk::cmd;
 use vk::cmd::commands::DrawManaged;
 use vk::cmd::commands::DrawVertices;
 use vkm::Vec2i;
@@ -18,7 +17,8 @@ pub struct Sprites {
   sampler: vk::Sampler,
   vb: vk::Buffer,
   ub: vk::Buffer,
-  mesh: Option<usize>,
+  mesh: usize,
+  vb_capacity: usize,
 
   pipe: Pipeline,
 }
@@ -50,6 +50,12 @@ impl Sprites {
     let pipe = Pipeline::new(gui.get_pipe(PipeId::Sprites));
     pipe.update_dsets(device, ub, font.texview, font.sampler);
 
+    let mesh = gui.new_mesh(
+      pipe.bind_pipe,
+      &[pipe.bind_ds_viewport, pipe.bind_ds_instance],
+      DrawManaged::new([(vb, 0)].iter().into(), DrawVertices::with_vertices(4).instance_count(0).into()),
+    );
+
     Sprites {
       device,
       gui: gui.clone(),
@@ -60,7 +66,8 @@ impl Sprites {
       sampler: font.sampler,
       vb,
       ub,
-      mesh: None,
+      mesh,
+      vb_capacity: 0,
 
       pipe,
     }
@@ -93,19 +100,17 @@ impl Sprites {
     let mut mem = self.gui.get_mem();
 
     // create new buffer if capacity of cached one is not enough
+    if sprites.len() > self.vb_capacity {
+      mem.trash.push(self.vb);
+      self.vb = vk::NULL_HANDLE;
 
-    if let Some(m) = self.mesh {
-      let m = self.gui.get_mesh(m);
-      if sprites.len() > m.draw.draw.vertices().unwrap().instance_count as usize {
-        mem.trash.push(self.vb);
-        self.vb = vk::NULL_HANDLE;
+      vk::mem::Buffer::new(&mut self.vb)
+        .vertex_buffer((sprites.len() * std::mem::size_of::<Vertex>()) as vk::DeviceSize)
+        .devicelocal(false)
+        .bind(&mut mem.alloc, vk::mem::BindType::Block)
+        .unwrap();
 
-        vk::mem::Buffer::new(&mut self.vb)
-          .vertex_buffer((sprites.len() * std::mem::size_of::<Vertex>()) as vk::DeviceSize)
-          .devicelocal(false)
-          .bind(&mut mem.alloc, vk::mem::BindType::Block)
-          .unwrap();
-      }
+      self.vb_capacity = sprites.len();
     }
 
     // only copy if not empty
@@ -113,17 +118,13 @@ impl Sprites {
       mem.alloc.get_mapped(self.vb).unwrap().host_to_device_slice(sprites);
     }
 
-    if let Some(mesh) = self.mesh {
-      self.gui.remove_mesh(mesh);
+    // finally update the buffer and instance count int the mesh
+    {
+      let mut meshes = self.gui.get_meshes();
+      let m = meshes.get_mut(self.mesh);
+      m.buffers[0] = self.vb;
+      m.draw.draw = DrawVertices::with_vertices(4).instance_count(sprites.len() as u32).into();
     }
-    self.mesh = Some(self.gui.new_mesh(
-      self.pipe.bind_pipe,
-      &[self.pipe.bind_ds_viewport, self.pipe.bind_ds_instance],
-      DrawManaged::new(
-        [(self.vb, 0)].iter().into(),
-        DrawVertices::with_vertices(4).instance_count(sprites.len() as u32).into(),
-      ),
-    ));
 
     self
   }

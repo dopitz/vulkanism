@@ -2,7 +2,6 @@ use crate::font::*;
 use crate::sprites;
 use crate::ImGui;
 
-use vk;
 use vkm::Vec2i;
 
 pub struct Text {

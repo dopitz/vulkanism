@@ -135,6 +135,7 @@ pub fn main() {
           println!("DPI          {:?}", window.window.get_hidpi_factor());
 
           if fb.extent.width != size.width as u32 || fb.extent.height != size.height as u32 {
+            println!("AOEUAOUEAOEU");
             resizeevent = true;
           }
         }
@@ -156,7 +157,7 @@ pub fn main() {
       rp = nrp;
       fb = nfb;
 
-      gui.gui.resize(sc.extent);
+      gui.gui.resize(sc.extent, fb.images[0]);
       resizeevent = false;
     }
 

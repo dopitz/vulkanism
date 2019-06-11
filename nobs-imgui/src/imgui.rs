@@ -8,9 +8,9 @@ use vk::builder::Buildable;
 use vk::cmd::commands::BindDset;
 use vk::cmd::commands::BindPipeline;
 use vk::cmd::commands::DrawManaged;
+use vk::cmd::commands::StreamPush;
 use vk::cmd::Stream;
-use vk::pass::Pass;
-use vk::pass::DrawMeshRef;
+use vk::pass::DrawPass;
 use vk::pipes::CachedPipeline;
 
 struct Viewport {
@@ -26,7 +26,7 @@ struct ImGuiImpl {
   mem: vk::mem::Mem,
   font: Arc<Font>,
 
-  draw: Mutex<vk::pass::DrawPass>,
+  draw: Mutex<DrawPass>,
 
   pipes: PipeCache,
   ub_viewport: Mutex<vk::Buffer>,
@@ -102,7 +102,7 @@ impl ImGui {
         mem,
         font,
 
-        draw: Mutex::new(vk::pass::DrawPass::new()),
+        draw: Mutex::new(DrawPass::new()),
 
         pipes: PipeCache::new(&PipeCreateInfo {
           device,
@@ -144,8 +144,22 @@ impl ImGui {
     self.gui.draw.lock().unwrap().remove(mesh)
   }
 
-  pub fn get_mesh<'a>(&'a self, mesh: usize) -> DrawMeshRef<'a> {
-    self.gui.draw.lock().unwrap().get(mesh)
+  pub fn get_meshes<'a>(&'a self) -> std::sync::MutexGuard<'a, DrawPass> {
+    self.gui.draw.lock().unwrap()
+  }
+
+  pub fn resize(&mut self, size: vk::Extent2D, target: vk::Image) {
+    let mut mem = self.gui.mem.clone();
+    *self.gui.fb.lock().unwrap() = vk::pass::Framebuffer::build_from_pass(&self.gui.rp, &mut mem.alloc)
+      .extent(size)
+      .target(0, target)
+      .create();
+
+    let ub = *self.gui.ub_viewport.lock().unwrap();
+    let mut map = mem.alloc.get_mapped(ub).unwrap();
+    let data = map.as_slice_mut::<u32>();
+    data[0] = size.width as u32;
+    data[1] = size.height as u32;
   }
 
   pub fn begin_window<'a>(&self) -> window::Window<'a> {
@@ -160,18 +174,8 @@ impl ImGui {
   }
 }
 
-impl Pass for ImGui {
-  fn resize(&mut self, extent: vk::Extent2D) {
-    let ub = *self.gui.ub_viewport.lock().unwrap();
-    let mut map = self.gui.mem.alloc.get_mapped(ub).unwrap();
-    let data = map.as_slice_mut::<u32>();
-    data[0] = extent.width as u32;
-    data[1] = extent.height as u32;
-  }
-}
-
-impl<'a> vk::cmd::commands::StreamPush for ImGui {
-  fn enqueue(&self, cs: vk::cmd::Stream) -> vk::cmd::Stream {
+impl<'a> StreamPush for ImGui {
+  fn enqueue(&self, cs: Stream) -> Stream {
     let fb = self.gui.fb.lock().unwrap();
     let draw = &*self.gui.draw.lock().unwrap();
     cs.push(&vk::cmd::commands::ImageBarrier::to_color_attachment(fb.images[0]))

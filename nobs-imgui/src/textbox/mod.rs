@@ -5,7 +5,6 @@ use crate::window::Window;
 use crate::ImGui;
 
 use vk;
-use vk::cmd;
 use vk::cmd::commands as cmds;
 
 pub struct TextBox {
