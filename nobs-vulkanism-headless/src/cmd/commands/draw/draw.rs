@@ -4,8 +4,7 @@ use super::BindVertexBuffersManaged;
 use super::DrawIndexed;
 use super::DrawIndirect;
 use super::DrawVertices;
-use crate::cmd::commands::StreamPush;
-use crate::cmd::Stream;
+use crate::cmd::stream::*;
 
 #[derive(Debug, Clone, Copy)]
 pub enum DrawKind {
@@ -61,7 +60,7 @@ impl DrawKind {
 }
 
 impl StreamPush for DrawKind {
-  fn enqueue(&self, cs: Stream) -> Stream {
+  fn enqueue(&self, cs: CmdBuffer) -> CmdBuffer {
     match self {
       DrawKind::Vertices(d) => cs.push(d),
       DrawKind::Indexed(d) => cs.push(d),
@@ -83,7 +82,7 @@ impl Draw {
 }
 
 impl StreamPush for Draw {
-  fn enqueue(&self, cs: Stream) -> Stream {
+  fn enqueue(&self, cs: CmdBuffer) -> CmdBuffer {
     cs.push(&self.vbs).push(&self.draw)
   }
 }
@@ -101,7 +100,7 @@ impl DrawManaged {
 }
 
 impl StreamPush for DrawManaged {
-  fn enqueue(&self, cs: Stream) -> Stream {
+  fn enqueue(&self, cs: CmdBuffer) -> CmdBuffer {
     cs.push(&self.vbs).push(&self.draw)
   }
 }

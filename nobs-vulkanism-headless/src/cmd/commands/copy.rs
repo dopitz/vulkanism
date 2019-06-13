@@ -1,6 +1,5 @@
 use super::ImageBarrier;
-use super::Stream;
-use super::StreamPush;
+use crate::cmd::stream::*;
 use vk;
 use vk::builder::Buildable;
 
@@ -13,7 +12,7 @@ pub struct BufferCopy {
 }
 
 impl StreamPush for BufferCopy {
-  fn enqueue(&self, cs: Stream) -> Stream {
+  fn enqueue(&self, cs: CmdBuffer) -> CmdBuffer {
     vk::CmdCopyBuffer(cs.buffer, self.src, self.dst, 1, &self.region);
     cs
   }
@@ -79,7 +78,7 @@ pub struct ImageBufferCopy {
 }
 
 impl StreamPush for BufferImageCopy {
-  fn enqueue(&self, cs: Stream) -> Stream {
+  fn enqueue(&self, cs: CmdBuffer) -> CmdBuffer {
     let cs = cs.push(&ImageBarrier::to_transfer_dst(self.dst));
     vk::CmdCopyBufferToImage(
       cs.buffer,
@@ -94,7 +93,7 @@ impl StreamPush for BufferImageCopy {
 }
 
 impl StreamPush for ImageBufferCopy {
-  fn enqueue(&self, cs: Stream) -> Stream {
+  fn enqueue(&self, cs: CmdBuffer) -> CmdBuffer {
     let cs = cs.push(&ImageBarrier::to_transfer_src(self.src));
     vk::CmdCopyImageToBuffer(
       cs.buffer,
@@ -186,7 +185,7 @@ pub struct ImageCopy {
 }
 
 impl StreamPush for ImageCopy {
-  fn enqueue(&self, cs: Stream) -> Stream {
+  fn enqueue(&self, cs: CmdBuffer) -> CmdBuffer {
     let cs = cs
       .push(&ImageBarrier::to_transfer_src(self.src))
       .push(&ImageBarrier::to_transfer_dst(self.dst));

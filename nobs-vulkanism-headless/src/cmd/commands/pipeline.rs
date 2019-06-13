@@ -1,5 +1,5 @@
-use super::Stream;
-use super::StreamPush;
+use crate::cmd::stream::*;
+use crate::cmd::CmdBuffer;
 use vk;
 
 /// Binds a pipeline to a command stream
@@ -28,7 +28,7 @@ impl BindPipeline {
 }
 
 impl StreamPush for BindPipeline {
-  fn enqueue(&self, cs: Stream) -> Stream {
+  fn enqueue(&self, cs: CmdBuffer) -> CmdBuffer {
     vk::CmdBindPipeline(cs.buffer, self.bindpoint, self.pipeline);
     cs
   }
@@ -55,7 +55,7 @@ impl BindDset {
 }
 
 impl StreamPush for BindDset {
-  fn enqueue(&self, cs: Stream) -> Stream {
+  fn enqueue(&self, cs: CmdBuffer) -> CmdBuffer {
     vk::CmdBindDescriptorSets(
       cs.buffer,
       self.bindpoint,
@@ -108,7 +108,7 @@ impl Viewport {
 }
 
 impl StreamPush for Viewport {
-  fn enqueue(&self, cs: Stream) -> Stream {
+  fn enqueue(&self, cs: CmdBuffer) -> CmdBuffer {
     vk::CmdSetViewport(cs.buffer, 0, 1, &self.vp);
     cs
   }
@@ -141,7 +141,7 @@ impl Scissor {
 }
 
 impl StreamPush for Scissor {
-  fn enqueue(&self, cs: Stream) -> Stream {
+  fn enqueue(&self, cs: CmdBuffer) -> CmdBuffer {
     vk::CmdSetScissor(cs.buffer, 0, 1, &self.rect);
     cs
   }

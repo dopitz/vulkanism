@@ -2,9 +2,9 @@ use crate::rect::Rect;
 use crate::ImGui;
 use vk::builder::Buildable;
 use vk::cmd::commands::Scissor;
-use vk::cmd::commands::StreamPush;
 use vk::cmd::commands::Viewport;
-use vk::cmd::Stream;
+use vk::cmd::stream::*;
+use vk::cmd::CmdBuffer;
 
 pub trait Component {
   fn rect(&mut self, rect: Rect) -> &mut Self;
@@ -21,7 +21,7 @@ pub struct WinComp {
 }
 
 pub trait Layout {
-  fn push<T: Component>(&mut self, c: &mut T)->WinComp;
+  fn push<T: Component>(&mut self, c: &mut T) -> WinComp;
 }
 
 pub struct ColumnLayout {
@@ -88,7 +88,7 @@ impl Window {
 }
 
 impl StreamPush for Window {
-  fn enqueue(&self, cs: Stream) -> Stream {
+  fn enqueue(&self, cs: CmdBuffer) -> CmdBuffer {
     let mut cs = self.gui.begin(cs).push(&Scissor::with_rect(self.layout.rect.to_vkrect()));
 
     let meshes = self.gui.get_meshes();

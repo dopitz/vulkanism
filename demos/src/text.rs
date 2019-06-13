@@ -4,7 +4,7 @@ extern crate nobs_vulkanism as vk;
 extern crate nobs_vkmath as vkm;
 
 use vk::builder::Buildable;
-use vk::pass::Pass;
+use vk::cmd::stream::*;
 use vk::winit;
 
 pub fn setup_vulkan_window() -> (
@@ -102,7 +102,7 @@ pub fn main() {
   let (_inst, pdevice, device, mut events_loop, window) = setup_vulkan_window();
 
   let mut alloc = vk::mem::Allocator::new(pdevice.handle, device.handle);
-  let cmds = vk::cmd::Pool::new(device.handle, device.queues[0].family).unwrap();
+  let cmds = vk::cmd::CmdPool::new(device.handle, device.queues[0].family).unwrap();
 
   let (mut sc, mut rp, mut fb) = resize(&pdevice, &device, &window, &mut alloc, None, None, None);
   let mem = vk::mem::Mem::new(alloc.clone(), 2);
@@ -113,7 +113,7 @@ pub fn main() {
   let mut close = false;
 
   use vk::cmd::commands::*;
-  let mut frame = vk::cmd::Frame::new(device.handle, 1).unwrap();
+  let mut batch = vk::cmd::RRBatch::new(device.handle, 1).unwrap();
 
   loop {
     events_loop.poll_events(|event| {
@@ -151,7 +151,7 @@ pub fn main() {
     });
 
     if resizeevent {
-      frame.sync().unwrap();
+      batch.sync().unwrap();
       let (nsc, nrp, nfb) = resize(&pdevice, &device, &window, &mut alloc, Some(sc), Some(rp), Some(fb));
       sc = nsc;
       rp = nrp;
@@ -162,56 +162,35 @@ pub fn main() {
     }
 
     mem.trash.clean();
-
-    let i = frame.next().unwrap();
-    let next = sc.next_image();
-
-    let cs = cmds
-      .begin_stream()
-      .unwrap()
+    vk::wnd::PresentFrame::new(cmds.clone(), &mut sc, &mut batch)
       .push(&ImageBarrier::to_color_attachment(fb.images[0]))
       .push(&fb.begin())
-      //.push(&gui)
-      //.push(&gui.begin_window().push(text.text(&t)))
       .push(&fb.end())
-      .push_fnmut(|cs| gui.render(cs))
-      .push(&sc.blit(next.index, fb.images[0]));
-
-    let (_, wait) = frame
-      .wait_for(next.signal, vk::PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT)
-      .push(cs)
-      .submit(device.queues[0].handle);
-
-    sc.present(device.queues[0].handle, next.index, &[wait.unwrap()]);
+      .push_mut(&mut gui)
+      .present(device.queues[0].handle, fb.images[0]);
 
     if close {
       break;
     }
   }
 
-  frame.sync().unwrap();
+  batch.sync().unwrap();
 }
 
 struct Gui {
   gui: imgui::ImGui,
   //text: imgui::text::Text,
   text: imgui::textbox::TextBox,
-
-  tt: String,
 }
 
 impl Gui {
-  pub fn new(device: &vk::device::Device, cmds: vk::cmd::Pool, extent: vk::Extent2D, target: vk::Image, mem: vk::mem::Mem) -> Self {
+  pub fn new(device: &vk::device::Device, cmds: vk::cmd::CmdPool, extent: vk::Extent2D, target: vk::Image, mem: vk::mem::Mem) -> Self {
     let gui = imgui::ImGui::new(device.handle, device.queues[0].handle, cmds.clone(), extent, target, mem);
 
     let mut text = imgui::textbox::TextBox::new(&gui);
     text.text("aoeu");
     text.typeset(text.get_typeset().size(70).cursor(Some(vec2!(1, 0))));
-    Self {
-      gui,
-      text,
-      tt: Default::default(),
-    }
+    Self { gui, text }
   }
 
   pub fn input(&mut self, c: char) {
@@ -221,8 +200,10 @@ impl Gui {
     }
     self.text.text(&format!("{}{}", self.text.get_text(), c));
   }
+}
 
-  pub fn render(&mut self, cs: vk::cmd::Stream) -> vk::cmd::Stream {
+impl StreamPushMut for Gui {
+  fn enqueue_mut(&mut self, cs: CmdBuffer) -> CmdBuffer {
     cs.push(&self.gui.begin_window().position(200, 200).size(500, 200).push(&mut self.text))
   }
 }

@@ -1,5 +1,5 @@
-use super::Stream;
 use super::StreamPush;
+use crate::cmd::CmdBuffer;
 use vk;
 
 /// Conservatively gets pipeline stage flags from acces flags
@@ -140,7 +140,7 @@ impl ImageBarrier {
 }
 
 impl StreamPush for ImageBarrier {
-  fn enqueue(&self, cs: Stream) -> Stream {
+  fn enqueue(&self, cs: CmdBuffer) -> CmdBuffer {
     vk::CmdPipelineBarrier(
       cs.buffer,
       self.src_stages,
@@ -206,7 +206,7 @@ impl BufferBarrier {
 }
 
 impl StreamPush for BufferBarrier {
-  fn enqueue(&self, cs: Stream) -> Stream {
+  fn enqueue(&self, cs: CmdBuffer) -> CmdBuffer {
     vk::CmdPipelineBarrier(
       cs.buffer,
       self.src_stages,

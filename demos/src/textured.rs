@@ -3,6 +3,7 @@ extern crate nobs_vkmath as vkm;
 extern crate nobs_vulkanism as vk;
 
 use vk::builder::Buildable;
+use vk::cmd::stream::*;
 use vk::winit;
 
 mod tex {
@@ -109,7 +110,13 @@ pub fn setup_rendertargets(
   (sc, pass, fbs)
 }
 
-pub fn update_mvp(device: &vk::device::Device, cmds: &vk::cmd::Pool, stage: &mut vk::mem::Staging, ub: vk::Buffer, mvp: &tex::UbTransform) {
+pub fn update_mvp(
+  device: &vk::device::Device,
+  cmds: &vk::cmd::CmdPool,
+  stage: &mut vk::mem::Staging,
+  ub: vk::Buffer,
+  mvp: &tex::UbTransform,
+) {
   let mut map = stage
     .range(0, std::mem::size_of::<tex::UbTransform>() as vk::DeviceSize)
     .map()
@@ -128,7 +135,7 @@ pub fn main() {
   let (_inst, pdevice, device, mut events_loop, window) = setup_vulkan_window();
 
   let mut alloc = vk::mem::Allocator::new(pdevice.handle, device.handle);
-  let cmds = vk::cmd::Pool::new(device.handle, device.queues[0].family).unwrap();
+  let cmds = vk::cmd::CmdPool::new(device.handle, device.queues[0].family).unwrap();
 
   let (mut sc, rp, fbs) = setup_rendertargets(&pdevice, &device, &window, &mut alloc);
   let mut mem = vk::mem::Mem::new(alloc, fbs.len());
@@ -246,7 +253,7 @@ pub fn main() {
 
   use vk::cmd::commands::*;
   let draw = DrawManaged::new([(vb, 0)].iter().into(), DrawVertices::with_vertices(3).into());
-  let mut frame = vk::cmd::Frame::new(device.handle, fbs.len()).unwrap();
+  let mut frame = vk::cmd::RRBatch::new(device.handle, fbs.len()).unwrap();
 
   let mut mvp = tex::UbTransform {
     model: vkm::Mat4::identity(),

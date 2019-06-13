@@ -1,5 +1,5 @@
-use super::Stream;
 use super::StreamPush;
+use crate::cmd::CmdBuffer;
 use vk;
 
 /// Blit command for copying, scaling and filtering an image
@@ -83,7 +83,7 @@ impl Blit {
 }
 
 impl StreamPush for Blit {
-  fn enqueue(&self, cs: Stream) -> Stream {
+  fn enqueue(&self, cs: CmdBuffer) -> CmdBuffer {
     vk::CmdBlitImage(
       cs.buffer,
       self.im_src,
@@ -140,7 +140,7 @@ impl ClearColorImage {
 }
 
 impl StreamPush for ClearColorImage {
-  fn enqueue(&self, cs: Stream) -> Stream {
+  fn enqueue(&self, cs: CmdBuffer) -> CmdBuffer {
     vk::CmdClearColorImage(cs.buffer, self.image, self.layout, &self.clear, 1, &self.subresource);
     cs
   }

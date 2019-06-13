@@ -244,7 +244,9 @@ impl FontBuilder {
     let char_tbl = (0..256).into_iter().map(|c| c.to_string() + ", ").collect::<Vec<String>>();
     let s = format!(
       "
-      pub fn new(device: vk::Device, mut mem: vk::mem::Mem, copy_queue: vk::Queue, cmds: &vk::cmd::Pool) -> Font {{
+      pub fn new(device: vk::Device, mut mem: vk::mem::Mem, copy_queue: vk::Queue, cmds: &vk::cmd::CmdPool) -> Font {{
+        use vk::cmd::stream::*;
+
         let mut tex = vk::NULL_HANDLE;
         vk::mem::Image::new(&mut tex)
           .texture2d({dimx}, {dimy}, vk::FORMAT_R8_UNORM)

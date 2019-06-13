@@ -1,5 +1,5 @@
 use crate::cmd::commands::StreamPush;
-use crate::cmd::Stream;
+use crate::cmd::CmdBuffer;
 
 /// Binds vertex buffers and issues draw call
 #[derive(Debug, Clone, Copy)]
@@ -61,7 +61,7 @@ impl DrawVertices {
 }
 
 impl StreamPush for DrawVertices {
-  fn enqueue(&self, cs: Stream) -> Stream {
+  fn enqueue(&self, cs: CmdBuffer) -> CmdBuffer {
     if self.vertex_count > 0 && self.instance_count > 0 {
       vk::CmdDraw(
         cs.buffer,

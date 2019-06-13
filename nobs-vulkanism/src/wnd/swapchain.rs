@@ -1,6 +1,6 @@
 use vk;
-use vk::cmd::commands::StreamPush;
-use vk::cmd::Stream;
+use vk::cmd::stream::*;
+use vk::cmd::CmdBuffer;
 
 /// Result from [struct.Swapchain.html#method.next_image]
 ///
@@ -23,7 +23,7 @@ pub struct Blit {
 }
 
 impl StreamPush for Blit {
-  fn enqueue(&self, cs: Stream) -> Stream {
+  fn enqueue(&self, cs: CmdBuffer) -> CmdBuffer {
     use vk::cmd::commands::ImageBarrier;
     cs.push(&ImageBarrier::to_transfer_src(self.blit.im_src))
       .push(&ImageBarrier::to_transfer_dst(self.blit.im_dst))

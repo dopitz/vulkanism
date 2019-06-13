@@ -6,9 +6,9 @@ use crate::cmd::commands::BindVertexBuffers;
 use crate::cmd::commands::Draw;
 use crate::cmd::commands::DrawKind;
 use crate::cmd::commands::DrawManaged;
-use crate::cmd::commands::StreamPush;
-use crate::cmd::Pool as CmdPool;
-use crate::cmd::Stream;
+use crate::cmd::stream::*;
+use crate::cmd::CmdBuffer;
+use crate::cmd::CmdPool;
 use std::collections::BTreeSet;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -159,7 +159,7 @@ pub struct DrawMeshRefMut<'a> {
   pub draw: &'a mut Draw,
 }
 impl<'a> StreamPush for DrawMeshRef<'a> {
-  fn enqueue(&self, mut cs: Stream) -> Stream {
+  fn enqueue(&self, mut cs: CmdBuffer) -> CmdBuffer {
     cs = cs.push(self.pipe);
     for ds in self.dset.iter() {
       cs = cs.push(ds);
@@ -168,7 +168,7 @@ impl<'a> StreamPush for DrawMeshRef<'a> {
   }
 }
 impl<'a> StreamPush for DrawMeshRefMut<'a> {
-  fn enqueue(&self, mut cs: Stream) -> Stream {
+  fn enqueue(&self, mut cs: CmdBuffer) -> CmdBuffer {
     cs = cs.push(self.pipe);
     for ds in self.dset.iter() {
       cs = cs.push(ds);
@@ -274,7 +274,7 @@ impl Pass for DrawPass {
 }
 
 impl StreamPush for DrawPass {
-  fn enqueue(&self, mut cs: Stream) -> Stream {
+  fn enqueue(&self, mut cs: CmdBuffer) -> CmdBuffer {
     for d in self.meshes.iter() {
       cs = cs.push(&self.pipes[d.pipe]);
       for ds in self.dsets[d.dset.0..d.dset.0 + d.dset.1].iter() {

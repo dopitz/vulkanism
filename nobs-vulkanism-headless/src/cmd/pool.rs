@@ -1,26 +1,24 @@
+use super::buffer::BufferCache;
+use super::Error;
+use super::CmdBuffer;
 use std::sync::Arc;
 use std::sync::Mutex;
-
 use vk;
-
-use crate::cmd::stream::StreamCache;
-use crate::cmd::Error;
-use crate::cmd::Stream;
 
 /// Wrapps a vulkan command pool
 ///
-/// The Pool is basically a chach for [Streams](struct.Stream.html).
-/// The only method [begin_stream](struct.Pool.html#method.begin_stream) either creates a new stream or reuses one that is currently not unused.
+/// The Pool is basically a chache for [command buffers](struct.CmdBuffer.html).
+/// The only method [begin_stream](struct.Pool.html#method.begin_stream) either creates a new stream or reuses one from the cache.
 #[derive(Clone)]
-pub struct Pool {
+pub struct CmdPool {
   pub device: vk::Device,
   pub queue_family: u32,
   pub handle: vk::CommandPool,
 
-  streams: Arc<Mutex<StreamCache>>,
+  buffers: Arc<Mutex<BufferCache>>,
 }
 
-impl Pool {
+impl CmdPool {
   /// Create a new command pool
   ///
   /// ## Arguments
@@ -40,15 +38,15 @@ impl Pool {
       device,
       queue_family,
       handle,
-      streams: Arc::new(Mutex::new(StreamCache::new(device, handle))),
+      buffers: Arc::new(Mutex::new(BufferCache::new(device, handle))),
     })
   }
 
   /// Get a new stream
   ///
   /// Reuses an unused command buffer if there is one, if not creates a new one.
-  /// Calles [begin](struct.Stream.html#method.begin) on the stream and returns it.
-  pub fn begin_stream(&self) -> Result<Stream, Error> {
-    Stream::new(self.streams.clone()).and_then(|s| s.begin())
+  /// Calles [begin](struct.CmdBuffer.html#method.begin) on the stream and returns it.
+  pub fn begin_stream(&self) -> Result<CmdBuffer, Error> {
+    CmdBuffer::new(self.buffers.clone()).and_then(|s| s.begin())
   }
 }

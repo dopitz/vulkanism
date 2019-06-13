@@ -1,6 +1,7 @@
 extern crate nobs_vulkanism as vk;
 
 use vk::builder::Buildable;
+use vk::cmd::stream::*;
 
 mod make_sequence {
   vk::pipes::pipeline! {
@@ -76,7 +77,7 @@ pub fn main() {
     //.b_out(|b| b.buffer(buf_out))
     .update();
 
-  let cpool = vk::cmd::Pool::new(device.handle, device.queues[0].family).unwrap();
+  let cpool = vk::cmd::CmdPool::new(device.handle, device.queues[0].family).unwrap();
 
   {
     let mapped = allocator.get_mapped(buf_ub).unwrap();

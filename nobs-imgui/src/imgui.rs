@@ -1,15 +1,15 @@
-use std::sync::Arc;
-use std::sync::Mutex;
-
 use crate::pipeid::*;
 use crate::window;
 use font::*;
+use std::sync::Arc;
+use std::sync::Mutex;
 use vk::builder::Buildable;
 use vk::cmd::commands::BindDset;
 use vk::cmd::commands::BindPipeline;
 use vk::cmd::commands::DrawManaged;
-use vk::cmd::commands::StreamPush;
-use vk::cmd::Stream;
+use vk::cmd::stream::*;
+use vk::cmd::CmdBuffer;
+use vk::cmd::CmdPool;
 use vk::pass::DrawPass;
 use vk::pipes::CachedPipeline;
 
@@ -20,7 +20,7 @@ struct Viewport {
 struct ImGuiImpl {
   device: vk::Device,
   copy_queue: vk::Queue,
-  cmds: vk::cmd::Pool,
+  cmds: CmdPool,
   rp: vk::pass::Renderpass,
   fb: Mutex<vk::pass::Framebuffer>,
   mem: vk::mem::Mem,
@@ -47,7 +47,7 @@ impl ImGui {
   pub fn new(
     device: vk::Device,
     copy_queue: vk::Queue,
-    cmds: vk::cmd::Pool,
+    cmds: CmdPool,
     extent: vk::Extent2D,
     target: vk::Image,
     mut mem: vk::mem::Mem,
@@ -121,7 +121,7 @@ impl ImGui {
   pub fn get_copy_queue(&self) -> vk::Queue {
     self.gui.copy_queue
   }
-  pub fn get_cmds(&self) -> vk::cmd::Pool {
+  pub fn get_cmds(&self) -> CmdPool {
     self.gui.cmds.clone()
   }
   pub fn get_mem(&self) -> vk::mem::Mem {
@@ -159,14 +159,14 @@ impl ImGui {
     let extent = self.gui.fb.lock().unwrap().extent;
     window::Window::new(self.clone()).size(extent.width, extent.height)
   }
-  pub fn begin(&self, cs: Stream) -> Stream {
+  pub fn begin(&self, cs: CmdBuffer) -> CmdBuffer {
     let fb = self.gui.fb.lock().unwrap();
     cs.push(&vk::cmd::commands::ImageBarrier::to_color_attachment(fb.images[0]))
       .push(&fb.begin())
       .push(&vk::cmd::commands::Viewport::with_extent(fb.extent))
       .push(&vk::cmd::commands::Scissor::with_extent(fb.extent))
   }
-  pub fn end(&self, cs: Stream) -> Stream {
+  pub fn end(&self, cs: CmdBuffer) -> CmdBuffer {
     let fb = self.gui.fb.lock().unwrap();
     cs.push(&fb.end())
   }

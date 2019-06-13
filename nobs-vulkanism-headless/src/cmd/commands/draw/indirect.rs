@@ -1,6 +1,6 @@
 use super::bindvertexbuffer::BindVertexBuffersTrait;
 use crate::cmd::commands::StreamPush;
-use crate::cmd::Stream;
+use crate::cmd::CmdBuffer;
 use vk;
 
 /// Binds vertex buffers and issues an indirect draw call
@@ -54,7 +54,7 @@ impl DrawIndirect {
 }
 
 impl StreamPush for DrawIndirect {
-  fn enqueue(&self, cs: Stream) -> Stream {
+  fn enqueue(&self, cs: CmdBuffer) -> CmdBuffer {
     if let Some(indices) = self.index_buffer {
       vk::CmdBindIndexBuffer(cs.buffer, indices, self.index_offset, self.index_type);
       vk::CmdDrawIndexedIndirect(cs.buffer, self.buffer, self.offset, self.count, self.stride);

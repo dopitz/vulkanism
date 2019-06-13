@@ -1,8 +1,7 @@
 use super::DrawIndexed;
 use super::DrawIndirect;
 use super::DrawVertices;
-use crate::cmd::commands::StreamPush;
-use crate::cmd::Stream;
+use crate::cmd::stream::*;
 use vk;
 
 pub trait BindVertexBuffersTrait: StreamPush + Default {}
@@ -32,7 +31,7 @@ impl BindVertexBuffers {
 }
 
 impl StreamPush for BindVertexBuffers {
-  fn enqueue(&self, cs: Stream) -> Stream {
+  fn enqueue(&self, cs: CmdBuffer) -> CmdBuffer {
     if self.count > 0 {
       vk::CmdBindVertexBuffers(cs.buffer, 0, self.count, self.buffers, self.offsets);
     }
@@ -68,7 +67,7 @@ impl BindVertexBuffersManaged {
 }
 
 impl StreamPush for BindVertexBuffersManaged {
-  fn enqueue(&self, cs: Stream) -> Stream {
+  fn enqueue(&self, cs: CmdBuffer) -> CmdBuffer {
     cs.push(&BindVertexBuffers::new(
       self.buffers.len() as u32,
       self.buffers.as_ptr(),

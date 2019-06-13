@@ -1,6 +1,6 @@
 use super::bindvertexbuffer::BindVertexBuffersTrait;
 use crate::cmd::commands::StreamPush;
-use crate::cmd::Stream;
+use crate::cmd::CmdBuffer;
 use vk;
 
 /// Bind vertex buffers and issues an indexed draw call
@@ -87,7 +87,7 @@ impl DrawIndexed {
 }
 
 impl StreamPush for DrawIndexed {
-  fn enqueue(&self, cs: Stream) -> Stream {
+  fn enqueue(&self, cs: CmdBuffer) -> CmdBuffer {
     vk::CmdBindIndexBuffer(cs.buffer, self.index_buffer, self.index_buffer_offset, self.index_type);
     vk::CmdDrawIndexed(
       cs.buffer,

@@ -1,5 +1,5 @@
-use super::Stream;
 use super::StreamPush;
+use crate::cmd::CmdBuffer;
 use vk;
 
 /// Begins a render pass
@@ -54,7 +54,7 @@ impl RenderpassBegin {
 }
 
 impl StreamPush for RenderpassBegin {
-  fn enqueue(&self, cs: Stream) -> Stream {
+  fn enqueue(&self, cs: CmdBuffer) -> CmdBuffer {
     vk::CmdBeginRenderPass(cs.buffer, &self.info, self.contents);
     cs
   }
@@ -64,10 +64,8 @@ impl StreamPush for RenderpassBegin {
 pub struct RenderpassEnd {}
 
 impl StreamPush for RenderpassEnd {
-  fn enqueue(&self, cs: Stream) -> Stream {
+  fn enqueue(&self, cs: CmdBuffer) -> CmdBuffer {
     vk::CmdEndRenderPass(cs.buffer);
     cs
   }
 }
-
-

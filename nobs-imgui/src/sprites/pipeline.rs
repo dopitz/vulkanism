@@ -47,8 +47,8 @@ use vk;
 use vk::builder::Buildable;
 use vk::cmd::commands::BindDset;
 use vk::cmd::commands::BindPipeline;
-use vk::cmd::commands::StreamPush;
-use vk::cmd::Stream;
+use vk::cmd::stream::*;
+use vk::cmd::CmdBuffer;
 use vk::pipes::CachedPipeline;
 use vk::pipes::DescriptorPool;
 
@@ -59,7 +59,7 @@ pub struct Pipeline {
 }
 
 impl StreamPush for Pipeline {
-  fn enqueue(&self, cs: Stream) -> Stream {
+  fn enqueue(&self, cs: CmdBuffer) -> CmdBuffer {
     cs.push(&self.bind_pipe).push(&self.bind_ds_viewport).push(&self.bind_ds_instance)
   }
 }

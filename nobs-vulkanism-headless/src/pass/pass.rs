@@ -1,5 +1,5 @@
-use crate::cmd::commands::StreamPush;
-use crate::cmd::Stream;
+use crate::cmd::stream::*;
+use crate::cmd::CmdBuffer;
 use vk;
 
 pub trait PassId: std::hash::Hash + PartialEq + Eq + Clone + Copy {

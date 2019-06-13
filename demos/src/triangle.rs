@@ -1,6 +1,7 @@
 extern crate nobs_vulkanism as vk;
 
 use vk::builder::Buildable;
+use vk::cmd::stream::*;
 use vk::winit;
 
 mod tri {
@@ -102,7 +103,7 @@ pub fn main() {
   let (_inst, pdevice, device, mut events_loop, window) = setup_vulkan_window();
 
   let mut alloc = vk::mem::Allocator::new(pdevice.handle, device.handle);
-  let cmds = vk::cmd::Pool::new(device.handle, device.queues[0].family).unwrap();
+  let cmds = vk::cmd::CmdPool::new(device.handle, device.queues[0].family).unwrap();
 
   let (mut sc, rp, fbs) = setup_rendertargets(&pdevice, &device, &window, &mut alloc);
 
@@ -124,7 +125,7 @@ pub fn main() {
 
   use vk::cmd::commands::*;
   let draw = Draw::new(Default::default(), DrawVertices::with_vertices(3).into());
-  let mut frame = vk::cmd::Frame::new(device.handle, fbs.len()).unwrap();
+  let mut frame = vk::cmd::RRBatch::new(device.handle, fbs.len()).unwrap();
 
   loop {
     events_loop.poll_events(|event| match event {

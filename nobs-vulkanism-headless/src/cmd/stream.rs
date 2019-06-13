@@ -1,136 +1,40 @@
-use std::sync::Arc;
-use std::sync::Mutex;
-use std::sync::Weak;
+pub use super::CmdBuffer;
 
-use vk;
-
-use crate::cmd::commands::StreamPush;
-use crate::cmd::commands::StreamPushMut;
-use crate::cmd::Error;
-
-pub struct StreamCache {
-  device: vk::Device,
-  pool: vk::CommandPool,
-  streams: Vec<Stream>,
-}
-
-impl Drop for StreamCache {
-  fn drop(&mut self) {
-    vk::DestroyCommandPool(self.device, self.pool, std::ptr::null());
-  }
-}
-
-impl StreamCache {
-  pub fn new(device: vk::Device, pool: vk::CommandPool) -> Self {
-    Self {
-      device,
-      pool,
-      streams: Default::default(),
-    }
-  }
-}
-
-/// Wrapps a vulkan command buffer
+/// Allows to use [push](../stream/struct.Stream.html#method.push) on a [Stream](../stream/struct.Stream.html)
 ///
-/// The stream is basically a builder pattern for all vulkan functions related to `vk::Cmd*`.
-/// For every command in [commands](commands/index.html) we can use [push](struct.Stream.html#method.push) to enqueue it to the command stream.
-///
-/// When we are done building the command stream, we push it into a batch ([BatchSubmit](struct.BatchSubmit.html), [AutoBatch](struct.AutoBatch.html), [Frame](struct.Frame.html)).
-/// The batch can then submit all streams with one queue submit call. This is useful, since queue submit calls are very overhead heavy.
-///
-/// Letting the [Stream](struct.Stream.html) go out of scope will call [drop](struct.Stream.html#method.drop). This will redeem the Stream to the pool without subitting it.
-pub struct Stream {
-  pub buffer: vk::CommandBuffer,
-  streams: Weak<Mutex<StreamCache>>,
+/// This trait is implemented for several vulkan commands in the [commands module](../commands/index.html).
+/// Structs may define more complex rendering logic in this traits implementation.
+pub trait StreamPush {
+  fn enqueue(&self, cs: CmdBuffer) -> CmdBuffer;
 }
 
-impl Drop for Stream {
-  /// Returns the stream to the pool.
-  ///
-  /// This breaks up configuring the stream and returns it to the pool.
-  /// No vulkan commands are submitted, the command buffer can be reused again.
-  fn drop(&mut self) {
-    if let Some(streams) = self.streams.upgrade() {
-      streams.lock().unwrap().streams.push(Self {
-        buffer: self.buffer,
-        streams: self.streams.clone(),
-      });
-    }
-  }
+/// Allows to use [push_mut](../stream/struct.Stream.html#method.push) on a [StreamMut](../stream/struct.StreamMut.html)
+///
+/// Same as [StreamPush](trait.StreamPush.html) but lets one modify the command while it is pushed.
+pub trait StreamPushMut {
+  fn enqueue_mut(&mut self, cs: CmdBuffer) -> CmdBuffer;
 }
 
-impl Stream {
-  /// Is only called by [Pool](struct.Pool.html)
-  pub fn new(streams: Arc<Mutex<StreamCache>>) -> Result<Self, Error> {
-    let (device, pool, top) = {
-      let mut streams = streams.lock().unwrap();
-      (streams.device, streams.pool, streams.streams.pop())
-    };
-
-    Ok(match top {
-      Some(s) => s,
-      None => Self {
-        buffer: {
-          let info = vk::CommandBufferAllocateInfo {
-            sType: vk::STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-            pNext: std::ptr::null(),
-            level: vk::COMMAND_BUFFER_LEVEL_PRIMARY,
-            commandPool: pool,
-            commandBufferCount: 1,
-          };
-          let mut h = vk::NULL_HANDLE;
-          vk_check!(vk::AllocateCommandBuffers(device, &info, &mut h)).map_err(|e| Error::CreateStreamFailed(e))?;
-          h
-        },
-        streams: Arc::downgrade(&streams),
-      },
-    })
-  }
-
-  /// Is implicitly called in [Pool::begin_stream](struct.Pool.html#method.begin_stream)
-  pub fn begin(self) -> Result<Self, Error> {
-    vk::ResetCommandBuffer(self.buffer, 0);
-
-    let info = vk::CommandBufferBeginInfo {
-      sType: vk::STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-      pNext: std::ptr::null(),
-      flags: vk::COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
-      pInheritanceInfo: std::ptr::null(),
-    };
-    vk_check!(vk::BeginCommandBuffer(self.buffer, &info)).map_err(|e| Error::BeginCommandBufferFailed(e))?;
-
-    Ok(self)
-  }
-
+/// Command Stream wrapper
+///
+/// Needs [push](trait.Stream.html#method.push) (already implemented by [CmdBuffer](../struct.CmdBuffer.html)).
+/// Pushing a command into a stream will call [StreamPush::enqueue](trait.StreamPush.html#method.enqueue).
+///
+/// Also defines methods for pushing Options and lambdas
+pub trait Stream: Sized {
   /// Pushes a command into a stream.
   ///
   /// Any struct implementing the [StreamPush](commands/trait.StreamPush.html) trait can be pushed into the stream.
   /// This can be used to build more complex commands from many primitive ones and be able to push them with one call.
-  pub fn push<T: StreamPush>(self, o: &T) -> Self {
-    o.enqueue(self)
-  }
-  /// Pushes a command into a stream.
-  ///
-  /// See [push](struct.Stream.html#method.push). Calls to a mutable version, so that the pushed command can be modified.
-  pub fn push_mut<T: StreamPushMut>(self, o: &mut T) -> Self {
-    o.enqueue_mut(self)
-  }
+  fn push<T: StreamPush>(self, o: &T) -> Self;
+
   /// Pushes a command contained in the option into a stream. NOP if the Option is None.
   ///
   /// Any struct implementing the [StreamPush](commands/trait.StreamPush.html) trait can be pushed into the stream.
   /// This can be used to build more complex commands from many primitive ones and be able to push them with one call.
-  pub fn push_if<T: StreamPush>(self, o: &Option<T>) -> Self {
+  fn push_if<T: StreamPush>(self, o: &Option<T>) -> Self {
     match o {
-      Some(ref c) => c.enqueue(self),
-      None => self,
-    }
-  }
-  /// Pushes a command into a stream.
-  ///
-  /// See [push_if](struct.Stream.html#method.push_if). Calls to a mutable version, so that the pushed command can be modified.
-  pub fn push_if_mut<T: StreamPushMut>(self, o: &mut Option<T>) -> Self {
-    match o {
-      Some(ref mut c) => c.enqueue_mut(self),
+      Some(ref c) => self.push(c),
       None => self,
     }
   }
@@ -138,13 +42,34 @@ impl Stream {
   /// Pushes a lambda into a stream.
   ///
   /// Can be used to push complex command logic into stream.
-  pub fn push_fnmut<F: FnMut(Self) -> Self>(self, mut f: F) -> Self {
+  fn push_fn<F: Fn(Self) -> Self>(self, f: F) -> Self {
     f(self)
   }
+}
+
+/// Command Stream wrapper
+///
+/// Same as [Stream](trait.Stream.html) but for mutable commands.
+pub trait StreamMut: Stream + Sized {
+  /// Pushes a command into a stream.
+  ///
+  /// See [push](struct.Stream.html#method.push). Calls to a mutable version, so that the pushed command can be modified.
+  fn push_mut<T: StreamPushMut>(self, o: &mut T) -> Self;
+
+  /// Pushes a command into a stream.
+  ///
+  /// See [push_if](struct.Stream.html#method.push_if). Calls to a mutable version, so that the pushed command can be modified.
+  fn push_if_mut<T: StreamPushMut>(self, o: &mut Option<T>) -> Self {
+    match o {
+      Some(ref mut c) => self.push_mut(c),
+      None => self,
+    }
+  }
+
   /// Pushes a lambda into a stream.
   ///
   /// Can be used to push complex command logic into stream.
-  pub fn push_fn<F: Fn(Self) -> Self>(self, f: F) -> Self {
+  fn push_fnmut<F: FnMut(Self) -> Self>(self, mut f: F) -> Self {
     f(self)
   }
 }

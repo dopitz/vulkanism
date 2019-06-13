@@ -1,11 +1,10 @@
+use super::CmdBuffer;
+use super::Error;
 use vk;
-
-use crate::cmd::Error;
-use crate::cmd::Stream;
 
 struct Batch {
   device: vk::Device,
-  streams: Vec<Stream>,
+  streams: Vec<CmdBuffer>,
   buffers: Vec<vk::CommandBuffer>,
 
   wait_signals: Vec<vk::Semaphore>,
@@ -14,10 +13,10 @@ struct Batch {
   fence: vk::Fence,
 }
 
-/// Collection of streams that are submitted to the same queue.
+/// Collection of command buffers that are submitted to the same queue.
 ///
-/// Queue submit calles should subit as many command buffers as possible batched together, because it is a very overhead heavy operation.
-/// BatchSubmit collects [Streams](struct.Stream.html) that can be batched together and [submits](struct.BatchSubmit.html#method.submit) them in a single call.
+/// Submit vulkan calles should submit as many command buffers as possible batched together, because it is a very overhead heavy operation.
+/// BatchSubmit collects [CmdBuffers](struct.CmdBuffer.html) that can be batched together and [submits](struct.BatchSubmit.html#method.submit) them in a single call.
 ///
 /// Submitting the batch will yield a [BatchWait](struct.BatchWait.html) to synchronize with the CPU.
 /// Syncing with the CPU will yield a BatchSubmit again. This is implemented in a way that the internal vectors holding the streams does not need to be freed/allocated again.
@@ -27,9 +26,9 @@ pub struct BatchSubmit {
   batch: Batch,
 }
 
-/// Collection of streams that are beeing executed.
+/// Collection of command buffers that are beeing executed.
 ///
-/// After [Streams](struct.Stream.html) have been submitted to a queue with [BatchSubmit](struct.BatchSubmit.html) they are executed on the device.
+/// After [CmdBuffers](struct.CmdBuffer.html) have been submitted to a queue with [BatchSubmit](struct.BatchSubmit.html) they are executed on the device.
 /// The single purpose of BatchWait is to [sync](struct.BatchWait.html#method.sync) the execution with the CPU.
 pub struct BatchWait {
   batch: Batch,
@@ -87,7 +86,7 @@ impl Batch {
     self.wait_stages.push(stage);
   }
 
-  pub fn push(&mut self, stream: Stream) {
+  pub fn push(&mut self, stream: CmdBuffer) {
     vk::EndCommandBuffer(stream.buffer);
     self.buffers.push(stream.buffer);
     self.streams.push(stream);
@@ -142,12 +141,12 @@ impl BatchSubmit {
 
   /// Creates a new batch
   ///
-  /// Initalizes vectors to hold the streams with `capacity`.
-  /// This might be useful if we know the maximum number of stream that are submited to the batch up front, because we do not need to resize and reallocate vectors as much.
+  /// Initalizes memory, so that we can call [push](struct.BatchSubmit.html$method.push) `N = capacity` times.
+  /// This might be useful if we know the maximum number of command buffers that are submited to the batch up front, because we reduce the number of reallocations.
   ///
   /// For the same reason we should e.g. not create a new batch every frame but use an
-  /// [AutoBatch](struct.AutoBatch.html) or [Frame](struct.Frame.html) that lives outside of the render loop.
-  /// Otherwise we would free the memory for the cached streams after every loop and reallocate them in the next frame again.
+  /// [AutoBatch](struct.AutoBatch.html) or [RRBatch](struct.RRBatch.html) that lives outside of the render loop.
+  /// Otherwise we would free the memory for the cached command buffers after every loop and reallocate them in the next frame again.
   pub fn with_capacity(device: vk::Device, capacity: usize) -> Result<Self, Error> {
     Ok(Self {
       batch: Batch::with_capacity(device, capacity)?,
@@ -156,17 +155,17 @@ impl BatchSubmit {
 
   /// Waits for `sig` in `stage`
   ///
-  /// Adds the semaphore to the waiting signals. Can be called multiple times, the execution will then wait on all submitted semaphores.
+  /// Adds the semaphore to the waiting signals. Can be called multiple times, the execution will then wait on all submitted semaphores simultaneously.
   pub fn wait_for(mut self, sig: vk::Semaphore, stage: vk::ShaderStageFlags) -> Self {
     self.batch.wait_for(sig, stage);
     self
   }
 
-  /// Adds a stream to the batch
+  /// Adds a command buffer to the batch
   ///
-  /// After this, the stream can not be modified any more.
-  /// Pushing a stream into the batch will automatically call `vk::EndCommandBuffer` on the streams command buffer.
-  pub fn push(mut self, stream: Stream) -> Self {
+  /// Pushing a command buffer into the batch will automatically call `vk::EndCommandBuffer`.
+  /// This will take ownership of the command buffer. Ownership is returnd to the associated command pool after successful submission.
+  pub fn push(mut self, stream: CmdBuffer) -> Self {
     self.batch.push(stream);
     self
   }
@@ -176,7 +175,7 @@ impl BatchSubmit {
   /// ## Returns
   /// A tuple with
   ///  - the [BatchWait](struct.BatchWait.html) used for syncronisation
-  ///  - the semaphore that indicates when the batch is done with its execution
+  ///  - the semaphore that indicates when the batch is done with its execution. This may be usefull if a second batch submit needs to wait for the completion of a first one.
   pub fn submit(mut self, queue: vk::Queue) -> (BatchWait, vk::Semaphore) {
     let sig = self.batch.submit(queue);
     (BatchWait { batch: self.batch }, sig)
@@ -187,7 +186,7 @@ impl BatchSubmit {
     self.submit(queue).0.sync()
   }
 
-  /// Returns all stream to the pool with [waive](struct.Stream.html#method.waive) and clears all wait signals
+  /// Returns all stream to the pool with [waive](struct.CmdBuffer.html#method.waive) and clears all wait signals
   ///
   /// If no buffers have been [pushed](struct.BatchSubmit.html#method.push) this as o NOP. Otherwise no work is submitted for any of the streams in the batch.
   pub fn clear(mut self) -> Self {
@@ -208,7 +207,7 @@ impl BatchWait {
 /// Convenietly ping pong between [BatchSubmit](struct.BatchSubmit.html) and [BatchWait](struct.BatchWait.html).
 ///
 /// Implements the same functions as BatchSubmit and BatchWait, without the need for managing both types.
-/// The main difference is, that the AutoBatch is either in a submitting state or a waiting state, which is otherwise handles by the two different types.
+/// The main difference is, that the AutoBatch is either in a submitting state or a waiting state, which is otherwise handled by the two different types.
 /// Doing this with two types has the benefit, that the compiler prevents us from colling a function that is not defined for the current state.
 /// However it can be tedious to manage the two types, hence the AutoBatch.
 ///
@@ -216,13 +215,13 @@ impl BatchWait {
 /// which is usually not defined, because the batch was already in a waiting state. In general all functions behave exactly as in
 /// [BatchSubmit](struct.BatchSubmit.html) and [BatchWait](struct.BatchWait.html) as long as they are called in their respective state, otherwise they become NOPs.
 ///
-/// If the batch [is submitting](struct.AutoBatch.html#method.is_submitting), we can call
+/// If the batch [is submitting](struct.AutoBatch.html#method.is_submitting), we may call
 ///  - [wait_for](struct.AutoBatch.html#method.wait_for)
 ///  - [push](struct.AutoBatch.html#method.push)
 ///  - [submit](struct.AutoBatch.html#method.submit)
 ///  - [submit_immediate](struct.AutoBatch.html#method.submit_immediate)
 ///
-/// and all other methods will become NOPs. If the batch [is waiting](struct.AutoBatch.html#method.is_waiting), we can call
+/// and all other methods will become NOPs. If the batch [is waiting](struct.AutoBatch.html#method.is_waiting), we may call
 ///  - [sync](struct.AutoBatch.html#method.wait_for)
 ///
 /// and all other methods will become NOPs.
@@ -273,7 +272,7 @@ impl AutoBatch {
   /// See (BatchSubmit::push)[struct.BatchSubmit.html#method.push].
   ///
   /// If this batch is in waiting state this function will become a NOP.
-  pub fn push(&mut self, stream: Stream) -> &mut Self {
+  pub fn push(&mut self, stream: CmdBuffer) -> &mut Self {
     self.submit = self.submit.take().and_then(|b| Some(b.push(stream)));
     self
   }
@@ -302,7 +301,7 @@ impl AutoBatch {
     self.sync()
   }
 
-  /// Returns all stream to the pool with [waive](struct.Stream.html#method.waive) and clears all wait signals
+  /// Returns all stream to the pool with [waive](struct.CmdBuffer.html#method.waive) and clears all wait signals
   ///
   /// See [BatchWait::sync](struct.BatchWait.html#method.sync).
   ///
@@ -321,16 +320,16 @@ impl AutoBatch {
 /// When rendering we can build a batch in parallel while still executing the batch from one (or more) frames before.
 /// Here we schedule batches in round robin with N batches. This means we can build/execute up to N batches in parallel.
 ///
-/// We advance the frame with [next](struct.Frame.html#method.next), which syncs with the batch that has been submitted the longest time ago.
-pub struct Frame {
+/// We advance the frame with [next](struct.RRBatch.html#method.next), which syncs with the batch that has been submitted the longest time ago.
+pub struct RRBatch {
   batches: Vec<AutoBatch>,
   index: usize,
 }
 
-impl Frame {
+impl RRBatch {
   /// Creates batches for `num_frames`
   ///
-  /// Batches are created [with capacity = 1](struct.Frame.html#method.with_capacity)
+  /// Batches are created [with capacity = 1](struct.RRBatch.html#method.with_capacity)
   pub fn new(device: vk::Device, num_frames: usize) -> Result<Self, Error> {
     Self::with_capacity(device, num_frames, 1)
   }
@@ -373,7 +372,7 @@ impl Frame {
   /// See (BatchSubmit::push)[struct.BatchSubmit.html#method.push].
   ///
   /// If this batch is in waiting state this function will become a NOP.
-  pub fn push(&mut self, stream: Stream) -> &mut Self {
+  pub fn push(&mut self, stream: CmdBuffer) -> &mut Self {
     self.batches[self.index].push(stream);
     self
   }

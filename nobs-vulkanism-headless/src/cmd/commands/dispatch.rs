@@ -1,4 +1,4 @@
-use super::Stream;
+use crate::cmd::CmdBuffer;
 use super::StreamPush;
 use vk;
 
@@ -37,7 +37,7 @@ impl Dispatch {
 }
 
 impl StreamPush for Dispatch {
-  fn enqueue(&self, cs: Stream) -> Stream {
+  fn enqueue(&self, cs: CmdBuffer) -> CmdBuffer {
     match self {
       Dispatch::Base(d) => vk::CmdDispatch(cs.buffer, d.x, d.y, d.z),
       Dispatch::Indirect(d) => vk::CmdDispatchIndirect(cs.buffer, d.buffer, d.offset),
