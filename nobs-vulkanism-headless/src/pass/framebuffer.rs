@@ -251,8 +251,8 @@ impl<'a, 'b> RenderpassFramebufferBuilder<'a, 'b> {
         *i,
         *v,
         match is_depth(f) {
-          true => vk::ClearValue::build().depth(1.0).clear,
-          false => vk::ClearValue::build().coloru32([0, 0, 0, 0]).clear,
+          true => vk::ClearValue::build().depth(1.0).into(),
+          false => vk::ClearValue::build().coloru32([0, 0, 0, 0]).into(),
         },
       );
     }

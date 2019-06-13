@@ -71,8 +71,8 @@ pub fn main() {
     .unwrap();
 
   make_sequence::dset::write(device.handle, ds)
-    .Ub(vk::DescriptorBufferInfo::build().buffer(buf_ub).info)
-    .b_out(vk::DescriptorBufferInfo::build().buffer(buf_out).info)
+    .Ub(vk::DescriptorBufferInfo::build().buffer(buf_ub).into())
+    .b_out(vk::DescriptorBufferInfo::build().buffer(buf_out).into())
     //.Ub(|b| b.buffer(buf_ub))
     //.b_out(|b| b.buffer(buf_out))
     .update();

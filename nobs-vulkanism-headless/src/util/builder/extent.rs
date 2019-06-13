@@ -1,10 +1,10 @@
 use vk;
 
 pub struct Extent2DBuilder {
-  pub extent: vk::Extent2D,
+  extent: vk::Extent2D,
 }
 
-vk_builder!(vk::Extent2D, Extent2DBuilder, extent);
+vk_builder_into!(vk::Extent2D, Extent2DBuilder, extent);
 
 impl Default for Extent2DBuilder {
   fn default() -> Self {
@@ -33,10 +33,10 @@ impl Extent2DBuilder {
 }
 
 pub struct Extent3DBuilder {
-  pub extent: vk::Extent3D,
+  extent: vk::Extent3D,
 }
 
-vk_builder!(vk::Extent3D, Extent3DBuilder, extent);
+vk_builder_into!(vk::Extent3D, Extent3DBuilder, extent);
 
 impl Default for Extent3DBuilder {
   fn default() -> Self {

@@ -223,8 +223,8 @@ pub fn main() {
       &stage.copy_into_image(
         texture,
         vk::BufferImageCopy::build()
-          .image_extent(vk::Extent3D::build().set(256, 256, 1).extent)
-          .subresource(vk::ImageSubresourceLayers::build().aspect(vk::IMAGE_ASPECT_COLOR_BIT).layers),
+          .image_extent(vk::Extent3D::build().set(256, 256, 1).into())
+          .subresource(vk::ImageSubresourceLayers::build().aspect(vk::IMAGE_ASPECT_COLOR_BIT).into()),
       ),
     );
 
@@ -237,11 +237,11 @@ pub fn main() {
   let ds = descriptors.new_dset(&pipe.dsets[0]).unwrap();
 
   tex::dset::write(device.handle, ds)
-    .ub_transform(vk::DescriptorBufferInfo::build().buffer(ub).info)
+    .ub_transform(vk::DescriptorBufferInfo::build().buffer(ub).into())
     .tex_sampler(
       vk::DescriptorImageInfo::build()
         .set(vk::IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, texview, sampler)
-        .info,
+        .into(),
     )
     .update();
 

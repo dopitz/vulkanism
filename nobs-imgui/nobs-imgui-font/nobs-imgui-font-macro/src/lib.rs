@@ -283,8 +283,8 @@ impl FontBuilder {
           &stage.copy_into_image(
             tex,
             vk::BufferImageCopy::build()
-              .image_extent(vk::Extent3D::build().set({dimx}, {dimy}, 1).extent)
-              .subresource(vk::ImageSubresourceLayers::build().aspect(vk::IMAGE_ASPECT_COLOR_BIT).layers),
+              .image_extent(vk::Extent3D::build().set({dimx}, {dimy}, 1).into())
+              .subresource(vk::ImageSubresourceLayers::build().aspect(vk::IMAGE_ASPECT_COLOR_BIT).into()),
           ),
         );
 
@@ -298,9 +298,9 @@ impl FontBuilder {
               &vk::cmd::commands::Blit::new()
                 .src(tex)
                 .src_offset_end(w, h, 1)
-                .src_subresource(vk::ImageSubresourceLayers::build().aspect(vk::IMAGE_ASPECT_COLOR_BIT).mip_level(l-1).layers)
+                .src_subresource(vk::ImageSubresourceLayers::build().aspect(vk::IMAGE_ASPECT_COLOR_BIT).mip_level(l-1).into())
                 .dst(tex)
-                .dst_subresource(vk::ImageSubresourceLayers::build().aspect(vk::IMAGE_ASPECT_COLOR_BIT).mip_level(l).layers)
+                .dst_subresource(vk::ImageSubresourceLayers::build().aspect(vk::IMAGE_ASPECT_COLOR_BIT).mip_level(l).into())
                 .dst_offset_end(w / 2, h / 2, 1)
               );
               w /= 2;

@@ -1,10 +1,10 @@
 use vk;
 
 pub struct ImageSubresourceBuilder {
-  pub subresource: vk::ImageSubresource,
+  subresource: vk::ImageSubresource,
 }
 
-vk_builder!(vk::ImageSubresource, ImageSubresourceBuilder, subresource);
+vk_builder_into!(vk::ImageSubresource, ImageSubresourceBuilder, subresource);
 
 impl Default for ImageSubresourceBuilder {
   fn default() -> Self {
@@ -36,10 +36,10 @@ impl ImageSubresourceBuilder {
 }
 
 pub struct ImageSubresourceLayersBuilder {
-  pub layers: vk::ImageSubresourceLayers,
+  layers: vk::ImageSubresourceLayers,
 }
 
-vk_builder!(vk::ImageSubresourceLayers, ImageSubresourceLayersBuilder, layers);
+vk_builder_into!(vk::ImageSubresourceLayers, ImageSubresourceLayersBuilder, layers);
 
 impl Default for ImageSubresourceLayersBuilder {
   fn default() -> Self {

@@ -1,10 +1,10 @@
 use vk;
 
 pub struct ClearValueBuilder {
-  pub clear: vk::ClearValue,
+  clear: vk::ClearValue,
 }
 
-vk_builder!(vk::ClearValue, ClearValueBuilder, clear);
+vk_builder_into!(vk::ClearValue, ClearValueBuilder, clear);
 
 impl Default for ClearValueBuilder {
   fn default() -> Self {

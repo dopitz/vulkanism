@@ -25,5 +25,27 @@ macro_rules! vk_builder {
         self
       }
     }
+
+    impl AsRef<$target> for $builder {
+      fn as_ref(&self) -> &$target {
+        &self.$member
+      }
+    }
+  };
+}
+
+#[macro_export]
+macro_rules! vk_builder_into {
+  ($target:ty, $builder:ident) => {
+    $crate::vk_builder_into!($target, $builder, info);
+  };
+  ($target:ty, $builder:ident, $member:ident) => {
+    $crate::vk_builder!($target, $builder, $member);
+
+    impl Into<$target> for $builder {
+      fn into(self) -> $target {
+        self.$member
+      }
+    }
   };
 }

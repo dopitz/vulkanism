@@ -7,7 +7,7 @@ use vk;
 ///  - offset: 0
 ///  - range: vk::WHOLE_SIZE
 pub struct DescriptorBufferInfoBuilder {
-  pub info: vk::DescriptorBufferInfo,
+  info: vk::DescriptorBufferInfo,
 }
 
 impl DescriptorBufferInfoBuilder {
@@ -53,7 +53,7 @@ impl Default for DescriptorBufferInfoBuilder {
   }
 }
 
-vk_builder!(vk::DescriptorBufferInfo, DescriptorBufferInfoBuilder);
+vk_builder_into!(vk::DescriptorBufferInfo, DescriptorBufferInfoBuilder);
 
 /// Builder for a descriptor image info to write an image binding
 ///
@@ -62,7 +62,7 @@ vk_builder!(vk::DescriptorBufferInfo, DescriptorBufferInfoBuilder);
 ///  - sampler: `vk::NULL_HANDLE`
 ///  - layout: `vk::IMAGE_LAYOUT_UNDEFINED`
 pub struct DescriptorImageInfoBuilder {
-  pub info: vk::DescriptorImageInfo,
+  info: vk::DescriptorImageInfo,
 }
 
 impl DescriptorImageInfoBuilder {
@@ -117,7 +117,7 @@ impl Default for DescriptorImageInfoBuilder {
   }
 }
 
-vk_builder!(vk::DescriptorImageInfo, DescriptorImageInfoBuilder);
+vk_builder_into!(vk::DescriptorImageInfo, DescriptorImageInfoBuilder);
 
 enum WriteOffset {
   Buffer(isize),

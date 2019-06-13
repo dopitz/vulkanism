@@ -21,12 +21,16 @@ impl Rect {
   pub fn from_rect(posx: i32, posy: i32, w: u32, h: u32) -> Self {
     Self::new(vkm::Vec2::new(posx, posy), vkm::Vec2::new(w, h))
   }
+}
 
-  pub fn from_vkrect(rect: vk::Rect2D) -> Self {
-    Self::from_rect(rect.offset.x, rect.offset.y, rect.extent.width, rect.extent.height)
+impl From<vk::Rect2D> for Rect {
+  fn from(r: vk::Rect2D) -> Self {
+    Self::from_rect(r.offset.x, r.offset.y, r.extent.width, r.extent.height)
   }
+}
 
-  pub fn to_vkrect(&self) -> vk::Rect2D {
+impl Into<vk::Rect2D> for Rect {
+  fn into(self) -> vk::Rect2D {
     vk::Rect2D {
       offset: vk::Offset2D {
         x: self.position.x,
@@ -35,7 +39,7 @@ impl Rect {
       extent: vk::Extent2D {
         width: self.size.x,
         height: self.size.y,
-      }
+      },
     }
   }
 }

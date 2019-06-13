@@ -1,3 +1,5 @@
+use super::window::ColumnLayout;
+use super::window::Layout;
 use crate::pipeid::*;
 use crate::window;
 use font::*;
@@ -147,9 +149,12 @@ impl ImGui {
     data[1] = size.height as u32;
   }
 
-  pub fn begin_window(&self) -> window::Window {
+  pub fn begin_window(&self) -> window::Window<ColumnLayout> {
+    self.begin_layout(ColumnLayout::default())
+  }
+  pub fn begin_layout<T: Layout>(&self, layout: T) -> window::Window<T> {
     let extent = self.gui.fb.lock().unwrap().extent;
-    window::Window::new(self.clone()).size(extent.width, extent.height)
+    window::Window::new(self.clone(), layout).size(extent.width, extent.height)
   }
   pub fn begin(&self, cs: CmdBuffer) -> CmdBuffer {
     let fb = self.gui.fb.lock().unwrap();

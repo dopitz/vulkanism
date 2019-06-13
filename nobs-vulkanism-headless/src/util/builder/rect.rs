@@ -1,10 +1,10 @@
 use vk;
 
 pub struct Rect2DBuilder {
-  pub rect: vk::Rect2D,
+  rect: vk::Rect2D,
 }
 
-vk_builder!(vk::Rect2D, Rect2DBuilder, rect);
+vk_builder_into!(vk::Rect2D, Rect2DBuilder, rect);
 
 impl Default for Rect2DBuilder {
   fn default() -> Self {

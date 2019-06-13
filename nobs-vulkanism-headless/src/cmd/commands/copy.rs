@@ -120,9 +120,9 @@ impl Default for BufferImageCopyBuilder {
         bufferOffset: 0,
         bufferRowLength: 0,
         bufferImageHeight: 0,
-        imageSubresource: vk::ImageSubresourceLayers::build().layers,
-        imageOffset: vk::Offset3D::build().offset,
-        imageExtent: vk::Extent3D::build().extent,
+        imageSubresource: vk::ImageSubresourceLayers::build().into(),
+        imageOffset: vk::Offset3D::build().into(),
+        imageExtent: vk::Extent3D::build().into(),
       },
     }
   }
@@ -212,13 +212,13 @@ impl Default for ImageCopyBuilder {
   fn default() -> Self {
     Self {
       info: vk::ImageCopy {
-        srcSubresource: vk::ImageSubresourceLayers::build().layers,
-        srcOffset: vk::Offset3D::build().offset,
+        srcSubresource: vk::ImageSubresourceLayers::build().into(),
+        srcOffset: vk::Offset3D::build().into(),
 
-        dstSubresource: vk::ImageSubresourceLayers::build().layers,
-        dstOffset: vk::Offset3D::build().offset,
+        dstSubresource: vk::ImageSubresourceLayers::build().into(),
+        dstOffset: vk::Offset3D::build().into(),
 
-        extent: vk::Extent3D::build().extent,
+        extent: vk::Extent3D::build().into(),
       },
     }
   }

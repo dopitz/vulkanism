@@ -134,7 +134,7 @@ impl Pipeline {
     let ds_viewport = shared.new_dset(&pipe.dsets[0]).unwrap();
 
     pipe::DsViewport::write(pipe.device, ds_viewport)
-      .ub_viewport(vk::DescriptorBufferInfo::build().buffer(ub_viewport).info)
+      .ub_viewport(vk::DescriptorBufferInfo::build().buffer(ub_viewport).into())
       .update();
 
     CachedPipeline {
@@ -167,11 +167,11 @@ impl Pipeline {
 
   pub fn update_dsets(&self, device: vk::Device, ub_instance: vk::Buffer, tex: vk::ImageView, sampler: vk::Sampler) {
     pipe::DsText::write(device, self.bind_ds_instance.dset)
-      .ub(vk::DescriptorBufferInfo::build().buffer(ub_instance).info)
+      .ub(vk::DescriptorBufferInfo::build().buffer(ub_instance).into())
       .tex_sampler(
         vk::DescriptorImageInfo::build()
           .set(vk::IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, tex, sampler)
-          .info,
+          .into(),
       )
       .update();
   }

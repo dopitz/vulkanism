@@ -1,10 +1,10 @@
 use vk;
 
 pub struct Offset2DBuilder {
-  pub offset: vk::Offset2D,
+  offset: vk::Offset2D,
 }
 
-vk_builder!(vk::Offset2D, Offset2DBuilder, offset);
+vk_builder_into!(vk::Offset2D, Offset2DBuilder, offset);
 
 impl Default for Offset2DBuilder {
   fn default() -> Self {
@@ -33,10 +33,10 @@ impl Offset2DBuilder {
 }
 
 pub struct Offset3DBuilder {
-  pub offset: vk::Offset3D,
+  offset: vk::Offset3D,
 }
 
-vk_builder!(vk::Offset3D, Offset3DBuilder, offset);
+vk_builder_into!(vk::Offset3D, Offset3DBuilder, offset);
 
 impl Default for Offset3DBuilder {
   fn default() -> Self {
