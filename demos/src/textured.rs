@@ -85,7 +85,7 @@ pub fn setup_rendertargets(
 ) -> (vk::wnd::Swapchain, vk::pass::Renderpass, Vec<vk::pass::Framebuffer>) {
   let sc = vk::wnd::Swapchain::build(pdevice.handle, device.handle, window.surface).create();
 
-  let depth_format = vk::pass::select_depth_format(pdevice.handle, vk::pass::DEPTH_FORMATS).unwrap();
+  let depth_format = vk::pass::Framebuffer::select_depth_format(pdevice.handle, vk::pass::Framebuffer::enumerate_depth_formats()).unwrap();
 
   let pass = vk::pass::Renderpass::build(device.handle)
     .attachment(0, vk::AttachmentDescription::build().format(vk::FORMAT_B8G8R8A8_UNORM))

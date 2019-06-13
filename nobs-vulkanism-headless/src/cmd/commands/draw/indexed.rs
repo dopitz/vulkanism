@@ -1,6 +1,4 @@
-use super::bindvertexbuffer::BindVertexBuffersTrait;
-use crate::cmd::commands::StreamPush;
-use crate::cmd::CmdBuffer;
+use crate::cmd::stream::*;
 use vk;
 
 /// Bind vertex buffers and issues an indexed draw call

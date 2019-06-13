@@ -1,5 +1,4 @@
-use crate::cmd::commands::StreamPush;
-use crate::cmd::CmdBuffer;
+use crate::cmd::stream::*;
 
 /// Binds vertex buffers and issues draw call
 #[derive(Debug, Clone, Copy)]
@@ -74,4 +73,3 @@ impl StreamPush for DrawVertices {
     cs
   }
 }
-

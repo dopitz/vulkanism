@@ -1,10 +1,7 @@
 use crate::rect::Rect;
 use crate::ImGui;
-use vk::builder::Buildable;
 use vk::cmd::commands::Scissor;
-use vk::cmd::commands::Viewport;
 use vk::cmd::stream::*;
-use vk::cmd::CmdBuffer;
 
 pub trait Component {
   fn rect(&mut self, rect: Rect) -> &mut Self;

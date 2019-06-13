@@ -274,7 +274,7 @@ impl Builder {
   /// Adds an attachment at position `index`
   pub fn attachment(&mut self, index: u32, builder: AttachmentBuilder) -> &mut Self {
     let desc = self.attachments.entry(index).or_insert_with(|| builder.get());
-    if crate::pass::DEPTH_FORMATS.iter().find(|f| **f == desc.format).is_some() {
+    if super::Framebuffer::enumerate_depth_formats().iter().find(|f| **f == desc.format).is_some() {
       self.depth = Some(index);
     }
     self

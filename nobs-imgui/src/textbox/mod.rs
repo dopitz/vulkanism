@@ -4,9 +4,6 @@ use crate::text::Text;
 use crate::window::Component;
 use crate::ImGui;
 
-use vk;
-use vk::cmd::commands as cmds;
-
 pub struct TextBox {
   rect: Rect,
   text: Text,

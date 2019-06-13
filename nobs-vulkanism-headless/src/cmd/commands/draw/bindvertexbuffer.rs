@@ -1,10 +1,5 @@
-use super::DrawIndexed;
-use super::DrawIndirect;
-use super::DrawVertices;
 use crate::cmd::stream::*;
 use vk;
-
-pub trait BindVertexBuffersTrait: StreamPush + Default {}
 
 /// Binds vertex buffers to command stream
 #[derive(Debug, Clone, Copy)]
@@ -38,8 +33,6 @@ impl StreamPush for BindVertexBuffers {
     cs
   }
 }
-
-impl BindVertexBuffersTrait for BindVertexBuffers {}
 
 impl From<(&[vk::Buffer], &[vk::DeviceSize])> for BindVertexBuffers {
   fn from(buffers: (&[vk::Buffer], &[vk::DeviceSize])) -> Self {
@@ -75,8 +68,6 @@ impl StreamPush for BindVertexBuffersManaged {
     ))
   }
 }
-
-impl BindVertexBuffersTrait for BindVertexBuffersManaged {}
 
 impl<'a, T: Iterator<Item = &'a (vk::Buffer, vk::DeviceSize)>> From<T> for BindVertexBuffersManaged {
   fn from(buffers: T) -> Self {

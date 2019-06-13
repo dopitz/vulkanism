@@ -4,18 +4,10 @@ use font::*;
 use std::sync::Arc;
 use std::sync::Mutex;
 use vk::builder::Buildable;
-use vk::cmd::commands::BindDset;
-use vk::cmd::commands::BindPipeline;
-use vk::cmd::commands::DrawManaged;
 use vk::cmd::stream::*;
-use vk::cmd::CmdBuffer;
 use vk::cmd::CmdPool;
 use vk::pass::DrawPass;
 use vk::pipes::CachedPipeline;
-
-struct Viewport {
-  ub: vk::Buffer,
-}
 
 struct ImGuiImpl {
   device: vk::Device,

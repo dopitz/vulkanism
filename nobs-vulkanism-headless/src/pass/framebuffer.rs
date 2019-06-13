@@ -60,6 +60,32 @@ impl Framebuffer {
   pub fn end(&self) -> RenderpassEnd {
     RenderpassEnd {}
   }
+
+  pub fn enumerate_depth_formats() -> &'static [vk::Format] {
+    static DEPTH_FORMATS: [vk::Format; 7] = [
+      vk::FORMAT_D32_SFLOAT,
+      vk::FORMAT_D32_SFLOAT_S8_UINT,
+      vk::FORMAT_D24_UNORM_S8_UINT,
+      vk::FORMAT_D16_UNORM,
+      vk::FORMAT_X8_D24_UNORM_PACK32,
+      vk::FORMAT_S8_UINT,
+      vk::FORMAT_D16_UNORM_S8_UINT,
+    ];
+    &DEPTH_FORMATS
+  }
+
+  /// Select the best matching depth format for the specified physical device
+  pub fn select_depth_format(pdevice: vk::PhysicalDevice, formats: &[vk::Format]) -> Option<vk::Format> {
+    formats
+      .iter()
+      .find(|f| {
+        let mut props = unsafe { std::mem::uninitialized() };
+        vk::GetPhysicalDeviceFormatProperties(pdevice, **f, &mut props);
+
+        (props.optimalTilingFeatures & vk::FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT) != 0
+      })
+      .cloned()
+  }
 }
 
 pub struct Builder {
@@ -177,7 +203,7 @@ impl<'a, 'b> RenderpassFramebufferBuilder<'a, 'b> {
   /// Images are created with the [Allocator](../../mem/struct.Allocator.html) that has been specified in the builders constructor.
   pub fn create(mut self) -> Framebuffer {
     fn is_depth(format: vk::Format) -> bool {
-      crate::pass::DEPTH_FORMATS.iter().find(|f| **f == format).is_some()
+      Framebuffer::enumerate_depth_formats().iter().find(|f| **f == format).is_some()
     }
 
     // create images for every one that was not set externally
@@ -225,8 +251,8 @@ impl<'a, 'b> RenderpassFramebufferBuilder<'a, 'b> {
         *i,
         *v,
         match is_depth(f) {
-          true => crate::pass::clear_depth(1.0),
-          false => crate::pass::clear_coloru32([0, 0, 0, 0]),
+          true => vk::ClearValue::build().depth(1.0).clear,
+          false => vk::ClearValue::build().coloru32([0, 0, 0, 0]).clear,
         },
       );
     }

@@ -1,14 +1,8 @@
-use super::Pass;
-use super::PassId;
 use crate::cmd::commands::BindDset;
 use crate::cmd::commands::BindPipeline;
-use crate::cmd::commands::BindVertexBuffers;
 use crate::cmd::commands::Draw;
-use crate::cmd::commands::DrawKind;
 use crate::cmd::commands::DrawManaged;
 use crate::cmd::stream::*;
-use crate::cmd::CmdBuffer;
-use crate::cmd::CmdPool;
 use std::collections::BTreeSet;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -267,10 +261,6 @@ impl DrawPass {
       draw: &mut m.draw,
     }
   }
-}
-
-impl Pass for DrawPass {
-  fn resize(&mut self, size: vk::Extent2D) {}
 }
 
 impl StreamPush for DrawPass {

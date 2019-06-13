@@ -14,7 +14,5 @@ pub use draw::*;
 pub use pipeline::*;
 pub use renderpass::*;
 
-use super::CmdBuffer;
-
 use super::stream::*;
 

@@ -1,4 +1,3 @@
-use super::bindvertexbuffer::BindVertexBuffersTrait;
 use super::BindVertexBuffers;
 use super::BindVertexBuffersManaged;
 use super::DrawIndexed;

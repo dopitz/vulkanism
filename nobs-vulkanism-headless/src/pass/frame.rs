@@ -1,4 +1,3 @@
-use super::Framebuffer;
 use crate::cmd::stream::*;
 use crate::cmd::CmdBuffer;
 use crate::cmd::CmdPool;
