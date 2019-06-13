@@ -46,6 +46,8 @@ impl Layout for ColumnLayout {
   }
 
   fn push<T: Component>(&mut self, c: &mut T) -> (Scissor, usize) {
+
+
     let mut rect = Rect::new(self.rect.position + vec2!(0, self.top as i32), c.get_size_hint());
     if rect.size.x == 0 {
       rect.size.x = self.rect.size.x;
@@ -57,6 +59,7 @@ impl Layout for ColumnLayout {
       rect.size.y = self.rect.size.y - self.top;
     }
     c.rect(rect);
+    self.top += rect.size.y;
 
     (Scissor::with_rect(rect.into()), c.get_mesh())
   }
