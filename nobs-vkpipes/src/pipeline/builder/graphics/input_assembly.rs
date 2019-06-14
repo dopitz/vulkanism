@@ -7,10 +7,10 @@ use vk;
 /// - primitive topology: `vk::PRIMITIVE_TOPOLOGY_TRIANGLE_LIST`
 /// - primiteve restart: disabled
 pub struct Builder {
-  pub info: vk::PipelineInputAssemblyStateCreateInfo,
+  info: vk::PipelineInputAssemblyStateCreateInfo,
 }
 
-vk_builder!(vk::PipelineInputAssemblyStateCreateInfo, Builder);
+vk_builder_into!(vk::PipelineInputAssemblyStateCreateInfo, Builder);
 
 impl Default for Builder {
   fn default() -> Builder {

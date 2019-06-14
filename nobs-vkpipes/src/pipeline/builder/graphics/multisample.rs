@@ -11,10 +11,10 @@ use vk;
 /// - alpha to coverage: disabled
 /// - alpha to one: disabled
 pub struct Builder {
-  pub info: vk::PipelineMultisampleStateCreateInfo,
+  info: vk::PipelineMultisampleStateCreateInfo,
 }
 
-vk_builder!(vk::PipelineMultisampleStateCreateInfo, Builder);
+vk_builder_into!(vk::PipelineMultisampleStateCreateInfo, Builder);
 
 impl Default for Builder {
   fn default() -> Builder {

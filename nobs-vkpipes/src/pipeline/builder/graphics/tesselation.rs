@@ -6,10 +6,10 @@ use vk;
 ///
 /// - path control points: `0`
 pub struct Builder {
-  pub info: vk::PipelineTessellationStateCreateInfo,
+  info: vk::PipelineTessellationStateCreateInfo,
 }
 
-vk_builder!(vk::PipelineTessellationStateCreateInfo, Builder);
+vk_builder_into!(vk::PipelineTessellationStateCreateInfo, Builder);
 
 impl Default for Builder {
   fn default() -> Builder {

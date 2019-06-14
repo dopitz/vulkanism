@@ -14,10 +14,10 @@ use vk;
 /// - front: uninitialized
 /// - back: uninitialized
 pub struct Builder {
-  pub info: vk::PipelineDepthStencilStateCreateInfo,
+  info: vk::PipelineDepthStencilStateCreateInfo,
 }
 
-vk_builder!(vk::PipelineDepthStencilStateCreateInfo, Builder);
+vk_builder_into!(vk::PipelineDepthStencilStateCreateInfo, Builder);
 
 impl Default for Builder {
   fn default() -> Builder {

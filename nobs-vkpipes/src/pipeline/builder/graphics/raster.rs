@@ -15,10 +15,10 @@ use vk;
 /// - depth bias clamp: `0`
 /// - depth bias solpe factor: `0`
 pub struct Builder {
-  pub info: vk::PipelineRasterizationStateCreateInfo,
+  info: vk::PipelineRasterizationStateCreateInfo,
 }
 
-vk_builder!(vk::PipelineRasterizationStateCreateInfo, Builder);
+vk_builder_into!(vk::PipelineRasterizationStateCreateInfo, Builder);
 
 impl Default for Builder {
   fn default() -> Builder {

@@ -8,8 +8,8 @@ use vk;
 /// - states: none
 #[derive(Debug)]
 pub struct Builder {
-  pub states: Vec<vk::DynamicState>,
-  pub info: vk::PipelineDynamicStateCreateInfo,
+  states: Vec<vk::DynamicState>,
+  info: vk::PipelineDynamicStateCreateInfo,
 }
 
 vk_builder!(vk::PipelineDynamicStateCreateInfo, Builder);
@@ -32,15 +32,12 @@ impl Default for Builder {
 impl Builder {
   pub fn push_state(mut self, state: vk::DynamicState) -> Self {
     self.states.push(state);
+    self.info.dynamicStateCount = self.states.len() as u32;
+    self.info.pDynamicStates = self.states.as_ptr();
     self
   }
 
-  pub fn get(&self) -> vk::PipelineDynamicStateCreateInfo {
-    let mut info = self.info;
-    if info.pDynamicStates.is_null() && !self.states.is_empty() {
-      info.dynamicStateCount = self.states.len() as u32;
-      info.pDynamicStates = self.states.as_ptr();
-    }
-    info
+  pub fn is_empty(&self) -> bool {
+    self.states.is_empty()
   }
 }

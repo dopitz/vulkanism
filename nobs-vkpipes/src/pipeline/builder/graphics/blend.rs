@@ -13,8 +13,8 @@ use vk;
 /// - dst alpha blend factor: `vk::BLEND_FACTER_ZERO`
 /// - alpha blend op: `vk::BLEND_OP_ADD`
 pub struct Builder {
-  pub attachments: Vec<vk::PipelineColorBlendAttachmentState>,
-  pub info: vk::PipelineColorBlendStateCreateInfo,
+  attachments: Vec<vk::PipelineColorBlendAttachmentState>,
+  info: vk::PipelineColorBlendStateCreateInfo,
 }
 
 vk_builder!(vk::PipelineColorBlendStateCreateInfo, Builder);
@@ -39,7 +39,9 @@ impl Default for Builder {
 
 impl Builder {
   pub fn push_attachment(mut self, b: AttachmentBuilder) -> Self {
-    self.attachments.push(b.info);
+    self.attachments.push(b.into());
+    self.info.attachmentCount = self.attachments.len() as u32;
+    self.info.pAttachments = self.attachments.as_ptr();
     self
   }
 
@@ -55,22 +57,13 @@ impl Builder {
     self.info.blendConstants = consts;
     self
   }
-
-  pub fn get(&self) -> vk::PipelineColorBlendStateCreateInfo {
-    let mut info = self.info;
-    if info.pAttachments.is_null() && !self.attachments.is_empty() {
-      info.attachmentCount = self.attachments.len() as u32;
-      info.pAttachments = self.attachments.as_ptr();
-    }
-    info
-  }
 }
 
 pub struct AttachmentBuilder {
-  pub info: vk::PipelineColorBlendAttachmentState,
+  info: vk::PipelineColorBlendAttachmentState,
 }
 
-vk_builder!(vk::PipelineColorBlendAttachmentState, AttachmentBuilder);
+vk_builder_into!(vk::PipelineColorBlendAttachmentState, AttachmentBuilder);
 
 impl Default for AttachmentBuilder {
   fn default() -> AttachmentBuilder {

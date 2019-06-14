@@ -146,17 +146,15 @@ pub fn main() {
         .push_binding(
           vk::VertexInputBindingDescription::build()
             .binding(0)
-            .stride(std::mem::size_of::<tex::Vertex>() as u32)
-            .binding,
+            .stride(std::mem::size_of::<tex::Vertex>() as u32),
         )
-        .push_attribute(vk::VertexInputAttributeDescription::build().binding(0).location(0).attribute)
+        .push_attribute(vk::VertexInputAttributeDescription::build().binding(0).location(0))
         .push_attribute(
           vk::VertexInputAttributeDescription::build()
             .binding(0)
             .location(1)
             .format(vk::FORMAT_R32G32_SFLOAT)
-            .offset(4 * std::mem::size_of::<f32>() as u32)
-            .attribute,
+            .offset(4 * std::mem::size_of::<f32>() as u32),
         ),
     )
     .dynamic(

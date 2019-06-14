@@ -73,39 +73,34 @@ impl Pipeline {
             vk::VertexInputBindingDescription::build()
               .binding(0)
               .input_rate(vk::VERTEX_INPUT_RATE_INSTANCE)
-              .stride(std::mem::size_of::<Vertex>() as u32)
-              .binding,
+              .stride(std::mem::size_of::<Vertex>() as u32),
           )
           .push_attribute(
             vk::VertexInputAttributeDescription::build()
               .binding(0)
               .location(0)
-              .format(vk::FORMAT_R32G32_SFLOAT)
-              .attribute,
+              .format(vk::FORMAT_R32G32_SFLOAT),
           )
           .push_attribute(
             vk::VertexInputAttributeDescription::build()
               .binding(0)
               .location(1)
               .format(vk::FORMAT_R32G32_SFLOAT)
-              .offset(2 * std::mem::size_of::<f32>() as u32)
-              .attribute,
+              .offset(2 * std::mem::size_of::<f32>() as u32),
           )
           .push_attribute(
             vk::VertexInputAttributeDescription::build()
               .binding(0)
               .location(2)
               .format(vk::FORMAT_R32G32_SFLOAT)
-              .offset(4 * std::mem::size_of::<f32>() as u32)
-              .attribute,
+              .offset(4 * std::mem::size_of::<f32>() as u32),
           )
           .push_attribute(
             vk::VertexInputAttributeDescription::build()
               .binding(0)
               .location(3)
               .format(vk::FORMAT_R32G32_SFLOAT)
-              .offset(6 * std::mem::size_of::<f32>() as u32)
-              .attribute,
+              .offset(6 * std::mem::size_of::<f32>() as u32),
           ),
       )
       .input_assembly(vk::PipelineInputAssemblyStateCreateInfo::build().topology(vk::PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP))

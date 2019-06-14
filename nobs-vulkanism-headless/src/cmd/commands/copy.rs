@@ -19,10 +19,10 @@ impl StreamPush for BufferCopy {
 }
 
 pub struct BufferCopyBuilder {
-  pub info: vk::BufferCopy,
+  info: vk::BufferCopy,
 }
 
-vk_builder!(vk::BufferCopy, BufferCopyBuilder);
+vk_builder_into!(vk::BufferCopy, BufferCopyBuilder);
 
 impl Default for BufferCopyBuilder {
   fn default() -> Self {
@@ -108,10 +108,10 @@ impl StreamPush for ImageBufferCopy {
 }
 
 pub struct BufferImageCopyBuilder {
-  pub info: vk::BufferImageCopy,
+  info: vk::BufferImageCopy,
 }
 
-vk_builder!(vk::BufferImageCopy, BufferImageCopyBuilder);
+vk_builder_into!(vk::BufferImageCopy, BufferImageCopyBuilder);
 
 impl Default for BufferImageCopyBuilder {
   fn default() -> Self {
@@ -179,9 +179,9 @@ impl BufferImageCopyBuilder {
 /// Copies memory from one image to another
 #[derive(Clone, Copy, Debug)]
 pub struct ImageCopy {
-  pub src: vk::Image,
-  pub dst: vk::Image,
-  pub region: vk::ImageCopy,
+  src: vk::Image,
+  dst: vk::Image,
+  region: vk::ImageCopy,
 }
 
 impl StreamPush for ImageCopy {
@@ -206,7 +206,7 @@ pub struct ImageCopyBuilder {
   pub info: vk::ImageCopy,
 }
 
-vk_builder!(vk::ImageCopy, ImageCopyBuilder);
+vk_builder_into!(vk::ImageCopy, ImageCopyBuilder);
 
 impl Default for ImageCopyBuilder {
   fn default() -> Self {
