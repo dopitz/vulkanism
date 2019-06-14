@@ -4,15 +4,12 @@ use vk;
 use vk::builder::Buildable;
 
 pub struct Staging {
-  mem: mem::Mem,
-  pub buffer: vk::Buffer,
-  pub offset: vk::DeviceSize,
-  pub size: vk::DeviceSize,
+  range: StagingRange,
 }
 
 impl Drop for Staging {
   fn drop(&mut self) {
-    self.mem.trash.push(self.buffer);
+    self.range.mem.trash.push(self.range.buffer);
   }
 }
 
@@ -21,7 +18,7 @@ impl std::fmt::Debug for Staging {
     write!(
       f,
       "Staging {{ buffer: {}, offset: {}, size: {}}}",
-      self.buffer, self.offset, self.size
+      self.range.buffer, self.range.offset, self.range.size
     )
   }
 }
@@ -36,13 +33,47 @@ impl Staging {
       .bind(&mut mem.alloc, mem::BindType::Scatter)?;
 
     Ok(Self {
-      mem,
-      buffer,
-      offset: 0,
-      size,
+      range: StagingRange {
+        mem,
+        buffer,
+        offset: 0,
+        size,
+      },
     })
   }
 
+  pub fn range(&self, offset: vk::DeviceSize, size: vk::DeviceSize) -> StagingRange {
+    self.range.range(offset, size)
+  }
+
+  pub fn map(&mut self) -> Option<mem::Mapped> {
+    self.range.map()
+  }
+
+  pub fn copy_from_buffer(&self, src: vk::Buffer, srcoffset: vk::DeviceSize) -> commands::BufferCopy {
+    self.range.copy_from_buffer(src, srcoffset)
+  }
+  pub fn copy_into_buffer(&self, dst: vk::Buffer, dstoffset: vk::DeviceSize) -> commands::BufferCopy {
+    self.range.copy_into_buffer(dst, dstoffset)
+  }
+
+  pub fn copy_from_image(&self, src: vk::Image, cp: commands::BufferImageCopyBuilder) -> commands::ImageBufferCopy {
+    self.range.copy_from_image(src, cp)
+  }
+  pub fn copy_into_image(&self, dst: vk::Image, cp: commands::BufferImageCopyBuilder) -> commands::BufferImageCopy {
+    self.range.copy_into_image(dst, cp)
+  }
+}
+
+#[derive(Clone)]
+pub struct StagingRange {
+  mem: mem::Mem,
+  buffer: vk::Buffer,
+  offset: vk::DeviceSize,
+  size: vk::DeviceSize,
+}
+
+impl StagingRange {
   pub fn range(&self, offset: vk::DeviceSize, size: vk::DeviceSize) -> Self {
     Self {
       mem: self.mem.clone(),
@@ -51,7 +82,6 @@ impl Staging {
       size,
     }
   }
-
 
   pub fn map(&mut self) -> Option<mem::Mapped> {
     self.mem.alloc.get_mapped_region(self.buffer, self.offset, self.size)
@@ -82,19 +112,30 @@ impl Staging {
 
 pub struct StagingFrame {
   stage: Staging,
+  range: StagingRange,
 }
 
 impl StagingFrame {
-  pub fn new(stage: Staging) -> Self {
-    Self { stage }
+  pub fn new(mut mem: mem::Mem, size: vk::DeviceSize) -> Result<Self, mem::Error> {
+    let stage = Staging::new(mem, size)?;
+    let range = stage.range.clone();
+    Ok(Self { stage, range })
   }
 
-  pub fn next(&mut self, size: vk::DeviceSize) -> Result<Staging, mem::Error> {
-    if self.stage.size < size {
+  pub fn next(&mut self, size: vk::DeviceSize) -> Result<StagingRange, mem::Error> {
+    if self.range.size < size {
       Err(mem::Error::OutOfMemory)?;
     }
-    let s = self.stage.range(0, size);
-    self.stage = self.stage.range(size, self.stage.size - size);
-    Ok(s)
+    let r = self.range.range(0, size);
+    self.range = self.range.range(size, self.range.size - size);
+    Ok(r)
+  }
+
+  pub fn reset(&mut self) {
+    self.range = self.stage.range.clone();
+  }
+
+  pub fn capacity(&self) -> vk::DeviceSize {
+    self.stage.range.size
   }
 }
