@@ -1,3 +1,4 @@
+/// Memory type that is returnd by `vk::Get*MemoryRequirements` functions
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Memtype {
   pub index: u32,

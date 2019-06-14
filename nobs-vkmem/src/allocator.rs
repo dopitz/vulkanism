@@ -242,7 +242,7 @@ impl Drop for AllocatorImpl {
 /// Buffers and images can be easyly created with the [Buffer](builder/struct.Buffer.html) and [Image](builder/struct.Image.html) builder.
 /// Host accessible buffers can be conveniently accessed with [get_mapped / get_mapped_region](struct.Allocator.html#method.get_mapped) and [Mapped](mapped/struct.Mapped.html).
 /// Allocated resources may be freed with [destroy(_many)](struct.Allocator.html#method.destroy).
-/// Memory of pages that have no bore resource binding can be freed with [free_unused](struct.Allocator.html#method.free_unused) again.
+/// Memory of pages that have no resource binding any more can be freed with [free_unused](struct.Allocator.html#method.free_unused) again.
 ///
 /// ```rust
 /// extern crate nobs_vk as vk;
@@ -284,7 +284,7 @@ impl Drop for AllocatorImpl {
 /// let mut img = vk::NULL_HANDLE;
 /// let mut bb = vk::NULL_HANDLE;
 ///
-/// // configure create infos
+/// // configure buffer/image create infos
 /// vkmem::Buffer::new(&mut buf_ub)
 ///   .size(std::mem::size_of::<Ub>() as vk::DeviceSize)
 ///   .usage(vk::BUFFER_USAGE_TRANSFER_DST_BIT | vk::BUFFER_USAGE_UNIFORM_BUFFER_BIT)
@@ -304,6 +304,7 @@ impl Drop for AllocatorImpl {
 ///   .devicelocal(true)
 ///
 ///   // this will create the image/buffers and bind them to memory
+///   // all BindTypes will NOT shuffle the order of the resources around
 ///   .bind(&mut allocator, vkmem::BindType::Scatter)
 ///   .unwrap();
 ///
@@ -317,8 +318,7 @@ impl Drop for AllocatorImpl {
 /// }
 /// {
 ///   let mapped = allocator.get_mapped(buf_ub).unwrap();
-///   let mut ubb = Ub { a: 0, b: 0, c: 0 };
-///   mapped.device_to_host(&mut ubb);
+///   let ubb : Ub = mapped.device_to_host();
 /// }
 ///
 /// {
@@ -524,7 +524,7 @@ impl Allocator {
   ///
   /// allocator.bind(
   ///   &[
-  ///     vkmem::BindInfo::with_size(buf, host_access_flags, true, 12),
+  ///     vkmem::BindInfo::new(buf, host_access_flags, true),
   ///     vkmem::BindInfo::new(img, device_local_flags, false),
   ///   ],
   ///   vkmem::BindType::Scatter,
@@ -719,8 +719,7 @@ impl Allocator {
   /// }
   /// {
   ///   let mapped = allocator.get_mapped(buf_ub).unwrap();
-  ///   let mut ubb = Ub { a: 0, b: 0, c: 0 };
-  ///   mapped.device_to_host(&mut ubb);
+  ///   let ubb : Ub = mapped.device_to_host();
   ///   assert_eq!(ubb.a, 123);
   ///   assert_eq!(ubb.b, 4);
   ///   assert_eq!(ubb.c, 5);

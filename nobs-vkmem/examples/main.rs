@@ -94,8 +94,7 @@ fn main() {
   }
   {
     let mapped = allocator.get_mapped(buf_ub).unwrap();
-    let mut ubb = Ub { a: 0, b: 0, c: 0 };
-    mapped.device_to_host(&mut ubb);
+    let ubb : Ub = mapped.device_to_host();
     println!("{:?}", ubb);
   }
 

@@ -3,21 +3,21 @@
 //! Buffer and image creation in vulkan is tricky in comparison to e.g. OpenGL, because
 //! 1. We have to create the buffer/image and then later bind it to a `vkDeviceMemory` that has to be created separately.
 //! 2. Creating a single `vkDeviceMemory` allocation for every buffer/image is bad practice,
-//!     in fact it is [encouraged](https://developer.nvidia.com/vulkan-memory-management) to bind esources that are used together on the same allocation.
+//!     in fact it is [encouraged](https://developer.nvidia.com/vulkan-memory-management) to bind resources that are used together on the same allocation.
 //! 3. Another layer of difficulty is introduced with memory types, since not all resources (should) share the same memory properties - which is different for each Driver/Vendor
 //!
 //! nobs-vkmem provides convenient and accessible methods for creating buffers and images and binding them to physical memory.
 //! This dramatically reduces boiler plate code, while still offers the user considerable control over how resources are bound to memory.
 //! 1. Easy buffer and image creation with builder patterns.
-//! 2. Device memory is allocated in larger pages. The library keeps track of free and used regions in a page.
+//! 2. Device memory is allocated in larger pages. The crate keeps track of free and used regions in a page.
 //! 3. Offers different allocation strategies for different purposes, including forcing the binding of several resources to a continuous block, or binding resources on private pages.
 //! 4. Easy mapping of host accessible buffers
 //!
-//! Interfacing with this library is mainly handled in [Allocator](struct.Allocator.html), with which buffers and images are bound to device memory.
+//! Interfacing with this crate is mainly handled in [Allocator](struct.Allocator.html), with which buffers and images are bound to device memory.
 //!
 //! [Buffer](builder/struct.Buffer.html) and [Image](builder/struct.Image.html) provide a convenient way to configure buffers/images and bind them to the allocator in bulk.
 //!
-//! See [Allocator](struct.Allocator.html) to get a quick overview on how to use this library.
+//! See [Allocator](struct.Allocator.html) to get a quick overview on how to use this crate.
 #[macro_use]
 extern crate nobs_vk as vk;
 
@@ -70,6 +70,7 @@ pub enum Error {
   MapError,
 }
 
+/// Wrapper around an [Allocator](struct.Alloctator.html) and [Trash](struct.Trash.html).
 #[derive(Clone)]
 pub struct Mem {
   pub alloc: Allocator,
@@ -77,6 +78,7 @@ pub struct Mem {
 }
 
 impl Mem {
+  /// Create new Mem object from Allocator and Trash
   pub fn new(alloc: Allocator, inflight: usize) -> Self {
     Self {
       alloc: alloc.clone(),
