@@ -86,6 +86,7 @@ pub trait FontChar {
 pub struct TypeSet {
   pub font: Arc<Font>,
   pub size: u32,
+  pub line_spacing: f32,
   pub offset: vkm::Vec2i,
   pub cursor: Option<vkm::Vec2u>,
 }
@@ -95,6 +96,7 @@ impl TypeSet {
     Self {
       font,
       size: 12,
+      line_spacing: 1.2,
       offset: vec2!(0, 12),
       cursor: None,
     }
@@ -109,6 +111,11 @@ impl TypeSet {
     self.offset.y -= self.size as i32;
     self.size = s;
     self.offset.y += self.size as i32;
+    self
+  }
+
+  pub fn line_spacing(mut self, s: f32) -> Self {
+    self.line_spacing = s;
     self
   }
 
@@ -132,7 +139,7 @@ impl TypeSet {
     for (c, s) in s.chars().zip(buf.iter_mut()) {
       if c == '\n' || c == '\r' {
         off.x = offset.x;
-        off.y = off.y + size;
+        off.y = off.y + size * self.line_spacing;
         cp.x = 0;
         cp.y += 1;
       }

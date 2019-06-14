@@ -188,6 +188,7 @@ impl FontBuilder {
 
     let mut offset = vec2!(0);
     let mut tex_chars = HashMap::new();
+    let mut y_bearing_max = 0.0;
 
     for c in chars.iter() {
       face.load_char(c.c as usize, freetype::face::LoadFlag::RENDER).unwrap();
@@ -218,6 +219,13 @@ impl FontBuilder {
         offset.x = 0;
         offset.y += slot_size.y;
       }
+
+      y_bearing_max = f32::max(g.bitmap_top() as f32 / self.char_height as f32, y_bearing_max);
+    }
+
+    // fix the origin of the glyph into the bearing from top left corner
+    for (_, c) in tex_chars.iter_mut() {
+      c.bearing.y -= 1.0 - y_bearing_max;
     }
 
     (data, tex_chars)

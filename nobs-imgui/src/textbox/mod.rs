@@ -48,8 +48,8 @@ impl Component for TextBox {
 
   fn get_size_hint(&self) -> vkm::Vec2u {
     let w = 0;
-    let h = self.get_text().lines().count() as u32 * self.get_typeset().size as u32;
-    vec2!(w, h)
+    let h = self.get_text().lines().count() as f32 * self.get_typeset().line_spacing * self.get_typeset().size as f32;
+    vec2!(w, h as u32)
   }
 
   fn get_mesh(&self) -> usize {
