@@ -133,6 +133,7 @@ impl<T: Clone + Copy> std::ops::IndexMut<std::ops::Range<usize>> for BlockAlloc<
 
 #[derive(Debug, Clone, Copy)]
 pub struct DrawMesh {
+  toggle: bool,
   pipe: usize,
   dset: (usize, usize),
   buffers: (usize, usize),
@@ -212,6 +213,7 @@ impl DrawPass {
     let beg = buffers;
     let end = buffers + draw.vbs.buffers.len();
     let (mesh, _) = self.meshes.push(&[DrawMesh {
+      toggle: true,
       pipe,
       dset: (dset, dsets.len()),
       buffers: (buffers, draw.vbs.buffers.len()),
@@ -241,6 +243,10 @@ impl DrawPass {
     }
   }
 
+  pub fn toggle(&mut self, mesh: usize, toggle: bool) {
+    self.meshes[mesh].toggle = toggle;
+  }
+
   pub fn get<'a>(&'a self, mesh: usize) -> DrawMeshRef<'a> {
     let m = &self.meshes[mesh];
     DrawMeshRef {
@@ -265,7 +271,7 @@ impl DrawPass {
 
 impl StreamPush for DrawPass {
   fn enqueue(&self, mut cs: CmdBuffer) -> CmdBuffer {
-    for d in self.meshes.iter() {
+    for d in self.meshes.iter().filter(|d| d.toggle) {
       cs = cs.push(&self.pipes[d.pipe]);
       for ds in self.dsets[d.dset.0..d.dset.0 + d.dset.1].iter() {
         cs = cs.push(ds);
