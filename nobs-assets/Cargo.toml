@@ -1,0 +1,18 @@
+[package]
+name = "nobs-assets"
+version = "0.1.0"
+authors = ["Daniel Opitz <danielopitz91@gmail.com>"]
+description = "asset library ot top of nobs-vulkanism"
+license = "MIT"
+keywords = ["vulkan", "graphics", "gpu", "rendering"]
+categories = ["rendering::graphics-api"]
+repository = "https://github.com/dopitz/vulkanism/nobs-assets"
+readme = "README.md"
+edition = "2018"
+
+[dependencies]
+nobs-vulkanism-headless = {version = "0.1.0", path = "../nobs-vulkanism-headless"}
+nobs-vkmath = {version = "0.1.0", path = "../nobs-vkmath"}
+
+[build-dependencies]
+nobs-vulkanism-headless = {version = "0.1.0", path = "../nobs-vulkanism-headless"}

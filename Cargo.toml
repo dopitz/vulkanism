@@ -1,5 +1,6 @@
 [workspace]
 members = [
+  "nobs-assets",
   "nobs-imgui",
   "nobs-vk",
   "nobs-vkmem",
