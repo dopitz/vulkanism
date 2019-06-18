@@ -3,5 +3,11 @@ extern crate nobs_vulkanism_headless as vk;
 extern crate nobs_vkmath as vkm;
 
 mod assets;
-mod image;
-mod model;
+mod update;
+
+pub mod image;
+pub mod model;
+
+pub use assets::AssetType;
+pub use assets::Assets;
+pub use update::Update;

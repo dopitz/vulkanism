@@ -1,54 +1,39 @@
+use super::Update;
 use std::collections::HashMap;
 
 pub trait AssetType {
   type Types;
-  fn load(id: &str) -> Self::Types;
-}
-
-pub struct At {}
-
-impl AssetType for At {
-  type Types = vk::Image;
-  fn load(id: &str) -> Self::Types {
-    println!("cat");
-    0
-  }
-}
-
-pub struct At2 {}
-
-impl AssetType for At2 {
-  type Types = usize;
-  fn load(id: &str) -> Self::Types {
-    println!("dog");
-    0
-  }
-}
-
-pub enum AtX {
-  Image(<At as AssetType>::Types),
-  Usize(<At2 as AssetType>::Types)
-}
-
-impl AssetType for AtX {
-  type Types = Self;
-  fn load(id: &str) -> Self::Types {
-    AtX::Image(0)
-  }
+  fn load(id: &str, up: &mut Update) -> Self::Types;
 }
 
 macro_rules! asset_type {
-  (($name:ident, $ty:expr)*) => (
-    
+  ($name:ident, $(($atname:ident, $attype:ty)),+) => (
+    pub enum $name {
+      $(
+        $atname(<$attype as AssetType>::Types),
+      )+
+    }
   )
 }
 
-
 pub struct Assets<T: AssetType> {
+  device: vk::Device,
+  mem: vk::mem::Mem,
+
   assets: HashMap<String, T::Types>,
+  pub up: Update,
 }
 
 impl<T: AssetType> Assets<T> {
+  pub fn new(device: vk::Device, mem: vk::mem::Mem) -> Self {
+    Assets {
+      device,
+      mem: mem.clone(),
+      assets: Default::default(),
+      up: Update::new(mem),
+    }
+  }
+
   pub fn contains(&self, id: &str) -> bool {
     self.assets.contains_key(id)
   }
@@ -56,7 +41,7 @@ impl<T: AssetType> Assets<T> {
     if self.contains(id) {
       self.assets.get(id).unwrap()
     } else {
-      self.assets.insert(id.to_owned(), T::load(id));
+      self.assets.insert(id.to_owned(), T::load(id, &mut self.up));
       self.assets.get(id).unwrap()
     }
   }

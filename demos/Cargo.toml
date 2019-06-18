@@ -9,6 +9,7 @@ publish = false
 nobs-vulkanism = {version = "0.1.0", path = "../nobs-vulkanism"}
 nobs-imgui = {version = "0.1.0", path = "../nobs-imgui"}
 nobs-vkmath = {version = "0.1.0", path = "../nobs-vkmath"}
+nobs-assets = {version = "0.1.0", path = "../nobs-assets"}
 
 [build-dependencies]
 nobs-vulkanism = {version = "0.1.0", path = "../nobs-vulkanism"}
@@ -28,3 +29,7 @@ path = "src/textured.rs"
 [[bin]]
 name = "text"
 path = "src/text.rs"
+
+[[bin]]
+name = "obj"
+path = "src/obj.rs"
