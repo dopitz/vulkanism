@@ -5,36 +5,17 @@ use std::io::Read;
 use vk;
 use vkm::Vec2f;
 use vkm::Vec3f;
-
-fn parse_vec2(s: &str) -> Result<Vec2f, &'static str> {
-  let mut split = s.split_whitespace();
-  if split.clone().count() < 2 {
-    Err("parse vec2 invalid compontent count")?
-  }
-  Ok(vec2!(
-    split.next().unwrap().parse::<f32>().unwrap(),
-    split.next().unwrap().parse::<f32>().unwrap()
-  ))
-}
-fn parse_vec3(s: &str) -> Result<Vec3f, &'static str> {
-  let mut split = s.split_whitespace();
-  if split.clone().count() < 3 {
-    Err("parse vec3 invalid compontent count")?
-  }
-  Ok(vec3!(
-    split.next().unwrap().parse::<f32>().unwrap(),
-    split.next().unwrap().parse::<f32>().unwrap(),
-    split.next().unwrap().parse::<f32>().unwrap()
-  ))
-}
+use super::parse_vec2;
+use super::parse_vec3;
 
 enum Token {
   Vert(Vec3f),
   Norm(Vec3f),
   UV(Vec2f),
   Group(String),
-  Face([Option<FaceIndex>; 4]),
+  Usemtl(String),
   Smooth(bool),
+  Face([Option<FaceIndex>; 4]),
   Comment,
 }
 
@@ -51,6 +32,10 @@ impl TryFrom<&str> for Token {
       Ok(Token::UV(parse_vec2(line.split_at(2).1)?))
     } else if line.starts_with("g ") {
       Ok(Token::Group(line.split_at(1).1.trim().to_string()))
+    } else if line.starts_with("usemtl ") {
+      Ok(Token::Usemtl(line.split_at(6).1.trim().to_string()))
+    } else if line.starts_with("s ") {
+      Ok(Token::Smooth(line.split_at(1).1.trim().starts_with("1")))
     } else if line.starts_with("f ") {
       let mut face: [Option<FaceIndex>; 4] = [None, None, None, None];
       for (i, idx) in line.split_whitespace().skip(1).enumerate() {
@@ -65,8 +50,6 @@ impl TryFrom<&str> for Token {
         face[i] = Some(fi);
       }
       Ok(Token::Face(face))
-    } else if line.starts_with("s ") {
-      Ok(Token::Smooth(line.split_at(1).1.trim().starts_with("1")))
     } else if line.starts_with("#") || line.is_empty() {
       Ok(Token::Comment)
     } else {
@@ -84,23 +67,26 @@ struct FaceIndex {
 
 struct Group {
   name: String,
+  mat: Option<String>,
   faces: Vec<[Option<FaceIndex>; 4]>,
 }
 
 #[derive(Default)]
-struct Shape {
-  name: String,
-  vertices: Vec<Vec3f>,
-  normals: Vec<Vec3f>,
-  uvs: Vec<Vec2f>,
+pub struct Shape {
+  pub name: String,
+  pub mat: Option<String>,
 
-  indices: Vec<u16>,
+  pub vertices: Vec<Vec3f>,
+  pub normals: Vec<Vec3f>,
+  pub uvs: Vec<Vec2f>,
+
+  pub indices: Vec<u16>,
 }
 
-pub struct Wavefront {}
+pub struct Obj {}
 
-impl Wavefront {
-  pub fn load(file: &str) {
+impl Obj {
+  pub fn load(file: &str) -> Vec<Shape> {
     let mut f = std::fs::File::open(file).unwrap();
     let mut contents = String::new();
     f.read_to_string(&mut contents).unwrap();
@@ -123,9 +109,24 @@ impl Wavefront {
         Token::Norm(n) => normals.push(n),
         Token::UV(uv) => uvs.push(uv),
         Token::Face(f) => group.as_mut().unwrap().faces.push(f),
+        Token::Usemtl(m) => {
+          if let None = group.as_ref().and_then(|g| g.mat.as_ref()) {
+            group.as_mut().unwrap().mat = Some(m)
+          } else {
+            let name = group.as_ref().unwrap().name.clone();
+            groups.push(Group {
+              name,
+              mat: Some(m),
+              faces: Default::default(),
+            });
+
+            group = groups.last_mut();
+          }
+        }
         Token::Group(g) => {
           groups.push(Group {
             name: g,
+            mat: None,
             faces: Default::default(),
           });
           group = groups.last_mut();
@@ -195,5 +196,8 @@ impl Wavefront {
 
       shapes.push(shape);
     }
+
+    shapes
   }
 }
+

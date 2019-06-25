@@ -1,3 +1,4 @@
 mod wavefront;
 
-pub use wavefront::Wavefront;
+pub use wavefront::Obj;
+pub use wavefront::Mtl;
