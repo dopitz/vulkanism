@@ -1,3 +1,6 @@
+use super::parse_vec2;
+use super::parse_vec3;
+use super::Mtl;
 use std::collections::HashMap;
 use std::convert::TryFrom;
 use std::convert::TryInto;
@@ -5,10 +8,9 @@ use std::io::Read;
 use vk;
 use vkm::Vec2f;
 use vkm::Vec3f;
-use super::parse_vec2;
-use super::parse_vec3;
 
 enum Token {
+  MtlLib(String),
   Vert(Vec3f),
   Norm(Vec3f),
   UV(Vec2f),
@@ -24,7 +26,9 @@ impl TryFrom<&str> for Token {
 
   fn try_from(line: &str) -> Result<Self, Self::Error> {
     let line = line.trim_start();
-    if line.starts_with("v ") {
+    if line.starts_with("mtllib ") {
+      Ok(Token::MtlLib(line.split_at(6).1.trim().to_string()))
+    } else if line.starts_with("v ") {
       Ok(Token::Vert(parse_vec3(line.split_at(1).1)?))
     } else if line.starts_with("vn ") {
       Ok(Token::Norm(parse_vec3(line.split_at(2).1)?))
@@ -98,6 +102,8 @@ impl Obj {
 
     let mut group: Option<&mut Group> = None;
 
+    let mut mtl = Default::default();
+
     // parse file
     for l in contents.lines() {
       let tok = match l.try_into() {
@@ -105,6 +111,10 @@ impl Obj {
         Ok(t) => t,
       };
       match tok {
+        Token::MtlLib(name) => {
+          let path = std::fs::canonicalize(file).unwrap();
+          mtl = Mtl::load(&format!("{}/{}", path.parent().unwrap().to_str().unwrap(), name));
+        }
         Token::Vert(v) => vertices.push(v),
         Token::Norm(n) => normals.push(n),
         Token::UV(uv) => uvs.push(uv),
@@ -200,4 +210,3 @@ impl Obj {
     shapes
   }
 }
-

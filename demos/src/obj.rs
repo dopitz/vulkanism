@@ -168,7 +168,7 @@ pub fn main() {
     .unwrap();
 
 
-  let shapes = assets::model::Obj::load("assets/bunny.obj");
+  let shapes = assets::model::Obj::load("assets/sponza/sponza.obj");
 
 
 

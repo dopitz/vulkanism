@@ -40,6 +40,10 @@ impl Mtl {
     let mut m = "".to_string();
 
     for l in contents.lines() {
+      if l.trim_start().starts_with("#") || l.is_empty() {
+        continue;
+      }
+
       if l.trim().starts_with("newmtl") {
         m = l.split_at(6).1.trim().to_string();
         mats.insert(m.clone(), Default::default());
