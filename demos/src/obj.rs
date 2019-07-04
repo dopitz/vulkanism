@@ -1,5 +1,6 @@
 extern crate nobs_assets as assets;
 extern crate nobs_imgui as imgui;
+#[macro_use]
 extern crate nobs_vkmath as vkm;
 #[macro_use]
 extern crate nobs_vulkanism as vk;
@@ -175,7 +176,7 @@ pub fn main() {
           vk::VertexInputAttributeDescription::build()
             .binding(1)
             .location(1)
-            .format(vk::FORMAT_R32G32B32_SFLOAT)
+            .format(vk::FORMAT_R32G32B32_SFLOAT),
         )
         .push_binding(
           vk::VertexInputBindingDescription::build()
@@ -195,7 +196,7 @@ pub fn main() {
         .push_state(vk::DYNAMIC_STATE_SCISSOR),
     )
     .blend(vk::PipelineColorBlendStateCreateInfo::build().push_attachment(vk::PipelineColorBlendAttachmentState::build()))
-    .raster(vk::PipelineRasterizationStateCreateInfo::build().front_face(vk::FRONT_FACE_CLOCKWISE))
+    //.raster(vk::PipelineRasterizationStateCreateInfo::build().front_face(vk::FRONT_FACE_CLOCKWISE))
     .create()
     .unwrap();
 
@@ -235,14 +236,23 @@ pub fn main() {
   );
 
   let mut mvp = obj::UbTransform {
-    model: vkm::Mat4::rotation_y(std::f32::consts::PI), // vkm::Mat4::identity(), //
+    model: vkm::Mat4::rotation_y(std::f32::consts::PI), //
     view: vkm::Mat4::look_at(
       vkm::Vec3::new(0.0, 0.0, -10.0),
       vkm::Vec3::new(0.0, 0.0, 0.0),
       vkm::Vec3::new(0.0, 1.0, 0.0),
     ),
-    proj: vkm::Mat4::scale(vkm::Vec3::new(1.0, -1.0, 1.0)) * vkm::Mat4::perspective_lh(std::f32::consts::PI / 4.0, 1.0, 1.0, 100.0),
+    proj: vkm::Mat4::perspective_lh(std::f32::consts::PI / 4.0, 1.0, 1.0, 100.0),
   };
+
+  let v = vec4!(1.0, 1.0, 1.0, 0.0);
+  println!("{:?}", v);
+  let v = mvp.model * v;
+  println!("{:?}", v);
+  let v = mvp.view * v;
+  println!("{:?}", v);
+  let v = mvp.proj * v;
+  println!("{:?}", v);
 
   loop {
     events_loop.poll_events(|event| match event {
@@ -308,7 +318,13 @@ pub fn main() {
       rp = nrp;
       fb = nfb;
 
-      mvp.proj = vkm::Mat4::scale(vkm::Vec3::new(1.0, -1.0, 1.0)) * vkm::Mat4::perspective_lh(std::f32::consts::PI / 4.0, sc.extent.width as f32 / sc.extent.height as f32, 1.0, 100.0);
+      mvp.proj = vkm::Mat4::scale(vec3!(-1.0, -1.0, 1.0))
+        * vkm::Mat4::perspective_lh(
+          std::f32::consts::PI / 4.0,
+          sc.extent.width as f32 / sc.extent.height as f32,
+          1.0,
+          100.0,
+        );
       update_mvp(&device, &cmds, &mut stage, ub, &mvp);
       resize = false;
 
