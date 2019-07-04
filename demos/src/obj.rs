@@ -237,12 +237,12 @@ pub fn main() {
 
   let mut mvp = obj::UbTransform {
     model: vkm::Mat4::rotation_y(std::f32::consts::PI), //
-    view: vkm::Mat4::look_at(
+    view: vkm::Mat4::scale(vec3!(-1.0, -1.0, 1.0)) * vkm::Mat4::look_at(
       vkm::Vec3::new(0.0, 0.0, -10.0),
       vkm::Vec3::new(0.0, 0.0, 0.0),
       vkm::Vec3::new(0.0, 1.0, 0.0),
     ),
-    proj: vkm::Mat4::perspective_lh(std::f32::consts::PI / 4.0, 1.0, 1.0, 100.0),
+    proj: vkm::Mat4::scale(vec3!(-1.0, -1.0, 1.0)) * vkm::Mat4::perspective_lh(std::f32::consts::PI / 4.0, 1.0, 1.0, 100.0),
   };
 
   let v = vec4!(1.0, 1.0, 1.0, 0.0);
@@ -318,13 +318,12 @@ pub fn main() {
       rp = nrp;
       fb = nfb;
 
-      mvp.proj = vkm::Mat4::scale(vec3!(-1.0, -1.0, 1.0))
-        * vkm::Mat4::perspective_lh(
-          std::f32::consts::PI / 4.0,
-          sc.extent.width as f32 / sc.extent.height as f32,
-          1.0,
-          100.0,
-        );
+      mvp.proj = vkm::Mat4::perspective_lh(
+        std::f32::consts::PI / 4.0,
+        sc.extent.width as f32 / sc.extent.height as f32,
+        1.0,
+        100.0,
+      );
       update_mvp(&device, &cmds, &mut stage, ub, &mvp);
       resize = false;
 
