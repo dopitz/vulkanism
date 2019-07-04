@@ -84,7 +84,7 @@ pub struct Shape {
   pub normals: Vec<Vec3f>,
   pub uvs: Vec<Vec2f>,
 
-  pub indices: Vec<u16>,
+  pub indices: Vec<u32>,
 }
 
 pub struct Obj {}
@@ -170,7 +170,7 @@ impl Obj {
 
     // convert into shapes
     let mut shapes = Vec::with_capacity(groups.len());
-    let mut face_indices: HashMap<FaceIndex, u16> = Default::default();
+    let mut face_indices: HashMap<FaceIndex, u32> = Default::default();
 
     for g in groups.iter() {
       face_indices.clear();
@@ -185,7 +185,7 @@ impl Obj {
             shape.vertices.push(vertices[fi.v as usize]);
             shape.normals.push(normals[fi.vn as usize]);
             shape.uvs.push(uvs[fi.vt as usize]);
-            i as u16
+            i as u32 
           });
         }
 

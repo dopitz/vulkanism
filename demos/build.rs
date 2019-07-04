@@ -12,4 +12,8 @@ fn main() {
     .uses("src/textured.vert")
     .uses("src/textured.frag")
     .depends("src/textured.rs");
+  ShaderUsage::new()
+    .uses("src/obj.vert")
+    .uses("src/obj.frag")
+    .depends("src/obj.rs");
 }

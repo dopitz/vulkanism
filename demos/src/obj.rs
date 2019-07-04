@@ -1,25 +1,27 @@
+extern crate nobs_assets as assets;
 extern crate nobs_imgui as imgui;
 extern crate nobs_vkmath as vkm;
+#[macro_use]
 extern crate nobs_vulkanism as vk;
-extern crate nobs_assets as assets;
 
 use vk::builder::Buildable;
 use vk::cmd::stream::*;
 use vk::winit;
 
-mod tex {
+mod obj {
   vk::pipes::pipeline! {
     stage = {
       ty = "vert",
-      glsl = "src/textured.vert",
+      glsl = "src/obj.vert",
     }
 
     stage = {
       ty = "frag",
-      glsl = "src/textured.frag",
+      glsl = "src/obj.frag",
     }
   }
 
+  #[repr(C)]
   #[derive(Clone, Copy)]
   pub struct UbTransform {
     pub model: vkm::Mat4f,
@@ -29,8 +31,9 @@ mod tex {
 
   #[repr(C)]
   pub struct Vertex {
-    pub pos: vkm::Vec4f,
-    pub tex: vkm::Vec2f,
+    pub pos: vkm::Vec3f,
+    pub norm: vkm::Vec3f,
+    pub uv: vkm::Vec2f,
   }
 }
 
@@ -78,37 +81,45 @@ pub fn setup_vulkan_window() -> (
   (inst, pdevice, device, events_loop, window)
 }
 
-pub fn setup_rendertargets(
+pub fn resize_window(
   pdevice: &vk::device::PhysicalDevice,
   device: &vk::device::Device,
   window: &vk::wnd::Window,
   alloc: &mut vk::mem::Allocator,
-) -> (vk::wnd::Swapchain, vk::pass::Renderpass, Vec<vk::pass::Framebuffer>) {
+  mut sc: Option<vk::wnd::Swapchain>,
+  mut pass: Option<vk::pass::Renderpass>,
+  mut fb: Option<vk::pass::Framebuffer>,
+) -> (vk::wnd::Swapchain, vk::pass::Renderpass, vk::pass::Framebuffer) {
+  if sc.is_some() {
+    sc.take();
+  }
   let sc = vk::wnd::Swapchain::build(pdevice.handle, device.handle, window.surface).create();
 
   let depth_format = vk::pass::Framebuffer::select_depth_format(pdevice.handle, vk::pass::Framebuffer::enumerate_depth_formats()).unwrap();
 
-  let pass = vk::pass::Renderpass::build(device.handle)
-    .attachment(0, vk::AttachmentDescription::build().format(vk::FORMAT_B8G8R8A8_UNORM))
-    .attachment(1, vk::AttachmentDescription::build().format(depth_format))
-    .subpass(
-      0,
-      vk::SubpassDescription::build()
-        .bindpoint(vk::PIPELINE_BIND_POINT_GRAPHICS)
-        .color(0)
-        .depth(1),
-    )
-    .dependency(vk::SubpassDependency::build().external(0))
-    .create()
-    .unwrap();
+  let pass = match pass {
+    Some(p) => p,
+    None => vk::pass::Renderpass::build(device.handle)
+      .attachment(0, vk::AttachmentDescription::build().format(vk::FORMAT_B8G8R8A8_UNORM))
+      .attachment(1, vk::AttachmentDescription::build().format(depth_format))
+      .subpass(
+        0,
+        vk::SubpassDescription::build()
+          .bindpoint(vk::PIPELINE_BIND_POINT_GRAPHICS)
+          .color(0)
+          .depth(1),
+      )
+      .dependency(vk::SubpassDependency::build().external(0))
+      .create()
+      .unwrap(),
+  };
 
-  let fbs = vec![
-    vk::pass::Framebuffer::build_from_pass(&pass, alloc).extent(sc.extent).create(),
-    vk::pass::Framebuffer::build_from_pass(&pass, alloc).extent(sc.extent).create(),
-    vk::pass::Framebuffer::build_from_pass(&pass, alloc).extent(sc.extent).create(),
-  ];
+  if fb.is_some() {
+    fb.take();
+  }
+  let fb = vk::pass::Framebuffer::build_from_pass(&pass, alloc).extent(sc.extent).create();
 
-  (sc, pass, fbs)
+  (sc, pass, fb)
 }
 
 pub fn update_mvp(
@@ -116,13 +127,13 @@ pub fn update_mvp(
   cmds: &vk::cmd::CmdPool,
   stage: &mut vk::mem::Staging,
   ub: vk::Buffer,
-  mvp: &tex::UbTransform,
+  mvp: &obj::UbTransform,
 ) {
   let mut map = stage
-    .range(0, std::mem::size_of::<tex::UbTransform>() as vk::DeviceSize)
+    .range(0, std::mem::size_of::<obj::UbTransform>() as vk::DeviceSize)
     .map()
     .unwrap();
-  let svb = map.as_slice_mut::<tex::UbTransform>();
+  let svb = map.as_slice_mut::<obj::UbTransform>();
 
   svb[0] = *mvp;
 
@@ -138,24 +149,44 @@ pub fn main() {
   let mut alloc = vk::mem::Allocator::new(pdevice.handle, device.handle);
   let cmds = vk::cmd::CmdPool::new(device.handle, device.queues[0].family).unwrap();
 
-  let (mut sc, rp, fbs) = setup_rendertargets(&pdevice, &device, &window, &mut alloc);
-  let mut mem = vk::mem::Mem::new(alloc, fbs.len());
+  let (mut sc, mut rp, mut fb) = resize_window(&pdevice, &device, &window, &mut alloc, None, None, None);
+  let mut mem = vk::mem::Mem::new(alloc, 1);
 
-  let pipe = tex::new(device.handle, rp.pass, 0)
+  let pipe = obj::new(device.handle, rp.pass, 0)
     .vertex_input(
       vk::PipelineVertexInputStateCreateInfo::build()
         .push_binding(
           vk::VertexInputBindingDescription::build()
             .binding(0)
-            .stride(std::mem::size_of::<tex::Vertex>() as u32),
+            .stride(std::mem::size_of::<vkm::Vec3f>() as u32),
         )
-        .push_attribute(vk::VertexInputAttributeDescription::build().binding(0).location(0))
         .push_attribute(
           vk::VertexInputAttributeDescription::build()
             .binding(0)
+            .location(0)
+            .format(vk::FORMAT_R32G32B32_SFLOAT),
+        )
+        .push_binding(
+          vk::VertexInputBindingDescription::build()
+            .binding(1)
+            .stride(std::mem::size_of::<vkm::Vec3f>() as u32),
+        )
+        .push_attribute(
+          vk::VertexInputAttributeDescription::build()
+            .binding(1)
             .location(1)
-            .format(vk::FORMAT_R32G32_SFLOAT)
-            .offset(4 * std::mem::size_of::<f32>() as u32),
+            .format(vk::FORMAT_R32G32B32_SFLOAT)
+        )
+        .push_binding(
+          vk::VertexInputBindingDescription::build()
+            .binding(2)
+            .stride(std::mem::size_of::<vkm::Vec2f>() as u32),
+        )
+        .push_attribute(
+          vk::VertexInputAttributeDescription::build()
+            .binding(2)
+            .location(2)
+            .format(vk::FORMAT_R32G32_SFLOAT),
         ),
     )
     .dynamic(
@@ -164,104 +195,47 @@ pub fn main() {
         .push_state(vk::DYNAMIC_STATE_SCISSOR),
     )
     .blend(vk::PipelineColorBlendStateCreateInfo::build().push_attachment(vk::PipelineColorBlendAttachmentState::build()))
+    .raster(vk::PipelineRasterizationStateCreateInfo::build().front_face(vk::FRONT_FACE_CLOCKWISE))
     .create()
     .unwrap();
 
+  let mut assets: assets::Assets<assets::model::wavefront::AssetType> = assets::Assets::new(device.handle, mem.clone());
+  let shapes = assets.get("assets/bunny.obj");
 
-  let shapes = assets::model::Obj::load("assets/sponza/sponza.obj");
-
-
-
-
-  let mut vb = vk::NULL_HANDLE;
   let mut ub = vk::NULL_HANDLE;
-  let mut texture = vk::NULL_HANDLE;
-  vk::mem::Buffer::new(&mut vb)
-    .vertex_buffer(3 * std::mem::size_of::<tex::Vertex>() as vk::DeviceSize)
-    .new_buffer(&mut ub)
-    .uniform_buffer(std::mem::size_of::<tex::UbTransform>() as vk::DeviceSize)
-    .new_image(&mut texture)
-    .texture2d(256, 256, vk::FORMAT_R8G8B8A8_UNORM)
+  vk::mem::Buffer::new(&mut ub)
+    .uniform_buffer(std::mem::size_of::<obj::UbTransform>() as vk::DeviceSize)
     .bind(&mut mem.alloc, vk::mem::BindType::Block)
     .unwrap();
 
-  let texview = vk::ImageViewCreateInfo::build()
-    .texture2d(texture, vk::FORMAT_R8G8B8A8_UNORM)
-    .create(device.handle)
-    .unwrap();
-  let sampler = vk::SamplerCreateInfo::build().create(device.handle).unwrap();
-
   let mut stage = vk::mem::Staging::new(mem.clone(), 256 * 256 * 4).unwrap();
-  {
-    let mut map = stage
-      .range(0, 3 * std::mem::size_of::<tex::Vertex>() as vk::DeviceSize)
-      .map()
-      .unwrap();
-    let svb = map.as_slice_mut::<tex::Vertex>();
-    svb[0].pos = vkm::Vec4::new(0.0, 1.0, 0.0, 1.0);
-    svb[0].tex = vkm::Vec2::new(1.0, 1.0);
-
-    svb[1].pos = vkm::Vec4::new(-1.0, -1.0, 0.0, 1.0);
-    svb[1].tex = vkm::Vec2::new(1.0, 1.0);
-
-    svb[2].pos = vkm::Vec4::new(1.0, -1.0, 0.0, 1.0);
-    svb[2].tex = vkm::Vec2::new(1.0, 1.0);
-
-    let cs = cmds.begin_stream().unwrap().push(&stage.copy_into_buffer(vb, 0));
-
-    let mut batch = vk::cmd::AutoBatch::new(device.handle).unwrap();
-    batch.push(cs).submit(device.queues[0].handle).0.sync().unwrap();
-  }
-
-  {
-    let mut map = stage
-      .range(0, 256 * 256 * std::mem::size_of::<u32>() as vk::DeviceSize)
-      .map()
-      .unwrap();
-    let data = map.as_slice_mut::<u32>();
-
-    for d in data.iter_mut() {
-      *d = 0xFF << 24 | 0xFF << 8 | 0xFF;
-    }
-
-    let cs = cmds.begin_stream().unwrap().push(
-      &stage.copy_into_image(
-        texture,
-        vk::BufferImageCopy::build()
-          .image_extent(vk::Extent3D::build().set(256, 256, 1).into())
-          .subresource(vk::ImageSubresourceLayers::build().aspect(vk::IMAGE_ASPECT_COLOR_BIT).into()),
-      ),
-    );
-
-    let mut batch = vk::cmd::AutoBatch::new(device.handle).unwrap();
-    batch.push(cs).submit(device.queues[0].handle).0.sync().unwrap();
-  }
 
   use vk::pipes::DescriptorPool;
   let descriptors = DescriptorPool::new(device.handle, DescriptorPool::new_capacity().add(&pipe.dsets[0], 1));
   let ds = descriptors.new_dset(&pipe.dsets[0]).unwrap();
 
-  tex::dset::write(device.handle, ds)
+  obj::dset::write(device.handle, ds)
     .ub_transform(vk::DescriptorBufferInfo::build().buffer(ub).into())
-    .tex_sampler(
-      vk::DescriptorImageInfo::build()
-        .set(vk::IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, texview, sampler)
-        .into(),
-    )
     .update();
 
   let t = std::time::SystemTime::now();
   let mut n = 0;
 
   let mut close = false;
-  let mut x = 'x';
+  let mut resize = false;
 
   use vk::cmd::commands::*;
-  let draw = DrawManaged::new([(vb, 0)].iter().into(), DrawVertices::with_vertices(3).into());
-  let mut frame = vk::cmd::RRBatch::new(device.handle, fbs.len()).unwrap();
+  let mut frame = vk::cmd::RRBatch::new(device.handle, 1).unwrap();
 
-  let mut mvp = tex::UbTransform {
-    model: vkm::Mat4::identity(),
+  let draw = DrawManaged::new(
+    [(shapes[0].vertices, 0), (shapes[0].normals, 0), (shapes[0].uvs, 0)].iter().into(),
+    DrawIndexed::with_indices(shapes[0].indices, shapes[0].count)
+      .index_type(vk::INDEX_TYPE_UINT32)
+      .into(),
+  );
+
+  let mut mvp = obj::UbTransform {
+    model: vkm::Mat4::rotation_y(std::f32::consts::PI), // vkm::Mat4::identity(), //
     view: vkm::Mat4::look_at(
       vkm::Vec3::new(0.0, 0.0, -10.0),
       vkm::Vec3::new(0.0, 0.0, 0.0),
@@ -280,13 +254,14 @@ pub fn main() {
         event: winit::WindowEvent::Resized(size),
         ..
       } => {
-        println!("{:?}", size);
-        update_mvp(&device, &cmds, &mut stage, ub, &mvp)
+        resize = true;
       }
       winit::Event::WindowEvent {
-        event: winit::WindowEvent::ReceivedCharacter(c),
+        event: winit::WindowEvent::HiDpiFactorChanged(dpi),
         ..
-      } => x = c,
+      } => {
+        resize = true;
+      }
       winit::Event::DeviceEvent {
         event: winit::DeviceEvent::Key(key),
         ..
@@ -299,6 +274,14 @@ pub fn main() {
             }
             winit::VirtualKeyCode::O => {
               mvp.view = mvp.view * vkm::Mat4::translate(vkm::Vec3::new(0.0, 0.0, 0.2));
+              update_mvp(&device, &cmds, &mut stage, ub, &mvp);
+            }
+            winit::VirtualKeyCode::L => {
+              mvp.view = mvp.view * vkm::Mat4::translate(vkm::Vec3::new(-0.2, 0.0, 0.0));
+              update_mvp(&device, &cmds, &mut stage, ub, &mvp);
+            }
+            winit::VirtualKeyCode::H => {
+              mvp.view = mvp.view * vkm::Mat4::translate(vkm::Vec3::new(0.2, 0.0, 0.0));
               update_mvp(&device, &cmds, &mut stage, ub, &mvp);
             }
             _ => (),
@@ -318,13 +301,27 @@ pub fn main() {
       _ => (),
     });
 
+    if resize {
+      vk_uncheck!(vk::DeviceWaitIdle(device.handle));
+      let (nsc, nrp, nfb) = resize_window(&pdevice, &device, &window, &mut mem.alloc, Some(sc), Some(rp), Some(fb));
+      sc = nsc;
+      rp = nrp;
+      fb = nfb;
+
+      mvp.proj = vkm::Mat4::scale(vkm::Vec3::new(1.0, -1.0, 1.0)) * vkm::Mat4::perspective_lh(std::f32::consts::PI / 4.0, sc.extent.width as f32 / sc.extent.height as f32, 1.0, 100.0);
+      update_mvp(&device, &cmds, &mut stage, ub, &mvp);
+      resize = false;
+
+      println!("{:?}", sc.extent);
+    }
+
     let i = frame.next().unwrap();
     let next = sc.next_image();
-    let fb = &fbs[i];
 
     let cs = cmds
       .begin_stream()
       .unwrap()
+      .push_mut(&mut assets.up)
       .push(&ImageBarrier::to_color_attachment(fb.images[0]))
       .push(&fb.begin())
       .push(&Viewport::with_extent(sc.extent))
@@ -349,9 +346,6 @@ pub fn main() {
   }
 
   frame.sync().unwrap();
-
-  vk::DestroyImageView(device.handle, texview, std::ptr::null());
-  vk::DestroySampler(device.handle, sampler, std::ptr::null());
 
   println!("{}", mem.alloc.print_stats());
 
