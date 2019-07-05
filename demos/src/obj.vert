@@ -9,8 +9,10 @@ layout(location = 0) out vec3 vs_position;
 layout(location = 1) out vec3 vs_normal;
 layout(location = 2) out vec2 out_tex;
 
-layout(binding = 0) uniform ub_transform {
+layout(binding = 0) uniform ub_model {
   mat4 model;
+};
+layout(binding = 1) uniform ub_camera {
   mat4 view;
   mat4 proj;
 };

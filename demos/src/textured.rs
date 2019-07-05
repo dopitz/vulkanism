@@ -1,4 +1,5 @@
 extern crate nobs_imgui as imgui;
+#[macro_use]
 extern crate nobs_vkmath as vkm;
 extern crate nobs_vulkanism as vk;
 
@@ -191,14 +192,14 @@ pub fn main() {
       .map()
       .unwrap();
     let svb = map.as_slice_mut::<tex::Vertex>();
-    svb[0].pos = vkm::Vec4::new(0.0, 1.0, 0.0, 1.0);
-    svb[0].tex = vkm::Vec2::new(1.0, 1.0);
+    svb[0].pos = vec4!(0.0, 1.0, 0.0, 1.0);
+    svb[0].tex = vec2!(1.0, 1.0);
 
-    svb[1].pos = vkm::Vec4::new(1.0, -1.0, 0.0, 1.0);
-    svb[1].tex = vkm::Vec2::new(1.0, 1.0);
+    svb[1].pos = vec4!(1.0, -1.0, 0.0, 1.0);
+    svb[1].tex = vec2!(1.0, 1.0);
 
-    svb[2].pos = vkm::Vec4::new(-1.0, -1.0, 0.0, 1.0);
-    svb[2].tex = vkm::Vec2::new(1.0, 1.0);
+    svb[2].pos = vec4!(-1.0, -1.0, 0.0, 1.0);
+    svb[2].tex = vec2!(1.0, 1.0);
 
     let cs = cmds.begin_stream().unwrap().push(&stage.copy_into_buffer(vb, 0));
 
@@ -255,11 +256,7 @@ pub fn main() {
 
   let mut mvp = tex::UbTransform {
     model: vkm::Mat4::identity(),
-    view: vkm::Mat4::scale(vkm::Vec3::new(-1.0, -1.0, 1.0)) * vkm::Mat4::look_at(
-      vkm::Vec3::new(0.0, 0.0, -10.0),
-      vkm::Vec3::new(0.0, 0.0, 0.0),
-      vkm::Vec3::new(0.0, 1.0, 0.0),
-    ),
+    view: vkm::Mat4::scale(vec3!(-1.0, -1.0, 1.0)) * vkm::Mat4::look_at(vec3!(0.0, 0.0, -10.0), vec3!(0.0, 0.0, 0.0), vec3!(0.0, 1.0, 0.0)),
     proj: vkm::Mat4::perspective_lh(std::f32::consts::PI / 4.0, 1.0, 1.0, 100.0),
   };
 

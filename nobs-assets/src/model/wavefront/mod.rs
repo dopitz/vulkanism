@@ -51,6 +51,42 @@ impl crate::AssetType for AssetType {
   fn load(id: &str, up: &mut Update) -> Self::Types {
     let obj = Obj::load(id);
 
+    let o = 2 * 3;
+    let i = [obj[0].indices[o], obj[0].indices[o + 1], obj[0].indices[o + 2]].iter().map(|i| *i as usize).collect::<Vec<_>>();
+    let v = [obj[0].vertices[i[0]], obj[0].vertices[i[1]], obj[0].vertices[i[2]]];
+    let n = [obj[0].normals[i[0]], obj[0].normals[i[1]], obj[0].normals[i[2]]];
+
+    let a = v[1] - v[0];
+    let b = v[2] - v[0];
+    let nt = Vec3f::normalize(Vec3f::cross(a, b));
+    let nn = Vec3f::normalize(n[0]);
+
+    let d = Vec3f::dot(nt, nn);
+
+    println!("{:?}", i);
+    println!("{:?}", v);
+    println!("{:?}", n);
+    println!("");
+
+    println!("{:?}", a);
+    println!("{:?}", b);
+    println!("");
+
+    println!("{:?}", nt);
+    println!("{:?}", nn);
+    println!("{:?}", d);
+
+    let nn = Vec3f::normalize(n[1]);
+    println!("{:?}", nn);
+    println!("{:?}", d);
+
+    let nn = Vec3f::normalize(n[2]);
+    println!("{:?}", nn);
+    println!("{:?}", d);
+
+
+
+
     let mut shapes = obj
       .iter()
       .map(|s| Shape {

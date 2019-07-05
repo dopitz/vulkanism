@@ -183,7 +183,7 @@ impl Obj {
           indices[i] = *face_indices.entry(fi).or_insert_with(|| {
             let i = shape.vertices.len();
             shape.vertices.push(vertices[fi.v as usize]);
-            shape.normals.push(-normals[fi.vn as usize]);
+            shape.normals.push(normals[fi.vn as usize]);
             shape.uvs.push(uvs[fi.vt as usize]);
             i as u32 
           });

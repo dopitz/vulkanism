@@ -5,6 +5,8 @@ extern crate nobs_vkmath as vkm;
 #[macro_use]
 extern crate nobs_vulkanism as vk;
 
+mod camera;
+
 use vk::builder::Buildable;
 use vk::cmd::stream::*;
 use vk::winit;
@@ -24,8 +26,13 @@ mod obj {
 
   #[repr(C)]
   #[derive(Clone, Copy)]
-  pub struct UbTransform {
+  pub struct UbModel {
     pub model: vkm::Mat4f,
+  }
+
+  #[repr(C)]
+  #[derive(Clone, Copy)]
+  pub struct UbCamera {
     pub view: vkm::Mat4f,
     pub proj: vkm::Mat4f,
   }
@@ -35,6 +42,77 @@ mod obj {
     pub pos: vkm::Vec3f,
     pub norm: vkm::Vec3f,
     pub uv: vkm::Vec2f,
+  }
+
+  use vk::builder::Buildable;
+  use vk::pipes as p;
+
+  pub struct Pipeline {
+    pipe: p::Pipeline,
+    pool: p::DescriptorPool,
+  }
+
+  impl Pipeline {
+    pub fn new(device: vk::Device, pass: vk::RenderPass) -> Self {
+      let pipe = new(device, pass, 0)
+        .vertex_input(
+          vk::PipelineVertexInputStateCreateInfo::build()
+            .push_binding(
+              vk::VertexInputBindingDescription::build()
+                .binding(0)
+                .stride(std::mem::size_of::<vkm::Vec3f>() as u32),
+            )
+            .push_attribute(
+              vk::VertexInputAttributeDescription::build()
+                .binding(0)
+                .location(0)
+                .format(vk::FORMAT_R32G32B32_SFLOAT),
+            )
+            .push_binding(
+              vk::VertexInputBindingDescription::build()
+                .binding(1)
+                .stride(std::mem::size_of::<vkm::Vec3f>() as u32),
+            )
+            .push_attribute(
+              vk::VertexInputAttributeDescription::build()
+                .binding(1)
+                .location(1)
+                .format(vk::FORMAT_R32G32B32_SFLOAT),
+            )
+            .push_binding(
+              vk::VertexInputBindingDescription::build()
+                .binding(2)
+                .stride(std::mem::size_of::<vkm::Vec2f>() as u32),
+            )
+            .push_attribute(
+              vk::VertexInputAttributeDescription::build()
+                .binding(2)
+                .location(2)
+                .format(vk::FORMAT_R32G32_SFLOAT),
+            ),
+        )
+        .dynamic(
+          vk::PipelineDynamicStateCreateInfo::build()
+            .push_state(vk::DYNAMIC_STATE_VIEWPORT)
+            .push_state(vk::DYNAMIC_STATE_SCISSOR),
+        )
+        .blend(vk::PipelineColorBlendStateCreateInfo::build().push_attachment(vk::PipelineColorBlendAttachmentState::build()))
+        .create()
+        .unwrap();
+
+      let pool = p::DescriptorPool::new(device, p::DescriptorPool::new_capacity().add(&pipe.dsets[0], 1));
+
+      Self { pipe, pool }
+    }
+
+    pub fn new_dset(&mut self) -> vk::cmd::commands::BindDset {
+      let ds = self.pool.new_dset(&self.pipe.dsets[0]).unwrap();
+      vk::cmd::commands::BindDset::new(vk::PIPELINE_BIND_POINT_GRAPHICS, self.pipe.layout, 0, ds)
+    }
+
+    pub fn bind(&self) -> vk::cmd::commands::BindPipeline {
+      vk::cmd::commands::BindPipeline::graphics(self.pipe.handle)
+    }
   }
 }
 
@@ -123,27 +201,6 @@ pub fn resize_window(
   (sc, pass, fb)
 }
 
-pub fn update_mvp(
-  device: &vk::device::Device,
-  cmds: &vk::cmd::CmdPool,
-  stage: &mut vk::mem::Staging,
-  ub: vk::Buffer,
-  mvp: &obj::UbTransform,
-) {
-  let mut map = stage
-    .range(0, std::mem::size_of::<obj::UbTransform>() as vk::DeviceSize)
-    .map()
-    .unwrap();
-  let svb = map.as_slice_mut::<obj::UbTransform>();
-
-  svb[0] = *mvp;
-
-  let cs = cmds.begin_stream().unwrap().push(&stage.copy_into_buffer(ub, 0));
-
-  let mut batch = vk::cmd::AutoBatch::new(device.handle).unwrap();
-  batch.push(cs).submit(device.queues[0].handle).0.sync().unwrap();
-}
-
 pub fn main() {
   let (_inst, pdevice, device, mut events_loop, window) = setup_vulkan_window();
 
@@ -153,80 +210,12 @@ pub fn main() {
   let (mut sc, mut rp, mut fb) = resize_window(&pdevice, &device, &window, &mut alloc, None, None, None);
   let mut mem = vk::mem::Mem::new(alloc, 1);
 
-  let pipe = obj::new(device.handle, rp.pass, 0)
-    .vertex_input(
-      vk::PipelineVertexInputStateCreateInfo::build()
-        .push_binding(
-          vk::VertexInputBindingDescription::build()
-            .binding(0)
-            .stride(std::mem::size_of::<vkm::Vec3f>() as u32),
-        )
-        .push_attribute(
-          vk::VertexInputAttributeDescription::build()
-            .binding(0)
-            .location(0)
-            .format(vk::FORMAT_R32G32B32_SFLOAT),
-        )
-        .push_binding(
-          vk::VertexInputBindingDescription::build()
-            .binding(1)
-            .stride(std::mem::size_of::<vkm::Vec3f>() as u32),
-        )
-        .push_attribute(
-          vk::VertexInputAttributeDescription::build()
-            .binding(1)
-            .location(1)
-            .format(vk::FORMAT_R32G32B32_SFLOAT),
-        )
-        .push_binding(
-          vk::VertexInputBindingDescription::build()
-            .binding(2)
-            .stride(std::mem::size_of::<vkm::Vec2f>() as u32),
-        )
-        .push_attribute(
-          vk::VertexInputAttributeDescription::build()
-            .binding(2)
-            .location(2)
-            .format(vk::FORMAT_R32G32_SFLOAT),
-        ),
-    )
-    .dynamic(
-      vk::PipelineDynamicStateCreateInfo::build()
-        .push_state(vk::DYNAMIC_STATE_VIEWPORT)
-        .push_state(vk::DYNAMIC_STATE_SCISSOR),
-    )
-    .blend(vk::PipelineColorBlendStateCreateInfo::build().push_attachment(vk::PipelineColorBlendAttachmentState::build()))
-    //.raster(vk::PipelineRasterizationStateCreateInfo::build().front_face(vk::FRONT_FACE_CLOCKWISE))
-    .create()
-    .unwrap();
+  let mut camera = camera::Camera::new(mem.clone());
+  camera.transform.view = vkm::Mat4::look_at(vec3!(0.0, 0.0, -10.0), vec3!(0.0, 0.0, 0.0), vec3!(0.0, 1.0, 0.0));
+  camera.resize(sc.extent);
 
   let mut assets: assets::Assets<assets::model::wavefront::AssetType> = assets::Assets::new(device.handle, mem.clone());
   let shapes = assets.get("assets/bunny.obj");
-
-  let mut ub = vk::NULL_HANDLE;
-  vk::mem::Buffer::new(&mut ub)
-    .uniform_buffer(std::mem::size_of::<obj::UbTransform>() as vk::DeviceSize)
-    .bind(&mut mem.alloc, vk::mem::BindType::Block)
-    .unwrap();
-
-  let mut stage = vk::mem::Staging::new(mem.clone(), 256 * 256 * 4).unwrap();
-
-  use vk::pipes::DescriptorPool;
-  let descriptors = DescriptorPool::new(device.handle, DescriptorPool::new_capacity().add(&pipe.dsets[0], 1));
-  let ds = descriptors.new_dset(&pipe.dsets[0]).unwrap();
-
-  obj::dset::write(device.handle, ds)
-    .ub_transform(vk::DescriptorBufferInfo::build().buffer(ub).into())
-    .update();
-
-  let t = std::time::SystemTime::now();
-  let mut n = 0;
-
-  let mut close = false;
-  let mut resize = false;
-
-  use vk::cmd::commands::*;
-  let mut frame = vk::cmd::RRBatch::new(device.handle, 1).unwrap();
 
   let draw = DrawManaged::new(
     [(shapes[0].vertices, 0), (shapes[0].normals, 0), (shapes[0].uvs, 0)].iter().into(),
@@ -235,80 +224,68 @@ pub fn main() {
       .into(),
   );
 
-  let mut mvp = obj::UbTransform {
-    model: vkm::Mat4::rotation_y(std::f32::consts::PI), //
-    view: vkm::Mat4::scale(vec3!(-1.0, -1.0, 1.0)) * vkm::Mat4::look_at(
-      vkm::Vec3::new(0.0, 0.0, -10.0),
-      vkm::Vec3::new(0.0, 0.0, 0.0),
-      vkm::Vec3::new(0.0, 1.0, 0.0),
-    ),
-    proj: vkm::Mat4::scale(vec3!(-1.0, -1.0, 1.0)) * vkm::Mat4::perspective_lh(std::f32::consts::PI / 4.0, 1.0, 1.0, 100.0),
-  };
+  let mut pipe = obj::Pipeline::new(device.handle, rp.pass);
+  let bind_ds = pipe.new_dset();
 
-  let v = vec4!(1.0, 1.0, 1.0, 0.0);
-  println!("{:?}", v);
-  let v = mvp.model * v;
-  println!("{:?}", v);
-  let v = mvp.view * v;
-  println!("{:?}", v);
-  let v = mvp.proj * v;
-  println!("{:?}", v);
+  let mut ub_model = vk::NULL_HANDLE;
+  vk::mem::Buffer::new(&mut ub_model)
+    .uniform_buffer(std::mem::size_of::<obj::UbModel>() as vk::DeviceSize)
+    .bind(&mut mem.alloc, vk::mem::BindType::Block)
+    .unwrap();
 
+  // update uniform buffers
+  {
+    let mut stage = assets.up.get_staging(std::mem::size_of::<obj::UbModel>() as vk::DeviceSize);
+    let mut map = stage.map().unwrap();
+    map.host_to_device(&obj::UbModel {
+      model: vkm::Mat4::scale(vec3!(1.0, 1.0, -1.0)),
+    });
+    assets.up.push_buffer((
+      stage.copy_into_buffer(ub_model, 0),
+      Some(BufferBarrier::new(ub_model).to(vk::ACCESS_UNIFORM_READ_BIT)),
+    ));
+  }
+
+  obj::dset::write(device.handle, bind_ds.dset)
+    .ub_model(vk::DescriptorBufferInfo::build().buffer(ub_model).into())
+    .ub_camera(vk::DescriptorBufferInfo::build().buffer(camera.ub).into())
+    .update();
+
+  let mut close = false;
+  let mut resize = false;
+
+  use vk::cmd::commands::*;
+  let mut frame = vk::cmd::RRBatch::new(device.handle, 1).unwrap();
   loop {
-    events_loop.poll_events(|event| match event {
-      winit::Event::WindowEvent {
-        event: winit::WindowEvent::CloseRequested,
-        ..
-      } => close = true,
-      winit::Event::WindowEvent {
-        event: winit::WindowEvent::Resized(size),
-        ..
-      } => {
-        resize = true;
-      }
-      winit::Event::WindowEvent {
-        event: winit::WindowEvent::HiDpiFactorChanged(dpi),
-        ..
-      } => {
-        resize = true;
-      }
-      winit::Event::DeviceEvent {
-        event: winit::DeviceEvent::Key(key),
-        ..
-      } => {
-        if let Some(k) = key.virtual_keycode {
-          match k {
-            winit::VirtualKeyCode::Comma => {
-              mvp.view = mvp.view * vkm::Mat4::translate(vkm::Vec3::new(0.0, 0.0, -0.2));
-              update_mvp(&device, &cmds, &mut stage, ub, &mvp);
-            }
-            winit::VirtualKeyCode::O => {
-              mvp.view = mvp.view * vkm::Mat4::translate(vkm::Vec3::new(0.0, 0.0, 0.2));
-              update_mvp(&device, &cmds, &mut stage, ub, &mvp);
-            }
-            winit::VirtualKeyCode::L => {
-              mvp.view = mvp.view * vkm::Mat4::translate(vkm::Vec3::new(-0.2, 0.0, 0.0));
-              update_mvp(&device, &cmds, &mut stage, ub, &mvp);
-            }
-            winit::VirtualKeyCode::H => {
-              mvp.view = mvp.view * vkm::Mat4::translate(vkm::Vec3::new(0.2, 0.0, 0.0));
-              update_mvp(&device, &cmds, &mut stage, ub, &mvp);
-            }
-            _ => (),
-          }
+    events_loop.poll_events(|event| {
+      camera.handle_events(&event);
+      match event {
+        winit::Event::WindowEvent {
+          event: winit::WindowEvent::CloseRequested,
+          ..
+        } => close = true,
+        winit::Event::WindowEvent {
+          event: winit::WindowEvent::Resized(size),
+          ..
+        } => {
+          resize = true;
         }
-
-        println!("{:?}", key);
+        winit::Event::WindowEvent {
+          event: winit::WindowEvent::HiDpiFactorChanged(dpi),
+          ..
+        } => {
+          resize = true;
+        }
+        winit::Event::DeviceEvent {
+          event: winit::DeviceEvent::MouseWheel {
+            delta: winit::MouseScrollDelta::LineDelta(lp, la),
+          },
+          ..
+        } => {
+          println!("{:?}", (lp, la));
+        }
+        _ => (),
       }
-      winit::Event::DeviceEvent {
-        event: winit::DeviceEvent::MouseWheel {
-          delta: winit::MouseScrollDelta::LineDelta(lp, la),
-        },
-        ..
-      } => {
-        println!("{:?}", (lp, la));
-      }
-      _ => (),
     });
 
     if resize {
@@ -318,17 +295,13 @@ pub fn main() {
       rp = nrp;
       fb = nfb;
 
-      mvp.proj = vkm::Mat4::perspective_lh(
-        std::f32::consts::PI / 4.0,
-        sc.extent.width as f32 / sc.extent.height as f32,
-        1.0,
-        100.0,
-      );
-      update_mvp(&device, &cmds, &mut stage, ub, &mvp);
+      camera.resize(sc.extent);
       resize = false;
 
       println!("{:?}", sc.extent);
     }
+
+    camera.update(&mut assets.up);
 
     let i = frame.next().unwrap();
     let next = sc.next_image();
@@ -341,8 +314,8 @@ pub fn main() {
       .push(&fb.begin())
       .push(&Viewport::with_extent(sc.extent))
       .push(&Scissor::with_extent(sc.extent))
-      .push(&BindPipeline::graphics(pipe.handle))
-      .push(&BindDset::new(vk::PIPELINE_BIND_POINT_GRAPHICS, pipe.layout, 0, ds))
+      .push(&pipe.bind())
+      .push(&bind_ds)
       .push(&draw)
       .push(&fb.end())
       .push(&sc.blit(next.index, fb.images[0]));
@@ -353,7 +326,6 @@ pub fn main() {
       .submit(device.queues[0].handle);
 
     sc.present(device.queues[0].handle, next.index, &[wait.unwrap()]);
-    n += 1;
 
     if close {
       break;
@@ -363,8 +335,4 @@ pub fn main() {
   frame.sync().unwrap();
 
   println!("{}", mem.alloc.print_stats());
-
-  let t = t.elapsed().unwrap();
-  let t = t.as_secs() as f32 + t.subsec_millis() as f32 / 1000.0;
-  println!("{}, {}   {}", n, t, n as f32 / t);
 }
