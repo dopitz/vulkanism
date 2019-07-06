@@ -1,6 +1,7 @@
 use vk;
 use vk::cmd::commands::DrawManaged;
 use vk::cmd::commands::DrawVertices;
+use vk::mem::Handle;
 use vkm::Vec2i;
 
 use super::pipeline::*;
@@ -25,8 +26,8 @@ pub struct Sprites {
 
 impl Drop for Sprites {
   fn drop(&mut self) {
-    self.gui.get_mem().trash.push(self.ub);
-    self.gui.get_mem().trash.push(self.vb);
+    self.gui.get_mem().trash.push_buffer(self.ub);
+    self.gui.get_mem().trash.push_buffer(self.vb);
     self.gui.get_pipe(PipeId::Sprites).dsets.free_dset(self.pipe.bind_ds_instance.dset);
   }
 }
@@ -81,7 +82,7 @@ impl Sprites {
     if self.position != pos {
       self.position = pos;
 
-      let mut map = self.gui.get_mem().alloc.get_mapped(self.ub).unwrap();
+      let mut map = self.gui.get_mem().alloc.get_mapped(Handle::Buffer(self.ub)).unwrap();
       let data = map.as_slice_mut::<UbViewport>();
       data[0].offset = pos;
     }
@@ -105,7 +106,7 @@ impl Sprites {
 
     // create new buffer if capacity of cached one is not enough
     if sprites.len() > self.vb_capacity {
-      mem.trash.push(self.vb);
+      mem.trash.push_buffer(self.vb);
       self.vb = vk::NULL_HANDLE;
 
       vk::mem::Buffer::new(&mut self.vb)
@@ -119,7 +120,7 @@ impl Sprites {
 
     // only copy if not empty
     if !sprites.is_empty() {
-      mem.alloc.get_mapped(self.vb).unwrap().host_to_device_slice(sprites);
+      mem.alloc.get_mapped(Handle::Buffer(self.vb)).unwrap().host_to_device_slice(sprites);
     }
 
     // finally update the buffer and instance count int the mesh

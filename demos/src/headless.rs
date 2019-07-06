@@ -2,6 +2,7 @@ extern crate nobs_vulkanism as vk;
 
 use vk::builder::Buildable;
 use vk::cmd::stream::*;
+use vk::mem::Handle;
 
 mod make_sequence {
   vk::pipes::pipeline! {
@@ -80,7 +81,7 @@ pub fn main() {
   let cpool = vk::cmd::CmdPool::new(device.handle, device.queues[0].family).unwrap();
 
   {
-    let mapped = allocator.get_mapped(buf_ub).unwrap();
+    let mapped = allocator.get_mapped(Handle::Buffer(buf_ub)).unwrap();
     let ubb = make_sequence::Ub {
       num_elems: 123,
       i_first: 0,
@@ -89,7 +90,7 @@ pub fn main() {
     mapped.host_to_device(&ubb);
   }
   {
-    let mapped = allocator.get_mapped(buf_ub).unwrap();
+    let mapped = allocator.get_mapped(Handle::Buffer(buf_ub)).unwrap();
     //let mut ubb: make_sequence::Ub = unsafe { std::mem::uninitialized() };
     let ubb = mapped.device_to_host::<make_sequence::Ub>();
     println!("{:?}", ubb);
@@ -116,17 +117,17 @@ pub fn main() {
 
   println!("{}", allocator.print_stats());
 
-  allocator.destroy(buf_ub);
+  allocator.destroy(Handle::Buffer(buf_ub));
 
   println!("{}", allocator.print_stats());
   {
-    let mapped = allocator.get_mapped_region(buf_out, 8, 100 * 4 - 8).unwrap();
+    let mapped = allocator.get_mapped_region(Handle::Buffer(buf_out), 8, 100 * 4 - 8).unwrap();
     println!("{:?}", mapped);
     let v = mapped.as_slice::<u32>();
     println!("{:?}", v);
   }
 
-  allocator.destroy(buf_out);
+  allocator.destroy(Handle::Buffer(buf_out));
 
   allocator.free_unused();
 }

@@ -1,6 +1,5 @@
 use assets;
 use vk;
-use vk::cmd::commands::BufferCopy;
 
 pub struct Camera {
   mem: vk::mem::Mem,
@@ -20,7 +19,7 @@ pub struct CameraUb {
 
 impl Drop for Camera {
   fn drop(&mut self) {
-    self.mem.trash.push(self.ub);
+    self.mem.trash.push_buffer(self.ub);
   }
 }
 

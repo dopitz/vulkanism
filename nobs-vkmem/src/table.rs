@@ -17,7 +17,7 @@ struct Node {
 
 #[derive(Debug, Clone)]
 struct Binding {
-  handle: u64,
+  handle: Handle<u64>,
   node: Node,
 }
 
@@ -28,7 +28,7 @@ pub struct Table {
   pagesize: vk::DeviceSize,
 
   pages: HashMap<vk::DeviceMemory, HashMap<Block, Binding>>,
-  bindings: HashMap<u64, Block>,
+  bindings: HashMap<Handle<u64>, Block>,
   free: BTreeMap<Block, Node>,
 }
 
@@ -202,8 +202,8 @@ impl Table {
         // insert the first block always with the node of the group
         // prev reference will be good,
         // next reference will get fixed by subsequent blocks
-        self.insert(BlockType::Occupied(blocks[0]), n.clone(), Some(infos[0].handle.get()));
-        self.bindings.insert(infos[0].handle.get(), blocks[0]);
+        self.insert(BlockType::Occupied(blocks[0]), n.clone(), Some(infos[0].handle));
+        self.bindings.insert(infos[0].handle, blocks[0]);
 
         // insert middle blocks, same as in the first one, next references will be fixed by subsequent blocks
         if blocks.len() > 2 {
@@ -214,9 +214,9 @@ impl Table {
                 prev: Some(BlockType::Occupied(blocks[i - 1])),
                 next: Some(BlockType::Occupied(blocks[i + 1])),
               },
-              Some(infos[i].handle.get()),
+              Some(infos[i].handle),
             );
-            self.bindings.insert(infos[i].handle.get(), blocks[i]);
+            self.bindings.insert(infos[i].handle, blocks[i]);
           }
         }
 
@@ -229,9 +229,9 @@ impl Table {
               prev: Some(BlockType::Occupied(blocks[l - 1])),
               next: n.next,
             },
-            Some(infos[l].handle.get()),
+            Some(infos[l].handle),
           );
-          self.bindings.insert(infos[l].handle.get(), blocks[l]);
+          self.bindings.insert(infos[l].handle, blocks[l]);
         }
 
         // fix last block
@@ -259,7 +259,7 @@ impl Table {
   ///
   /// Does NOT reshuffel the memory to maximize contiuous free blocks,
   /// because vulkan does not allow to rebind buffers/images.
-  pub fn unbind(&mut self, handles: &[u64]) {
+  pub fn unbind(&mut self, handles: &[Handle<u64>]) {
     let mut blocks = Vec::with_capacity(handles.len());
     for h in handles {
       if let Some(b) = self.bindings.remove(h) {
@@ -369,7 +369,7 @@ impl Table {
     }
   }
 
-  fn insert(&mut self, b: BlockType, n: Node, h: Option<u64>) {
+  fn insert(&mut self, b: BlockType, n: Node, h: Option<Handle<u64>>) {
     if let Some(n) = n.prev.and_then(|prev| self.get_node(prev)) {
       n.next = Some(b);
     }
@@ -429,7 +429,7 @@ impl Table {
   /// Get the block of the specified resourcs.
   ///
   /// If the handle does not have a mapped block in this PageTable, returns None.
-  pub fn get_mem(&self, handle: u64) -> Option<Block> {
+  pub fn get_mem(&self, handle: Handle<u64>) -> Option<Block> {
     self.bindings.get(&handle).cloned()
   }
 

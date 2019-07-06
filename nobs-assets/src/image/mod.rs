@@ -11,8 +11,8 @@ use vk::cmd::commands::ImageBarrier;
 struct AssetType {}
 
 impl crate::AssetType for AssetType {
-  type Types = vk::Image;
-  fn load(id: &str, up: &mut Update) -> Self::Types {
+  type Type = vk::Image;
+  fn load(id: &str, up: &mut Update) -> Self::Type {
     let tga = targa::Targa::load(id).unwrap();
 
     let mut tex = vk::NULL_HANDLE;
@@ -44,5 +44,9 @@ impl crate::AssetType for AssetType {
     ));
 
     tex
+  }
+
+  fn free(asset: Self::Type, up: &mut Update) {
+    up.mem.trash.push_image(asset);
   }
 }

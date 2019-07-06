@@ -2,10 +2,11 @@ use std::sync::Arc;
 use std::sync::Mutex;
 
 use crate::Allocator;
+use crate::Handle;
 
 struct TrashImpl {
   alloc: Allocator,
-  ring_buffer: Vec<Vec<u64>>,
+  ring_buffer: Vec<Vec<Handle<u64>>>,
   ring_index: usize,
 }
 
@@ -32,7 +33,7 @@ impl Trash {
   /// # Returns
   /// The Trash object
   pub fn new(alloc: Allocator, inflight: usize) -> Self {
-    let mut ring_buffer= Vec::with_capacity(inflight);
+    let mut ring_buffer = Vec::with_capacity(inflight);
     ring_buffer.resize_with(inflight, || Default::default());
     Self {
       imp: Arc::new(Mutex::new(TrashImpl {
@@ -44,10 +45,18 @@ impl Trash {
   }
 
   /// Mark the given resource for deletion
-  pub fn push(&self, resource: u64) {
+  pub fn push(&self, resource: Handle<u64>) {
     let mut imp = self.imp.lock().unwrap();
     let i = imp.ring_index;
     imp.ring_buffer[i].push(resource);
+  }
+  /// Mark the specified image for deletion
+  pub fn push_image(&self, img: vk::Image) {
+    self.push(Handle::Image(img));
+  }
+  /// Mark the specified buffer for deletion
+  pub fn push_buffer(&self, buf: vk::Buffer) {
+    self.push(Handle::Buffer(buf));
   }
 
   /// Cleans up resources that can be deleted safely

@@ -1,6 +1,8 @@
 extern crate nobs_vk as vk;
 extern crate nobs_vkmem as vkmem;
 
+use vkmem::Handle;
+
 #[derive(Debug)]
 struct Ub {
   a: u32,
@@ -88,18 +90,18 @@ fn main() {
   // get_mapped mapps the whole block of memory to which the resources was bound
   // get_mapped_region lets us define a byte offset respective to the beginning of the resource and a size in bytes
   {
-    let mapped = allocator.get_mapped(buf_ub).unwrap();
+    let mapped = allocator.get_mapped(Handle::Buffer(buf_ub)).unwrap();
     let ubb = Ub { a: 123, b: 4, c: 5 };
     mapped.host_to_device(&ubb);
   }
   {
-    let mapped = allocator.get_mapped(buf_ub).unwrap();
+    let mapped = allocator.get_mapped(Handle::Buffer(buf_ub)).unwrap();
     let ubb : Ub = mapped.device_to_host();
     println!("{:?}", ubb);
   }
 
   {
-    let mapped = allocator.get_mapped_region(buf_out, 4, 100).unwrap();
+    let mapped = allocator.get_mapped_region(Handle::Buffer(buf_out), 4, 100).unwrap();
     println!("{:?}", mapped);
     let v = mapped.as_slice::<u32>();
     println!("{:?}", v);
@@ -111,7 +113,7 @@ fn main() {
   // buffers and images can be destroyed
   // destroy_many should be preferred, because this will rearrange the datastructure to find free blocks of memory
   //allocator.destroy(img);
-  allocator.destroy_many(&[buf_ub, buf_out]);
+  allocator.destroy_many(&[Handle::Buffer(buf_ub), Handle::Buffer(buf_out)]);
   println!("{}", allocator.print_stats());
 
   // destroying does NOT free memory

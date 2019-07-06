@@ -5,6 +5,7 @@ extern crate nobs_vkmath as vkm;
 
 use vk::builder::Buildable;
 use vk::cmd::stream::*;
+use vk::mem::Handle;
 use vk::winit;
 
 pub fn setup_vulkan_window() -> (
@@ -70,7 +71,7 @@ pub fn resize(
     let fb = fb.unwrap();
     let mut imgs = Vec::new();
     for i in fb.images.iter() {
-      imgs.push(*i);
+      imgs.push(Handle::Image(*i));
     }
     alloc.destroy_many(&imgs);
   }
@@ -204,6 +205,13 @@ impl Gui {
 
 impl StreamPushMut for Gui {
   fn enqueue_mut(&mut self, cs: CmdBuffer) -> CmdBuffer {
-    cs.push(&self.gui.begin_layout(imgui::window::ColumnLayout::default()).position(200, 200).size(500, 200).push(&mut self.text))
+    cs.push(
+      &self
+        .gui
+        .begin_layout(imgui::window::ColumnLayout::default())
+        .position(200, 200)
+        .size(500, 200)
+        .push(&mut self.text),
+    )
   }
 }

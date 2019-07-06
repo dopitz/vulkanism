@@ -47,45 +47,9 @@ pub struct Shape {
 pub struct AssetType {}
 
 impl crate::AssetType for AssetType {
-  type Types = Vec<Shape>;
-  fn load(id: &str, up: &mut Update) -> Self::Types {
+  type Type = Vec<Shape>;
+  fn load(id: &str, up: &mut Update) -> Self::Type {
     let obj = Obj::load(id);
-
-    let o = 2 * 3;
-    let i = [obj[0].indices[o], obj[0].indices[o + 1], obj[0].indices[o + 2]].iter().map(|i| *i as usize).collect::<Vec<_>>();
-    let v = [obj[0].vertices[i[0]], obj[0].vertices[i[1]], obj[0].vertices[i[2]]];
-    let n = [obj[0].normals[i[0]], obj[0].normals[i[1]], obj[0].normals[i[2]]];
-
-    let a = v[1] - v[0];
-    let b = v[2] - v[0];
-    let nt = Vec3f::normalize(Vec3f::cross(a, b));
-    let nn = Vec3f::normalize(n[0]);
-
-    let d = Vec3f::dot(nt, nn);
-
-    println!("{:?}", i);
-    println!("{:?}", v);
-    println!("{:?}", n);
-    println!("");
-
-    println!("{:?}", a);
-    println!("{:?}", b);
-    println!("");
-
-    println!("{:?}", nt);
-    println!("{:?}", nn);
-    println!("{:?}", d);
-
-    let nn = Vec3f::normalize(n[1]);
-    println!("{:?}", nn);
-    println!("{:?}", d);
-
-    let nn = Vec3f::normalize(n[2]);
-    println!("{:?}", nn);
-    println!("{:?}", d);
-
-
-
 
     let mut shapes = obj
       .iter()
@@ -134,7 +98,7 @@ impl crate::AssetType for AssetType {
     for (s, o) in shapes.iter_mut().zip(obj.iter()) {
       {
         let mut stage = up.get_staging((o.vertices.len() * std::mem::size_of::<vkm::Vec3f>()) as vk::DeviceSize);
-        let mut map = stage.map().unwrap();
+        let map = stage.map().unwrap();
         map.host_to_device_slice(&o.vertices);
         up.push_buffer((
           stage.copy_into_buffer(s.vertices, 0),
@@ -144,7 +108,7 @@ impl crate::AssetType for AssetType {
 
       if !o.normals.is_empty() {
         let mut stage = up.get_staging((o.normals.len() * std::mem::size_of::<vkm::Vec3f>()) as vk::DeviceSize);
-        let mut map = stage.map().unwrap();
+        let map = stage.map().unwrap();
         map.host_to_device_slice(&o.normals);
         up.push_buffer((
           stage.copy_into_buffer(s.normals, 0),
@@ -154,7 +118,7 @@ impl crate::AssetType for AssetType {
 
       if !o.uvs.is_empty() {
         let mut stage = up.get_staging((o.uvs.len() * std::mem::size_of::<vkm::Vec2f>()) as vk::DeviceSize);
-        let mut map = stage.map().unwrap();
+        let map = stage.map().unwrap();
         map.host_to_device_slice(&o.uvs);
         up.push_buffer((
           stage.copy_into_buffer(s.uvs, 0),
@@ -164,7 +128,7 @@ impl crate::AssetType for AssetType {
 
       if !o.indices.is_empty() {
         let mut stage = up.get_staging((o.indices.len() * std::mem::size_of::<u32>()) as vk::DeviceSize);
-        let mut map = stage.map().unwrap();
+        let map = stage.map().unwrap();
         map.host_to_device_slice(&o.indices);
         up.push_buffer((
           stage.copy_into_buffer(s.indices, 0),
@@ -174,5 +138,22 @@ impl crate::AssetType for AssetType {
     }
 
     shapes
+  }
+
+  fn free(shapes: Self::Type, up: &mut Update) {
+    for s in shapes {
+      if s.vertices != vk::NULL_HANDLE {
+        up.mem.trash.push_buffer(s.vertices);
+      }
+      if s.normals != vk::NULL_HANDLE {
+        up.mem.trash.push_buffer(s.normals);
+      }
+      if s.uvs != vk::NULL_HANDLE {
+        up.mem.trash.push_buffer(s.uvs);
+      }
+      if s.indices != vk::NULL_HANDLE {
+        up.mem.trash.push_buffer(s.indices);
+      }
+    }
   }
 }

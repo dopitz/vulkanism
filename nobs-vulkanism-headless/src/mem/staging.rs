@@ -1,5 +1,6 @@
 use crate::cmd::commands;
 use crate::mem;
+use crate::mem::Handle;
 use vk;
 use vk::builder::Buildable;
 
@@ -9,7 +10,7 @@ pub struct Staging {
 
 impl Drop for Staging {
   fn drop(&mut self) {
-    self.range.mem.trash.push(self.range.buffer);
+    self.range.mem.trash.push_buffer(self.range.buffer);
   }
 }
 
@@ -84,7 +85,10 @@ impl StagingRange {
   }
 
   pub fn map(&mut self) -> Option<mem::Mapped> {
-    self.mem.alloc.get_mapped_region(self.buffer, self.offset, self.size)
+    self
+      .mem
+      .alloc
+      .get_mapped_region(Handle::Buffer(self.buffer), self.offset, self.size)
   }
 
   pub fn copy_from_buffer(&self, src: vk::Buffer, srcoffset: vk::DeviceSize) -> commands::BufferCopy {

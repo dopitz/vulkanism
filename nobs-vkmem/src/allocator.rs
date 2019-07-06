@@ -216,15 +216,15 @@ struct AllocatorImpl {
   device: vk::Device,
   //pagetbls: HashMap<Memtype, page::PageTable>,
   pagetbls: HashMap<Memtype, Table>,
-  handles: HashMap<u64, Handle<Memtype>>,
+  handles: HashMap<Handle<u64>, Memtype>,
 }
 
 impl Drop for AllocatorImpl {
   fn drop(&mut self) {
     for (h, mt) in self.handles.iter() {
-      match mt {
-        Handle::Buffer(_) => vk::DestroyBuffer(self.device, *h, std::ptr::null()),
-        Handle::Image(_) => vk::DestroyImage(self.device, *h, std::ptr::null()),
+      match h {
+        Handle::Buffer(h) => vk::DestroyBuffer(self.device, *h, std::ptr::null()),
+        Handle::Image(h) => vk::DestroyImage(self.device, *h, std::ptr::null()),
       };
     }
   }
@@ -247,6 +247,8 @@ impl Drop for AllocatorImpl {
 /// ```rust
 /// extern crate nobs_vk as vk;
 /// extern crate nobs_vkmem as vkmem;
+///
+/// use vkmem::Handle;
 ///
 /// struct Ub {
 ///   a: u32,
@@ -312,17 +314,17 @@ impl Drop for AllocatorImpl {
 /// // get_mapped mapps the whole block of memory to which the resources was bound
 /// // get_mapped_region lets us define a byte offset respective to the beginning of the resource and a size in bytes
 /// {
-///   let mapped = allocator.get_mapped(buf_ub).unwrap();
+///   let mapped = allocator.get_mapped(Handle::Buffer(buf_ub)).unwrap();
 ///   let ubb = Ub { a: 123, b: 4, c: 5 };
 ///   mapped.host_to_device(&ubb);
 /// }
 /// {
-///   let mapped = allocator.get_mapped(buf_ub).unwrap();
+///   let mapped = allocator.get_mapped(Handle::Buffer(buf_ub)).unwrap();
 ///   let ubb : Ub = mapped.device_to_host();
 /// }
 ///
 /// {
-///   let mapped = allocator.get_mapped_region(buf_out, 4, 100).unwrap();
+///   let mapped = allocator.get_mapped_region(Handle::Buffer(buf_out), 4, 100).unwrap();
 ///   let v = mapped.as_slice::<u32>();
 /// }
 ///
@@ -330,8 +332,8 @@ impl Drop for AllocatorImpl {
 /// println!("{}", allocator.print_stats());
 ///
 /// // buffers and images can be destroyed
-/// allocator.destroy(img);
-/// allocator.destroy_many(&[buf_ub, buf_out]);
+/// allocator.destroy(Handle::Image(img));
+/// allocator.destroy_many(&[Handle::Buffer(buf_ub), Handle::Buffer(buf_out)]);
 ///
 /// // destroying does NOT free memory
 /// // if we want to free memory we can do this only if a whole page is not used any more
@@ -560,7 +562,7 @@ impl Allocator {
         .bind(&infos, bindtype)?;
 
       for h in infos.iter().map(|i| i.handle) {
-        alloc.handles.insert(h.get(), h.map(memtype));
+        alloc.handles.insert(h, memtype);
       }
     }
 
@@ -570,7 +572,7 @@ impl Allocator {
   /// Destroys a resource, that has been bound to this allocator
   ///
   /// see [destroy_many](struct.Allocator.html#method.destroy_many)
-  pub fn destroy(&mut self, handle: u64) {
+  pub fn destroy(&mut self, handle: Handle<u64>) {
     self.destroy_many(&[handle]);
   }
 
@@ -587,6 +589,7 @@ impl Allocator {
   /// ```rust
   /// # extern crate nobs_vk as vk;
   /// # extern crate nobs_vkmem as vkmem;
+  /// # use vkmem::Handle;
   /// # fn main() {
   /// #  let lib = vk::VkLib::new();
   /// #  let inst = vk::instance::new()
@@ -619,33 +622,33 @@ impl Allocator {
   /// #   .bind(&mut allocator, vkmem::BindType::Scatter)
   /// #   .unwrap();
   /// //... create, bind, use ...
-  /// allocator.destroy_many(&[buf, img]);
+  /// allocator.destroy_many(&[Handle::Buffer(buf), Handle::Image(img)]);
   /// # }
   /// ```
-  pub fn destroy_many(&mut self, handles: &[u64]) {
+  pub fn destroy_many(&mut self, handles: &[Handle<u64>]) {
     Self::destroy_inner(self.device, &mut self.alloc.lock().unwrap(), handles);
   }
 
-  fn destroy_inner(device: vk::Device, alloc: &mut AllocatorImpl, handles: &[u64]) {
-    let by_memtype =
-      handles
-        .iter()
-        .filter_map(|h| alloc.handles.get(h).map(|mt| (h, mt.get())))
-        .fold(HashMap::new(), |mut acc, (h, mt)| {
-          acc.entry(mt).or_insert(Vec::new()).push(*h);
-          acc
-        });
+  fn destroy_inner(device: vk::Device, alloc: &mut AllocatorImpl, handles: &[Handle<u64>]) {
+    let by_memtype = handles
+      .iter()
+      .filter_map(|h| alloc.handles.get(h).map(|mt| (*h, *mt)))
+      .fold(HashMap::new(), |mut acc, (h, mt)| {
+        acc.entry(mt).or_insert(Vec::new()).push(h);
+        acc
+      });
 
     for (mt, hs) in by_memtype.iter() {
       alloc.pagetbls.get_mut(mt).unwrap().unbind(hs);
     }
 
     for h in handles.iter() {
-      match alloc.handles.remove(h) {
-        Some(Handle::Buffer(_)) => vk::DestroyBuffer(device, *h, std::ptr::null()),
-        Some(Handle::Image(_)) => vk::DestroyImage(device, *h, std::ptr::null()),
-        None => (),
-      };
+      if alloc.handles.remove(h).is_some() {
+        match h {
+          Handle::Buffer(h) => vk::DestroyBuffer(device, *h, std::ptr::null()),
+          Handle::Image(h) => vk::DestroyImage(device, *h, std::ptr::null()),
+        }
+      }
     }
   }
 
@@ -666,12 +669,12 @@ impl Allocator {
     self.device
   }
 
-  fn get_mem(&self, handle: u64) -> Option<Block> {
+  fn get_mem(&self, handle: Handle<u64>) -> Option<Block> {
     let alloc = self.alloc.lock().unwrap();
     alloc
       .handles
       .get(&handle)
-      .and_then(|t| alloc.pagetbls.get(&t.get()))
+      .and_then(|t| alloc.pagetbls.get(&t))
       .and_then(|tbl| tbl.get_mem(handle))
   }
 
@@ -682,6 +685,7 @@ impl Allocator {
   ///```rust
   /// # extern crate nobs_vk as vk;
   /// # extern crate nobs_vkmem as vkmem;
+  /// # use vkmem::Handle;
   /// # fn main() {
   /// #  let lib = vk::VkLib::new();
   /// #  let inst = vk::instance::new()
@@ -713,12 +717,12 @@ impl Allocator {
   ///   .unwrap();
   ///
   /// {
-  ///   let mapped = allocator.get_mapped(buf_ub).unwrap();
+  ///   let mapped = allocator.get_mapped(Handle::Buffer(buf_ub)).unwrap();
   ///   let ubb = Ub { a: 123, b: 4, c: 5 };
   ///   mapped.host_to_device(&ubb);
   /// }
   /// {
-  ///   let mapped = allocator.get_mapped(buf_ub).unwrap();
+  ///   let mapped = allocator.get_mapped(Handle::Buffer(buf_ub)).unwrap();
   ///   let ubb : Ub = mapped.device_to_host();
   ///   assert_eq!(ubb.a, 123);
   ///   assert_eq!(ubb.b, 4);
@@ -726,7 +730,7 @@ impl Allocator {
   /// }
   /// # }
   /// ```
-  pub fn get_mapped(&self, handle: u64) -> Option<Mapped> {
+  pub fn get_mapped(&self, handle: Handle<u64>) -> Option<Mapped> {
     self.get_mem(handle).and_then(|b| Mapped::new(self.device, b).ok())
   }
 
@@ -738,6 +742,7 @@ impl Allocator {
   ///```rust
   /// # extern crate nobs_vk as vk;
   /// # extern crate nobs_vkmem as vkmem;
+  /// # use vkmem::Handle;
   /// # fn main() {
   /// #  let lib = vk::VkLib::new();
   /// #  let inst = vk::instance::new()
@@ -766,14 +771,14 @@ impl Allocator {
   ///   .unwrap();
   ///
   /// {
-  ///   let mut mapped = allocator.get_mapped_region(buf, 4, 100).unwrap();
+  ///   let mut mapped = allocator.get_mapped_region(Handle::Buffer(buf), 4, 100).unwrap();
   ///   let v = mapped.as_slice_mut::<u32>();
   ///   v[0] = 123;
   ///   v[1] = 4;
   ///   v[2] = 5;
   /// }
   /// {
-  ///   let mapped = allocator.get_mapped_region(buf, 4, 100).unwrap();
+  ///   let mapped = allocator.get_mapped_region(Handle::Buffer(buf), 4, 100).unwrap();
   ///   let v = mapped.as_slice::<u32>();
   ///   assert_eq!(v[0], 123);
   ///   assert_eq!(v[1], 4);
@@ -781,7 +786,7 @@ impl Allocator {
   /// }
   /// # }
   /// ```
-  pub fn get_mapped_region(&self, handle: u64, offset: vk::DeviceSize, size: vk::DeviceSize) -> Option<Mapped> {
+  pub fn get_mapped_region(&self, handle: Handle<u64>, offset: vk::DeviceSize, size: vk::DeviceSize) -> Option<Mapped> {
     self.get_mem(handle).and_then(|b| {
       let region = Block::new(b.mem, b.beg + b.pad + offset, b.beg + b.pad + offset + size, 0);
       match region.beg < b.end && region.end <= b.end {

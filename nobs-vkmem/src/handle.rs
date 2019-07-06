@@ -8,7 +8,7 @@
 ///
 /// Submitting buffers along with images to the [Allocator](struct.Allocator.html) makes sence, when they use the same memory type
 /// (which is the case for device local buffers and images)
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Handle<T>
 where
   T: Clone + Copy,

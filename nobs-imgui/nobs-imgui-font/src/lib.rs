@@ -40,7 +40,7 @@ pub struct Font {
 
 impl Drop for Font {
   fn drop(&mut self) {
-    self.mem.trash.push(self.tex);
+    self.mem.trash.push_image(self.tex);
     vk::DestroyImageView(self.device, self.texview, std::ptr::null());
     vk::DestroySampler(self.device, self.sampler, std::ptr::null());
   }

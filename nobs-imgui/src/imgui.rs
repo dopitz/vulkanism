@@ -8,6 +8,7 @@ use std::sync::Mutex;
 use vk::builder::Buildable;
 use vk::cmd::stream::*;
 use vk::cmd::CmdPool;
+use vk::mem::Handle;
 use vk::pass::DrawPass;
 use vk::pipes::CachedPipeline;
 
@@ -28,7 +29,7 @@ struct ImGuiImpl {
 
 impl Drop for ImGuiImpl {
   fn drop(&mut self) {
-    self.mem.alloc.destroy(*self.ub_viewport.lock().unwrap());
+    self.mem.trash.push_buffer(*self.ub_viewport.lock().unwrap());
   }
 }
 
@@ -56,7 +57,7 @@ impl ImGui {
       .unwrap();
 
     {
-      let mut map = mem.alloc.get_mapped(ub_viewport).unwrap();
+      let mut map = mem.alloc.get_mapped(Handle::Buffer(ub_viewport)).unwrap();
       let data = map.as_slice_mut::<u32>();
       data[0] = extent.width as u32;
       data[1] = extent.height as u32;
@@ -143,7 +144,7 @@ impl ImGui {
       .create();
 
     let ub = *self.gui.ub_viewport.lock().unwrap();
-    let mut map = mem.alloc.get_mapped(ub).unwrap();
+    let mut map = mem.alloc.get_mapped(Handle::Buffer(ub)).unwrap();
     let data = map.as_slice_mut::<u32>();
     data[0] = size.width as u32;
     data[1] = size.height as u32;
