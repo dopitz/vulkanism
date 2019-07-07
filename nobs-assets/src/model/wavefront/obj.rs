@@ -1,6 +1,6 @@
+use super::mtl::Mtl;
 use super::parse_vec2;
 use super::parse_vec3;
-use super::Mtl;
 use std::collections::HashMap;
 use std::convert::TryFrom;
 use std::convert::TryInto;
@@ -185,7 +185,7 @@ impl Obj {
             shape.vertices.push(vertices[fi.v as usize]);
             shape.normals.push(normals[fi.vn as usize]);
             shape.uvs.push(uvs[fi.vt as usize]);
-            i as u32 
+            i as u32
           });
         }
 

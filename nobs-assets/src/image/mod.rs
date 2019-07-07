@@ -4,19 +4,23 @@ mod targa;
 pub use bitmap::Bitmap;
 
 use crate::Update;
+use std::collections::HashMap;
 use vk;
 use vk::builder::Buildable;
 use vk::cmd::commands::ImageBarrier;
 
-struct AssetType {}
+struct Asset {
+  handle: vk::Image,
+}
 
-impl crate::AssetType for AssetType {
-  type Type = vk::Image;
-  fn load(id: &str, up: &mut Update) -> Self::Type {
+impl crate::Asset for Asset {
+  type Id = String;
+
+  fn load(id: &Self::Id, assets: &mut HashMap<Self::Id, Self>, up: &mut Update) {
     let tga = targa::Targa::load(id).unwrap();
 
-    let mut tex = vk::NULL_HANDLE;
-    vk::mem::Image::new(&mut tex)
+    let mut handle = vk::NULL_HANDLE;
+    vk::mem::Image::new(&mut handle)
       .texture2d(
         tga.img.size().x,
         tga.img.size().y,
@@ -35,18 +39,20 @@ impl crate::AssetType for AssetType {
 
     up.push_image((
       stage.copy_into_image(
-        tex,
+        handle,
         vk::BufferImageCopy::build()
           .subresource(vk::ImageSubresourceLayers::build().aspect(vk::IMAGE_ASPECT_COLOR_BIT).into())
           .image_extent(vk::Extent3D::build().set(tga.img.size().x, tga.img.size().y, 1).into()),
       ),
-      Some(ImageBarrier::to_shader_read(tex)),
+      Some(ImageBarrier::to_shader_read(handle)),
     ));
 
-    tex
+    assets.insert(id.clone(), Self { handle });
   }
 
-  fn free(asset: Self::Type, up: &mut Update) {
-    up.mem.trash.push_image(asset);
+  fn free(id: &Self::Id, assets: &mut HashMap<Self::Id, Self>, up: &mut Update) {
+    if let Some(asset) = assets.remove(id) {
+      up.mem.trash.push_image(asset.handle);
+    }
   }
 }

@@ -5,6 +5,7 @@ pub use mtl::Mtl;
 pub use obj::Obj;
 
 use crate::Update;
+use std::collections::HashMap;
 use vk;
 use vk::builder::Buildable;
 use vk::cmd::commands::BufferBarrier;
@@ -44,11 +45,14 @@ pub struct Shape {
   pub count: u32,
 }
 
-pub struct AssetType {}
+pub struct Asset {
+  pub shapes: Vec<Shape>,
+}
 
-impl crate::AssetType for AssetType {
-  type Type = Vec<Shape>;
-  fn load(id: &str, up: &mut Update) -> Self::Type {
+impl crate::Asset for Asset {
+  type Id = String;
+
+  fn load(id: &Self::Id, assets: &mut HashMap<Self::Id, Self>, up: &mut Update) {
     let obj = Obj::load(id);
 
     let mut shapes = obj
@@ -137,22 +141,24 @@ impl crate::AssetType for AssetType {
       }
     }
 
-    shapes
+    assets.insert(id.clone(), Self { shapes });
   }
 
-  fn free(shapes: Self::Type, up: &mut Update) {
-    for s in shapes {
-      if s.vertices != vk::NULL_HANDLE {
-        up.mem.trash.push_buffer(s.vertices);
-      }
-      if s.normals != vk::NULL_HANDLE {
-        up.mem.trash.push_buffer(s.normals);
-      }
-      if s.uvs != vk::NULL_HANDLE {
-        up.mem.trash.push_buffer(s.uvs);
-      }
-      if s.indices != vk::NULL_HANDLE {
-        up.mem.trash.push_buffer(s.indices);
+  fn free(id: &Self::Id, assets: &mut HashMap<Self::Id, Self>, up: &mut Update) {
+    if let Some(obj) = assets.remove(id) {
+      for s in obj.shapes {
+        if s.vertices != vk::NULL_HANDLE {
+          up.mem.trash.push_buffer(s.vertices);
+        }
+        if s.normals != vk::NULL_HANDLE {
+          up.mem.trash.push_buffer(s.normals);
+        }
+        if s.uvs != vk::NULL_HANDLE {
+          up.mem.trash.push_buffer(s.uvs);
+        }
+        if s.indices != vk::NULL_HANDLE {
+          up.mem.trash.push_buffer(s.indices);
+        }
       }
     }
   }

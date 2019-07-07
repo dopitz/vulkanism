@@ -1,49 +1,17 @@
 use super::Update;
 use std::collections::HashMap;
 
-pub trait AssetType {
-  type Type;
-  fn load(id: &str, up: &mut Update) -> Self::Type;
-  fn free(asset: Self::Type, up: &mut Update);
-}
+pub trait Asset: Sized {
+  type Id: Clone + PartialEq + Eq + std::hash::Hash;
 
-macro_rules! asset_type {
-  ($name:ident, $(($atname:ident, $attype:ty)),+) => (
-    pub enum $name {
-      $(
-        $atname(<$attype as AssetType>::Type),
-      )+
+  fn load(id: &Self::Id, assets: &mut HashMap<Self::Id, Self>, up: &mut Update);
+  fn free(id: &Self::Id, assets: &mut HashMap<Self::Id, Self>, up: &mut Update);
+
+  fn get<'a>(id: &Self::Id, assets: &'a mut HashMap<Self::Id, Self>, up: &mut Update) -> &'a Self {
+    if !assets.contains_key(id) {
+      Self::load(id, assets, up);
     }
-  )
-}
 
-pub struct Assets<T: AssetType> {
-  device: vk::Device,
-  mem: vk::mem::Mem,
-
-  assets: HashMap<String, T::Type>,
-  pub up: Update,
-}
-
-impl<T: AssetType> Assets<T> {
-  pub fn new(device: vk::Device, mem: vk::mem::Mem) -> Self {
-    Assets {
-      device,
-      mem: mem.clone(),
-      assets: Default::default(),
-      up: Update::new(mem),
-    }
-  }
-
-  pub fn contains(&self, id: &str) -> bool {
-    self.assets.contains_key(id)
-  }
-  pub fn get(&mut self, id: &str) -> &T::Type {
-    if self.contains(id) {
-      self.assets.get(id).unwrap()
-    } else {
-      self.assets.insert(id.to_owned(), T::load(id, &mut self.up));
-      self.assets.get(id).unwrap()
-    }
+    assets.get(id).unwrap()
   }
 }

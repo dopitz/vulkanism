@@ -214,8 +214,10 @@ pub fn main() {
   camera.transform.view = vkm::Mat4::look_at(vec3!(0.0, 0.0, -10.0), vec3!(0.0, 0.0, 0.0), vec3!(0.0, 1.0, 0.0));
   camera.resize(sc.extent);
 
-  let mut assets: assets::Assets<assets::model::wavefront::AssetType> = assets::Assets::new(device.handle, mem.clone());
-  let shapes = assets.get("assets/bunny.obj");
+  use assets::Asset;
+  let mut assets = std::collections::HashMap::new();
+  let mut up = assets::Update::new(mem.clone());
+  let shapes = &assets::model::wavefront::Asset::get(&"assets/bunny.obj".to_string(), &mut assets, &mut up).shapes;
 
   let draw = DrawManaged::new(
     [(shapes[0].vertices, 0), (shapes[0].normals, 0), (shapes[0].uvs, 0)].iter().into(),
@@ -235,12 +237,12 @@ pub fn main() {
 
   // update uniform buffers
   {
-    let mut stage = assets.up.get_staging(std::mem::size_of::<obj::UbModel>() as vk::DeviceSize);
+    let mut stage = up.get_staging(std::mem::size_of::<obj::UbModel>() as vk::DeviceSize);
     let mut map = stage.map().unwrap();
     map.host_to_device(&obj::UbModel {
       model: vkm::Mat4::scale(vec3!(1.0, 1.0, -1.0)),
     });
-    assets.up.push_buffer((
+    up.push_buffer((
       stage.copy_into_buffer(ub_model, 0),
       Some(BufferBarrier::new(ub_model).to(vk::ACCESS_UNIFORM_READ_BIT)),
     ));
@@ -301,7 +303,7 @@ pub fn main() {
       println!("{:?}", sc.extent);
     }
 
-    camera.update(&mut assets.up);
+    camera.update(&mut up);
 
     let i = frame.next().unwrap();
     let next = sc.next_image();
@@ -309,7 +311,7 @@ pub fn main() {
     let cs = cmds
       .begin_stream()
       .unwrap()
-      .push_mut(&mut assets.up)
+      .push_mut(&mut up)
       .push(&ImageBarrier::to_color_attachment(fb.images[0]))
       .push(&fb.begin())
       .push(&Viewport::with_extent(sc.extent))

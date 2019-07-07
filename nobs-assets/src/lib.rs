@@ -8,6 +8,5 @@ mod update;
 pub mod image;
 pub mod model;
 
-pub use assets::AssetType;
-pub use assets::Assets;
+pub use assets::Asset;
 pub use update::Update;
