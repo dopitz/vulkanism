@@ -3,6 +3,7 @@ mod targa;
 
 pub use bitmap::Bitmap;
 
+use crate::AssetPool;
 use crate::Update;
 use std::collections::HashMap;
 use vk;
@@ -16,7 +17,7 @@ pub struct Asset {
 impl crate::Asset for Asset {
   type Id = String;
 
-  fn load(id: &Self::Id, assets: &mut HashMap<Self::Id, Self>, up: &mut Update) {
+  fn load(id: &Self::Id, up: &mut Update) -> Self {
     let tga = targa::Targa::load(id).unwrap();
 
     let mut handle = vk::NULL_HANDLE;
@@ -47,12 +48,10 @@ impl crate::Asset for Asset {
       Some(ImageBarrier::to_shader_read(handle)),
     ));
 
-    assets.insert(id.clone(), Self { handle });
+    Self { handle }
   }
 
-  fn free(id: &Self::Id, assets: &mut HashMap<Self::Id, Self>, up: &mut Update) {
-    if let Some(asset) = assets.remove(id) {
-      up.mem.trash.push_image(asset.handle);
-    }
+  fn free(self, up: &mut Update) {
+    up.mem.trash.push_image(self.handle);
   }
 }

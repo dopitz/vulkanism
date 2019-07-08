@@ -4,6 +4,7 @@ mod obj;
 pub use mtl::Mtl;
 pub use obj::Obj;
 
+use crate::AssetPool;
 use crate::Update;
 use std::collections::HashMap;
 use vk;
@@ -51,7 +52,7 @@ pub struct Asset {
 impl crate::Asset for Asset {
   type Id = String;
 
-  fn load(id: &Self::Id, assets: &mut HashMap<Self::Id, Self>, up: &mut Update) {
+  fn load(id: &Self::Id, up: &mut Update) -> Self {
     let obj = Obj::load(id);
 
     let mut shapes = obj
@@ -140,24 +141,22 @@ impl crate::Asset for Asset {
       }
     }
 
-    assets.insert(id.clone(), Self { shapes });
+    Self {shapes}
   }
 
-  fn free(id: &Self::Id, assets: &mut HashMap<Self::Id, Self>, up: &mut Update) {
-    if let Some(obj) = assets.remove(id) {
-      for s in obj.shapes {
-        if s.vertices != vk::NULL_HANDLE {
-          up.mem.trash.push_buffer(s.vertices);
-        }
-        if s.normals != vk::NULL_HANDLE {
-          up.mem.trash.push_buffer(s.normals);
-        }
-        if s.uvs != vk::NULL_HANDLE {
-          up.mem.trash.push_buffer(s.uvs);
-        }
-        if s.indices != vk::NULL_HANDLE {
-          up.mem.trash.push_buffer(s.indices);
-        }
+  fn free(self, up: &mut Update) {
+    for s in self.shapes {
+      if s.vertices != vk::NULL_HANDLE {
+        up.mem.trash.push_buffer(s.vertices);
+      }
+      if s.normals != vk::NULL_HANDLE {
+        up.mem.trash.push_buffer(s.normals);
+      }
+      if s.uvs != vk::NULL_HANDLE {
+        up.mem.trash.push_buffer(s.uvs);
+      }
+      if s.indices != vk::NULL_HANDLE {
+        up.mem.trash.push_buffer(s.indices);
       }
     }
   }
