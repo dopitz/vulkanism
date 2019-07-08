@@ -221,7 +221,7 @@ struct AllocatorImpl {
 
 impl Drop for AllocatorImpl {
   fn drop(&mut self) {
-    for (h, mt) in self.handles.iter() {
+    for (h, _) in self.handles.iter() {
       match h {
         Handle::Buffer(h) => vk::DestroyBuffer(self.device, *h, std::ptr::null()),
         Handle::Image(h) => vk::DestroyImage(self.device, *h, std::ptr::null()),

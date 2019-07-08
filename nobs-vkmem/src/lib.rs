@@ -17,7 +17,7 @@
 //!
 //! [Buffer](builder/struct.Buffer.html) and [Image](builder/struct.Image.html) provide a convenient way to configure buffers/images and bind them to the allocator in bulk.
 //!
-//! See [Allocator](struct.Allocator.html) to get a quick overview on how to use this crate.
+//! See [Allocator](struct.Allocator.html) to get a quick overview on how to use create vulkan buffers and images with this crate.
 #[macro_use]
 extern crate nobs_vk as vk;
 

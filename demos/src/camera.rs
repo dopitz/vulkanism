@@ -66,7 +66,7 @@ impl Camera {
 
       vk::winit::Event::DeviceEvent {
         event: vk::winit::DeviceEvent::MouseWheel {
-          delta: vk::winit::MouseScrollDelta::LineDelta(x, y),
+          delta: vk::winit::MouseScrollDelta::LineDelta(_x, y),
         },
         ..
       } => self.move_dir.y -= *y as i32,
@@ -81,6 +81,7 @@ impl Camera {
     self.dirty = true;
   }
 
+  #[allow(dead_code)]
   pub fn force_update(&mut self) {
     self.dirty = true;
   }

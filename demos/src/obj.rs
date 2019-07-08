@@ -38,6 +38,7 @@ mod obj {
   }
 
   #[repr(C)]
+  #[allow(dead_code)]
   pub struct Vertex {
     pub pos: vkm::Vec3f,
     pub norm: vkm::Vec3f,
@@ -166,7 +167,7 @@ pub fn resize_window(
   window: &vk::wnd::Window,
   alloc: &mut vk::mem::Allocator,
   mut sc: Option<vk::wnd::Swapchain>,
-  mut pass: Option<vk::pass::Renderpass>,
+  pass: Option<vk::pass::Renderpass>,
   mut fb: Option<vk::pass::Framebuffer>,
 ) -> (vk::wnd::Swapchain, vk::pass::Renderpass, vk::pass::Framebuffer) {
   if sc.is_some() {
@@ -238,7 +239,7 @@ pub fn main() {
   // update uniform buffers
   {
     let mut stage = up.get_staging(std::mem::size_of::<obj::UbModel>() as vk::DeviceSize);
-    let mut map = stage.map().unwrap();
+    let map = stage.map().unwrap();
     map.host_to_device(&obj::UbModel {
       model: vkm::Mat4::scale(vec3!(1.0, 1.0, -1.0)),
     });
@@ -267,13 +268,13 @@ pub fn main() {
           ..
         } => close = true,
         winit::Event::WindowEvent {
-          event: winit::WindowEvent::Resized(size),
+          event: winit::WindowEvent::Resized(_),
           ..
         } => {
           resize = true;
         }
         winit::Event::WindowEvent {
-          event: winit::WindowEvent::HiDpiFactorChanged(dpi),
+          event: winit::WindowEvent::HiDpiFactorChanged(_),
           ..
         } => {
           resize = true;
@@ -305,7 +306,7 @@ pub fn main() {
 
     camera.update(&mut up);
 
-    let i = frame.next().unwrap();
+    frame.next().unwrap();
     let next = sc.next_image();
 
     let cs = cmds

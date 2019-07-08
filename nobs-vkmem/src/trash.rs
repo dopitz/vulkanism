@@ -12,12 +12,81 @@ struct TrashImpl {
 
 /// Keeps track of unused resources and deletes them
 ///
-/// In rendering scenarios we often run into a situation that a buffer/image is not used any more, but deleting it immediately is not possible, because it is still used in a draw/dispatch operation.
-/// The Trash will collect such resources and delete them when it is safe to do so and in bulk, which makes it also more efficient for the Allocator to update the memory page tables.
+/// In rendering scenarios we often run into a situation that a buffer/image will not be used any more in the future, but deleting it immediately is not possible, because it is currently used in a draw/dispatch operation.
+/// The Trash will collect such resources and delete them, when it is safe to do so and in bulk, which makes it also more efficient for the Allocator to update the memory page tables.
 ///
-/// The main idea is to call [clean](struct.Trash.html#method.clean) once every frame. Dependeing on the number of frames that can be in flight we wait N frames befor deleting the resources.
+/// The main idea is to call [clean](struct.Trash.html#method.clean) once every frame. Dependeing on the number of frames that can be in flight we wait N frames before deleting the resources.
 ///
 /// The Trash can be used concurrently, hazards are resolved internally.
+///
+/// The example shows the basic usage of [Trash](struct.Trash.html). 
+///
+/// ```rust
+/// extern crate nobs_vk as vk;
+/// extern crate nobs_vkmem as vkmem;
+///
+/// use vkmem::Handle;
+///
+/// struct Ub {
+///   a: u32,
+///   b: u32,
+///   c: u32,
+/// }
+///
+/// # fn main() {
+/// #  let lib = vk::VkLib::new();
+/// #  let inst = vk::instance::new()
+/// #    .validate(vk::DEBUG_REPORT_ERROR_BIT_EXT | vk::DEBUG_REPORT_WARNING_BIT_EXT)
+/// #    .application("awesome app", 0)
+/// #    .add_extension(vk::KHR_SURFACE_EXTENSION_NAME)
+/// #    .add_extension(vk::KHR_XLIB_SURFACE_EXTENSION_NAME)
+/// #    .create(lib)
+/// #    .unwrap();
+/// #  let (pdevice, device) = vk::device::PhysicalDevice::enumerate_all(inst.handle)
+/// #    .remove(0)
+/// #    .into_device()
+/// #    .add_queue(vk::device::QueueProperties {
+/// #      present: false,
+/// #      graphics: true,
+/// #      compute: true,
+/// #      transfer: true,
+/// #    }).create()
+/// #    .unwrap();
+///
+/// // crate the allocator and trash
+/// // the inflight parameter of Trash::new() controlls the delay of resource deletion
+/// let mut allocator = vkmem::Allocator::new(pdevice.handle, device.handle);
+/// let mut trash = vkmem::Trash::new(allocator.clone(), 2);
+///
+/// // create some resources
+/// let mut buf = vk::NULL_HANDLE;
+/// let mut img = vk::NULL_HANDLE;
+/// // vkmem::Buffer::new(&mut buf)...
+/// # vkmem::Buffer::new(&mut buf)
+/// #  .size(std::mem::size_of::<Ub>() as vk::DeviceSize)
+/// #  .usage(vk::BUFFER_USAGE_TRANSFER_DST_BIT | vk::BUFFER_USAGE_UNIFORM_BUFFER_BIT)
+/// #  .devicelocal(false)
+/// #  .new_image(&mut img)
+/// #  .image_type(vk::IMAGE_TYPE_2D)
+/// #  .size(123, 123, 1)
+/// #  .usage(vk::IMAGE_USAGE_SAMPLED_BIT)
+/// #  .devicelocal(true)
+/// #  .bind(&mut allocator, vkmem::BindType::Scatter)
+/// #  .unwrap();
+///
+/// // do some thing ...
+///
+/// // we are done using img, so mark it in trash
+/// trash.push_image(img);
+///
+/// // this will do nothing, because we used 2 as inflight parameter when constructing trash
+/// trash.clean();
+///
+/// // suppose we finished our draw call (and synced with the cpu)
+/// // now clean will delete img
+/// trash.clean();
+/// # }
+/// ```
 #[derive(Clone)]
 pub struct Trash {
   imp: Arc<Mutex<TrashImpl>>,

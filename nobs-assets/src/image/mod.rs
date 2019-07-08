@@ -9,7 +9,7 @@ use vk;
 use vk::builder::Buildable;
 use vk::cmd::commands::ImageBarrier;
 
-struct Asset {
+pub struct Asset {
   handle: vk::Image,
 }
 

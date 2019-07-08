@@ -5,7 +5,6 @@ use std::collections::HashMap;
 use std::convert::TryFrom;
 use std::convert::TryInto;
 use std::io::Read;
-use vk;
 use vkm::Vec2f;
 use vkm::Vec3f;
 

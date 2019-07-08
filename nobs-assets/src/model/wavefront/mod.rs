@@ -7,7 +7,6 @@ pub use obj::Obj;
 use crate::Update;
 use std::collections::HashMap;
 use vk;
-use vk::builder::Buildable;
 use vk::cmd::commands::BufferBarrier;
 use vkm::Vec2f;
 use vkm::Vec3f;

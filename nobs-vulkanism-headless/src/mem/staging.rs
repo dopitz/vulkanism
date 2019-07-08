@@ -120,7 +120,7 @@ pub struct StagingFrame {
 }
 
 impl StagingFrame {
-  pub fn new(mut mem: mem::Mem, size: vk::DeviceSize) -> Result<Self, mem::Error> {
+  pub fn new(mem: mem::Mem, size: vk::DeviceSize) -> Result<Self, mem::Error> {
     let stage = Staging::new(mem, size)?;
     let range = stage.range.clone();
     Ok(Self { stage, range })
