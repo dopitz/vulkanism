@@ -141,7 +141,7 @@ impl crate::Asset for Asset {
       }
     }
 
-    Self {shapes}
+    Self { shapes }
   }
 
   fn free(self, up: &mut Update) {

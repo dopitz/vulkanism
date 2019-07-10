@@ -215,11 +215,9 @@ pub fn main() {
   camera.transform.view = vkm::Mat4::look_at(vec3!(0.0, 0.0, -10.0), vec3!(0.0, 0.0, 0.0), vec3!(0.0, 1.0, 0.0));
   camera.resize(sc.extent);
 
-  use assets::AssetPool;
-  use assets::Asset;
-  let mut assets : std::collections::HashMap<String, assets::model::wavefront::Asset> = std::collections::HashMap::new();
+  use assets::*;
+  let mut assets: Assets<model::wavefront::Asset> = Assets::new();
   let mut up = assets::Update::new(mem.clone());
-  //let shapes = &assets::model::wavefront::Asset::get(&"assets/bunny.obj".to_string(), &mut assets, &mut up).shapes;
   let shapes = &assets.load(&"assets/bunny.obj".to_string(), &mut up).shapes;
 
   let draw = DrawManaged::new(

@@ -9,5 +9,6 @@ pub mod image;
 pub mod model;
 
 pub use assets::AssetPool;
+pub use assets::Assets;
 pub use assets::Asset;
 pub use update::Update;
