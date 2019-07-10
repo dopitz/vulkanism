@@ -5,11 +5,12 @@ extern crate freetype;
 extern crate nobs_imgui_font as font;
 extern crate winit;
 
-pub mod pipeid;
 pub mod input;
+pub mod pipeid;
 pub mod rect;
-pub mod text;
+pub mod select;
 pub mod sprites;
+pub mod text;
 pub mod textbox;
 pub mod window;
 

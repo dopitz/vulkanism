@@ -1,3 +1,4 @@
+use super::select::Select;
 use super::window::ColumnLayout;
 use super::window::Layout;
 use crate::pipeid::*;
@@ -12,19 +13,23 @@ use vk::mem::Handle;
 use vk::pass::DrawPass;
 use vk::pipes::CachedPipeline;
 
+struct Passes {}
+
 struct ImGuiImpl {
   device: vk::Device,
   copy_queue: vk::Queue,
   cmds: CmdPool,
+  mem: vk::mem::Mem,
+
   rp: vk::pass::Renderpass,
   fb: Mutex<vk::pass::Framebuffer>,
-  mem: vk::mem::Mem,
+  draw: Mutex<DrawPass>,
+  select: Mutex<DrawPass>,
+  ub_viewport: Mutex<vk::Buffer>,
+
   font: Arc<Font>,
 
-  draw: Mutex<DrawPass>,
-
   pipes: PipeCache,
-  ub_viewport: Mutex<vk::Buffer>,
 }
 
 impl Drop for ImGuiImpl {
@@ -92,12 +97,15 @@ impl ImGui {
         device,
         copy_queue,
         cmds,
+        mem,
+
         rp,
         fb,
-        mem,
-        font,
-
         draw: Mutex::new(DrawPass::new()),
+        select: Mutex::new(DrawPass::new()),
+        ub_viewport: Mutex::new(ub_viewport),
+
+        font,
 
         pipes: PipeCache::new(&PipeCreateInfo {
           device,
@@ -105,7 +113,6 @@ impl ImGui {
           subpass: 0,
           ub_viewport,
         }),
-        ub_viewport: Mutex::new(ub_viewport),
       }),
     }
   }
@@ -128,12 +135,15 @@ impl ImGui {
   pub fn get_pipe(&self, id: PipeId) -> &CachedPipeline {
     &self.gui.pipes[id]
   }
-  pub fn get_ub_viewport(&self) -> vk::Buffer {
-    *self.gui.ub_viewport.lock().unwrap()
-  }
+  //pub fn get_ub_viewport(&self) -> vk::Buffer {
+  //  *self.gui.ub_viewport.lock().unwrap()
+  //}
 
   pub fn get_meshes<'a>(&'a self) -> std::sync::MutexGuard<'a, DrawPass> {
     self.gui.draw.lock().unwrap()
+  }
+  pub fn get_selects<'a>(&'a self) -> std::sync::MutexGuard<'a, DrawPass> {
+    self.gui.select.lock().unwrap()
   }
 
   pub fn resize(&mut self, size: vk::Extent2D, target: vk::Image) {
