@@ -267,6 +267,10 @@ impl DrawPass {
       draw: &mut m.draw,
     }
   }
+
+  pub fn iter<'a, T: Iterator<Item = usize>>(&'a self, mesh_iter: T) -> DrawPassIterator<'a, T> {
+    DrawPassIterator { pass: self, mesh_iter }
+  }
 }
 
 impl StreamPush for DrawPass {
@@ -277,6 +281,21 @@ impl StreamPush for DrawPass {
         cs = cs.push(ds);
       }
       cs = cs.push(&d.draw);
+    }
+    cs
+  }
+}
+
+pub struct DrawPassIterator<'a, T: Iterator<Item = usize>> {
+  pass: &'a DrawPass,
+  mesh_iter: T,
+}
+
+impl<'a, T: Iterator<Item = usize>> StreamPushMut for DrawPassIterator<'a, T> {
+  fn enqueue_mut(&mut self, mut cs: CmdBuffer) -> CmdBuffer {
+    for mesh in self.mesh_iter.by_ref() {
+      let draw = self.pass.get(mesh);
+      cs = cs.push(&draw)
     }
     cs
   }
