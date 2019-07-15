@@ -1,8 +1,9 @@
 use super::select::Select;
-use super::window::ColumnLayout;
-use super::window::Layout;
 use crate::pipeid::*;
-use crate::window;
+use crate::window::ColumnLayout;
+use crate::window::Layout;
+use crate::window::RootWindow;
+use crate::window::Window;
 use font::*;
 use std::sync::Arc;
 use std::sync::Mutex;
@@ -30,6 +31,8 @@ struct ImGuiImpl {
   font: Arc<Font>,
 
   pipes: PipeCache,
+
+  root: Mutex<Option<RootWindow>>,
 }
 
 impl Drop for ImGuiImpl {
@@ -113,6 +116,8 @@ impl ImGui {
           subpass: 0,
           ub_viewport,
         }),
+
+        root: Mutex::new(None),
       }),
     }
   }
@@ -160,22 +165,35 @@ impl ImGui {
     data[1] = size.height as u32;
   }
 
-  pub fn begin_window(&self) -> window::Window<ColumnLayout> {
-    self.begin_layout(ColumnLayout::default())
-  }
-  pub fn begin_layout<T: Layout>(&self, layout: T) -> window::Window<T> {
-    let extent = self.gui.fb.lock().unwrap().extent;
-    window::Window::new(self.clone(), layout).size(extent.width, extent.height)
-  }
-  pub fn begin(&self, cs: CmdBuffer) -> CmdBuffer {
+  pub fn begin_draw(&self, cs: CmdBuffer) -> CmdBuffer {
     let fb = self.gui.fb.lock().unwrap();
     cs.push(&vk::cmd::commands::ImageBarrier::to_color_attachment(fb.images[0]))
       .push(&fb.begin())
       .push(&vk::cmd::commands::Viewport::with_extent(fb.extent))
       .push(&vk::cmd::commands::Scissor::with_extent(fb.extent))
   }
-  pub fn end(&self, cs: CmdBuffer) -> CmdBuffer {
+  pub fn end_draw(&self, cs: CmdBuffer) -> CmdBuffer {
     let fb = self.gui.fb.lock().unwrap();
     cs.push(&fb.end())
+  }
+
+  pub fn begin(&mut self) -> RootWindow {
+    match self.gui.root.lock().unwrap().take() {
+      Some(rw) => rw,
+      None => RootWindow::new(self.clone()),
+    }
+  }
+  pub fn end(&mut self, root: RootWindow) {
+    *self.gui.root.lock().unwrap() = Some(root);
+  }
+  pub fn begin_window(&self) -> Window<ColumnLayout> {
+    self.begin_layout(ColumnLayout::default())
+  }
+  pub fn begin_layout<T: Layout>(&self, layout: T) -> Window<T> {
+    let extent = self.gui.fb.lock().unwrap().extent;
+    Window::new(self.clone(), RootWindow::new(self.clone()), layout).size(extent.width, extent.height)
+  }
+  pub fn get_size(&self) -> vk::Extent2D {
+    self.gui.fb.lock().unwrap().extent
   }
 }

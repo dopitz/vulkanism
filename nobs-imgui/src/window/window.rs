@@ -1,5 +1,6 @@
 use super::Component;
 use super::Layout;
+use super::RootWindow;
 use crate::rect::Rect;
 use crate::ImGui;
 use vk::cmd::commands::Scissor;
@@ -18,14 +19,16 @@ impl From<(Scissor, usize)> for WinComp {
 
 pub struct Window<T: Layout> {
   gui: ImGui,
+  root: RootWindow,
   components: Vec<WinComp>,
   layout: T,
 }
 
 impl<T: Layout> Window<T> {
-  pub fn new(gui: ImGui, layout: T) -> Self {
+  pub fn new(gui: ImGui, root: RootWindow, layout: T) -> Self {
     Self {
       gui,
+      root,
       components: Default::default(),
       layout,
     }
@@ -46,19 +49,12 @@ impl<T: Layout> Window<T> {
 
   pub fn push<C: Component>(mut self, c: &mut C) -> Self {
     self.components.push(self.layout.push(c).into());
+    self.root.push(c);
     self
   }
-}
 
-impl<T: Layout> StreamPush for Window<T> {
-  fn enqueue(&self, cs: CmdBuffer) -> CmdBuffer {
-    let mut cs = self.gui.begin(cs).push(&Scissor::with_rect(self.layout.get_rect().into()));
-
-    let meshes = self.gui.get_meshes();
-    for c in self.components.iter() {
-      cs = cs.push(&c.scissor).push(&meshes.get(c.mesh));
-    }
-
-    self.gui.end(cs)
+  pub fn end_window(self) -> RootWindow {
+    // TODO: layout, push, ...
+    self.root
   }
 }

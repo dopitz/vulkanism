@@ -205,13 +205,15 @@ impl Gui {
 
 impl StreamPushMut for Gui {
   fn enqueue_mut(&mut self, cs: CmdBuffer) -> CmdBuffer {
-    cs.push(
-      &self
+    cs.push_mut(
+      &mut self
         .gui
+        .begin()
         .begin_layout(imgui::window::ColumnLayout::default())
         .position(200, 200)
         .size(500, 200)
-        .push(&mut self.text),
+        .push(&mut self.text)
+        .end_window()
     )
   }
 }
