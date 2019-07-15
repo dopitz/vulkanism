@@ -183,17 +183,31 @@ impl ImGui {
       None => RootWindow::new(self.clone()),
     }
   }
-  pub fn end(&mut self, root: RootWindow) {
+  pub fn end(&mut self, root: RootWindow) -> WindowSubmit {
     *self.gui.root.lock().unwrap() = Some(root);
+    WindowSubmit { gui: self.clone() }
   }
-  pub fn begin_window(&self) -> Window<ColumnLayout> {
+  pub fn begin_window(&mut self) -> Window<ColumnLayout> {
     self.begin_layout(ColumnLayout::default())
   }
-  pub fn begin_layout<T: Layout>(&self, layout: T) -> Window<T> {
-    let extent = self.gui.fb.lock().unwrap().extent;
-    Window::new(self.clone(), RootWindow::new(self.clone()), layout).size(extent.width, extent.height)
+  pub fn begin_layout<T: Layout>(&mut self, layout: T) -> Window<T> {
+    self.begin().begin_layout(layout)
   }
   pub fn get_size(&self) -> vk::Extent2D {
     self.gui.fb.lock().unwrap().extent
+  }
+}
+
+pub struct WindowSubmit {
+  gui: ImGui,
+}
+
+impl StreamPush for WindowSubmit {
+  fn enqueue(&self, cs: CmdBuffer) -> CmdBuffer {
+    if let Some(ref mut rw) = *self.gui.gui.root.lock().unwrap() {
+      cs.push_mut(rw)
+    } else {
+      cs
+    }
   }
 }

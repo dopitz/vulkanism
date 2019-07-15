@@ -18,16 +18,14 @@ impl From<(Scissor, usize)> for WinComp {
 }
 
 pub struct Window<T: Layout> {
-  gui: ImGui,
   root: RootWindow,
   components: Vec<WinComp>,
   layout: T,
 }
 
 impl<T: Layout> Window<T> {
-  pub fn new(gui: ImGui, root: RootWindow, layout: T) -> Self {
+  pub fn new(root: RootWindow, layout: T) -> Self {
     Self {
-      gui,
       root,
       components: Default::default(),
       layout,
