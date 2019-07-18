@@ -182,6 +182,7 @@ struct Gui {
   gui: imgui::ImGui,
   //text: imgui::text::Text,
   text: imgui::textbox::TextBox,
+  text2: imgui::textbox::TextBox,
 }
 
 impl Gui {
@@ -191,7 +192,11 @@ impl Gui {
     let mut text = imgui::textbox::TextBox::new(&gui);
     text.text("aoeu");
     text.typeset(text.get_typeset().size(70).cursor(Some(vec2!(1, 0))));
-    Self { gui, text }
+
+    let mut text2 = imgui::textbox::TextBox::new(&gui);
+    text2.text("aoeu");
+    text2.typeset(text2.get_typeset().size(70).cursor(Some(vec2!(1, 0))));
+    Self { gui, text, text2 }
   }
 
   pub fn input(&mut self, c: char) {
@@ -200,6 +205,7 @@ impl Gui {
       c = '\n';
     }
     self.text.text(&format!("{}{}", self.text.get_text(), c));
+    self.text2.text(&format!("{}{}", c, self.text2.get_text()));
   }
 }
 
@@ -213,6 +219,11 @@ impl StreamPushMut for Gui {
         .position(200, 200)
         .size(500, 200)
         .push(&mut self.text)
+        .end_window()
+        .begin_layout(imgui::window::ColumnLayout::default())
+        .position(900, 200)
+        .size(500, 200)
+        .push(&mut self.text2)
         .end_window()
     )
   }

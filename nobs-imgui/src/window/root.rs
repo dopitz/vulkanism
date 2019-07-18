@@ -46,18 +46,18 @@ impl RootWindow {
 impl StreamPushMut for RootWindow {
   fn enqueue_mut(&mut self, cs: CmdBuffer) -> CmdBuffer {
     let mut cs = self.gui.begin_draw(cs);
-
-    //.push(&Scissor::with_rect(self.layout.get_rect().into()));
-
     let meshes = self.gui.get_meshes();
     for c in self.components.iter() {
       cs = cs.push(&c.scissor).push(&meshes.get(c.draw_mesh));
     }
-
-    // TODO: Select pass
-
     cs = self.gui.end_draw(cs);
 
+    cs = self.gui.begin_select(cs);
+    let meshes = self.gui.get_selects();
+    for c in self.components.iter().filter(|c| c.select_mesh.is_some()) {
+      cs = cs.push(&c.scissor).push(&meshes.get(c.select_mesh.unwrap()));
+    }
+    cs = self.gui.end_select(cs);
 
     self.components.clear();
     //self.gui.clone().end(self);
