@@ -27,7 +27,7 @@ struct ImGuiImpl {
   mem: vk::mem::Mem,
 
   draw: Pass,
-  select: Pass,
+  select: Mutex<Select>,
   ub_viewport: Mutex<vk::Buffer>,
 
   font: Arc<Font>,
@@ -104,30 +104,7 @@ impl ImGui {
       }
     };
 
-    let select = {
-      let rp = vk::pass::Renderpass::build(device)
-        .attachment(
-          0,
-          vk::AttachmentDescription::build()
-            .format(vk::FORMAT_R32_UINT)
-            .initial_layout(vk::IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL),
-        )
-        .subpass(
-          0,
-          vk::SubpassDescription::build().bindpoint(vk::PIPELINE_BIND_POINT_GRAPHICS).color(0),
-        )
-        .dependency(vk::SubpassDependency::build().external(0))
-        .create()
-        .unwrap();
-
-      let fb = Mutex::new(vk::pass::Framebuffer::build_from_pass(&rp, &mut mem.alloc).extent(extent).create());
-
-      Pass {
-        rp,
-        fb,
-        draw: Mutex::new(DrawPass::new()),
-      }
-    };
+    let select = Mutex::new(Select::new(device, extent, mem.clone()));
 
     let pipes = PipeCache::new(&PipeCreateInfo {
       device,
@@ -181,8 +158,8 @@ impl ImGui {
   pub fn get_meshes<'a>(&'a self) -> std::sync::MutexGuard<'a, DrawPass> {
     self.gui.draw.draw.lock().unwrap()
   }
-  pub fn get_selects<'a>(&'a self) -> std::sync::MutexGuard<'a, DrawPass> {
-    self.gui.select.draw.lock().unwrap()
+  pub fn get_selects<'a>(&'a self) -> std::sync::MutexGuard<'a, Select> {
+    self.gui.select.lock().unwrap()
   }
 
   pub fn resize(&mut self, size: vk::Extent2D, target: vk::Image) {
@@ -192,9 +169,7 @@ impl ImGui {
       .target(0, target)
       .create();
 
-    *self.gui.select.fb.lock().unwrap() = vk::pass::Framebuffer::build_from_pass(&self.gui.select.rp, &mut mem.alloc)
-      .extent(size)
-      .create();
+    self.gui.select.lock().unwrap().resize(size);
 
     let ub = *self.gui.ub_viewport.lock().unwrap();
     let mut map = mem.alloc.get_mapped(Handle::Buffer(ub)).unwrap();
@@ -212,18 +187,6 @@ impl ImGui {
   }
   pub fn end_draw(&self, cs: CmdBuffer) -> CmdBuffer {
     let fb = self.gui.draw.fb.lock().unwrap();
-    cs.push(&fb.end())
-  }
-
-  pub fn begin_select(&self, cs: CmdBuffer) -> CmdBuffer {
-    let fb = self.gui.select.fb.lock().unwrap();
-    cs.push(&vk::cmd::commands::ImageBarrier::to_color_attachment(fb.images[0]))
-      .push(&fb.begin())
-      .push(&vk::cmd::commands::Viewport::with_extent(fb.extent))
-      .push(&vk::cmd::commands::Scissor::with_extent(fb.extent))
-  }
-  pub fn end_select(&self, cs: CmdBuffer) -> CmdBuffer {
-    let fb = self.gui.select.fb.lock().unwrap();
     cs.push(&fb.end())
   }
 

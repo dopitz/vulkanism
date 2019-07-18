@@ -30,7 +30,7 @@ impl RootWindow {
     self.components.push(WindowComponent {
       scissor: Scissor::with_rect(c.get_rect().into()),
       draw_mesh: c.get_mesh(),
-      select_mesh: None,
+      select_mesh: c.get_select_mesh(),
     });
   }
 
@@ -45,6 +45,7 @@ impl RootWindow {
 
 impl StreamPushMut for RootWindow {
   fn enqueue_mut(&mut self, cs: CmdBuffer) -> CmdBuffer {
+    // Draw actual ui elements
     let mut cs = self.gui.begin_draw(cs);
     let meshes = self.gui.get_meshes();
     for c in self.components.iter() {
@@ -52,12 +53,13 @@ impl StreamPushMut for RootWindow {
     }
     cs = self.gui.end_draw(cs);
 
-    cs = self.gui.begin_select(cs);
-    let meshes = self.gui.get_selects();
+    // draw boxes for object selection
+    let selects = self.gui.get_selects();
+    cs = selects.begin(cs);
     for c in self.components.iter().filter(|c| c.select_mesh.is_some()) {
-      cs = cs.push(&c.scissor).push(&meshes.get(c.select_mesh.unwrap()));
+      cs = cs.push(&c.scissor).push(&selects.get(c.select_mesh.unwrap()));
     }
-    cs = self.gui.end_select(cs);
+    cs = selects.end(cs);
 
     self.components.clear();
     //self.gui.clone().end(self);
