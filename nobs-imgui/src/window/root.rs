@@ -54,7 +54,7 @@ impl StreamPushMut for RootWindow {
     cs = self.gui.end_draw(cs);
 
     // draw boxes for object selection
-    let selects = self.gui.get_selects();
+    let mut selects = self.gui.get_selects();
     cs = selects.begin(cs);
     for c in self.components.iter().filter(|c| c.select_mesh.is_some()) {
       cs = cs.push(&c.scissor).push(&selects.get(c.select_mesh.unwrap()));

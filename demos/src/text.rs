@@ -224,7 +224,7 @@ impl StreamPushMut for Gui {
         .position(900, 200)
         .size(500, 200)
         .push(&mut self.text2)
-        .end_window()
+        .end_window(),
     )
   }
 }

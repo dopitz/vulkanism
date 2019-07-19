@@ -15,6 +15,7 @@ use vk::pass::Renderpass;
 #[derive(Clone, Copy)]
 enum SelectType {
   Rect(Rect),
+  Custom,
   Empty,
 }
 
@@ -34,6 +35,7 @@ pub struct Select {
 
   rects_dirty: bool,
   rects_buffer: vk::Buffer,
+  rects_buffer_len: usize,
   rects: Vec<Rect>,
 }
 
@@ -67,6 +69,7 @@ impl Select {
 
       rects_dirty: false,
       rects_buffer: vk::NULL_HANDLE,
+      rects_buffer_len: 0,
       rects: Default::default(),
     }
   }
@@ -83,46 +86,89 @@ impl Select {
   }
 
   pub fn remove(&mut self, mesh: usize) {
+    // SelectItems are refenced by outside mesh id
     if let Some(s) = self.meshes.remove(&mesh) {
-      let rects = &mut self.rects;
+      // We do not need the select mesh any more
       self.pass.remove(s.mesh);
       match s.typ {
         SelectType::Rect(rect) => {
+          // pop the last element in the rect vector
+          // and update all rects of the remaining SelectItems
+          let rects = &mut self.rects;
+          rects.pop();
           self
             .meshes
             .iter_mut()
             .filter_map(|(mesh, s)| if let SelectType::Rect(_) = s.typ { Some(s) } else { None })
             .enumerate()
             .for_each(|(i, s)| {
+              // reference new position of the rect
               s.mesh = i;
               rects[i] = rect;
             });
           self.rects_dirty = true;
         }
-        SelectType::Empty => (),
+        _ => (),
       }
     }
   }
 
   pub fn make_rect(&mut self, mesh: usize, rect: Rect) {
+    // Copy SelectItem and write back later, because we might need to remove the mesh if it was a different type
     let mut select = *self.meshes.entry(mesh).or_insert_with(|| SelectItem {
       mesh: 0,
       typ: SelectType::Empty,
     });
 
+    // If the type of this SelectItem was not a rect we, remove it and create a new one with correct type
     match select.typ {
       SelectType::Rect(_) => (),
-      _ => self.remove(mesh),
+      _ => {
+        self.remove(mesh);
+        select.mesh = self.rects.len();
+        self.rects.push(rect);
+      }
     }
 
     select.typ = SelectType::Rect(rect);
 
-    select.mesh = 123;
-
+    // write back
     self.meshes.entry(mesh).and_modify(|v| *v = select);
+    self.rects_dirty = true;
   }
 
-  pub fn begin(&self, cs: CmdBuffer) -> CmdBuffer {
+  fn update_rects(&mut self) {
+    if self.rects_dirty {
+      self.rects_dirty = false;
+
+      if self.rects.len() != self.rects_buffer_len {
+        self.mem.trash.push_buffer(self.rects_buffer);
+        self.rects_buffer = vk::NULL_HANDLE;
+
+        vk::mem::Buffer::new(&mut self.rects_buffer)
+          .vertex_buffer((self.rects.len() * std::mem::size_of::<Rect>()) as vk::DeviceSize)
+          .devicelocal(false)
+          .bind(&mut self.mem.alloc, vk::mem::BindType::Block)
+          .unwrap();
+
+        self.rects_buffer_len = self.rects.len();
+      }
+
+      // only copy if not empty
+      if !self.rects.is_empty() {
+        self
+          .mem
+          .alloc
+          .get_mapped(Handle::Buffer(self.rects_buffer))
+          .unwrap()
+          .host_to_device_slice(&self.rects);
+      }
+    }
+  }
+
+  pub fn begin(&mut self, cs: CmdBuffer) -> CmdBuffer {
+    self.update_rects();
+
     cs.push(&vk::cmd::commands::ImageBarrier::to_color_attachment(self.fb.images[0]))
       .push(&self.fb.begin())
       .push(&vk::cmd::commands::Viewport::with_extent(self.fb.extent))
