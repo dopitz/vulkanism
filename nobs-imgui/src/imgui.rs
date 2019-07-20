@@ -204,7 +204,7 @@ impl ImGui {
   }
   pub fn begin_layout<T: Layout>(&self, layout: T) -> Window<T> {
     let extent = self.gui.draw.fb.lock().unwrap().extent;
-    Window::new(self.clone(), RootWindow::new(self.clone()), layout).size(extent.width, extent.height)
+    Window::new(RootWindow::new(self.clone()), layout).size(extent.width, extent.height)
   }
   pub fn get_size(&self) -> vk::Extent2D {
     self.gui.draw.fb.lock().unwrap().extent

@@ -39,7 +39,7 @@ impl RootWindow {
   }
   pub fn begin_layout<T: Layout>(self, layout: T) -> Window<T> {
     let extent = self.gui.get_size();
-    Window::new(self.gui.clone(), self, layout).size(extent.width, extent.height)
+    Window::new(self, layout).size(extent.width, extent.height)
   }
 }
 
