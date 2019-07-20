@@ -7,14 +7,16 @@ use crate::ImGui;
 pub struct TextBox {
   rect: Rect,
   text: Text,
+  select_mesh: usize,
 }
 
 impl TextBox {
   pub fn new(gui: &ImGui) -> Self {
     let rect = Rect::from_rect(0, 0, 200, 20);
     let text = Text::new(gui);
+    let select_mesh = 0;//gui.get_selects().new_mesh
 
-    Self { rect, text }
+    Self { rect, text, select_mesh }
   }
 
   pub fn text(&mut self, text: &str) -> &mut Self {
@@ -54,5 +56,9 @@ impl Component for TextBox {
 
   fn get_mesh(&self) -> usize {
     self.text.get_mesh()
+  }
+
+  fn get_select_mesh(&self) -> Option<usize> {
+    None
   }
 }

@@ -14,7 +14,11 @@ use vk::mem::Handle;
 use vk::pass::DrawPass;
 use vk::pipes::CachedPipeline;
 
-struct Passes {}
+struct Pass {
+  rp: vk::pass::Renderpass,
+  fb: Mutex<vk::pass::Framebuffer>,
+  draw: Mutex<DrawPass>,
+}
 
 struct ImGuiImpl {
   device: vk::Device,
@@ -22,10 +26,8 @@ struct ImGuiImpl {
   cmds: CmdPool,
   mem: vk::mem::Mem,
 
-  rp: vk::pass::Renderpass,
-  fb: Mutex<vk::pass::Framebuffer>,
-  draw: Mutex<DrawPass>,
-  select: Mutex<DrawPass>,
+  draw: Pass,
+  select: Mutex<Select>,
   ub_viewport: Mutex<vk::Buffer>,
 
   font: Arc<Font>,
@@ -71,29 +73,45 @@ impl ImGui {
       data[1] = extent.height as u32;
     }
 
-    let rp = vk::pass::Renderpass::build(device)
-      .attachment(
-        0,
-        vk::AttachmentDescription::build()
-          .format(vk::FORMAT_B8G8R8A8_UNORM)
-          .initial_layout(vk::IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
-          .load_op(vk::ATTACHMENT_LOAD_OP_LOAD),
-      )
-      .subpass(
-        0,
-        vk::SubpassDescription::build().bindpoint(vk::PIPELINE_BIND_POINT_GRAPHICS).color(0),
-      )
-      .dependency(vk::SubpassDependency::build().external(0))
-      .create()
-      .unwrap();
-    let pass = rp.pass;
+    let draw = {
+      let rp = vk::pass::Renderpass::build(device)
+        .attachment(
+          0,
+          vk::AttachmentDescription::build()
+            .format(vk::FORMAT_B8G8R8A8_UNORM)
+            .initial_layout(vk::IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
+            .load_op(vk::ATTACHMENT_LOAD_OP_LOAD),
+        )
+        .subpass(
+          0,
+          vk::SubpassDescription::build().bindpoint(vk::PIPELINE_BIND_POINT_GRAPHICS).color(0),
+        )
+        .dependency(vk::SubpassDependency::build().external(0))
+        .create()
+        .unwrap();
 
-    let fb = Mutex::new(
-      vk::pass::Framebuffer::build_from_pass(&rp, &mut mem.alloc)
-        .extent(extent)
-        .target(0, target)
-        .create(),
-    );
+      let fb = Mutex::new(
+        vk::pass::Framebuffer::build_from_pass(&rp, &mut mem.alloc)
+          .extent(extent)
+          .target(0, target)
+          .create(),
+      );
+
+      Pass {
+        rp,
+        fb,
+        draw: Mutex::new(DrawPass::new()),
+      }
+    };
+
+    let select = Mutex::new(Select::new(device, extent, mem.clone()));
+
+    let pipes = PipeCache::new(&PipeCreateInfo {
+      device,
+      pass: draw.rp.pass,
+      subpass: 0,
+      ub_viewport,
+    });
 
     Self {
       gui: Arc::new(ImGuiImpl {
@@ -102,20 +120,13 @@ impl ImGui {
         cmds,
         mem,
 
-        rp,
-        fb,
-        draw: Mutex::new(DrawPass::new()),
-        select: Mutex::new(DrawPass::new()),
+        draw,
+        select,
         ub_viewport: Mutex::new(ub_viewport),
 
         font,
 
-        pipes: PipeCache::new(&PipeCreateInfo {
-          device,
-          pass,
-          subpass: 0,
-          ub_viewport,
-        }),
+        pipes,
 
         root: Mutex::new(None),
       }),
@@ -145,18 +156,20 @@ impl ImGui {
   //}
 
   pub fn get_meshes<'a>(&'a self) -> std::sync::MutexGuard<'a, DrawPass> {
-    self.gui.draw.lock().unwrap()
+    self.gui.draw.draw.lock().unwrap()
   }
-  pub fn get_selects<'a>(&'a self) -> std::sync::MutexGuard<'a, DrawPass> {
+  pub fn get_selects<'a>(&'a self) -> std::sync::MutexGuard<'a, Select> {
     self.gui.select.lock().unwrap()
   }
 
   pub fn resize(&mut self, size: vk::Extent2D, target: vk::Image) {
     let mut mem = self.gui.mem.clone();
-    *self.gui.fb.lock().unwrap() = vk::pass::Framebuffer::build_from_pass(&self.gui.rp, &mut mem.alloc)
+    *self.gui.draw.fb.lock().unwrap() = vk::pass::Framebuffer::build_from_pass(&self.gui.draw.rp, &mut mem.alloc)
       .extent(size)
       .target(0, target)
       .create();
+
+    self.gui.select.lock().unwrap().resize(size);
 
     let ub = *self.gui.ub_viewport.lock().unwrap();
     let mut map = mem.alloc.get_mapped(Handle::Buffer(ub)).unwrap();
@@ -166,14 +179,14 @@ impl ImGui {
   }
 
   pub fn begin_draw(&self, cs: CmdBuffer) -> CmdBuffer {
-    let fb = self.gui.fb.lock().unwrap();
+    let fb = self.gui.draw.fb.lock().unwrap();
     cs.push(&vk::cmd::commands::ImageBarrier::to_color_attachment(fb.images[0]))
       .push(&fb.begin())
       .push(&vk::cmd::commands::Viewport::with_extent(fb.extent))
       .push(&vk::cmd::commands::Scissor::with_extent(fb.extent))
   }
   pub fn end_draw(&self, cs: CmdBuffer) -> CmdBuffer {
-    let fb = self.gui.fb.lock().unwrap();
+    let fb = self.gui.draw.fb.lock().unwrap();
     cs.push(&fb.end())
   }
 
@@ -183,31 +196,17 @@ impl ImGui {
       None => RootWindow::new(self.clone()),
     }
   }
-  pub fn end(&mut self, root: RootWindow) -> WindowSubmit {
+  pub fn end(&mut self, root: RootWindow) {
     *self.gui.root.lock().unwrap() = Some(root);
-    WindowSubmit { gui: self.clone() }
   }
-  pub fn begin_window(&mut self) -> Window<ColumnLayout> {
+  pub fn begin_window(&self) -> Window<ColumnLayout> {
     self.begin_layout(ColumnLayout::default())
   }
-  pub fn begin_layout<T: Layout>(&mut self, layout: T) -> Window<T> {
-    self.begin().begin_layout(layout)
+  pub fn begin_layout<T: Layout>(&self, layout: T) -> Window<T> {
+    let extent = self.gui.draw.fb.lock().unwrap().extent;
+    Window::new(self.clone(), RootWindow::new(self.clone()), layout).size(extent.width, extent.height)
   }
   pub fn get_size(&self) -> vk::Extent2D {
-    self.gui.fb.lock().unwrap().extent
-  }
-}
-
-pub struct WindowSubmit {
-  gui: ImGui,
-}
-
-impl StreamPush for WindowSubmit {
-  fn enqueue(&self, cs: CmdBuffer) -> CmdBuffer {
-    if let Some(ref mut rw) = *self.gui.gui.root.lock().unwrap() {
-      cs.push_mut(rw)
-    } else {
-      cs
-    }
+    self.gui.draw.fb.lock().unwrap().extent
   }
 }

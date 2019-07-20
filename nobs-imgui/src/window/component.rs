@@ -7,4 +7,6 @@ pub trait Component {
   fn get_size_hint(&self) -> vkm::Vec2u;
 
   fn get_mesh(&self) -> usize;
+
+  fn get_select_mesh(&self) -> Option<usize>;
 }

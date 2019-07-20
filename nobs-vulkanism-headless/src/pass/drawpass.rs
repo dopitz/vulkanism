@@ -228,6 +228,10 @@ impl DrawPass {
     mesh
   }
 
+  pub fn contains(&self, mesh: usize) -> bool {
+    self.meshes.contains(mesh)
+  }
+
   pub fn remove(&mut self, mesh: usize) -> bool {
     if self.meshes.contains(mesh) {
       let m = self.meshes[mesh];

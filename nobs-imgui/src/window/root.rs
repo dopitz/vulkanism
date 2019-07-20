@@ -4,7 +4,6 @@ use super::Layout;
 use super::Window;
 use crate::rect::Rect;
 use crate::ImGui;
-use crate::imgui::WindowSubmit;
 use vk::cmd::commands::Scissor;
 use vk::cmd::stream::*;
 
@@ -31,7 +30,7 @@ impl RootWindow {
     self.components.push(WindowComponent {
       scissor: Scissor::with_rect(c.get_rect().into()),
       draw_mesh: c.get_mesh(),
-      select_mesh: None,
+      select_mesh: c.get_select_mesh(),
     });
   }
 
@@ -40,30 +39,30 @@ impl RootWindow {
   }
   pub fn begin_layout<T: Layout>(self, layout: T) -> Window<T> {
     let extent = self.gui.get_size();
-    Window::new(self, layout).size(extent.width, extent.height)
-  }
-
-  pub fn end(self) -> WindowSubmit {
-    self.gui.clone().end(self)
+    Window::new(self.gui.clone(), self, layout).size(extent.width, extent.height)
   }
 }
 
 impl StreamPushMut for RootWindow {
   fn enqueue_mut(&mut self, cs: CmdBuffer) -> CmdBuffer {
+    // Draw actual ui elements
     let mut cs = self.gui.begin_draw(cs);
-
-    //.push(&Scissor::with_rect(self.layout.get_rect().into()));
-
     let meshes = self.gui.get_meshes();
     for c in self.components.iter() {
       cs = cs.push(&c.scissor).push(&meshes.get(c.draw_mesh));
     }
-
-    // TODO: Select pass
-
     cs = self.gui.end_draw(cs);
 
+    // TODO: Select pass
+    let mut selects = self.gui.get_selects();
+    cs = selects.begin(cs);
+    for c in self.components.iter().filter(|c| c.select_mesh.is_some()) {
+      cs = cs.push(&c.scissor).push(&selects.get(c.select_mesh.unwrap()));
+    }
+    cs = selects.end(cs);
+
     self.components.clear();
+    //self.gui.clone().end(self);
     cs
   }
 }
