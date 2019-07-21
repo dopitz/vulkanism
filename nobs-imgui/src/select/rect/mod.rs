@@ -16,13 +16,11 @@ pub struct Rects {
   device: vk::Device,
   mem: vk::mem::Mem,
 
-  position: Vec2i,
   id_offset: u32,
 
   vb: vk::Buffer,
   ub: vk::Buffer,
   vb_capacity: usize,
-  //pipe: Pipeline,
 }
 
 impl Drop for Rects {
@@ -58,23 +56,9 @@ impl Rects {
       vb,
       ub,
       vb_capacity: 0,
-      //pipe,
     }
   }
 
-  pub fn position(&mut self, pos: Vec2i) -> &mut Self {
-    if self.position != pos {
-      self.position = pos;
-
-      let mut map = self.mem.alloc.get_mapped(Handle::Buffer(self.ub)).unwrap();
-      let data = map.as_slice_mut::<UbViewport>();
-      data[0].offset = pos;
-    }
-    self
-  }
-  pub fn get_position(&self) -> Vec2i {
-    self.position
-  }
   pub fn id_offset(&mut self, offset: u32) -> &mut Self {
     if self.id_offset != offset {
       self.id_offset = offset;

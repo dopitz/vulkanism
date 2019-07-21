@@ -1,3 +1,4 @@
+use super::rect::Rects;
 use crate::rect::Rect;
 use std::collections::HashMap;
 use vk::builder::Buildable;
@@ -33,10 +34,9 @@ pub struct Select {
 
   meshes: HashMap<usize, SelectItem>,
 
+  rects: Rects,
   rects_dirty: bool,
-  rects_buffer: vk::Buffer,
-  rects_buffer_len: usize,
-  rects: Vec<Rect>,
+  //rects: Vec<Rect>,
 }
 
 impl Select {
@@ -59,6 +59,8 @@ impl Select {
 
     let fb = vk::pass::Framebuffer::build_from_pass(&rp, &mut mem.alloc).extent(extent).create();
 
+    let rects = Rects::new(device, mem.clone());
+
     Self {
       rp,
       fb,
@@ -67,10 +69,7 @@ impl Select {
 
       meshes: Default::default(),
 
-      rects_dirty: false,
-      rects_buffer: vk::NULL_HANDLE,
-      rects_buffer_len: 0,
-      rects: Default::default(),
+      rects, //: Default::default(),
     }
   }
 
@@ -94,8 +93,6 @@ impl Select {
         SelectType::Rect(rect) => {
           // pop the last element in the rect vector
           // and update all rects of the remaining SelectItems
-          let rects = &mut self.rects;
-          rects.pop();
           self
             .meshes
             .iter_mut()
@@ -104,7 +101,6 @@ impl Select {
             .for_each(|(i, s)| {
               // reference new position of the rect
               s.mesh = i;
-              rects[i] = rect;
             });
           self.rects_dirty = true;
         }
@@ -134,36 +130,44 @@ impl Select {
 
     // write back
     self.meshes.entry(mesh).and_modify(|v| *v = select);
-    self.rects_dirty = true;
   }
 
   fn update_rects(&mut self) {
-    if self.rects_dirty {
-      self.rects_dirty = false;
 
-      if self.rects.len() != self.rects_buffer_len {
-        self.mem.trash.push_buffer(self.rects_buffer);
-        self.rects_buffer = vk::NULL_HANDLE;
+    
+    //      self
+    //        .meshes
+    //        .iter()
+    //        .filter_map(|(mesh, s)| if let SelectType::Rect(_) = s.typ { Some(s) } else { None })
+    //        .enumerate()
+    //        .for_each(|(i, s)| {
+    //          self.rects
+    //          // reference new position of the rect
+    //          s.mesh = i;
+    //        });
 
-        vk::mem::Buffer::new(&mut self.rects_buffer)
-          .vertex_buffer((self.rects.len() * std::mem::size_of::<Rect>()) as vk::DeviceSize)
-          .devicelocal(false)
-          .bind(&mut self.mem.alloc, vk::mem::BindType::Block)
-          .unwrap();
+    //if self.rects.len() != self.rects_buffer_len {
+    //  self.mem.trash.push_buffer(self.rects_buffer);
+    //  self.rects_buffer = vk::NULL_HANDLE;
 
-        self.rects_buffer_len = self.rects.len();
-      }
+    //  vk::mem::Buffer::new(&mut self.rects_buffer)
+    //    .vertex_buffer((self.rects.len() * std::mem::size_of::<Rect>()) as vk::DeviceSize)
+    //    .devicelocal(false)
+    //    .bind(&mut self.mem.alloc, vk::mem::BindType::Block)
+    //    .unwrap();
 
-      // only copy if not empty
-      if !self.rects.is_empty() {
-        self
-          .mem
-          .alloc
-          .get_mapped(Handle::Buffer(self.rects_buffer))
-          .unwrap()
-          .host_to_device_slice(&self.rects);
-      }
-    }
+    //  self.rects_buffer_len = self.rects.len();
+    //}
+
+    //// only copy if not empty
+    //if !self.rects.is_empty() {
+    //  self
+    //    .mem
+    //    .alloc
+    //    .get_mapped(Handle::Buffer(self.rects_buffer))
+    //    .unwrap()
+    //    .host_to_device_slice(&self.rects);
+    //}
   }
 
   pub fn begin(&mut self, cs: CmdBuffer) -> CmdBuffer {

@@ -25,7 +25,6 @@ pub struct Vertex {
 #[repr(C)]
 #[derive(Debug)]
 pub struct UbViewport {
-  pub offset: vkm::Vec2i,
   pub id_offset: u32,
 }
 
