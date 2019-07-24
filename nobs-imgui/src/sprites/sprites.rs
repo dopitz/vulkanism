@@ -28,7 +28,7 @@ impl Drop for Sprites {
   fn drop(&mut self) {
     self.gui.get_mem().trash.push_buffer(self.ub);
     self.gui.get_mem().trash.push_buffer(self.vb);
-    self.gui.get_pipe(PipeId::Sprites).dsets.free_dset(self.pipe.bind_ds_instance.dset);
+    self.gui.get_pipe(PipeId::Sprites).dsets.as_ref().unwrap().free_dset(self.pipe.bind_ds_instance.dset);
     self.gui.get_meshes().remove(self.mesh);
   }
 }

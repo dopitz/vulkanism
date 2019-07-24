@@ -121,10 +121,10 @@ impl Pipeline {
   }
 
   pub fn setup_dsets(pipe: vk::pipes::Pipeline, ub_viewport: vk::Buffer) -> CachedPipeline {
-    let dsets = DescriptorPool::new(
+    let dsets = Some(DescriptorPool::new(
       pipe.device,
       DescriptorPool::new_capacity().add(&pipe.dsets[1], 32),
-    );
+    ));
     let shared = DescriptorPool::new(pipe.device, DescriptorPool::new_capacity().add(&pipe.dsets[0], 1));
     let ds_viewport = shared.new_dset(&pipe.dsets[0]).unwrap();
 
@@ -155,7 +155,7 @@ impl Pipeline {
         vk::PIPELINE_BIND_POINT_GRAPHICS,
         cache.pipe.layout,
         1,
-        cache.dsets.new_dset(&cache.pipe.dsets[1]).unwrap(),
+        cache.dsets.as_ref().unwrap().new_dset(&cache.pipe.dsets[1]).unwrap(),
       ),
     }
   }

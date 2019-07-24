@@ -13,6 +13,6 @@ pub trait PipelineId: std::hash::Hash + PartialEq + Eq + Clone + Copy {
 
 pub struct CachedPipeline {
   pub pipe: Pipeline,
-  pub dsets: DescriptorPool,
+  pub dsets: Option<DescriptorPool>,
   pub dsets_shared: Option<(DescriptorPool, Vec<vk::DescriptorSet>)>,
 }

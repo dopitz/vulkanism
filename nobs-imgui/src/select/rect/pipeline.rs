@@ -34,12 +34,11 @@ use vk::pipes::DescriptorPool;
 pub struct Pipeline {
   pub bind_pipe: BindPipeline,
   pub bind_ds_viewport: BindDset,
-  pub bind_ds_instance: BindDset,
 }
 
 impl StreamPush for Pipeline {
   fn enqueue(&self, cs: CmdBuffer) -> CmdBuffer {
-    cs.push(&self.bind_pipe).push(&self.bind_ds_viewport).push(&self.bind_ds_instance)
+    cs.push(&self.bind_pipe).push(&self.bind_ds_viewport)
   }
 }
 
@@ -87,7 +86,7 @@ impl Pipeline {
   }
 
   pub fn setup_dsets(pipe: vk::pipes::Pipeline, ub_viewport: vk::Buffer) -> CachedPipeline {
-    let dsets = DescriptorPool::new(pipe.device, DescriptorPool::new_capacity().add(&pipe.dsets[0], 1));
+    let dsets = Some(DescriptorPool::new(pipe.device, DescriptorPool::new_capacity().add(&pipe.dsets[0], 1)));
     let shared = DescriptorPool::new(pipe.device, DescriptorPool::new_capacity().add(&pipe.dsets[0], 1));
     let ds_viewport = shared.new_dset(&pipe.dsets[0]).unwrap();
 
@@ -113,12 +112,6 @@ impl Pipeline {
           Some((_, ref ds)) => ds[0],
           None => panic!("should never happen"),
         },
-      ),
-      bind_ds_instance: BindDset::new(
-        vk::PIPELINE_BIND_POINT_GRAPHICS,
-        cache.pipe.layout,
-        1,
-        cache.dsets.new_dset(&cache.pipe.dsets[1]).unwrap(),
       ),
     }
   }
