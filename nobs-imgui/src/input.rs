@@ -1,6 +1,6 @@
 use vkm::Vec2i;
-use winit::MouseButton;
-use winit::VirtualKeyCode;
+use vk::winit::MouseButton;
+use vk::winit::VirtualKeyCode;
 
 use std::collections::HashSet;
 
@@ -22,40 +22,40 @@ pub enum Event {
 }
 
 impl Event {
-  pub fn from_winit_event(e: winit::Event) -> Option<Self> {
+  pub fn from_winit_event(e: vk::winit::Event) -> Option<Self> {
     match e {
-      winit::Event::WindowEvent {
-        event: winit::WindowEvent::ReceivedCharacter(c),
+      vk::winit::Event::WindowEvent {
+        event: vk::winit::WindowEvent::ReceivedCharacter(c),
         ..
       } => Some(Event::CharReceived(c)),
 
-      winit::Event::WindowEvent {
-        event: winit::WindowEvent::KeyboardInput { input, .. },
+      vk::winit::Event::WindowEvent {
+        event: vk::winit::WindowEvent::KeyboardInput { input, .. },
         ..
       } => match input.state {
-        winit::ElementState::Pressed => input.virtual_keycode.and_then(|k| Some(Event::KeyDown(k))),
-        winit::ElementState::Released => input.virtual_keycode.and_then(|k| Some(Event::KeyUp(k))),
+        vk::winit::ElementState::Pressed => input.virtual_keycode.and_then(|k| Some(Event::KeyDown(k))),
+        vk::winit::ElementState::Released => input.virtual_keycode.and_then(|k| Some(Event::KeyUp(k))),
       },
-      winit::Event::WindowEvent {
-        event: winit::WindowEvent::CursorMoved { position, .. },
+      vk::winit::Event::WindowEvent {
+        event: vk::winit::WindowEvent::CursorMoved { position, .. },
         ..
       } => Some(Event::MouseMove(vec2!(position.x, position.y).into())),
-      winit::Event::WindowEvent {
-        event: winit::WindowEvent::MouseWheel {
-          delta: winit::MouseScrollDelta::LineDelta(x, y),
+      vk::winit::Event::WindowEvent {
+        event: vk::winit::WindowEvent::MouseWheel {
+          delta: vk::winit::MouseScrollDelta::LineDelta(x, y),
           ..
         },
         ..
       } => Some(Event::MouseWheel(vec2!(x, y).into())),
-      winit::Event::WindowEvent {
-        event: winit::WindowEvent::MouseInput { button, state, .. },
+      vk::winit::Event::WindowEvent {
+        event: vk::winit::WindowEvent::MouseInput { button, state, .. },
         ..
       } => match state {
-        winit::ElementState::Pressed => Some(Event::MouseDown(MouseEvent {
+        vk::winit::ElementState::Pressed => Some(Event::MouseDown(MouseEvent {
           button,
           position: vec2!(0),
         })),
-        winit::ElementState::Released => Some(Event::MouseUp(MouseEvent {
+        vk::winit::ElementState::Released => Some(Event::MouseUp(MouseEvent {
           button,
           position: vec2!(0),
         })),
@@ -73,51 +73,51 @@ pub struct Input {
 }
 
 impl Input {
-  pub fn parse(&mut self, e: winit::Event) -> Option<Event> {
+  pub fn parse(&mut self, e: vk::winit::Event) -> Option<Event> {
     match e {
-      winit::Event::WindowEvent {
-        event: winit::WindowEvent::ReceivedCharacter(c),
+      vk::winit::Event::WindowEvent {
+        event: vk::winit::WindowEvent::ReceivedCharacter(c),
         ..
       } => Some(Event::CharReceived(c)),
-      winit::Event::WindowEvent {
-        event: winit::WindowEvent::KeyboardInput { input, .. },
+      vk::winit::Event::WindowEvent {
+        event: vk::winit::WindowEvent::KeyboardInput { input, .. },
         ..
       } => match input.state {
-        winit::ElementState::Pressed => input.virtual_keycode.and_then(|k| {
+        vk::winit::ElementState::Pressed => input.virtual_keycode.and_then(|k| {
           self.keys.insert(k);
           Some(Event::KeyDown(k))
         }),
-        winit::ElementState::Released => input.virtual_keycode.and_then(|k| {
+        vk::winit::ElementState::Released => input.virtual_keycode.and_then(|k| {
           self.keys.remove(&k);
           Some(Event::KeyUp(k))
         }),
       },
-      winit::Event::WindowEvent {
-        event: winit::WindowEvent::CursorMoved { position, .. },
+      vk::winit::Event::WindowEvent {
+        event: vk::winit::WindowEvent::CursorMoved { position, .. },
         ..
       } => {
         self.cursor = vec2!(position.x, position.y).into();
         Some(Event::MouseMove(self.cursor))
       }
-      winit::Event::WindowEvent {
-        event: winit::WindowEvent::MouseWheel {
-          delta: winit::MouseScrollDelta::LineDelta(x, y),
+      vk::winit::Event::WindowEvent {
+        event: vk::winit::WindowEvent::MouseWheel {
+          delta: vk::winit::MouseScrollDelta::LineDelta(x, y),
           ..
         },
         ..
       } => Some(Event::MouseWheel(vec2!(x, y).into())),
-      winit::Event::WindowEvent {
-        event: winit::WindowEvent::MouseInput { button, state, .. },
+      vk::winit::Event::WindowEvent {
+        event: vk::winit::WindowEvent::MouseInput { button, state, .. },
         ..
       } => match state {
-        winit::ElementState::Pressed => {
+        vk::winit::ElementState::Pressed => {
           self.buttons.insert(button);
           Some(Event::MouseDown(MouseEvent {
             button,
             position: self.cursor,
           }))
         }
-        winit::ElementState::Released => {
+        vk::winit::ElementState::Released => {
           self.buttons.remove(&button);
           Some(Event::MouseUp(MouseEvent {
             button,

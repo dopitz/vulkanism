@@ -42,7 +42,7 @@ impl Sprites {
 
     let mut ub = vk::NULL_HANDLE;
     vk::mem::Buffer::new(&mut ub)
-      .uniform_buffer(std::mem::size_of::<UbViewport>() as vk::DeviceSize)
+      .uniform_buffer(std::mem::size_of::<UbText>() as vk::DeviceSize)
       .devicelocal(false)
       .bind(&mut mem.alloc, vk::mem::BindType::Block)
       .unwrap();
@@ -84,7 +84,7 @@ impl Sprites {
       self.position = pos;
 
       let mut map = self.gui.get_mem().alloc.get_mapped(Handle::Buffer(self.ub)).unwrap();
-      let data = map.as_slice_mut::<UbViewport>();
+      let data = map.as_slice_mut::<UbText>();
       data[0].offset = pos;
     }
     self

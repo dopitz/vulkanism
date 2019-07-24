@@ -6,30 +6,14 @@ use crate::ImGui;
 use vk::cmd::commands::Scissor;
 use vk::cmd::stream::*;
 
-struct WinComp {
-  scissor: Scissor,
-  mesh: usize,
-}
-
-impl From<(Scissor, usize)> for WinComp {
-  fn from(p: (Scissor, usize)) -> Self {
-    Self { scissor: p.0, mesh: p.1 }
-  }
-}
-
 pub struct Window<T: Layout> {
   root: RootWindow,
-  components: Vec<WinComp>,
   layout: T,
 }
 
 impl<T: Layout> Window<T> {
   pub fn new(root: RootWindow, layout: T) -> Self {
-    Self {
-      root,
-      components: Default::default(),
-      layout,
-    }
+    Self { root, layout }
   }
 
   pub fn rect(mut self, rect: Rect) -> Self {
@@ -46,13 +30,12 @@ impl<T: Layout> Window<T> {
   }
 
   pub fn push<C: Component>(mut self, c: &mut C) -> Self {
-    self.components.push(self.layout.push(c).into());
+    self.layout.push(c);
     self.root.push(c);
     self
   }
 
   pub fn end_window(self) -> RootWindow {
-    // TODO: layout, push, ...
     self.root
   }
 }

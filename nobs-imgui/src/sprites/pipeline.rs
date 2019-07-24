@@ -39,7 +39,7 @@ impl crate::font::FontChar for Vertex {
 
 #[repr(C)]
 #[derive(Debug)]
-pub struct UbViewport {
+pub struct UbText {
   pub offset: vkm::Vec2i,
 }
 
@@ -123,7 +123,7 @@ impl Pipeline {
   pub fn setup_dsets(pipe: vk::pipes::Pipeline, ub_viewport: vk::Buffer) -> CachedPipeline {
     let dsets = DescriptorPool::new(
       pipe.device,
-      DescriptorPool::new_capacity().add(&pipe.dsets[0], 1).add(&pipe.dsets[1], 1),
+      DescriptorPool::new_capacity().add(&pipe.dsets[1], 32),
     );
     let shared = DescriptorPool::new(pipe.device, DescriptorPool::new_capacity().add(&pipe.dsets[0], 1));
     let ds_viewport = shared.new_dset(&pipe.dsets[0]).unwrap();

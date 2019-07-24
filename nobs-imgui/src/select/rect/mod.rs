@@ -16,16 +16,12 @@ pub struct Rects {
   device: vk::Device,
   mem: vk::mem::Mem,
 
-  id_offset: u32,
-
   vb: vk::Buffer,
-  ub: vk::Buffer,
   vb_capacity: usize,
 }
 
 impl Drop for Rects {
   fn drop(&mut self) {
-    self.mem.trash.push_buffer(self.ub);
     self.mem.trash.push_buffer(self.vb);
     //TODO: self.mem.get_pipe(PipeId::Rects).dsets.free_dset(self.pipe.bind_ds_instance.dset);
     //TODO: self.mem.get_meshes().remove(self.mesh);
@@ -36,13 +32,6 @@ impl Rects {
   pub fn new(device: vk::Device, mut mem: vk::mem::Mem) -> Self {
     let vb = vk::NULL_HANDLE;
 
-    let mut ub = vk::NULL_HANDLE;
-    vk::mem::Buffer::new(&mut ub)
-      .uniform_buffer(std::mem::size_of::<UbViewport>() as vk::DeviceSize)
-      .devicelocal(false)
-      .bind(&mut mem.alloc, vk::mem::BindType::Block)
-      .unwrap();
-
     //let pipe = Pipeline::new(gui.get_pipe(PipeId::SelectRects));
     //pipe.update_dsets(device, ub, font.texview, font.sampler);
 
@@ -50,27 +39,9 @@ impl Rects {
       device,
       mem,
 
-      position: Default::default(),
-      id_offset: 0,
-
       vb,
-      ub,
       vb_capacity: 0,
     }
-  }
-
-  pub fn id_offset(&mut self, offset: u32) -> &mut Self {
-    if self.id_offset != offset {
-      self.id_offset = offset;
-
-      let mut map = self.mem.alloc.get_mapped(Handle::Buffer(self.ub)).unwrap();
-      let data = map.as_slice_mut::<UbViewport>();
-      data[0].id_offset = offset;
-    }
-    self
-  }
-  pub fn get_id_offset(&self) -> u32 {
-    self.id_offset
   }
 
   pub fn rects(&mut self, rects: &[Vertex]) -> &mut Self {

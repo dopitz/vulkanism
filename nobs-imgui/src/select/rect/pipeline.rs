@@ -11,7 +11,6 @@ mod pipe {
     }
 
     dset_name[0] = "DsViewport",
-    dset_name[1] = "DsRects",
   }
 }
 
@@ -20,12 +19,7 @@ mod pipe {
 pub struct Vertex {
   pub pos: vkm::Vec2f,
   pub size: vkm::Vec2f,
-}
-
-#[repr(C)]
-#[derive(Debug)]
-pub struct UbViewport {
-  pub id_offset: u32,
+  pub id: u32,
 }
 
 use vk;
@@ -72,9 +66,17 @@ impl Pipeline {
               .location(1)
               .format(vk::FORMAT_R32G32_SFLOAT)
               .offset(2 * std::mem::size_of::<f32>() as u32),
+          )
+          .push_attribute(
+            vk::VertexInputAttributeDescription::build()
+              .binding(0)
+              .location(2)
+              .format(vk::FORMAT_R32_UINT)
+              .offset(std::mem::size_of::<u32>() as u32),
           ),
       )
       .input_assembly(vk::PipelineInputAssemblyStateCreateInfo::build().topology(vk::PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP))
+      .blend(vk::PipelineColorBlendStateCreateInfo::build().push_attachment(vk::PipelineColorBlendAttachmentState::build()))
       .dynamic(
         vk::PipelineDynamicStateCreateInfo::build()
           .push_state(vk::DYNAMIC_STATE_VIEWPORT)
@@ -85,10 +87,7 @@ impl Pipeline {
   }
 
   pub fn setup_dsets(pipe: vk::pipes::Pipeline, ub_viewport: vk::Buffer) -> CachedPipeline {
-    let dsets = DescriptorPool::new(
-      pipe.device,
-      DescriptorPool::new_capacity().add(&pipe.dsets[0], 1).add(&pipe.dsets[1], 1),
-    );
+    let dsets = DescriptorPool::new(pipe.device, DescriptorPool::new_capacity().add(&pipe.dsets[0], 1));
     let shared = DescriptorPool::new(pipe.device, DescriptorPool::new_capacity().add(&pipe.dsets[0], 1));
     let ds_viewport = shared.new_dset(&pipe.dsets[0]).unwrap();
 
@@ -122,11 +121,5 @@ impl Pipeline {
         cache.dsets.new_dset(&cache.pipe.dsets[1]).unwrap(),
       ),
     }
-  }
-
-  pub fn update_dsets(&self, device: vk::Device, ub_instance: vk::Buffer, tex: vk::ImageView, sampler: vk::Sampler) {
-    pipe::DsRects::write(device, self.bind_ds_instance.dset)
-      .ub(vk::DescriptorBufferInfo::build().buffer(ub_instance).into())
-      .update();
   }
 }

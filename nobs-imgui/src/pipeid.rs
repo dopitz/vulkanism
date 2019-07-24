@@ -19,6 +19,9 @@ pub struct PipeCreateInfo {
   pub pass: vk::RenderPass,
   pub subpass: u32,
   pub ub_viewport: vk::Buffer,
+
+  pub select_pass: vk::RenderPass,
+  pub select_subpass: u32,
 }
 
 impl PipelineId for PipeId {
@@ -26,7 +29,7 @@ impl PipelineId for PipeId {
   fn create_pipeline(&self, info: &Self::CreateInfo) -> vk::pipes::Pipeline {
     match self {
       PipeId::Sprites => sprites::Pipeline::create_pipeline(info.device, info.pass, info.subpass),
-      PipeId::SelectRects => rect::Pipeline::create_pipeline(info.device, info.pass, info.subpass),
+      PipeId::SelectRects => rect::Pipeline::create_pipeline(info.device, info.select_pass, info.select_subpass),
     }
   }
 

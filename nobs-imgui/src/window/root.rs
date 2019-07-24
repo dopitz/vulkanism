@@ -3,6 +3,7 @@ use super::Component;
 use super::Layout;
 use super::Window;
 use crate::rect::Rect;
+use crate::select::Query;
 use crate::ImGui;
 use vk::cmd::commands::Scissor;
 use vk::cmd::stream::*;
@@ -14,55 +15,83 @@ struct WindowComponent {
 }
 
 pub struct RootWindow {
-  gui: ImGui,
-  components: Vec<WindowComponent>,
+  gui: Option<ImGui>,
+  components: Option<Vec<WindowComponent>>,
+  query: Option<Query>,
 }
 
 impl RootWindow {
   pub fn new(gui: ImGui) -> Self {
+    let query = Some(Query::new(gui.get_mem().clone()));
     RootWindow {
-      gui,
-      components: Default::default(),
+      gui: Some(gui),
+      components: Some(Default::default()),
+      query,
+    }
+  }
+  pub fn from_cached(gui: ImGui, root: Self) -> Self {
+    RootWindow {
+      gui: Some(gui),
+      components: root.components,
+      query: root.query,
     }
   }
 
   pub fn push<T: Component>(&mut self, c: &T) {
-    self.components.push(WindowComponent {
-      scissor: Scissor::with_rect(c.get_rect().into()),
-      draw_mesh: c.get_mesh(),
-      select_mesh: c.get_select_mesh(),
-    });
+    if let Some(components) = self.components.as_mut() {
+      components.push(WindowComponent {
+        scissor: Scissor::with_rect(c.get_rect().into()),
+        draw_mesh: c.get_mesh(),
+        select_mesh: c.get_select_mesh(),
+      });
+    }
   }
 
   pub fn begin_window(self) -> Window<ColumnLayout> {
     self.begin_layout(ColumnLayout::default())
   }
   pub fn begin_layout<T: Layout>(self, layout: T) -> Window<T> {
-    let extent = self.gui.get_size();
+    let extent = self.gui.as_ref().unwrap().get_size();
     Window::new(self, layout).size(extent.width, extent.height)
+  }
+
+  pub fn get_select_result(&mut self) -> Option<u32> {
+    self.query.as_mut().and_then(|q| q.get())
   }
 }
 
 impl StreamPushMut for RootWindow {
   fn enqueue_mut(&mut self, cs: CmdBuffer) -> CmdBuffer {
-    // Draw actual ui elements
-    let mut cs = self.gui.begin_draw(cs);
-    let meshes = self.gui.get_meshes();
-    for c in self.components.iter() {
-      cs = cs.push(&c.scissor).push(&meshes.get(c.draw_mesh));
-    }
-    cs = self.gui.end_draw(cs);
+    let gui = self.gui.as_ref().unwrap();
 
-    // TODO: Select pass
-    let mut selects = self.gui.get_selects();
-    cs = selects.begin(cs);
-    for c in self.components.iter().filter(|c| c.select_mesh.is_some()) {
-      cs = cs.push(&c.scissor).push(&selects.get(c.select_mesh.unwrap()));
-    }
-    cs = selects.end(cs);
+    if let Some(mut components) = self.components.take() {
+      // Draw actual ui elements
+      let mut cs = gui.begin_draw(cs);
+      let meshes = gui.get_meshes();
+      for c in components.iter() {
+        cs = cs.push(&c.scissor).push(&meshes.get(c.draw_mesh));
+      }
+      cs = gui.end_draw(cs);
 
-    self.components.clear();
-    //self.gui.clone().end(self);
-    cs
+      // Select Query
+      if let Some(mut query) = self.query.as_mut() {
+        query.clear();
+        for c in components.iter().filter(|c| c.select_mesh.is_some()) {
+          query.push(c.select_mesh.unwrap(), Some(c.scissor))
+        }
+        cs = cs.push_mut(&mut gui.get_selectpass().query(query));
+      }
+
+      components.clear();
+      gui.clone().end(Self {
+        gui: None,
+        components: Some(components),
+        query: self.query.take(),
+      });
+
+      cs
+    } else {
+      cs
+    }
   }
 }

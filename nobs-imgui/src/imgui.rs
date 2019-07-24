@@ -1,5 +1,5 @@
-use super::select::Select;
 use crate::pipeid::*;
+use crate::select::SelectPass;
 use crate::window::ColumnLayout;
 use crate::window::Layout;
 use crate::window::RootWindow;
@@ -26,8 +26,8 @@ struct ImGuiImpl {
   cmds: CmdPool,
   mem: vk::mem::Mem,
 
+  select: Mutex<SelectPass>,
   draw: Pass,
-  select: Mutex<Select>,
   ub_viewport: Mutex<vk::Buffer>,
 
   font: Arc<Font>,
@@ -73,6 +73,8 @@ impl ImGui {
       data[1] = extent.height as u32;
     }
 
+    let select = Mutex::new(SelectPass::new(device, extent, 1.0, mem.clone()));
+
     let draw = {
       let rp = vk::pass::Renderpass::build(device)
         .attachment(
@@ -104,13 +106,14 @@ impl ImGui {
       }
     };
 
-    let select = Mutex::new(Select::new(device, extent, mem.clone()));
-
     let pipes = PipeCache::new(&PipeCreateInfo {
       device,
       pass: draw.rp.pass,
       subpass: 0,
       ub_viewport,
+
+      select_pass: select.lock().unwrap().get_pass(),
+      select_subpass: 0,
     });
 
     Self {
@@ -120,8 +123,8 @@ impl ImGui {
         cmds,
         mem,
 
-        draw,
         select,
+        draw,
         ub_viewport: Mutex::new(ub_viewport),
 
         font,
@@ -155,11 +158,11 @@ impl ImGui {
   //  *self.gui.ub_viewport.lock().unwrap()
   //}
 
+  pub fn get_selectpass<'a>(&'a self) -> std::sync::MutexGuard<'a, SelectPass> {
+    self.gui.select.lock().unwrap()
+  }
   pub fn get_meshes<'a>(&'a self) -> std::sync::MutexGuard<'a, DrawPass> {
     self.gui.draw.draw.lock().unwrap()
-  }
-  pub fn get_selects<'a>(&'a self) -> std::sync::MutexGuard<'a, Select> {
-    self.gui.select.lock().unwrap()
   }
 
   pub fn resize(&mut self, size: vk::Extent2D, target: vk::Image) {
@@ -191,20 +194,25 @@ impl ImGui {
   }
 
   pub fn begin(&mut self) -> RootWindow {
+
+    println!("{:?}", self.gui.root.lock().unwrap().as_mut().and_then(|rw| rw.get_select_result()));
+
     match self.gui.root.lock().unwrap().take() {
-      Some(rw) => rw,
+      Some(rw) => RootWindow::from_cached(self.clone(), rw),
       None => RootWindow::new(self.clone()),
     }
   }
   pub fn end(&mut self, root: RootWindow) {
-    *self.gui.root.lock().unwrap() = Some(root);
+    self.gui.root.lock().unwrap().replace(root);
   }
-  pub fn begin_window(&self) -> Window<ColumnLayout> {
+  pub fn begin_window(&mut self) -> Window<ColumnLayout> {
     self.begin_layout(ColumnLayout::default())
   }
-  pub fn begin_layout<T: Layout>(&self, layout: T) -> Window<T> {
-    let extent = self.gui.draw.fb.lock().unwrap().extent;
-    Window::new(RootWindow::new(self.clone()), layout).size(extent.width, extent.height)
+  pub fn begin_layout<T: Layout>(&mut self, layout: T) -> Window<T> {
+    //let extent = self.gui.draw.fb.lock().unwrap().extent;
+    //Window::new(RootWindow::new(self.clone()), layout).size(extent.width, extent.height)
+
+    self.begin().begin_layout(layout)
   }
   pub fn get_size(&self) -> vk::Extent2D {
     self.gui.draw.fb.lock().unwrap().extent

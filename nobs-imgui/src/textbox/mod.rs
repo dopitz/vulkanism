@@ -14,7 +14,7 @@ impl TextBox {
   pub fn new(gui: &ImGui) -> Self {
     let rect = Rect::from_rect(0, 0, 200, 20);
     let text = Text::new(gui);
-    let select_mesh = 0;//gui.get_selects().new_mesh
+    let select_mesh = 0;//gui.get_selectpass().new_mesh()
 
     Self { rect, text, select_mesh }
   }
