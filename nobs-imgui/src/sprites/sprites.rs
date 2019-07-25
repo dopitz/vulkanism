@@ -75,6 +75,10 @@ impl Sprites {
     }
   }
 
+  pub fn get_gui(&self) -> ImGui {
+    self.gui.clone()
+  }
+
   pub fn get_mesh(&self) -> usize {
     self.mesh
   }

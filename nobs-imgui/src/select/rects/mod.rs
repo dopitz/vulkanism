@@ -23,6 +23,7 @@ pub struct Rects {
   vb_capacity: usize,
   vb_data: Vec<Vertex>,
   vb_free: BTreeSet<usize>,
+  meshes: Vec<usize>,
 
   pipe: Pipeline,
 }
@@ -48,12 +49,13 @@ impl Rects {
       vb_capacity: 0,
       vb_data: Default::default(),
       vb_free: Default::default(),
+      meshes: Default::default(),
       pipe,
     }
   }
 
   pub fn new_rect(&mut self) -> usize {
-    match self.vb_free.iter().next().cloned() {
+    let rect = match self.vb_free.iter().next().cloned() {
       Some(i) => {
         self.vb_free.remove(&i);
         i
@@ -62,9 +64,21 @@ impl Rects {
         self.vb_data.push(Default::default());
         self.vb_data.len() - 1
       }
-    }
+    };
+    self.vb_data[rect].id = self.pass.new_id();
+    self.pass.new_mesh(
+      self.pipe.bind_pipe,
+      &[self.pipe.bind_ds_viewport],
+      DrawManaged::new(
+        [(self.vb, 0)].iter().into(),
+        DrawVertices::with_vertices(4).instance_count(1).first_instance(rect as u32).into(),
+      ),
+    );
+    rect
   }
   pub fn remove(&mut self, i: usize) {
+    self.pass.remove_mesh(self.meshes[i]);
+    self.pass.remove_id(self.vb_data[i].id);
     self.vb_free.insert(i);
   }
 
@@ -73,6 +87,10 @@ impl Rects {
   }
   pub fn get_mut(&mut self, i: usize) -> &mut Vertex {
     &mut self.vb_data[i]
+  }
+
+  pub fn get_mesh(&self, i: usize) -> usize {
+    self.meshes[i]
   }
 
   pub fn update(&mut self) {

@@ -14,13 +14,12 @@ impl TextBox {
   pub fn new(gui: &ImGui) -> Self {
     let rect = Rect::from_rect(0, 0, 200, 20);
     let text = Text::new(gui);
-    let select_mesh = 0;//gui.get_selectpass().new_mesh()
-
-    //gui.get_selectpass().new_mesh();
-
-
-
+    let select_mesh = gui.get_select_rects().new_rect();
     Self { rect, text, select_mesh }
+  }
+
+  pub fn get_gui(&self) -> ImGui {
+    self.text.get_gui()
   }
 
   pub fn text(&mut self, text: &str) -> &mut Self {
@@ -43,6 +42,11 @@ impl TextBox {
 impl Component for TextBox {
   fn rect(&mut self, rect: Rect) -> &mut Self {
     if self.rect != rect {
+      let gui = self.get_gui();
+      let mut rects = gui.get_select_rects();
+      let r = rects.get_mut(self.select_mesh);
+      r.pos = rect.position.into();
+      r.size = rect.size.into();
       self.text.position(rect.position);
       self.rect = rect;
     }

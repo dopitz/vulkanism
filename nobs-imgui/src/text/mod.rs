@@ -22,6 +22,10 @@ impl Text {
     }
   }
 
+  pub fn get_gui(&self) -> ImGui {
+    self.sprites.get_gui()
+  }
+
   pub fn get_mesh(&self) -> usize {
     self.sprites.get_mesh()
   }

@@ -34,7 +34,7 @@ struct ImGuiImpl {
 
   root: Mutex<Option<RootWindow>>,
 
-  rects: SelectRects,
+  rects: Mutex<SelectRects>,
 }
 
 impl Drop for ImGuiImpl {
@@ -117,7 +117,7 @@ impl ImGui {
       select_subpass: 0,
     });
 
-    let rects = SelectRects::new(device, select.clone(), &pipes[PipeId::SelectRects], mem.clone());
+    let rects = Mutex::new(SelectRects::new(device, select.clone(), &pipes[PipeId::SelectRects], mem.clone()));
 
     Self {
       select,
@@ -154,6 +154,9 @@ impl ImGui {
 
   pub fn get_selectpass(&self) -> SelectPass {
     self.select.clone()
+  }
+  pub fn get_select_rects<'a>(&'a self) -> std::sync::MutexGuard<'a, SelectRects> {
+    self.gui.rects.lock().unwrap()
   }
   pub fn get_drawpass<'a>(&'a self) -> std::sync::MutexGuard<'a, DrawPass> {
     self.gui.draw.draw.lock().unwrap()
