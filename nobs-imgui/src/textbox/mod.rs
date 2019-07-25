@@ -16,6 +16,10 @@ impl TextBox {
     let text = Text::new(gui);
     let select_mesh = 0;//gui.get_selectpass().new_mesh()
 
+    //gui.get_selectpass().new_mesh();
+
+
+
     Self { rect, text, select_mesh }
   }
 

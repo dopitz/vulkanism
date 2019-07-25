@@ -29,7 +29,7 @@ impl Drop for Sprites {
     self.gui.get_mem().trash.push_buffer(self.ub);
     self.gui.get_mem().trash.push_buffer(self.vb);
     self.gui.get_pipe(PipeId::Sprites).dsets.as_ref().unwrap().free_dset(self.pipe.bind_ds_instance.dset);
-    self.gui.get_meshes().remove(self.mesh);
+    self.gui.get_drawpass().remove(self.mesh);
   }
 }
 
@@ -52,7 +52,7 @@ impl Sprites {
     let pipe = Pipeline::new(gui.get_pipe(PipeId::Sprites));
     pipe.update_dsets(device, ub, font.texview, font.sampler);
 
-    let mesh = gui.get_meshes().new_mesh(
+    let mesh = gui.get_drawpass().new_mesh(
       pipe.bind_pipe,
       &[pipe.bind_ds_viewport, pipe.bind_ds_instance],
       DrawManaged::new([(vb, 0)].iter().into(), DrawVertices::with_vertices(4).instance_count(0).into()),
@@ -126,10 +126,10 @@ impl Sprites {
 
     // finally update the buffer and instance count int the mesh
     {
-      let mut meshes = self.gui.get_meshes();
-      let m = meshes.get_mut(self.mesh);
-      m.buffers[0] = self.vb;
-      m.draw.draw = DrawVertices::with_vertices(4).instance_count(sprites.len() as u32).into();
+      let mut draw = self.gui.get_drawpass();
+      let mesh = draw.get_mut(self.mesh);
+      mesh.buffers[0] = self.vb;
+      mesh.draw.draw = DrawVertices::with_vertices(4).instance_count(sprites.len() as u32).into();
     }
 
     self

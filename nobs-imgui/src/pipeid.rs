@@ -6,7 +6,7 @@ use vk::pipes::CachedPipeline;
 use vk::pipes::PipelineId;
 
 use crate::sprites;
-use crate::select::rect;
+use crate::select::rects;
 
 #[derive(Hash, Clone, Copy, PartialEq, Eq)]
 pub enum PipeId {
@@ -29,7 +29,7 @@ impl PipelineId for PipeId {
   fn create_pipeline(&self, info: &Self::CreateInfo) -> vk::pipes::Pipeline {
     match self {
       PipeId::Sprites => sprites::Pipeline::create_pipeline(info.device, info.pass, info.subpass),
-      PipeId::SelectRects => rect::Pipeline::create_pipeline(info.device, info.select_pass, info.select_subpass),
+      PipeId::SelectRects => rects::Pipeline::create_pipeline(info.device, info.select_pass, info.select_subpass),
     }
   }
 
@@ -49,7 +49,7 @@ impl PipelineId for PipeId {
       PipeId::SelectRects => {
         cache.insert(
           PipeId::SelectRects,
-          rect::Pipeline::setup_dsets(pipes.remove(&PipeId::SelectRects).unwrap(), info.ub_viewport),
+          rects::Pipeline::setup_dsets(pipes.remove(&PipeId::SelectRects).unwrap(), info.ub_viewport),
         );
       }
     }

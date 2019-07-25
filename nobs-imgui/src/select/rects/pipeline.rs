@@ -2,12 +2,12 @@ mod pipe {
   vk::pipes::pipeline! {
     stage = {
       ty = "vert",
-      glsl = "src/select/rect/rect.vert",
+      glsl = "src/select/rects/rects.vert",
     }
 
     stage = {
       ty = "frag",
-      glsl = "src/select/rect/rect.frag",
+      glsl = "src/select/rects/rects.frag",
     }
 
     dset_name[0] = "DsViewport",
@@ -15,7 +15,7 @@ mod pipe {
 }
 
 #[repr(C)]
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct Vertex {
   pub pos: vkm::Vec2f,
   pub size: vkm::Vec2f,

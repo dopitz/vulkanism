@@ -1,5 +1,8 @@
 use crate::rect::Rect;
+use std::collections::BTreeSet;
 use std::collections::HashMap;
+use std::sync::Arc;
+use std::sync::Mutex;
 use vk::builder::Buildable;
 use vk::cmd::commands::BindDset;
 use vk::cmd::commands::BindPipeline;
@@ -14,7 +17,23 @@ use vk::pass::DrawPass;
 use vk::pass::Framebuffer;
 use vk::pass::Renderpass;
 
-pub struct SelectPass {
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct Ids {
+  beg: u32,
+  end: u32,
+}
+impl PartialOrd for Ids {
+  fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+    Some(self.beg.cmp(&other.beg))
+  }
+}
+impl Ord for Ids {
+  fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+    self.beg.cmp(&other.beg)
+  }
+}
+
+struct SelectPassImpl {
   rp: Renderpass,
   fb: Framebuffer,
   pass: DrawPass,
@@ -23,12 +42,19 @@ pub struct SelectPass {
   stage: vk::mem::Staging,
   current_pos: vkm::Vec2u,
   dpi: f64,
+
+  free_ids: BTreeSet<Ids>,
 }
 
-impl Drop for SelectPass {
+impl Drop for SelectPassImpl {
   fn drop(&mut self) {
     self.mem.trash.push(Handle::Image(self.fb.images[0]));
   }
+}
+
+#[derive(Clone)]
+pub struct SelectPass {
+  pass: Arc<Mutex<SelectPassImpl>>,
 }
 
 impl SelectPass {
@@ -53,63 +79,125 @@ impl SelectPass {
 
     let stage = vk::mem::Staging::new(mem.clone(), std::mem::size_of::<u32>() as vk::DeviceSize).unwrap();
 
-    Self {
-      rp,
-      fb,
-      pass: DrawPass::new(),
-      mem,
+    let mut free_ids: BTreeSet<Ids> = Default::default();
+    free_ids.insert(Ids {
+      beg: 0,
+      end: u32::max_value(),
+    });
 
-      stage,
-      current_pos: vec2!(0),
-      dpi,
+    Self {
+      pass: Arc::new(Mutex::new(SelectPassImpl {
+        rp,
+        fb,
+        pass: DrawPass::new(),
+        mem,
+
+        stage,
+        current_pos: vec2!(0),
+        dpi,
+
+        free_ids,
+      })),
     }
   }
 
   pub fn resize(&mut self, size: vk::Extent2D) {
-    self.mem.alloc.destroy(Handle::Image(self.fb.images[0]));
-    self.fb = vk::pass::Framebuffer::build_from_pass(&self.rp, &mut self.mem.alloc)
+    let mut pass = self.pass.lock().unwrap();
+    let mut mem = pass.mem.clone();
+    mem.alloc.destroy(Handle::Image(pass.fb.images[0]));
+    pass.fb = vk::pass::Framebuffer::build_from_pass(&pass.rp, &mut mem.alloc)
       .extent(size)
       .create();
   }
 
   pub fn handle_events(&mut self, e: &vk::winit::Event) {
+    let mut pass = self.pass.lock().unwrap();
+
     match e {
       vk::winit::Event::WindowEvent {
         event: vk::winit::WindowEvent::CursorMoved { position, .. },
         ..
-      } => self.current_pos = (vec2!(position.x, position.y) * self.dpi).into(),
+      } => pass.current_pos = (vec2!(position.x, position.y) * pass.dpi).into(),
       vk::winit::Event::WindowEvent {
         event: vk::winit::WindowEvent::HiDpiFactorChanged(dpi),
         ..
-      } => self.dpi = *dpi,
+      } => pass.dpi = *dpi,
       _ => (),
     }
 
-    self.current_pos = vkm::Vec2::clamp(
-      self.current_pos,
+    pass.current_pos = vkm::Vec2::clamp(
+      pass.current_pos,
       vec2!(0),
-      vec2!(self.fb.extent.width, self.fb.extent.height) - vec2!(1),
+      vec2!(pass.fb.extent.width, pass.fb.extent.height) - vec2!(1),
     );
   }
 
+  pub fn new_id(&mut self) -> u32 {
+    let free = &mut self.pass.lock().unwrap().free_ids;
+    let ids = *free.iter().next().unwrap();
+    free.remove(&ids);
+    if ids.end - ids.beg > 1 {
+      free.insert(Ids {
+        beg: ids.beg + 1,
+        end: ids.end,
+      });
+    }
+    ids.beg
+  }
+  pub fn new_ids(&mut self, count: u32) -> u32 {
+    let free = &mut self.pass.lock().unwrap().free_ids;
+    let ids = *free.iter().find(|ids| ids.end - ids.beg >= count).unwrap();
+    free.remove(&ids);
+    if ids.end - ids.beg > count {
+      free.insert(Ids {
+        beg: ids.beg + count,
+        end: ids.end,
+      });
+    }
+    ids.beg
+  }
+  pub fn remove_id(&mut self, id: u32) {
+    let free = &mut self.pass.lock().unwrap().free_ids;
+    let mut ids = *free.iter().find(|i| id == i.beg - 1 || id == i.end).unwrap();
+    free.remove(&ids);
+    if ids.beg - 1 == id {
+      ids.beg -= id;
+    }
+    if ids.end == id {
+      ids.end = id + 1;
+    }
+    free.insert(ids);
+  }
+  pub fn remove_ids(&mut self, id: u32, count: u32) {
+    let free = &mut self.pass.lock().unwrap().free_ids;
+    let mut ids = *free.iter().find(|i| i.beg >= id + count && id <= i.end).unwrap();
+    free.remove(&ids);
+    ids.beg = u32::min(ids.beg, id);
+    ids.end = u32::max(ids.end, id + count);
+    free.insert(ids);
+  }
+
   pub fn new_mesh(&mut self, pipe: BindPipeline, dsets: &[BindDset], draw: DrawManaged) -> usize {
-    self.pass.new_mesh(pipe, dsets, draw)
+    self.pass.lock().unwrap().pass.new_mesh(pipe, dsets, draw)
   }
 
   pub fn contains(&self, mesh: usize) -> bool {
-    self.pass.contains(mesh)
+    self.pass.lock().unwrap().pass.contains(mesh)
   }
 
-  pub fn remove(&mut self, mesh: usize) -> bool {
-    self.pass.remove(mesh)
+  pub fn remove_mesh(&mut self, mesh: usize) -> bool {
+    self.pass.lock().unwrap().pass.remove(mesh)
   }
 
-  pub fn query<'a>(&'a self, q: &'a mut Query) -> PushQuery<'a> {
-    PushQuery { pass: &self, query: q }
+  pub fn push_query<'a>(&self, q: &'a mut Query) -> PushQuery<'a> {
+    PushQuery {
+      pass: self.clone(),
+      query: q,
+    }
   }
 
   pub fn get_pass(&self) -> vk::RenderPass {
-    self.rp.pass
+    self.pass.lock().unwrap().rp.pass
   }
 }
 
@@ -155,7 +243,7 @@ impl Query {
 }
 
 pub struct PushQuery<'a> {
-  pass: &'a SelectPass,
+  pass: SelectPass,
   query: &'a mut Query,
 }
 
@@ -163,7 +251,8 @@ impl<'a> StreamPushMut for PushQuery<'a> {
   fn enqueue_mut(&mut self, cs: CmdBuffer) -> CmdBuffer {
     self.query.reset();
 
-    let fb = &self.pass.fb;
+    let pass = self.pass.pass.lock().unwrap();
+    let fb = &pass.fb;
     let mut cs = cs
       .push(&vk::cmd::commands::ImageBarrier::to_color_attachment(fb.images[0]))
       .push(&fb.begin())
@@ -171,7 +260,7 @@ impl<'a> StreamPushMut for PushQuery<'a> {
       .push(&vk::cmd::commands::Scissor::with_extent(fb.extent));
 
     for q in self.query.meshes.iter() {
-      cs = cs.push_if(&q.1).push(&self.pass.pass.get(q.0));
+      cs = cs.push_if(&q.1).push(&pass.pass.get(q.0));
     }
 
     cs.push(&fb.end()).push(
@@ -181,7 +270,7 @@ impl<'a> StreamPushMut for PushQuery<'a> {
           .subresource(vk::ImageSubresourceLayers::build().aspect(vk::IMAGE_ASPECT_COLOR_BIT).into())
           .image_offset(
             vk::Offset3D::build()
-              .set(self.pass.current_pos.x as i32, self.pass.current_pos.y as i32, 0)
+              .set(pass.current_pos.x as i32, pass.current_pos.y as i32, 0)
               .into(),
           )
           .image_extent(vk::Extent3D::build().set(1, 1, 1).into()),

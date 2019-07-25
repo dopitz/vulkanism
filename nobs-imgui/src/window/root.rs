@@ -67,9 +67,9 @@ impl StreamPushMut for RootWindow {
     if let Some(mut components) = self.components.take() {
       // Draw actual ui elements
       let mut cs = gui.begin_draw(cs);
-      let meshes = gui.get_meshes();
+      let draw = gui.get_drawpass();
       for c in components.iter() {
-        cs = cs.push(&c.scissor).push(&meshes.get(c.draw_mesh));
+        cs = cs.push(&c.scissor).push(&draw.get(c.draw_mesh));
       }
       cs = gui.end_draw(cs);
 
@@ -79,7 +79,7 @@ impl StreamPushMut for RootWindow {
         for c in components.iter().filter(|c| c.select_mesh.is_some()) {
           query.push(c.select_mesh.unwrap(), Some(c.scissor))
         }
-        cs = cs.push_mut(&mut gui.get_selectpass().query(query));
+        cs = cs.push_mut(&mut gui.get_selectpass().push_query(query));
       }
 
       components.clear();

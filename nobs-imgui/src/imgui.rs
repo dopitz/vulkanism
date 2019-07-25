@@ -1,5 +1,6 @@
 use crate::pipeid::*;
 use crate::select::SelectPass;
+use crate::select::rects::Rects as SelectRects;
 use crate::window::ColumnLayout;
 use crate::window::Layout;
 use crate::window::RootWindow;
@@ -22,11 +23,8 @@ struct Pass {
 
 struct ImGuiImpl {
   device: vk::Device,
-  copy_queue: vk::Queue,
-  cmds: CmdPool,
   mem: vk::mem::Mem,
 
-  select: Mutex<SelectPass>,
   draw: Pass,
   ub_viewport: Mutex<vk::Buffer>,
 
@@ -35,6 +33,8 @@ struct ImGuiImpl {
   pipes: PipeCache,
 
   root: Mutex<Option<RootWindow>>,
+
+  rects: SelectRects,
 }
 
 impl Drop for ImGuiImpl {
@@ -45,6 +45,7 @@ impl Drop for ImGuiImpl {
 
 #[derive(Clone)]
 pub struct ImGui {
+  select: SelectPass,
   gui: Arc<ImGuiImpl>,
 }
 
@@ -73,7 +74,7 @@ impl ImGui {
       data[1] = extent.height as u32;
     }
 
-    let select = Mutex::new(SelectPass::new(device, extent, 1.0, mem.clone()));
+    let select = SelectPass::new(device, extent, 1.0, mem.clone());
 
     let draw = {
       let rp = vk::pass::Renderpass::build(device)
@@ -112,18 +113,18 @@ impl ImGui {
       subpass: 0,
       ub_viewport,
 
-      select_pass: select.lock().unwrap().get_pass(),
+      select_pass: select.get_pass(),
       select_subpass: 0,
     });
 
+    let rects = SelectRects::new(device, select.clone(), &pipes[PipeId::SelectRects], mem.clone());
+
     Self {
+      select,
       gui: Arc::new(ImGuiImpl {
         device,
-        copy_queue,
-        cmds,
         mem,
 
-        select,
         draw,
         ub_viewport: Mutex::new(ub_viewport),
 
@@ -132,18 +133,14 @@ impl ImGui {
         pipes,
 
         root: Mutex::new(None),
+
+        rects,
       }),
     }
   }
 
   pub fn get_device(&self) -> vk::Device {
     self.gui.device
-  }
-  pub fn get_copy_queue(&self) -> vk::Queue {
-    self.gui.copy_queue
-  }
-  pub fn get_cmds(&self) -> CmdPool {
-    self.gui.cmds.clone()
   }
   pub fn get_mem(&self) -> vk::mem::Mem {
     self.gui.mem.clone()
@@ -154,14 +151,11 @@ impl ImGui {
   pub fn get_pipe(&self, id: PipeId) -> &CachedPipeline {
     &self.gui.pipes[id]
   }
-  //pub fn get_ub_viewport(&self) -> vk::Buffer {
-  //  *self.gui.ub_viewport.lock().unwrap()
-  //}
 
-  pub fn get_selectpass<'a>(&'a self) -> std::sync::MutexGuard<'a, SelectPass> {
-    self.gui.select.lock().unwrap()
+  pub fn get_selectpass(&self) -> SelectPass {
+    self.select.clone()
   }
-  pub fn get_meshes<'a>(&'a self) -> std::sync::MutexGuard<'a, DrawPass> {
+  pub fn get_drawpass<'a>(&'a self) -> std::sync::MutexGuard<'a, DrawPass> {
     self.gui.draw.draw.lock().unwrap()
   }
 
@@ -172,7 +166,7 @@ impl ImGui {
       .target(0, target)
       .create();
 
-    self.gui.select.lock().unwrap().resize(size);
+    self.select.resize(size);
 
     let ub = *self.gui.ub_viewport.lock().unwrap();
     let mut map = mem.alloc.get_mapped(Handle::Buffer(ub)).unwrap();
@@ -194,7 +188,6 @@ impl ImGui {
   }
 
   pub fn begin(&mut self) -> RootWindow {
-
     println!("{:?}", self.gui.root.lock().unwrap().as_mut().and_then(|rw| rw.get_select_result()));
 
     match self.gui.root.lock().unwrap().take() {
@@ -209,9 +202,6 @@ impl ImGui {
     self.begin_layout(ColumnLayout::default())
   }
   pub fn begin_layout<T: Layout>(&mut self, layout: T) -> Window<T> {
-    //let extent = self.gui.draw.fb.lock().unwrap().extent;
-    //Window::new(RootWindow::new(self.clone()), layout).size(extent.width, extent.height)
-
     self.begin().begin_layout(layout)
   }
   pub fn get_size(&self) -> vk::Extent2D {

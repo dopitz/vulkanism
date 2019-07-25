@@ -1,5 +1,5 @@
-mod select;
-pub mod rect;
+pub mod rects;
+mod selectpass;
 
-pub use select::SelectPass;
-pub use select::Query;
+pub use selectpass::Query;
+pub use selectpass::SelectPass;
