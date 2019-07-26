@@ -6,6 +6,7 @@ use std::sync::Mutex;
 use vk::builder::Buildable;
 use vk::cmd::commands::BindDset;
 use vk::cmd::commands::BindPipeline;
+use vk::cmd::commands::DrawKind;
 use vk::cmd::commands::DrawManaged;
 use vk::cmd::commands::RenderpassBegin;
 use vk::cmd::commands::RenderpassEnd;
@@ -75,7 +76,11 @@ impl SelectPass {
       .create()
       .unwrap();
 
-    let fb = vk::pass::Framebuffer::build_from_pass(&rp, &mut mem.alloc).extent(extent).create();
+    let mut fb = vk::pass::Framebuffer::build_from_pass(&rp, &mut mem.alloc).extent(extent).create();
+    let c = u32::max_value();
+    fb.set_clear(&[
+      vk::ClearValue::build().coloru32([c, c, c, c]).into(),
+    ]);
 
     let stage = vk::mem::Staging::new(mem.clone(), std::mem::size_of::<u32>() as vk::DeviceSize).unwrap();
 
@@ -108,6 +113,10 @@ impl SelectPass {
     pass.fb = vk::pass::Framebuffer::build_from_pass(&pass.rp, &mut mem.alloc)
       .extent(size)
       .create();
+    let c = u32::max_value();
+    pass.fb.set_clear(&[
+      vk::ClearValue::build().coloru32([c, c, c, c]).into(),
+    ]);
   }
 
   pub fn handle_events(&mut self, e: &vk::winit::Event) {
@@ -181,6 +190,17 @@ impl SelectPass {
     self.pass.lock().unwrap().pass.new_mesh(pipe, dsets, draw)
   }
 
+  pub fn update_mesh(
+    &mut self,
+    mesh: usize,
+    pipe: Option<BindPipeline>,
+    dsets: &[Option<BindDset>],
+    buffers: &[Option<vk::Buffer>],
+    draw: Option<DrawKind>,
+  ) {
+    self.pass.lock().unwrap().pass.update_mesh(mesh, pipe, dsets, buffers, draw);
+  }
+
   pub fn contains(&self, mesh: usize) -> bool {
     self.pass.lock().unwrap().pass.contains(mesh)
   }
@@ -190,6 +210,7 @@ impl SelectPass {
   }
 
   pub fn push_query<'a>(&self, q: &'a mut Query) -> PushQuery<'a> {
+    q.reset();
     PushQuery {
       pass: self.clone(),
       query: q,
@@ -213,7 +234,7 @@ impl Query {
     Query {
       meshes: Default::default(),
       result: None,
-      dirty: false,
+      dirty: true,
       stage: vk::mem::Staging::new(mem, std::mem::size_of::<u32>() as vk::DeviceSize).unwrap(),
     }
   }
@@ -226,7 +247,7 @@ impl Query {
 
   pub fn reset(&mut self) {
     self.result = None;
-    self.dirty = false;
+    self.dirty = true;
   }
 
   pub fn push(&mut self, mesh: usize, scissor: Option<Scissor>) {
@@ -237,6 +258,7 @@ impl Query {
     if self.dirty {
       let id = self.stage.map().unwrap().as_slice::<u32>()[0];
       self.result = if id == u32::max_value() { None } else { Some(id) };
+      self.dirty = false;
     }
     self.result
   }

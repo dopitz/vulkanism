@@ -28,7 +28,13 @@ impl Drop for Sprites {
   fn drop(&mut self) {
     self.gui.get_mem().trash.push_buffer(self.ub);
     self.gui.get_mem().trash.push_buffer(self.vb);
-    self.gui.get_pipe(PipeId::Sprites).dsets.as_ref().unwrap().free_dset(self.pipe.bind_ds_instance.dset);
+    self
+      .gui
+      .get_pipe(PipeId::Sprites)
+      .dsets
+      .as_ref()
+      .unwrap()
+      .free_dset(self.pipe.bind_ds_instance.dset);
     self.gui.get_drawpass().remove(self.mesh);
   }
 }
@@ -129,12 +135,13 @@ impl Sprites {
     }
 
     // finally update the buffer and instance count int the mesh
-    {
-      let mut draw = self.gui.get_drawpass();
-      let mesh = draw.get_mut(self.mesh);
-      mesh.buffers[0] = self.vb;
-      mesh.draw.draw = DrawVertices::with_vertices(4).instance_count(sprites.len() as u32).into();
-    }
+    self.gui.get_drawpass().update_mesh(
+      self.mesh,
+      None,                                                                             // no pipeline changes
+      &[],                                                                              // no dset changes
+      &[Some(self.vb)],                                                                 // set the vertex buffer
+      Some(DrawVertices::with_vertices(4).instance_count(sprites.len() as u32).into()), // update the nuber of draw instances
+    );
 
     self
   }

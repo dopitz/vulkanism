@@ -10,7 +10,6 @@ mod framebuffer;
 mod renderpass;
 
 pub use drawpass::DrawMeshRef;
-pub use drawpass::DrawMeshRefMut;
 pub use drawpass::DrawPass;
 pub use frame::Frame;
 pub use framebuffer::Framebuffer;

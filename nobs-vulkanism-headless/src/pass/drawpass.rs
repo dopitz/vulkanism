@@ -1,6 +1,7 @@
 use crate::cmd::commands::BindDset;
 use crate::cmd::commands::BindPipeline;
 use crate::cmd::commands::Draw;
+use crate::cmd::commands::DrawKind;
 use crate::cmd::commands::DrawManaged;
 use crate::cmd::stream::*;
 use std::collections::BTreeSet;
@@ -146,23 +147,7 @@ pub struct DrawMeshRef<'a> {
   pub offsets: &'a [vk::DeviceSize],
   pub draw: &'a Draw,
 }
-pub struct DrawMeshRefMut<'a> {
-  pub pipe: &'a mut BindPipeline,
-  pub dset: &'a mut [BindDset],
-  pub buffers: &'a mut [vk::Buffer],
-  pub offsets: &'a mut [vk::DeviceSize],
-  pub draw: &'a mut Draw,
-}
 impl<'a> StreamPush for DrawMeshRef<'a> {
-  fn enqueue(&self, mut cs: CmdBuffer) -> CmdBuffer {
-    cs = cs.push(self.pipe);
-    for ds in self.dset.iter() {
-      cs = cs.push(ds);
-    }
-    cs.push(self.draw)
-  }
-}
-impl<'a> StreamPush for DrawMeshRefMut<'a> {
   fn enqueue(&self, mut cs: CmdBuffer) -> CmdBuffer {
     cs = cs.push(self.pipe);
     for ds in self.dset.iter() {
@@ -228,6 +213,55 @@ impl DrawPass {
     mesh
   }
 
+  pub fn update_mesh(
+    &mut self,
+    mesh: usize,
+    pipe: Option<BindPipeline>,
+    dsets: &[Option<BindDset>],
+    buffers: &[Option<vk::Buffer>],
+    draw: Option<DrawKind>,
+  ) {
+    struct Mut<'a> {
+      pipe: &'a mut BindPipeline,
+      dset: &'a mut [BindDset],
+      buffers: &'a mut [vk::Buffer],
+      offsets: &'a mut [vk::DeviceSize],
+      draw: &'a mut Draw,
+    };
+    let m = &mut self.meshes[mesh];
+    let mesh = Mut {
+      pipe: &mut self.pipes[m.pipe],
+      dset: &mut self.dsets[m.dset.0..m.dset.0 + m.dset.1],
+      buffers: &mut self.buffers[m.buffers.0..m.buffers.0 + m.buffers.1],
+      offsets: &mut self.offsets[m.buffers.0..m.buffers.0 + m.buffers.1],
+      draw: &mut m.draw,
+    };
+
+    //let mesh = self.get_mut(mesh);
+    if let Some(pipe) = pipe {
+      *mesh.pipe = pipe;
+    }
+    if !dsets.is_empty() {
+      debug_assert!(mesh.dset.len() == dsets.len(), "inconsistent dset length");
+      for (dst, src) in mesh.dset.iter_mut().zip(dsets.iter()) {
+        if let Some(src) = src {
+          *dst = *src
+        }
+      }
+    }
+    if !buffers.is_empty() {
+      debug_assert!(mesh.buffers.len() == buffers.len(), "inconsistent buffers length");
+      for (dst, src) in mesh.buffers.iter_mut().zip(buffers.iter()) {
+        if let Some(src) = src {
+          *dst = *src
+        }
+      }
+    }
+    if let Some(draw) = draw {
+      mesh.draw.draw = draw;
+    }
+  }
+
   pub fn contains(&self, mesh: usize) -> bool {
     self.meshes.contains(mesh)
   }
@@ -259,16 +293,6 @@ impl DrawPass {
       buffers: &self.buffers[m.buffers.0..m.buffers.0 + m.buffers.1],
       offsets: &self.buffers[m.buffers.0..m.buffers.0 + m.buffers.1],
       draw: &m.draw,
-    }
-  }
-  pub fn get_mut<'a>(&'a mut self, mesh: usize) -> DrawMeshRefMut<'a> {
-    let m = &mut self.meshes[mesh];
-    DrawMeshRefMut {
-      pipe: &mut self.pipes[m.pipe],
-      dset: &mut self.dsets[m.dset.0..m.dset.0 + m.dset.1],
-      buffers: &mut self.buffers[m.buffers.0..m.buffers.0 + m.buffers.1],
-      offsets: &mut self.offsets[m.buffers.0..m.buffers.0 + m.buffers.1],
-      draw: &mut m.draw,
     }
   }
 

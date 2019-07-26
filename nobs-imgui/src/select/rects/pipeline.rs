@@ -71,7 +71,7 @@ impl Pipeline {
               .binding(0)
               .location(2)
               .format(vk::FORMAT_R32_UINT)
-              .offset(std::mem::size_of::<u32>() as u32),
+              .offset(4 * std::mem::size_of::<f32>() as u32),
           ),
       )
       .input_assembly(vk::PipelineInputAssemblyStateCreateInfo::build().topology(vk::PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP))

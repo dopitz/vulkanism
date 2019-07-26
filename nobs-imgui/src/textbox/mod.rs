@@ -14,7 +14,7 @@ impl TextBox {
   pub fn new(gui: &ImGui) -> Self {
     let rect = Rect::from_rect(0, 0, 200, 20);
     let text = Text::new(gui);
-    let select_mesh = gui.get_select_rects().new_rect();
+    let select_mesh = gui.get_select_rects().new_rect(vec2!(0), vec2!(0));
     Self { rect, text, select_mesh }
   }
 
@@ -42,11 +42,10 @@ impl TextBox {
 impl Component for TextBox {
   fn rect(&mut self, rect: Rect) -> &mut Self {
     if self.rect != rect {
-      let gui = self.get_gui();
-      let mut rects = gui.get_select_rects();
-      let r = rects.get_mut(self.select_mesh);
-      r.pos = rect.position.into();
-      r.size = rect.size.into();
+      self
+        .get_gui()
+        .get_select_rects()
+        .update_rect(self.select_mesh, rect.position, rect.size);
       self.text.position(rect.position);
       self.rect = rect;
     }
@@ -67,6 +66,6 @@ impl Component for TextBox {
   }
 
   fn get_select_mesh(&self) -> Option<usize> {
-    None
+    Some(self.select_mesh)
   }
 }

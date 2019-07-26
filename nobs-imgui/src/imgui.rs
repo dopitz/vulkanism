@@ -1,6 +1,6 @@
 use crate::pipeid::*;
-use crate::select::SelectPass;
 use crate::select::rects::Rects as SelectRects;
+use crate::select::SelectPass;
 use crate::window::ColumnLayout;
 use crate::window::Layout;
 use crate::window::RootWindow;
@@ -55,6 +55,7 @@ impl ImGui {
     copy_queue: vk::Queue,
     cmds: CmdPool,
     extent: vk::Extent2D,
+    dpi: f64,
     target: vk::Image,
     mut mem: vk::mem::Mem,
   ) -> Self {
@@ -74,7 +75,7 @@ impl ImGui {
       data[1] = extent.height as u32;
     }
 
-    let select = SelectPass::new(device, extent, 1.0, mem.clone());
+    let select = SelectPass::new(device, extent, dpi, mem.clone());
 
     let draw = {
       let rp = vk::pass::Renderpass::build(device)
@@ -178,6 +179,10 @@ impl ImGui {
     data[1] = size.height as u32;
   }
 
+  pub fn handle_events(&mut self, e: &vk::winit::Event) {
+    self.select.handle_events(e);
+  }
+
   pub fn begin_draw(&self, cs: CmdBuffer) -> CmdBuffer {
     let fb = self.gui.draw.fb.lock().unwrap();
     cs.push(&vk::cmd::commands::ImageBarrier::to_color_attachment(fb.images[0]))
@@ -192,6 +197,8 @@ impl ImGui {
 
   pub fn begin(&mut self) -> RootWindow {
     println!("{:?}", self.gui.root.lock().unwrap().as_mut().and_then(|rw| rw.get_select_result()));
+
+    self.gui.rects.lock().unwrap().update();
 
     match self.gui.root.lock().unwrap().take() {
       Some(rw) => RootWindow::from_cached(self.clone(), rw),

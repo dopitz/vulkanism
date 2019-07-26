@@ -108,7 +108,7 @@ pub fn main() {
   let (mut sc, mut rp, mut fb) = resize(&pdevice, &device, &window, &mut alloc, None, None, None);
   let mem = vk::mem::Mem::new(alloc.clone(), 2);
 
-  let mut gui = Gui::new(&device, cmds.clone(), sc.extent, fb.images[0], mem.clone());
+  let mut gui = Gui::new(&device, cmds.clone(), sc.extent, window.window.get_hidpi_factor(), fb.images[0], mem.clone());
 
   let mut resizeevent = false;
   let mut close = false;
@@ -136,7 +136,6 @@ pub fn main() {
           println!("DPI          {:?}", window.window.get_hidpi_factor());
 
           if fb.extent.width != size.width as u32 || fb.extent.height != size.height as u32 {
-            println!("AOEUAOUEAOEU");
             resizeevent = true;
           }
         }
@@ -148,7 +147,7 @@ pub fn main() {
         }
         _ => (),
       }
-      //println!("{:?}", inp.parse(event));
+      gui.handle_events(&event);
     });
 
     if resizeevent {
@@ -186,8 +185,8 @@ struct Gui {
 }
 
 impl Gui {
-  pub fn new(device: &vk::device::Device, cmds: vk::cmd::CmdPool, extent: vk::Extent2D, target: vk::Image, mem: vk::mem::Mem) -> Self {
-    let gui = imgui::ImGui::new(device.handle, device.queues[0].handle, cmds.clone(), extent, target, mem);
+  pub fn new(device: &vk::device::Device, cmds: vk::cmd::CmdPool, extent: vk::Extent2D, dpi: f64, target: vk::Image, mem: vk::mem::Mem) -> Self {
+    let gui = imgui::ImGui::new(device.handle, device.queues[0].handle, cmds.clone(), extent, dpi, target, mem);
 
     let mut text = imgui::textbox::TextBox::new(&gui);
     text.text("aoeu");
@@ -197,6 +196,10 @@ impl Gui {
     text2.text("aoeu");
     text2.typeset(text2.get_typeset().size(70).cursor(Some(vec2!(1, 0))));
     Self { gui, text, text2 }
+  }
+
+  pub fn handle_events(&mut self, e: &vk::winit::Event) {
+    self.gui.handle_events(e);
   }
 
   pub fn input(&mut self, c: char) {

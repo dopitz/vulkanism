@@ -63,6 +63,7 @@ impl RootWindow {
 impl StreamPushMut for RootWindow {
   fn enqueue_mut(&mut self, cs: CmdBuffer) -> CmdBuffer {
     let gui = self.gui.as_ref().unwrap();
+    gui.get_select_rects().update();
 
     if let Some(mut components) = self.components.take() {
       // Draw actual ui elements
