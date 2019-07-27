@@ -1,10 +1,10 @@
 mod component;
 mod layout;
-mod root;
+mod screen;
 mod window;
 
 pub use component::Component;
 pub use layout::ColumnLayout;
 pub use layout::Layout;
-pub use root::RootWindow;
+pub use screen::Screen;
 pub use window::Window;

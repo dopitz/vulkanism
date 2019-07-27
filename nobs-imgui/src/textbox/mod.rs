@@ -2,20 +2,36 @@ use crate::font::*;
 use crate::rect::Rect;
 use crate::text::Text;
 use crate::window::Component;
+use crate::window::Layout;
+use crate::window::Window;
 use crate::ImGui;
+
+#[derive(Debug)]
+pub enum Event {
+  Clicked,
+  MouseOver,
+  Changed,
+}
 
 pub struct TextBox {
   rect: Rect,
   text: Text,
   select_mesh: usize,
+  select_id: u32,
 }
 
 impl TextBox {
   pub fn new(gui: &ImGui) -> Self {
     let rect = Rect::from_rect(0, 0, 200, 20);
     let text = Text::new(gui);
-    let select_mesh = gui.get_select_rects().new_rect(vec2!(0), vec2!(0));
-    Self { rect, text, select_mesh }
+    let select_id = gui.select.rects().new_rect(vec2!(0), vec2!(0)) as u32;
+    let select_mesh = gui.select.rects().get_mesh(select_id as usize);
+    Self {
+      rect,
+      text,
+      select_mesh,
+      select_id,
+    }
   }
 
   pub fn get_gui(&self) -> ImGui {
@@ -44,7 +60,8 @@ impl Component for TextBox {
     if self.rect != rect {
       self
         .get_gui()
-        .get_select_rects()
+        .select
+        .rects()
         .update_rect(self.select_mesh, rect.position, rect.size);
       self.text.position(rect.position);
       self.rect = rect;
@@ -67,5 +84,14 @@ impl Component for TextBox {
 
   fn get_select_mesh(&self) -> Option<usize> {
     Some(self.select_mesh)
+  }
+
+  type Event = Event;
+  fn draw<T: Layout>(&mut self, wnd: &mut Window<T>) -> Option<Event> {
+    wnd.push(self);
+
+    wnd
+      .get_select_result()
+      .and_then(|id| if id == self.select_id { Some(Event::Clicked) } else { None })
   }
 }

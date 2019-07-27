@@ -108,7 +108,7 @@ pub fn main() {
   let (mut sc, mut rp, mut fb) = resize(&pdevice, &device, &window, &mut alloc, None, None, None);
   let mem = vk::mem::Mem::new(alloc.clone(), 2);
 
-  let mut gui = Gui::new(&device, cmds.clone(), sc.extent, window.window.get_hidpi_factor(), fb.images[0], mem.clone());
+  let mut gui = Gui::new(&device, &window, fb.images[0], mem.clone());
 
   let mut resizeevent = false;
   let mut close = false;
@@ -185,8 +185,8 @@ struct Gui {
 }
 
 impl Gui {
-  pub fn new(device: &vk::device::Device, cmds: vk::cmd::CmdPool, extent: vk::Extent2D, dpi: f64, target: vk::Image, mem: vk::mem::Mem) -> Self {
-    let gui = imgui::ImGui::new(device.handle, device.queues[0].handle, cmds.clone(), extent, dpi, target, mem);
+  pub fn new(device: &vk::device::Device, wnd: &vk::wnd::Window, target: vk::Image, mem: vk::mem::Mem) -> Self {
+    let gui = imgui::ImGui::new(device, wnd, target, mem);
 
     let mut text = imgui::textbox::TextBox::new(&gui);
     text.text("aoeu");
@@ -214,20 +214,19 @@ impl Gui {
 
 impl StreamPushMut for Gui {
   fn enqueue_mut(&mut self, cs: CmdBuffer) -> CmdBuffer {
-    cs.push_mut(
-      &mut self
-        .gui
-        .begin()
-        .begin_layout(imgui::window::ColumnLayout::default())
-        .position(200, 200)
-        .size(500, 200)
-        .push(&mut self.text)
-        .end_window()
-        .begin_layout(imgui::window::ColumnLayout::default())
-        .position(900, 200)
-        .size(500, 200)
-        .push(&mut self.text2)
-        .end_window(),
-    )
+    use imgui::window::Component;
+    use imgui::window::Window;
+
+    let mut scr = self.gui.begin();
+    let mut wnd = Window::new(&mut scr).position(200, 200).size(500, 200);;
+
+    if let Some(e) = self.text.draw(&mut wnd) {
+      println!("{:?}", e);
+    };
+
+    let mut wnd = Window::new(&mut scr).position(900, 200).size(500, 200);;
+    self.text2.draw(&mut wnd);
+
+    cs.push_mut(&mut scr)
   }
 }

@@ -1,16 +1,11 @@
 use crate::pipeid::*;
-use crate::select::rects::Rects as SelectRects;
+use crate::select::Select;
 use crate::select::SelectPass;
-use crate::window::ColumnLayout;
-use crate::window::Layout;
-use crate::window::RootWindow;
-use crate::window::Window;
+use crate::window::Screen;
 use font::*;
 use std::sync::Arc;
 use std::sync::Mutex;
 use vk::builder::Buildable;
-use vk::cmd::stream::*;
-use vk::cmd::CmdPool;
 use vk::mem::Handle;
 use vk::pass::DrawPass;
 use vk::pipes::CachedPipeline;
@@ -28,13 +23,11 @@ struct ImGuiImpl {
   draw: Pass,
   ub_viewport: Mutex<vk::Buffer>,
 
-  font: Arc<Font>,
-
   pipes: PipeCache,
 
-  root: Mutex<Option<RootWindow>>,
+  scr: Mutex<Option<Screen>>,
 
-  rects: Mutex<SelectRects>,
+  font: Arc<Font>,
 }
 
 impl Drop for ImGuiImpl {
@@ -43,24 +36,45 @@ impl Drop for ImGuiImpl {
   }
 }
 
+/// Main gui handle, controlls the renderpass, framebuffer object and event handling
+///
+/// The gui is clonable and implemented thread safe, hazards are handled internally.
+///
+/// This struct will be instantiated once. It creates a renderpass and framebuffer from the specidied vulkan image.
+/// The gui also caches the vulkan pipelines and descriptor pools that are needed for rendering gui compontents.
+///
+/// Rendering a gui is done with associated funcions declared by gui components.
+/// These funcions require a [Window](window/struct.Window.html) that handles positioning and resizing with [Layout](window/trait.Layout.html).
 #[derive(Clone)]
 pub struct ImGui {
-  select: SelectPass,
+  pub select: Select,
   gui: Arc<ImGuiImpl>,
 }
 
 impl ImGui {
-  pub fn new(
-    device: vk::Device,
-    copy_queue: vk::Queue,
-    cmds: CmdPool,
-    extent: vk::Extent2D,
-    dpi: f64,
-    target: vk::Image,
-    mut mem: vk::mem::Mem,
-  ) -> Self {
-    let font = Arc::new(font::dejavu_mono::new(device, mem.clone(), copy_queue, &cmds));
+  /// Create a new gui object.
+  ///
+  /// Also creates an [Select](select/struct.Select.html) instance, which may be used outside the gui.
+  ///
+  /// # Arguments
+  /// * `device` - vulkanism device handle
+  /// * `wnd` - vulkanism window handle
+  /// * `target` - vulkan image on which the gui is rendered
+  /// * `mem` - vulkanism memory manager on which additional buffers and textures are allocated
+  pub fn new(device: &vk::device::Device, wnd: &vk::wnd::Window, target: vk::Image, mut mem: vk::mem::Mem) -> Self {
+    // we need dpi and size of window to get the render target extent
+    let dpi = wnd.window.get_hidpi_factor();
+    let extent = wnd.window.get_inner_size().unwrap();
+    let extent: vk::Extent2D = vk::Extent2D::build()
+      .set((extent.width * dpi) as u32, (extent.height * dpi) as u32)
+      .into();
 
+    // we temporarily create a command pool to create the default font
+    let cmds = vk::cmd::CmdPool::new(device.handle, device.queues[0].family).unwrap();
+    let font = Arc::new(font::dejavu_mono::new(device.handle, mem.clone(), device.queues[0].handle, &cmds));
+
+    // we have a single uniform buffer with the viewport dimensions
+    // this ub is shared by all gui components
     let mut ub_viewport = vk::NULL_HANDLE;
     vk::mem::Buffer::new(&mut ub_viewport)
       .uniform_buffer(2 * std::mem::size_of::<f32>() as vk::DeviceSize)
@@ -75,10 +89,11 @@ impl ImGui {
       data[1] = extent.height as u32;
     }
 
-    let select = SelectPass::new(device, extent, dpi, mem.clone());
-
+    // gui renderpass and framebuffer
+    // we reuse the color target from outside the gui
+    // the gui components are then rendered with alpha blending
     let draw = {
-      let rp = vk::pass::Renderpass::build(device)
+      let rp = vk::pass::Renderpass::build(device.handle)
         .attachment(
           0,
           vk::AttachmentDescription::build()
@@ -108,61 +123,76 @@ impl ImGui {
       }
     };
 
+    // the select pass is needed for pipeline creation
+    let select = SelectPass::new(device.handle, extent, dpi, mem.clone());
+
+    // pipelines used in gui, caches individual and shared descriptor pools
     let pipes = PipeCache::new(&PipeCreateInfo {
-      device,
+      device: device.handle,
       pass: draw.rp.pass,
       subpass: 0,
       ub_viewport,
 
-      select_pass: select.get_pass(),
+      select_pass: select.get_renderpass(),
       select_subpass: 0,
     });
 
-    let rects = Mutex::new(SelectRects::new(device, select.clone(), &pipes[PipeId::SelectRects], mem.clone()));
+    // selection components
+    let select = Select::new(select, &pipes, mem.clone());
 
     Self {
       select,
       gui: Arc::new(ImGuiImpl {
-        device,
+        device: device.handle,
         mem,
 
         draw,
         ub_viewport: Mutex::new(ub_viewport),
 
-        font,
-
         pipes,
 
-        root: Mutex::new(None),
+        scr: Mutex::new(None),
 
-        rects,
+        font,
       }),
     }
   }
 
+  /// Get the vulkan device for which the gui was created
   pub fn get_device(&self) -> vk::Device {
     self.gui.device
   }
+  /// Get the vulkanism memory manager of the gui
   pub fn get_mem(&self) -> vk::mem::Mem {
     self.gui.mem.clone()
   }
+  /// Get the gui's default font
   pub fn get_font(&self) -> Arc<Font> {
     self.gui.font.clone()
   }
+  /// Get the specified pipeline from the gui's cached pipelines
+  ///
+  /// # Arguments
+  /// * `id` - Pipeline identifier
   pub fn get_pipe(&self, id: PipeId) -> &CachedPipeline {
     &self.gui.pipes[id]
   }
 
-  pub fn get_selectpass(&self) -> SelectPass {
-    self.select.clone()
-  }
-  pub fn get_select_rects<'a>(&'a self) -> std::sync::MutexGuard<'a, SelectRects> {
-    self.gui.rects.lock().unwrap()
-  }
+  /// Get the gui's draw pass
+  ///
+  ///
   pub fn get_drawpass<'a>(&'a self) -> std::sync::MutexGuard<'a, DrawPass> {
     self.gui.draw.draw.lock().unwrap()
   }
 
+  /// Resize the gui
+  ///
+  /// Resizing creates a new framebuffer object with the specified vulkan image.
+  /// Updates the interal uniform buffer with the viewport.
+  ///
+  /// # Arguments
+  /// * `size` - The new size of the gui
+  /// * `target` - The new render target image for the gui
   pub fn resize(&mut self, size: vk::Extent2D, target: vk::Image) {
     let mut mem = self.gui.mem.clone();
     *self.gui.draw.fb.lock().unwrap() = vk::pass::Framebuffer::build_from_pass(&self.gui.draw.rp, &mut mem.alloc)
@@ -179,42 +209,36 @@ impl ImGui {
     data[1] = size.height as u32;
   }
 
+  /// Handle window events
+  ///
+  /// Also calls [Select::handle_events](select/struct.Select.html#method.handle_events) for the gui`s object selection manager.
+  ///
+  /// # Arguments
+  /// * `e` - Event to be handled
   pub fn handle_events(&mut self, e: &vk::winit::Event) {
     self.select.handle_events(e);
   }
 
-  pub fn begin_draw(&self, cs: CmdBuffer) -> CmdBuffer {
+  /// Begins gui rendering
+  ///
+  /// # Returns
+  /// [Screen](window/struct.Screen.html) that submits components into command buffer and a [select query](select/struct.Query.html).
+  pub fn begin(&mut self) -> Screen {
     let fb = self.gui.draw.fb.lock().unwrap();
-    cs.push(&vk::cmd::commands::ImageBarrier::to_color_attachment(fb.images[0]))
-      .push(&fb.begin())
-      .push(&vk::cmd::commands::Viewport::with_extent(fb.extent))
-      .push(&vk::cmd::commands::Scissor::with_extent(fb.extent))
-  }
-  pub fn end_draw(&self, cs: CmdBuffer) -> CmdBuffer {
-    let fb = self.gui.draw.fb.lock().unwrap();
-    cs.push(&fb.end())
-  }
-
-  pub fn begin(&mut self) -> RootWindow {
-    println!("{:?}", self.gui.root.lock().unwrap().as_mut().and_then(|rw| rw.get_select_result()));
-
-    self.gui.rects.lock().unwrap().update();
-
-    match self.gui.root.lock().unwrap().take() {
-      Some(rw) => RootWindow::from_cached(self.clone(), rw),
-      None => RootWindow::new(self.clone()),
+    match self.gui.scr.lock().unwrap().take() {
+      Some(rw) => Screen::from_cached(self.clone(), fb.extent, fb.images[0], fb.begin(), fb.end(), rw),
+      None => Screen::new(self.clone(), fb.extent, fb.images[0], fb.begin(), fb.end()),
     }
   }
-  pub fn end(&mut self, root: RootWindow) {
-    self.gui.root.lock().unwrap().replace(root);
-  }
-  pub fn begin_window(&mut self) -> Window<ColumnLayout> {
-    self.begin_layout(ColumnLayout::default())
-  }
-  pub fn begin_layout<T: Layout>(&mut self, layout: T) -> Window<T> {
-    self.begin().begin_layout(layout)
-  }
-  pub fn get_size(&self) -> vk::Extent2D {
-    self.gui.draw.fb.lock().unwrap().extent
+  /// Finishs gui rendering
+  ///
+  /// This is automaticolly called when [Screen](window/struct.Screen.html) is pushed into a command buffer.
+  ///
+  /// The gui retains buffers for storing gui components and the select query so that no (re)allocations during rendering happen in continuous frames.
+  ///
+  /// # Arguments
+  /// * `scr` - The [Screen](window/struct.Screen.html) returned from [begin](struct.ImGui.html#method.begin).
+  pub fn end(&mut self, scr: Screen) {
+    self.gui.scr.lock().unwrap().replace(scr);
   }
 }

@@ -3,9 +3,7 @@ mod targa;
 
 pub use bitmap::Bitmap;
 
-use crate::AssetPool;
 use crate::Update;
-use std::collections::HashMap;
 use vk;
 use vk::builder::Buildable;
 use vk::cmd::commands::ImageBarrier;

@@ -225,7 +225,6 @@ impl DrawPass {
       pipe: &'a mut BindPipeline,
       dset: &'a mut [BindDset],
       buffers: &'a mut [vk::Buffer],
-      offsets: &'a mut [vk::DeviceSize],
       draw: &'a mut Draw,
     };
     let m = &mut self.meshes[mesh];
@@ -233,7 +232,6 @@ impl DrawPass {
       pipe: &mut self.pipes[m.pipe],
       dset: &mut self.dsets[m.dset.0..m.dset.0 + m.dset.1],
       buffers: &mut self.buffers[m.buffers.0..m.buffers.0 + m.buffers.1],
-      offsets: &mut self.offsets[m.buffers.0..m.buffers.0 + m.buffers.1],
       draw: &mut m.draw,
     };
 

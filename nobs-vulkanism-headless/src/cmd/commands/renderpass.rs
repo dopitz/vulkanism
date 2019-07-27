@@ -61,6 +61,7 @@ impl StreamPush for RenderpassBegin {
 }
 
 /// Ends a render pass
+#[derive(Clone, Copy)]
 pub struct RenderpassEnd {}
 
 impl StreamPush for RenderpassEnd {

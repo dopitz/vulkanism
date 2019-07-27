@@ -1,16 +1,29 @@
 use super::Component;
 use crate::rect::Rect;
-use vk::cmd::commands::Scissor;
 
+/// Defines rules for positioning and resizing gui components, when they are adden to a [Window](struct.Window.html).
+///
+/// Layouting gui components has to be incremental. 
+/// This means that the layout for a single components needs to be decided without knolwledge about other components.
+/// The layouts internal state must be used instead.
 pub trait Layout: Default {
   fn new() -> Self {
     Default::default()
   }
+  /// Resets the layout
+  ///
+  /// # Arguments
+  /// * `rect` - The draw area which may be used by components 
   fn reset(&mut self, rect: Rect);
+  /// Gets the draw area
   fn get_rect(&self) -> Rect;
-  fn push<T: Component>(&mut self, c: &mut T) -> (Scissor, usize);
+  /// Layout a component
+  ///
+  /// This function should modify the components layout using [Component::rect](trait.Component.html#method.rect).
+  fn push<T: Component>(&mut self, c: &mut T);
 }
 
+/// Float layout that does not modify componets
 #[derive(Default)]
 pub struct FloatLayout {
   rect: Rect,
@@ -25,11 +38,11 @@ impl Layout for FloatLayout {
     self.rect
   }
 
-  fn push<T: Component>(&mut self, c: &mut T) -> (Scissor, usize) {
-    (Scissor::with_rect(c.get_rect().into()), c.get_mesh())
+  fn push<T: Component>(&mut self, _c: &mut T) {
   }
 }
 
+/// Column layout that arranges components in a single column from top first to bottom last
 #[derive(Default)]
 pub struct ColumnLayout {
   rect: Rect,
@@ -45,7 +58,7 @@ impl Layout for ColumnLayout {
     self.rect
   }
 
-  fn push<T: Component>(&mut self, c: &mut T) -> (Scissor, usize) {
+  fn push<T: Component>(&mut self, c: &mut T) {
     let mut rect = Rect::new(self.rect.position + vec2!(0, self.top as i32), c.get_size_hint());
     if rect.size.x == 0 {
       rect.size.x = self.rect.size.x;
@@ -58,7 +71,5 @@ impl Layout for ColumnLayout {
     }
     c.rect(rect);
     self.top += rect.size.y;
-
-    (Scissor::with_rect(rect.into()), c.get_mesh())
   }
 }

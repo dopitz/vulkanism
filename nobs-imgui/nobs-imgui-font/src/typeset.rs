@@ -1,6 +1,5 @@
 use super::Font;
 use std::sync::Arc;
-use vk;
 use vkm;
 
 pub trait FontChar {

@@ -32,7 +32,7 @@ impl<T: Asset> AssetPool<T> for HashMap<T::Id, T> {
   }
 }
 
-pub type Assets<T: Asset> = HashMap<T::Id, T>;
+pub type Assets<T: Asset> = HashMap<<T as Asset>::Id, T>;
 
 pub trait Asset : Sized {
   type Id: Clone + PartialEq + Eq + std::hash::Hash;

@@ -101,7 +101,7 @@ impl Obj {
 
     let mut group: Option<&mut Group> = None;
 
-    let mut mtl = Default::default();
+    let mut _mtl = Default::default();
 
     // parse file
     for l in contents.lines() {
@@ -112,7 +112,7 @@ impl Obj {
       match tok {
         Token::MtlLib(name) => {
           let path = std::fs::canonicalize(file).unwrap();
-          mtl = Mtl::load(&format!("{}/{}", path.parent().unwrap().to_str().unwrap(), name));
+          _mtl = Mtl::load(&format!("{}/{}", path.parent().unwrap().to_str().unwrap(), name));
         }
         Token::Vert(v) => vertices.push(v),
         Token::Norm(n) => normals.push(n),

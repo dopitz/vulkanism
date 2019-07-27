@@ -4,9 +4,7 @@ mod obj;
 pub use mtl::Mtl;
 pub use obj::Obj;
 
-use crate::AssetPool;
 use crate::Update;
-use std::collections::HashMap;
 use vk;
 use vk::cmd::commands::BufferBarrier;
 use vkm::Vec2f;

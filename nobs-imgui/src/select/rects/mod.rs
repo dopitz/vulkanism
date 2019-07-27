@@ -5,8 +5,6 @@ pub use pipeline::Vertex;
 
 use crate::pipeid::*;
 use crate::select::SelectPass;
-use crate::ImGui;
-use pipeline::*;
 use std::collections::BTreeSet;
 use vk;
 use vk::cmd::commands::DrawManaged;
@@ -15,8 +13,16 @@ use vk::mem::Handle;
 use vkm::Vec2i;
 use vkm::Vec2u;
 
+/// Manages meshes for drawing rects/billboards in a [SelectPass](../struct.SelectPass.html)
+///
+/// Rects are rectangular regions on the framebuffer given in pixel coordinates.
+///
+/// Rects are drawn with individual meshes in the SelectPass. The memory is managed together for all Rects.
+/// This means we only have a single vertex buffer. When a mesh is created it is setup to draw a single instance of the vertex buffer.
+///
+/// We do this, because the gui needs to be shure that draw calles are in order when we draw overlapping gui elements.
+/// Ordering of the draw calls might not match the order in the vertex buffer.
 pub struct Rects {
-  device: vk::Device,
   pass: SelectPass,
   mem: vk::mem::Mem,
 
@@ -37,13 +43,20 @@ impl Drop for Rects {
 }
 
 impl Rects {
-  pub fn new(device: vk::Device, pass: SelectPass, pipe: &vk::pipes::CachedPipeline, mem: vk::mem::Mem) -> Self {
+  /// Creates the manager for the specified select pass.
+  ///
+  /// [Select](../struct.Select.html) already creates and sets up a manager for Rect object selection and can be used for non gui purposes as well.
+  ///
+  /// # Arguments
+  /// * `pass` - the select pass from which object ids and mesh ids are retrieved
+  /// * `pipes` - pipeline manager of [ImGui](../../struct.ImGui.html)
+  /// * `mem` - memory manager to allocate vertex buffers
+  pub fn new(pass: SelectPass, pipes: &PipeCache, mem: vk::mem::Mem) -> Self {
     let vb = vk::NULL_HANDLE;
 
-    let pipe = Pipeline::new(pipe);
+    let pipe = Pipeline::new(&pipes[PipeId::SelectRects]);
 
     Rects {
-      device,
       pass,
       mem,
 
@@ -57,6 +70,21 @@ impl Rects {
     }
   }
 
+  /// Create a new Rect
+  ///
+  /// Creating a rect will allocate a new object id and mesh id from the [SelectPass](../struct.SelectPass.html)
+  /// The rect will be identified with this id for all futher modifications, 
+  /// eg. [updating](struct.Rects.html#method.update_rect), 
+  /// [removing](struct.Rects.html#method.remove),
+  /// [accessing](struct.Rects.html#method.get),
+  /// or [retrieving the mesh id](struct.Rects.html#method.get_mesh)
+  ///
+  /// # Arguments
+  /// * `pos` - top left position of the rect in pixel coordinates
+  /// * `size` - size of the rect in pixels
+  ///
+  /// # Returs
+  /// The object id of the rect. Since this id was allocated from the [SelectPass](../struct.SelectPass.html) we can be sure that no other selectable object with the same id exists.
   pub fn new_rect(&mut self, pos: Vec2i, size: Vec2u) -> usize {
     let rect = match self.vb_free.iter().next().cloned() {
       Some(i) => {
@@ -82,26 +110,61 @@ impl Rects {
     rect
   }
 
+  /// Updates position and size of the rect
+  ///
+  /// To make changes visible we have to update the vertex buffer with [update](struct.Rects.html#method.update)
+  ///
+  /// # Arguments
+  /// * `i` - id of the rect (returned from [new_rect](struct.Rects.html#method.new_rect))
+  /// * `pos` - top left position of the rect in pixel coordinates
+  /// * `size` - size of the rect in pixels
   pub fn update_rect(&mut self, i: usize, pos: Vec2i, size: Vec2u) {
     self.vb_data[i].pos = pos.into();
     self.vb_data[i].size = size.into();
     self.vb_dirty = true;
   }
 
+  /// Removes the rect
+  ///
+  /// Removes the associated mesh in [SelectPass](../struct.SelectPass.html).
+  /// Frees the object id in [SelectPass](../struct.SelectPass.html).
+  ///
+  /// # Arguments
+  /// * `i` - id of the rect (returned from [new_rect](struct.Rects.html#method.new_rect))
   pub fn remove(&mut self, i: usize) {
     self.pass.remove_mesh(self.meshes[i]);
     self.pass.remove_id(self.vb_data[i].id);
     self.vb_free.insert(i);
   }
 
+  /// Gets the Rect that is stored in the vertex buffer
+  ///
+  /// # Arguments
+  /// * `i` - id of the rect (returned from [new_rect](struct.Rects.html#method.new_rect))
+  ///
+  /// # Returns
+  /// Reference to the vertex buffer content
   pub fn get(&self, i: usize) -> &Vertex {
     &self.vb_data[i]
   }
 
+  /// Gets the associated mesh id
+  ///
+  /// # Arguments
+  /// * `i` - id of the rect (returned from [new_rect](struct.Rects.html#method.new_rect))
+  ///
+  /// # Returns
+  /// The mesh id
   pub fn get_mesh(&self, i: usize) -> usize {
     self.meshes[i]
   }
 
+  /// Updates the vertex buffer
+  ///
+  /// [Updating rects](struct.Rects.html#method.update_rect) will not copy changes to the vertex buffer.
+  /// Instead updates are copied in batch with this function.
+  ///
+  /// We can conservatively call this function even if no changes to the rects have been made, the manager internally tracks if the vertex buffer is dirty and needs updating.
   pub fn update(&mut self) {
     if self.vb_dirty {
       // create new buffer if capacity of cached one is not enough
@@ -119,7 +182,7 @@ impl Rects {
 
         // update the vertex buffer in the draw meshes of the select pass
         for m in self.meshes.iter() {
-          let mesh = self.pass.update_mesh(*m, None, &[], &[Some(self.vb)], None);
+          self.pass.update_mesh(*m, None, &[], &[Some(self.vb)], None);
         }
       }
 
