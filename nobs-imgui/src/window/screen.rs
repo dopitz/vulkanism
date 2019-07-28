@@ -31,6 +31,7 @@ pub struct Screen {
   image: vk::Image,
   draw_begin: RenderpassBegin,
   draw_end: RenderpassEnd,
+  events: Option<Vec<vk::winit::Event>>,
   components: Option<Vec<WindowComponent>>,
   query: Option<[Query; 2]>,
 }
@@ -56,6 +57,7 @@ impl Screen {
       image,
       draw_begin,
       draw_end,
+      events: Some(Default::default()),
       components: Some(Default::default()),
       query,
     }
@@ -87,6 +89,7 @@ impl Screen {
       image,
       draw_begin,
       draw_end,
+      events: scr.events,
       components: scr.components,
       query: scr.query,
     }
@@ -117,6 +120,14 @@ impl Screen {
   /// The id of the selection, `None` if no valid object in the [Selection](../select/struct.Select.html) was selected or the query was not executed.
   pub fn get_select_result(&mut self) -> Option<u32> {
     self.query.as_mut().and_then(|q| q[1].get())
+  }
+
+  pub fn push_event(&mut self, e: &vk::winit::Event) {
+    self.events.as_mut().unwrap().push(e.clone());
+  }
+  /// Gets the list of events since last time [ImGui::handle_events](../struct.Imgui.html#method.handle_events) was called.
+  pub fn get_events<'a>(&'a self) -> &'a[vk::winit::Event] {
+    self.events.as_ref().unwrap()
   }
 }
 
@@ -151,6 +162,8 @@ impl StreamPushMut for Screen {
         query.swap(0, 1);
       }
 
+      let mut events = self.events.take().unwrap();
+      events.clear();
       components.clear();
       gui.clone().end(Self {
         gui: None,
@@ -158,6 +171,7 @@ impl StreamPushMut for Screen {
         image: self.image,
         draw_begin: self.draw_begin,
         draw_end: self.draw_end,
+        events: Some(events),
         components: Some(components),
         query: self.query.take(),
       });

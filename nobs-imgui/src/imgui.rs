@@ -217,6 +217,9 @@ impl ImGui {
   /// * `e` - Event to be handled
   pub fn handle_events(&mut self, e: &vk::winit::Event) {
     self.select.handle_events(e);
+    if let Some(scr) = self.gui.scr.lock().unwrap().as_mut() {
+      scr.push_event(e);
+    }
   }
 
   /// Begins gui rendering

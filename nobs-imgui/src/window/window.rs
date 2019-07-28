@@ -59,4 +59,9 @@ impl<'a, T: Layout> Window<'a, T> {
   pub fn get_select_result(&mut self) -> Option<u32> {
     self.scr.get_select_result()
   }
+
+  /// Gets the list of events since last time [ImGui::handle_events](../struct.Imgui.html#method.handle_events) was called.
+  pub fn get_events(&'a self) -> &'a[vk::winit::Event] {
+    self.scr.get_events()
+  }
 }

@@ -90,8 +90,23 @@ impl Component for TextBox {
   fn draw<T: Layout>(&mut self, wnd: &mut Window<T>) -> Option<Event> {
     wnd.push(self);
 
-    wnd
-      .get_select_result()
-      .and_then(|id| if id == self.select_id { Some(Event::Clicked) } else { None })
+    let mut clicked = false;
+    for e in wnd.get_events() {
+      match e {
+        vk::winit::Event::DeviceEvent {
+          event: vk::winit::DeviceEvent::Button { button, state: vk::winit::ElementState::Pressed },
+          ..
+        } if *button == 1 => clicked = true,
+        _ => (),
+      }
+    }
+
+    if clicked {
+      wnd
+        .get_select_result()
+        .and_then(|id| if id == self.select_id { Some(Event::Clicked) } else { None })
+    } else {
+      None
+    }
   }
 }
