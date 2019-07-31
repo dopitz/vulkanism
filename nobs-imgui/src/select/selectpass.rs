@@ -13,10 +13,56 @@ use vk::pass::DrawPass;
 use vk::pass::Framebuffer;
 use vk::pass::Renderpass;
 
+/// Id type to uniquely identify a selectable object
+///
+/// We define a separate type for this so that we get more type checking from the compiler.
+/// Conversion to and from `u32` is still available with `into()` and `from()`, however we have to conscientously do this.
+/// This way it is less likely to accidentally use an `u32` as a SelectId that is in fact not.
+///
+/// We can also forbid certain operations on ids (eg. mul, div, bit logic) because that doesn't make sese for ids.
+/// However we allow addition with ***vanilla*** u32 and getting the difference between two SelectIds.
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub struct SelectId {
+  id: u32,
+}
+
+impl SelectId {
+  /// We reserve `u32::max_value` as an invalid id that must not be used.
+  pub fn invalid() -> Self {
+    Self { id: u32::max_value() }
+  }
+}
+
+impl Into<u32> for SelectId {
+  fn into(self) -> u32 {
+    self.id
+  }
+}
+
+impl From<u32> for SelectId {
+  fn from(id: u32) -> Self {
+    Self { id }
+  }
+}
+
+impl std::ops::Add<u32> for SelectId {
+  type Output = SelectId;
+  fn add(self, rhs: u32) -> SelectId {
+    (self.id + rhs).into()
+  }
+}
+
+impl std::ops::Sub for SelectId {
+  type Output = u32;
+  fn sub(self, rhs: SelectId) -> u32 {
+    self.id - rhs.id
+  }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 struct Ids {
-  beg: u32,
-  end: u32,
+  beg: SelectId,
+  end: SelectId,
 }
 impl PartialOrd for Ids {
   fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
@@ -49,7 +95,7 @@ impl Drop for SelectPassImpl {
 
 /// Renderpass for object selection
 ///
-/// This is a wrapper around a draw pass that renderes object ids to a u32 image and lets one retrieve the id over which the mouse pointer is currently at.
+/// This is a wrapper around a DrawPass that renderes [SelectIds](struct.SelectId.html) into an u32 image and lets one retrieve the id over which the mouse pointer is currently at.
 /// The pass also takes care of managing ids used to identify objects in the framebuffer.
 ///
 /// Using the pass is thread safe, all hazards are handled internally.
@@ -84,13 +130,13 @@ impl SelectPass {
       .unwrap();
 
     let mut fb = vk::pass::Framebuffer::build_from_pass(&rp, &mut mem.alloc).extent(extent).create();
-    let c = u32::max_value();
+    let c = SelectId::invalid().into();
     fb.set_clear(&[vk::ClearValue::build().coloru32([c, c, c, c]).into()]);
 
     let mut free_ids: BTreeSet<Ids> = Default::default();
     free_ids.insert(Ids {
-      beg: 0,
-      end: u32::max_value(),
+      beg: SelectId::from(0),
+      end: SelectId::invalid().into(),
     });
 
     Self {
@@ -147,69 +193,72 @@ impl SelectPass {
 
   /// Create a new id for object selection
   ///
-  /// Object ids are completely unrelated to the mesh id ([new_mesh](struct.SelectPass.html#method.new_mesh)).
-  /// A single mesh can write multiple object ids, eg. if rendered with instancing.
+  /// [SelectIds](struct.SelectId.html) are completely unrelated to the mesh id ([new_mesh](struct.SelectPass.html#method.new_mesh)).
+  /// A single mesh can choose write multiple SelectIds, eg. if rendered with instancing.
   ///
-  /// We can not ensure that rendered meshes actually only use the object ids they are supposed to.
-  ///
-  /// Managing the object ids centralized in the SelectPass at least ensures that there are no overlapps when ids are distributed.
+  /// We can not ensure that rendered meshes actually only use the SelectIds they are supposed to.
+  /// However, managing the SelectIds centralized in the SelectPass at least ensures that there are no overlapps when ids are distributed.
   ///
   /// # Returns
   /// The id to identify an object on the framebuffer
-  pub fn new_id(&mut self) -> u32 {
-    let free = &mut self.pass.lock().unwrap().free_ids;
-    let ids = *free.iter().next().unwrap();
-    free.remove(&ids);
-    if ids.end - ids.beg > 1 {
-      free.insert(Ids {
-        beg: ids.beg + 1,
-        end: ids.end,
-      });
-    }
-    ids.beg
+  pub fn new_id(&mut self) -> SelectId {
+    self.new_ids(1)
   }
-  /// Create several ids for object selection on a block
+  /// Create several ids for object selection in a block
   ///
   /// # Arguments
   /// * `count` - Number of ids in this block
   ///
   /// # Returns
-  /// The first id of the block. Ids in the block are continuous meaning the last id in this block is `result + count - 1`.
-  pub fn new_ids(&mut self, count: u32) -> u32 {
+  /// The first [SelectId](struct.SelectId.html) of the block. Ids in the block are continuous meaning the (inclusive) last id in this block is `result + (count - 1)`.
+  pub fn new_ids(&mut self, count: u32) -> SelectId {
+    // find and remove block with enough free ids
     let free = &mut self.pass.lock().unwrap().free_ids;
-    let ids = *free.iter().find(|ids| ids.end - ids.beg >= count).unwrap();
+    let ids = *free.iter().find(|ids| ids.beg + count <= ids.end).unwrap();
     free.remove(&ids);
-    if ids.end - ids.beg > count {
+
+    // add unused ids back
+    if ids.beg + count < ids.end {
       free.insert(Ids {
         beg: ids.beg + count,
         end: ids.end,
       });
     }
+
+    // return first id in the block
     ids.beg
   }
-  /// Free id, so that it may be reused in a [new_id](struct.SelectPass.html#method.new_id)
+  /// Free [SelectId](struct.SelectId.html), so that it may be reused in a future [new_id](struct.SelectPass.html#method.new_id)
   ///
   /// # Arguments
   /// * `id` - id to be freed
-  pub fn remove_id(&mut self, id: u32) {
-    let free = &mut self.pass.lock().unwrap().free_ids;
-    let mut ids = *free.iter().find(|i| id == i.beg - 1 || id == i.end).unwrap();
-    free.remove(&ids);
-    if ids.beg - 1 == id {
-      ids.beg -= id;
-    }
-    if ids.end == id {
-      ids.end = id + 1;
-    }
-    free.insert(ids);
+  pub fn remove_id(&mut self, id: SelectId) {
+    self.remove_ids(id, 1);
   }
-  pub fn remove_ids(&mut self, id: u32, count: u32) {
+  /// Frees multiple [SelectIds](struct.SelectId.html) in a block.
+  ///
+  /// Note that when ids ar allocated using [new_ids](struct.SelectPass.html#method.new_ids) we are note forced to free them with the corresponding `remove_ids`.
+  /// We can free single ids from block allocated ids.
+  /// We can also free multiple ids in a block that have been allocated in multiple calls of [new_id](struct.SelectPass.html#method.new_id)
+  ///
+  /// # Arguments
+  /// * `id` - first id to be freed
+  /// * `count` - number of ids to free
+  pub fn remove_ids(&mut self, id: SelectId, count: u32) {
+    let mut f = Ids { beg: id, end: id + count };
+
     let free = &mut self.pass.lock().unwrap().free_ids;
-    let mut ids = *free.iter().find(|i| i.beg >= id + count && id <= i.end).unwrap();
-    free.remove(&ids);
-    ids.beg = u32::min(ids.beg, id);
-    ids.end = u32::max(ids.end, id + count);
-    free.insert(ids);
+    loop {
+      // find intersecting free block
+      match free.iter().find(|i| id + count <= i.beg && id <= i.end).cloned() {
+        Some(ids) => {
+          free.remove(&ids);
+          f.beg = SelectId::min(ids.beg, f.beg);
+          f.end = SelectId::max(ids.end, f.end + count);
+        }
+        None => break,
+      }
+    }
   }
 
   /// Create a mesh in the DrawPass
@@ -326,7 +375,7 @@ impl Query {
 
   /// Resets the query result to `None`
   ///
-  /// Sets the cached selction result back to `None`. 
+  /// Sets the cached selction result back to `None`.
   /// This will also force [get](struct.Query.html#method.get) to read back the result from the staging buffer again.
   pub fn reset(&mut self) {
     self.result = None;
@@ -348,13 +397,13 @@ impl Query {
   /// After that the query result will be cached and no GPU readback is needed.
   ///
   /// Once [reset](struct.Query.html#method.reset) is called the cached result will be invalidated.
-  pub fn get(&mut self) -> Option<u32> {
+  pub fn get(&mut self) -> Option<SelectId> {
     if self.dirty {
       let id = self.stage.map().unwrap().as_slice::<u32>()[0];
       self.result = if id == u32::max_value() { None } else { Some(id) };
       self.dirty = false;
     }
-    self.result
+    self.result.map(|r| SelectId::from(r))
   }
 }
 

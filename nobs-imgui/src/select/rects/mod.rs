@@ -4,6 +4,7 @@ pub use pipeline::Pipeline;
 pub use pipeline::Vertex;
 
 use crate::pipeid::*;
+use crate::select::SelectId;
 use crate::select::SelectPass;
 use std::collections::BTreeSet;
 use vk;
@@ -72,9 +73,9 @@ impl Rects {
 
   /// Create a new Rect
   ///
-  /// Creating a rect will allocate a new object id and mesh id from the [SelectPass](../struct.SelectPass.html)
-  /// The rect will be identified with this id for all futher modifications, 
-  /// eg. [updating](struct.Rects.html#method.update_rect), 
+  /// Creating a rect will allocate a new [SelectId](../struct.SelectId.html) and mesh id from the [SelectPass](../struct.SelectPass.html)
+  /// The rect will be identified with this id for all futher modifications,
+  /// eg. [updating](struct.Rects.html#method.update_rect),
   /// [removing](struct.Rects.html#method.remove),
   /// [accessing](struct.Rects.html#method.get),
   /// or [retrieving the mesh id](struct.Rects.html#method.get_mesh)
@@ -97,7 +98,7 @@ impl Rects {
         self.vb_data.len() - 1
       }
     };
-    self.vb_data[rect].id = self.pass.new_id();
+    self.vb_data[rect].id = self.pass.new_id().into();
     self.meshes[rect] = self.pass.new_mesh(
       self.pipe.bind_pipe,
       &[self.pipe.bind_ds_viewport],
@@ -133,7 +134,7 @@ impl Rects {
   /// * `i` - id of the rect (returned from [new_rect](struct.Rects.html#method.new_rect))
   pub fn remove(&mut self, i: usize) {
     self.pass.remove_mesh(self.meshes[i]);
-    self.pass.remove_id(self.vb_data[i].id);
+    self.pass.remove_id(self.vb_data[i].id.into());
     self.vb_free.insert(i);
   }
 
@@ -146,6 +147,17 @@ impl Rects {
   /// Reference to the vertex buffer content
   pub fn get(&self, i: usize) -> &Vertex {
     &self.vb_data[i]
+  }
+
+  /// Gets the associated [SelectId](../struct.SelectId.html)
+  ///
+  /// # Arguments
+  /// * `i` - id of the rect (returned from [new_rect](struct.Rects.html#method.new_rect))
+  ///
+  /// # Returns
+  /// The SelectId
+  pub fn get_select_id(&self, i: usize) -> SelectId {
+    SelectId::from(self.vb_data[i].id)
   }
 
   /// Gets the associated mesh id

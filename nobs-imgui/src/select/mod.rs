@@ -4,6 +4,7 @@ mod selectpass;
 pub use rects::Rects as SelectRects;
 pub use selectpass::Query;
 pub use selectpass::SelectPass;
+pub use selectpass::SelectId;
 
 use crate::pipeid::*;
 use std::sync::Arc;
@@ -50,25 +51,25 @@ impl Select {
   /// Resize the [SelectPass](struct.SelectPass.html)
   ///
   /// See [new_id](struct.SelectPass.html#method.new_id).
-  pub fn new_id(&mut self) -> u32 {
+  pub fn new_id(&mut self) -> SelectId {
     self.pass.new_id()
   }
   /// Resize the [SelectPass](struct.SelectPass.html)
   ///
   /// See [new_ids](struct.SelectPass.html#method.new_ids).
-  pub fn new_ids(&mut self, count: u32) -> u32 {
+  pub fn new_ids(&mut self, count: u32) -> SelectId {
     self.pass.new_ids(count)
   }
   /// Resize the [SelectPass](struct.SelectPass.html)
   ///
   /// See [remove_id](struct.SelectPass.html#method.remove_id).
-  pub fn remove_id(&mut self, id: u32) {
+  pub fn remove_id(&mut self, id: SelectId) {
     self.pass.remove_id(id);
   }
   /// Resize the [SelectPass](struct.SelectPass.html)
   ///
   /// See [remove_ids](struct.SelectPass.html#method.remove_ids).
-  pub fn remove_ids(&mut self, id: u32, count: u32) {
+  pub fn remove_ids(&mut self, id: SelectId, count: u32) {
     self.pass.remove_ids(id, count);
   }
 

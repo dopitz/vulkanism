@@ -1,5 +1,6 @@
 use crate::font::*;
 use crate::rect::Rect;
+use crate::select::SelectId;
 use crate::text::Text;
 use crate::window::Component;
 use crate::window::Layout;
@@ -16,19 +17,22 @@ pub enum Event {
 pub struct TextBox {
   rect: Rect,
   text: Text,
+  select_rect: usize,
   select_mesh: usize,
-  select_id: u32,
+  select_id: SelectId,
 }
 
 impl TextBox {
   pub fn new(gui: &ImGui) -> Self {
     let rect = Rect::from_rect(0, 0, 200, 20);
     let text = Text::new(gui);
-    let select_id = gui.select.rects().new_rect(vec2!(0), vec2!(0)) as u32;
-    let select_mesh = gui.select.rects().get_mesh(select_id as usize);
+    let select_rect = gui.select.rects().new_rect(vec2!(0), vec2!(0));
+    let select_id = gui.select.rects().get_select_id(select_rect);
+    let select_mesh = gui.select.rects().get_mesh(select_rect);
     Self {
       rect,
       text,
+      select_rect,
       select_mesh,
       select_id,
     }
@@ -94,7 +98,10 @@ impl Component for TextBox {
     for e in wnd.get_events() {
       match e {
         vk::winit::Event::DeviceEvent {
-          event: vk::winit::DeviceEvent::Button { button, state: vk::winit::ElementState::Pressed },
+          event: vk::winit::DeviceEvent::Button {
+            button,
+            state: vk::winit::ElementState::Pressed,
+          },
           ..
         } if *button == 1 => clicked = true,
         _ => (),

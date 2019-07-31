@@ -1,5 +1,6 @@
 use super::Component;
 use crate::select::Query;
+use crate::select::SelectId;
 use crate::ImGui;
 use vk::cmd::commands::RenderpassBegin;
 use vk::cmd::commands::RenderpassEnd;
@@ -118,7 +119,7 @@ impl Screen {
   ///
   /// # Returns
   /// The id of the selection, `None` if no valid object in the [Selection](../select/struct.Select.html) was selected or the query was not executed.
-  pub fn get_select_result(&mut self) -> Option<u32> {
+  pub fn get_select_result(&mut self) -> Option<SelectId> {
     self.query.as_mut().and_then(|q| q[1].get())
   }
 
@@ -126,7 +127,7 @@ impl Screen {
     self.events.as_mut().unwrap().push(e.clone());
   }
   /// Gets the list of events since last time [ImGui::handle_events](../struct.Imgui.html#method.handle_events) was called.
-  pub fn get_events<'a>(&'a self) -> &'a[vk::winit::Event] {
+  pub fn get_events<'a>(&'a self) -> &'a [vk::winit::Event] {
     self.events.as_ref().unwrap()
   }
 }

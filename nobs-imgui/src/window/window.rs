@@ -1,8 +1,9 @@
-use super::Component;
 use super::ColumnLayout;
+use super::Component;
 use super::Layout;
 use super::Screen;
 use crate::rect::Rect;
+use crate::select::SelectId;
 
 /// Window used to set position and size of gui components
 ///
@@ -56,12 +57,12 @@ impl<'a, T: Layout> Window<'a, T> {
   /// Get the selection result of the last object query
   ///
   /// See [get_select_result](struct.Screen.html#method.get_select_result).
-  pub fn get_select_result(&mut self) -> Option<u32> {
+  pub fn get_select_result(&mut self) -> Option<SelectId> {
     self.scr.get_select_result()
   }
 
   /// Gets the list of events since last time [ImGui::handle_events](../struct.Imgui.html#method.handle_events) was called.
-  pub fn get_events(&'a self) -> &'a[vk::winit::Event] {
+  pub fn get_events(&'a self) -> &'a [vk::winit::Event] {
     self.scr.get_events()
   }
 }
