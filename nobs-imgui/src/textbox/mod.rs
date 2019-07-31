@@ -6,6 +6,7 @@ use crate::window::Component;
 use crate::window::Layout;
 use crate::window::Window;
 use crate::ImGui;
+use vk::pass::MeshId;
 
 #[derive(Debug)]
 pub enum Event {
@@ -18,8 +19,14 @@ pub struct TextBox {
   rect: Rect,
   text: Text,
   select_rect: usize,
-  select_mesh: usize,
+  select_mesh: MeshId,
   select_id: SelectId,
+}
+
+impl Drop for TextBox {
+  fn drop(&mut self) {
+    self.get_gui().select.rects().remove(self.select_rect);
+  }
 }
 
 impl TextBox {
@@ -66,7 +73,7 @@ impl Component for TextBox {
         .get_gui()
         .select
         .rects()
-        .update_rect(self.select_mesh, rect.position, rect.size);
+        .update_rect(self.select_rect, rect.position, rect.size);
       self.text.position(rect.position);
       self.rect = rect;
     }
@@ -82,11 +89,11 @@ impl Component for TextBox {
     vec2!(w, h as u32)
   }
 
-  fn get_mesh(&self) -> usize {
+  fn get_mesh(&self) -> MeshId {
     self.text.get_mesh()
   }
 
-  fn get_select_mesh(&self) -> Option<usize> {
+  fn get_select_mesh(&self) -> Option<MeshId> {
     Some(self.select_mesh)
   }
 

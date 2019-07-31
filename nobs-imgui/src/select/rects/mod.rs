@@ -11,6 +11,7 @@ use vk;
 use vk::cmd::commands::DrawManaged;
 use vk::cmd::commands::DrawVertices;
 use vk::mem::Handle;
+use vk::pass::MeshId;
 use vkm::Vec2i;
 use vkm::Vec2u;
 
@@ -32,7 +33,7 @@ pub struct Rects {
   vb_data: Vec<Vertex>,
   vb_free: BTreeSet<usize>,
   vb_dirty: bool,
-  meshes: Vec<usize>,
+  meshes: Vec<MeshId>,
 
   pipe: Pipeline,
 }
@@ -78,7 +79,7 @@ impl Rects {
   /// eg. [updating](struct.Rects.html#method.update_rect),
   /// [removing](struct.Rects.html#method.remove),
   /// [accessing](struct.Rects.html#method.get),
-  /// or [retrieving the mesh id](struct.Rects.html#method.get_mesh)
+  /// or [retrieving the MeshId](struct.Rects.html#method.get_mesh)
   ///
   /// # Arguments
   /// * `pos` - top left position of the rect in pixel coordinates
@@ -93,7 +94,7 @@ impl Rects {
         i
       }
       None => {
-        self.meshes.push(0);
+        self.meshes.push(MeshId::invalid());
         self.vb_data.push(Default::default());
         self.vb_data.len() - 1
       }
@@ -166,8 +167,8 @@ impl Rects {
   /// * `i` - id of the rect (returned from [new_rect](struct.Rects.html#method.new_rect))
   ///
   /// # Returns
-  /// The mesh id
-  pub fn get_mesh(&self, i: usize) -> usize {
+  /// The MeshId
+  pub fn get_mesh(&self, i: usize) -> MeshId {
     self.meshes[i]
   }
 

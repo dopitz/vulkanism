@@ -7,6 +7,7 @@ use vkm::Vec2i;
 use super::pipeline::*;
 use crate::pipeid::*;
 use crate::ImGui;
+use vk::pass::MeshId;
 
 pub struct Sprites {
   device: vk::Device,
@@ -18,7 +19,7 @@ pub struct Sprites {
   sampler: vk::Sampler,
   vb: vk::Buffer,
   ub: vk::Buffer,
-  mesh: usize,
+  mesh: MeshId,
   vb_capacity: usize,
 
   pipe: Pipeline,
@@ -85,7 +86,7 @@ impl Sprites {
     self.gui.clone()
   }
 
-  pub fn get_mesh(&self) -> usize {
+  pub fn get_mesh(&self) -> MeshId {
     self.mesh
   }
 

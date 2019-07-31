@@ -1,6 +1,7 @@
 use super::Layout;
 use super::Window;
 use crate::rect::Rect;
+use vk::pass::MeshId;
 
 /// Basic trait for renderable and selectable gui components
 ///
@@ -14,17 +15,17 @@ pub trait Component {
   /// Gets the ideal size of the component
   fn get_size_hint(&self) -> vkm::Vec2u;
 
-  /// Gets the mesh id for drawing the component
-  fn get_mesh(&self) -> usize;
+  /// Gets the MeshId for drawing the component
+  fn get_mesh(&self) -> MeshId;
 
-  /// Gets the mesh id for object selection of this component
-  fn get_select_mesh(&self) -> Option<usize>;
+  /// Gets the MeshId for object selection of this component
+  fn get_select_mesh(&self) -> Option<MeshId>;
 
   /// Event type that can be used to handle user interaction when the component is [drawn](trait.Component.html#method.draw)
   type Event;
   /// Draws the component and returns an Event for handling user interaction
   ///
-  /// The component is added to the Screen referenced by `wnd`. 
+  /// The component is added to the Screen referenced by `wnd`.
   /// The window is used to resize and set the position of the component with [rect](trait.Component.html#method.rect).
   fn draw<T: Layout>(&mut self, wnd: &mut Window<T>) -> Option<Self::Event>;
 }

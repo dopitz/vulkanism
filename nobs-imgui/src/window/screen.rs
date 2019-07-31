@@ -6,11 +6,12 @@ use vk::cmd::commands::RenderpassBegin;
 use vk::cmd::commands::RenderpassEnd;
 use vk::cmd::commands::Scissor;
 use vk::cmd::stream::*;
+use vk::pass::MeshId;
 
 struct WindowComponent {
   scissor: Scissor,
-  draw_mesh: usize,
-  select_mesh: Option<usize>,
+  draw_mesh: MeshId,
+  select_mesh: Option<MeshId>,
 }
 
 /// Cache for gui components and selection query

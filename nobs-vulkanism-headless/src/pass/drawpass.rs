@@ -132,14 +132,59 @@ impl<T: Clone + Copy> std::ops::IndexMut<std::ops::Range<usize>> for BlockAlloc<
   }
 }
 
+/// Id type to uniquely identify a drawable mesh
+///
+/// We define a separate type for this so that we get more type checking from the compiler.
+/// Conversion to and from `usize` is still available with `into()` and `from()`, however we have to conscientously do this.
+/// This way it is less likely to accidentally use an `usize` as a MeshId that is in fact not.
+///
+/// We can also forbid certain operations on ids (eg. mul, div, bit logic) because that doesn't make sense for ids.
+/// However we allow addition with ***vanilla*** usize and getting the difference between two MeshIds.
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub struct MeshId {
+  id: usize,
+}
+
+impl MeshId {
+  /// We reserve `usize::max_value` as an invalid id that must not be used.
+  pub fn invalid() -> Self {
+    Self { id: usize::max_value() }
+  }
+}
+
+impl Into<usize> for MeshId {
+  fn into(self) -> usize {
+    self.id
+  }
+}
+impl From<usize> for MeshId {
+  fn from(id: usize) -> Self {
+    Self { id }
+  }
+}
+
+impl std::ops::Add<usize> for MeshId {
+  type Output = Self;
+  fn add(self, rhs: usize) -> Self {
+    (self.id + rhs).into()
+  }
+}
+impl std::ops::Sub for MeshId {
+  type Output = isize;
+  fn sub(self, rhs: Self) -> isize {
+    self.id as isize - rhs.id as isize
+  }
+}
+
 #[derive(Debug, Clone, Copy)]
-pub struct DrawMesh {
+struct DrawMesh {
   toggle: bool,
   pipe: usize,
   dset: (usize, usize),
   buffers: (usize, usize),
   draw: Draw,
 }
+/// Compiled info for a single draw call
 pub struct DrawMeshRef<'a> {
   pub pipe: &'a BindPipeline,
   pub dset: &'a [BindDset],
@@ -157,6 +202,14 @@ impl<'a> StreamPush for DrawMeshRef<'a> {
   }
 }
 
+/// Manager for DrawCommands
+///
+/// The DrawPass records information that is needed to execute a single draw call in vulkan. We call the compiled information `Mesh` and can refer to it through a [MeshId](struct.MeshId.html)
+/// It stores pipeline, descriptor sets, vertex buffers with offsets, and the [Draw](../cmd/commands/struct.Draw.html) call itself in an struct of array manner.
+/// Descriptor sets and vertex buffers that belong to the same draw call are stored packed together.
+///
+/// The DrawPass can be enqued into a [command buffer](../cmd/struct.CmdBuffer.html), which will iterate over all recorded draw calles and execute them accordingly.
+/// We can also define a draw order with [iter](struct.DrawPass.html#method.iter)
 pub struct DrawPass {
   pipes: BlockAlloc<BindPipeline>,
   dsets: BlockAlloc<BindDset>,
@@ -167,6 +220,7 @@ pub struct DrawPass {
 }
 
 impl DrawPass {
+  /// Creates a new (empty) DrawPass
   pub fn new() -> Self {
     Self {
       pipes: Default::default(),
@@ -186,7 +240,16 @@ impl DrawPass {
     }
   }
 
-  pub fn new_mesh(&mut self, pipe: BindPipeline, dsets: &[BindDset], draw: DrawManaged) -> usize {
+  /// Allocate a new mesh
+  ///
+  /// Adds a mesh. Requires a valid [BindPipeline](../cmd/commands/struct.BindPipeline.html) and [DrawManaged](../cmd/commands/struct.DrawManaged.html) command.
+  /// We optionally can use one or more [BindDset](../cmd/commands/struct.BindDset.html) commands.
+  ///
+  /// This function takes a [DrawManaged](../cmd/commands/struct.DrawManaged.html) command and inserts the individually allocated vertex buffers into the DrawPasses to improve cache coherence.
+  ///
+  /// # Returns
+  /// The [MeshId](struct.MeshId.html) associated with the new mesh
+  pub fn new_mesh(&mut self, pipe: BindPipeline, dsets: &[BindDset], draw: DrawManaged) -> MeshId {
     // copy into draw pass allocators
     let (pipe, _) = self.pipes.push(&[pipe]);
     let (dset, _) = self.dsets.push(dsets);
@@ -210,12 +273,15 @@ impl DrawPass {
       self.update_bindvbs();
     }
 
-    mesh
+    MeshId::from(mesh)
   }
 
+  /// Updates the mesh
+  ///
+  /// Updating the mesh may NOT change the number of descriptor sets or vertex buffers!
   pub fn update_mesh(
     &mut self,
-    mesh: usize,
+    mesh: MeshId,
     pipe: Option<BindPipeline>,
     dsets: &[Option<BindDset>],
     buffers: &[Option<vk::Buffer>],
@@ -227,7 +293,8 @@ impl DrawPass {
       buffers: &'a mut [vk::Buffer],
       draw: &'a mut Draw,
     };
-    let m = &mut self.meshes[mesh];
+    let m: usize = mesh.into();
+    let m = &mut self.meshes[m];
     let mesh = Mut {
       pipe: &mut self.pipes[m.pipe],
       dset: &mut self.dsets[m.dset.0..m.dset.0 + m.dset.1],
@@ -260,31 +327,34 @@ impl DrawPass {
     }
   }
 
-  pub fn contains(&self, mesh: usize) -> bool {
-    self.meshes.contains(mesh)
+  pub fn contains(&self, mesh: MeshId) -> bool {
+    self.meshes.contains(mesh.into())
   }
 
-  pub fn remove(&mut self, mesh: usize) -> bool {
-    if self.meshes.contains(mesh) {
-      let m = self.meshes[mesh];
+  pub fn remove(&mut self, mesh: MeshId) -> bool {
+    if self.meshes.contains(mesh.into()) {
+      let m: usize = mesh.into();
+      let m = self.meshes[m];
       self.pipes.free(m.pipe, 1);
       self.dsets.free(m.dset.0, m.dset.1);
       self.buffers.free(m.buffers.0, m.buffers.1);
       self.offsets.free(m.buffers.0, m.buffers.1);
 
-      self.meshes.free(mesh, 1);
+      self.meshes.free(mesh.into(), 1);
       true
     } else {
       false
     }
   }
 
-  pub fn toggle(&mut self, mesh: usize, toggle: bool) {
-    self.meshes[mesh].toggle = toggle;
+  pub fn toggle(&mut self, mesh: MeshId, toggle: bool) {
+    let m: usize = mesh.into();
+    self.meshes[m].toggle = toggle;
   }
 
-  pub fn get<'a>(&'a self, mesh: usize) -> DrawMeshRef<'a> {
-    let m = &self.meshes[mesh];
+  pub fn get<'a>(&'a self, mesh: MeshId) -> DrawMeshRef<'a> {
+    let m: usize = mesh.into();
+    let m = &self.meshes[m];
     DrawMeshRef {
       pipe: &self.pipes[m.pipe],
       dset: &self.dsets[m.dset.0..m.dset.0 + m.dset.1],
@@ -294,7 +364,7 @@ impl DrawPass {
     }
   }
 
-  pub fn iter<'a, T: Iterator<Item = usize>>(&'a self, mesh_iter: T) -> DrawPassIterator<'a, T> {
+  pub fn iter<'a, T: Iterator<Item = MeshId>>(&'a self, mesh_iter: T) -> DrawPassIterator<'a, T> {
     DrawPassIterator { pass: self, mesh_iter }
   }
 }
@@ -312,12 +382,12 @@ impl StreamPush for DrawPass {
   }
 }
 
-pub struct DrawPassIterator<'a, T: Iterator<Item = usize>> {
+pub struct DrawPassIterator<'a, T: Iterator<Item = MeshId>> {
   pass: &'a DrawPass,
   mesh_iter: T,
 }
 
-impl<'a, T: Iterator<Item = usize>> StreamPushMut for DrawPassIterator<'a, T> {
+impl<'a, T: Iterator<Item = MeshId>> StreamPushMut for DrawPassIterator<'a, T> {
   fn enqueue_mut(&mut self, mut cs: CmdBuffer) -> CmdBuffer {
     for mesh in self.mesh_iter.by_ref() {
       let draw = self.pass.get(mesh);

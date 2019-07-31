@@ -5,6 +5,10 @@ use vk::cmd::CmdPool;
 use vk::cmd::RRBatch;
 use vk::pass::Frame;
 
+/// Frame for rendering into a window
+///
+/// Takes care of creating and submitting a command buffer.
+/// Also handles batch syncronisation and presentation to the swapchain.
 pub struct PresentFrame<'a> {
   frame: Frame<'a>,
   next: NextImage,

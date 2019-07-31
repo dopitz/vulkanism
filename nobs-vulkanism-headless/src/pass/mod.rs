@@ -11,10 +11,12 @@ mod renderpass;
 
 pub use drawpass::DrawMeshRef;
 pub use drawpass::DrawPass;
+pub use drawpass::MeshId;
 pub use frame::Frame;
 pub use framebuffer::Framebuffer;
 pub use renderpass::Renderpass;
 
+/// Errors for [Renderpass](struct.Renderpass.html) and [Framebuffer](struct.Framebuffer.html) creation
 #[derive(Debug)]
 pub enum Error {
   MissingSubpass(usize),

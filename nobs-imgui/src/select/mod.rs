@@ -3,8 +3,8 @@ mod selectpass;
 
 pub use rects::Rects as SelectRects;
 pub use selectpass::Query;
-pub use selectpass::SelectPass;
 pub use selectpass::SelectId;
+pub use selectpass::SelectPass;
 
 use crate::pipeid::*;
 use std::sync::Arc;
@@ -14,6 +14,7 @@ use vk::cmd::commands::BindDset;
 use vk::cmd::commands::BindPipeline;
 use vk::cmd::commands::DrawKind;
 use vk::cmd::commands::DrawManaged;
+use vk::pass::MeshId;
 
 /// Wraps a [SelectPass](struct.SelectPass.html) and other useful object selection managers
 ///
@@ -76,7 +77,7 @@ impl Select {
   /// Resize the [SelectPass](struct.SelectPass.html)
   ///
   /// See [new_mesh](struct.SelectPass.html#method.new_mesh).
-  pub fn new_mesh(&mut self, pipe: BindPipeline, dsets: &[BindDset], draw: DrawManaged) -> usize {
+  pub fn new_mesh(&mut self, pipe: BindPipeline, dsets: &[BindDset], draw: DrawManaged) -> MeshId {
     self.pass.new_mesh(pipe, dsets, draw)
   }
 
@@ -85,7 +86,7 @@ impl Select {
   /// See [update_mesh](struct.SelectPass.html#method.update_mesh).
   pub fn update_mesh(
     &mut self,
-    mesh: usize,
+    mesh: MeshId,
     pipe: Option<BindPipeline>,
     dsets: &[Option<BindDset>],
     buffers: &[Option<vk::Buffer>],
@@ -97,14 +98,14 @@ impl Select {
   /// Resize the [SelectPass](struct.SelectPass.html)
   ///
   /// See [contains](struct.SelectPass.html#method.contains).
-  pub fn contains(&self, mesh: usize) -> bool {
+  pub fn contains(&self, mesh: MeshId) -> bool {
     self.pass.contains(mesh)
   }
 
   /// Resize the [SelectPass](struct.SelectPass.html)
   ///
   /// See [remove_mesh](struct.SelectPass.html#method.remove_mesh).
-  pub fn remove_mesh(&mut self, mesh: usize) -> bool {
+  pub fn remove_mesh(&mut self, mesh: MeshId) -> bool {
     self.pass.remove_mesh(mesh)
   }
 

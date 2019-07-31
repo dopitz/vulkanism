@@ -9,6 +9,7 @@ use vk::cmd::commands::DrawManaged;
 use vk::cmd::commands::Scissor;
 use vk::cmd::stream::*;
 use vk::mem::Handle;
+use vk::pass::MeshId;
 use vk::pass::DrawPass;
 use vk::pass::Framebuffer;
 use vk::pass::Renderpass;
@@ -53,9 +54,9 @@ impl std::ops::Add<u32> for SelectId {
 }
 
 impl std::ops::Sub for SelectId {
-  type Output = u32;
-  fn sub(self, rhs: SelectId) -> u32 {
-    self.id - rhs.id
+  type Output = i32;
+  fn sub(self, rhs: SelectId) -> i32 {
+    self.id as i32 - rhs.id as i32
   }
 }
 
@@ -266,8 +267,8 @@ impl SelectPass {
   /// See [new_mesh](https://docs.rs/nobs-vulkanism-headless/0.1.0/nobs_vulkanism_headless/pass/struct.DrawPass.html#method.new_mesh) for details.
   ///
   /// # Returns
-  /// The mesh id
-  pub fn new_mesh(&mut self, pipe: BindPipeline, dsets: &[BindDset], draw: DrawManaged) -> usize {
+  /// The MeshId
+  pub fn new_mesh(&mut self, pipe: BindPipeline, dsets: &[BindDset], draw: DrawManaged) -> MeshId {
     self.pass.lock().unwrap().pass.new_mesh(pipe, dsets, draw)
   }
 
@@ -276,7 +277,7 @@ impl SelectPass {
   /// See [update_mesh](https://docs.rs/nobs-vulkanism-headless/0.1.0/nobs_vulkanism_headless/pass/struct.DrawPass.html#method.update_mesh) for details.
   pub fn update_mesh(
     &mut self,
-    mesh: usize,
+    mesh: MeshId,
     pipe: Option<BindPipeline>,
     dsets: &[Option<BindDset>],
     buffers: &[Option<vk::Buffer>],
@@ -288,14 +289,14 @@ impl SelectPass {
   /// Checks if a there is a mesh with the specified id
   ///
   /// See [contains](https://docs.rs/nobs-vulkanism-headless/0.1.0/nobs_vulkanism_headless/pass/struct.DrawPass.html#method.contains) for details.
-  pub fn contains(&self, mesh: usize) -> bool {
+  pub fn contains(&self, mesh: MeshId) -> bool {
     self.pass.lock().unwrap().pass.contains(mesh)
   }
 
   /// Removes the mesh with the specified mesh id if present
   ///
   /// See [remove_mesh](https://docs.rs/nobs-vulkanism-headless/0.1.0/nobs_vulkanism_headless/pass/struct.DrawPass.html#method.remove_mesh) for details.
-  pub fn remove_mesh(&mut self, mesh: usize) -> bool {
+  pub fn remove_mesh(&mut self, mesh: MeshId) -> bool {
     self.pass.lock().unwrap().pass.remove(mesh)
   }
 
@@ -340,13 +341,13 @@ impl SelectPass {
   }
 }
 
-/// Query that collects meshes and reads back the selected id.
+/// Query that collects meshes and reads back the SelectId.
 ///
 /// The query collects mesh ids and optionally scissor rects.
 /// All mesh ids must stem from the same [SelectPass](struct.SelectPass.html).
 pub struct Query {
-  meshes: Vec<(usize, Option<Scissor>)>,
-  result: Option<u32>,
+  meshes: Vec<(MeshId, Option<Scissor>)>,
+  result: Option<SelectId>,
   dirty: bool,
   stage: vk::mem::Staging,
 }
@@ -385,9 +386,9 @@ impl Query {
   /// Adds a mesh and scissor rect to the query
   ///
   /// # Arguments
-  /// * `mesh` - the mesh id
+  /// * `mesh` - the MeshId to render the SelectIds into the framebuffer
   /// * `scissor` - if a scissor command is specified this scissor rect will be used befor drawing `mesh`
-  pub fn push(&mut self, mesh: usize, scissor: Option<Scissor>) {
+  pub fn push(&mut self, mesh: MeshId, scissor: Option<Scissor>) {
     self.meshes.push((mesh, scissor));
   }
 
@@ -400,10 +401,10 @@ impl Query {
   pub fn get(&mut self) -> Option<SelectId> {
     if self.dirty {
       let id = self.stage.map().unwrap().as_slice::<u32>()[0];
-      self.result = if id == u32::max_value() { None } else { Some(id) };
+      self.result = if id == u32::max_value() { None } else { Some(SelectId::from(id)) };
       self.dirty = false;
     }
-    self.result.map(|r| SelectId::from(r))
+    self.result
   }
 }
 

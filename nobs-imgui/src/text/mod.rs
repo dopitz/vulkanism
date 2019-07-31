@@ -2,6 +2,7 @@ use crate::font::*;
 use crate::sprites;
 use crate::ImGui;
 
+use vk::pass::MeshId;
 use vkm::Vec2i;
 
 pub struct Text {
@@ -26,7 +27,7 @@ impl Text {
     self.sprites.get_gui()
   }
 
-  pub fn get_mesh(&self) -> usize {
+  pub fn get_mesh(&self) -> MeshId {
     self.sprites.get_mesh()
   }
 
