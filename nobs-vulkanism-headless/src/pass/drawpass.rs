@@ -92,6 +92,12 @@ impl<T: Clone + Copy> BlockAlloc<T> {
     self.free.insert(FreeBlock { index, count });
   }
 
+  pub fn clear(&mut self) {
+    self.data.clear();
+    self.flag.clear();
+    self.free.clear();
+  }
+
   pub fn contains(&self, index: usize) -> bool {
     self.flag[index]
   }
@@ -345,6 +351,14 @@ impl DrawPass {
     } else {
       false
     }
+  }
+
+  pub fn clear(&mut self) {
+    self.pipes.clear();
+    self.dsets.clear();
+    self.buffers.clear();
+    self.offsets.clear();
+    self.meshes.clear();
   }
 
   pub fn toggle(&mut self, mesh: MeshId, toggle: bool) {
