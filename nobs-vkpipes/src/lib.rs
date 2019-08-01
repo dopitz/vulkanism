@@ -128,22 +128,32 @@ pub enum Error {
 /// ```
 pub mod build {
   /// Creates a dependency between a shader source and rust source
-  pub struct ShaderUsage {}
+  pub struct ShaderUsage {
+    path_prefix: String,
+  }
 
   impl ShaderUsage {
     /// Creates a new mapping
     pub fn new() -> ShaderUsage {
-      ShaderUsage {}
+      ShaderUsage {
+        path_prefix: "".to_owned(),
+      }
+    }
+    /// Creates a new mapping with path prefix
+    pub fn with_prefix(path_prefix: &str) -> ShaderUsage {
+      ShaderUsage {
+        path_prefix: path_prefix.to_owned(),
+      }
     }
 
     /// Specify a filename of a shader, that if changed triggers the recompilation of all dependent rust sources
     pub fn uses(&self, filename: &str) -> &Self {
       if std::path::Path::new(filename).exists() {
-        println!("cargo:rerun-if-changed={}", filename);
+        println!("cargo:rerun-if-changed={}{}", self.path_prefix, filename);
       } else {
         println!(
-          "cargo:warning=The file {} does not exists, but is listed as used shader resource",
-          filename
+          "cargo:warning=The file {}{} does not exists, but is listed as used shader resource",
+          self.path_prefix, filename
         );
       }
       &self
@@ -154,13 +164,13 @@ pub mod build {
       if std::path::Path::new(filename).exists() {
         std::process::Command::new("sh")
           .arg("-c")
-          .arg(format!("touch {}", filename))
+          .arg(format!("touch {}{}", self.path_prefix, filename))
           .output()
           .unwrap();
       } else {
         println!(
-          "cargo:warning=The file {} does not exists, but is listed as shader usage dependency",
-          filename
+          "cargo:warning=The file {}{} does not exists, but is listed as shader usage dependency",
+          self.path_prefix, filename
         );
       }
       &self
