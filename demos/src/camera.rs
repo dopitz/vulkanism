@@ -98,10 +98,10 @@ impl Camera {
       let mut map = self.stage.map().unwrap();
       let svb = map.as_slice_mut::<CameraUb>();
       svb[0] = self.transform;
-      up.push_buffer((
+      up.push_buffer(
         self.stage.copy_into_buffer(self.ub, 0),
         Some(vk::cmd::commands::BufferBarrier::new(self.ub).to(vk::ACCESS_UNIFORM_READ_BIT)),
-      ));
+      );
     }
   }
 }

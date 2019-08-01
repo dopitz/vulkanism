@@ -243,10 +243,10 @@ pub fn main() {
     map.host_to_device(&obj::UbModel {
       model: vkm::Mat4::scale(vec3!(1.0, 1.0, -1.0)),
     });
-    up.push_buffer((
+    up.push_buffer(
       stage.copy_into_buffer(ub_model, 0),
       Some(BufferBarrier::new(ub_model).to(vk::ACCESS_UNIFORM_READ_BIT)),
-    ));
+    );
   }
 
   obj::dset::write(device.handle, bind_ds.dset)
