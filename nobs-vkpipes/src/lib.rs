@@ -141,19 +141,27 @@ pub mod build {
     }
     /// Creates a new mapping with path prefix
     pub fn with_prefix(path_prefix: &str) -> ShaderUsage {
-      ShaderUsage {
-        path_prefix: path_prefix.to_owned(),
-      }
+      let path_prefix = if path_prefix.ends_with('/') {
+        path_prefix.to_owned()
+      } else {
+        format!("{}{}", path_prefix, "/").to_owned()
+      };
+      ShaderUsage { path_prefix }
+    }
+
+    fn get_fn(&self, filename: &str) -> String {
+      format!("{}{}", self.path_prefix, filename).to_owned()
     }
 
     /// Specify a filename of a shader, that if changed triggers the recompilation of all dependent rust sources
     pub fn uses(&self, filename: &str) -> &Self {
-      if std::path::Path::new(filename).exists() {
-        println!("cargo:rerun-if-changed={}{}", self.path_prefix, filename);
+      let filename = self.get_fn(filename);
+      if std::path::Path::new(&filename).exists() {
+        println!("cargo:rerun-if-changed={}", filename);
       } else {
         println!(
-          "cargo:warning=The file {}{} does not exists, but is listed as used shader resource",
-          self.path_prefix, filename
+          "cargo:warning=The file {} does not exists, but is listed as used shader resource",
+          filename
         );
       }
       &self
@@ -161,16 +169,17 @@ pub mod build {
 
     /// Specify a filename of a rust source, that is recompiled if any of used shaders was changed
     pub fn depends(&self, filename: &str) -> &Self {
-      if std::path::Path::new(filename).exists() {
+      let filename = self.get_fn(filename);
+      if std::path::Path::new(&filename).exists() {
         std::process::Command::new("sh")
           .arg("-c")
-          .arg(format!("touch {}{}", self.path_prefix, filename))
+          .arg(format!("touch {}", filename))
           .output()
           .unwrap();
       } else {
         println!(
-          "cargo:warning=The file {}{} does not exists, but is listed as shader usage dependency",
-          self.path_prefix, filename
+          "cargo:warning=The file {} does not exists, but is listed as shader usage dependency",
+          filename
         );
       }
       &self
