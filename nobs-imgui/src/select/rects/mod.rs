@@ -15,6 +15,50 @@ use vk::pass::MeshId;
 use vkm::Vec2i;
 use vkm::Vec2u;
 
+/// Id type to uniquely identify a sprte for object selection
+///
+/// We define a separate type for this so that we get more type checking from the compiler.
+/// Conversion to and from `usize` is still available with `into()` and `from()`, however we have to conscientously do this.
+/// This way it is less likely to accidentally use an `usize` as a RectId that is in fact not.
+///
+/// We can also forbid certain operations on ids (eg. mul, div, bit logic) because that doesn't make sense for ids.
+/// However we allow addition with ***vanilla*** usize and getting the difference between two MeshIds.
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub struct RectId {
+  id: usize,
+}
+
+impl RectId {
+  /// We reserve `usize::max_value` as an invalid id that must not be used.
+  pub fn invalid() -> Self {
+    Self { id: usize::max_value() }
+  }
+}
+
+impl Into<usize> for RectId {
+  fn into(self) -> usize {
+    self.id
+  }
+}
+impl From<usize> for RectId {
+  fn from(id: usize) -> Self {
+    Self { id }
+  }
+}
+
+impl std::ops::Add<usize> for RectId {
+  type Output = Self;
+  fn add(self, rhs: usize) -> Self {
+    (self.id + rhs).into()
+  }
+}
+impl std::ops::Sub for RectId {
+  type Output = isize;
+  fn sub(self, rhs: Self) -> isize {
+    self.id as isize - rhs.id as isize
+  }
+}
+
 /// Manages meshes for drawing rects/billboards in a [SelectPass](../struct.SelectPass.html)
 ///
 /// Rects are rectangular regions on the framebuffer given in pixel coordinates.
@@ -87,7 +131,7 @@ impl Rects {
   ///
   /// # Returs
   /// The object id of the rect. Since this id was allocated from the [SelectPass](../struct.SelectPass.html) we can be sure that no other selectable object with the same id exists.
-  pub fn new_rect(&mut self, pos: Vec2i, size: Vec2u) -> usize {
+  pub fn new_rect(&mut self, pos: Vec2i, size: Vec2u) -> RectId {
     let rect = match self.vb_free.iter().next().cloned() {
       Some(i) => {
         self.vb_free.remove(&i);
@@ -108,6 +152,7 @@ impl Rects {
         DrawVertices::with_vertices(4).instance_count(1).first_instance(rect as u32).into(),
       ),
     );
+    let rect = RectId::from(rect);
     self.update_rect(rect, pos, size);
     rect
   }
@@ -120,7 +165,8 @@ impl Rects {
   /// * `i` - id of the rect (returned from [new_rect](struct.Rects.html#method.new_rect))
   /// * `pos` - top left position of the rect in pixel coordinates
   /// * `size` - size of the rect in pixels
-  pub fn update_rect(&mut self, i: usize, pos: Vec2i, size: Vec2u) {
+  pub fn update_rect(&mut self, i: RectId, pos: Vec2i, size: Vec2u) {
+    let i: usize = i.into();
     self.vb_data[i].pos = pos.into();
     self.vb_data[i].size = size.into();
     self.vb_dirty = true;
@@ -133,7 +179,8 @@ impl Rects {
   ///
   /// # Arguments
   /// * `i` - id of the rect (returned from [new_rect](struct.Rects.html#method.new_rect))
-  pub fn remove(&mut self, i: usize) {
+  pub fn remove(&mut self, i: RectId) {
+    let i: usize = i.into();
     self.pass.remove_mesh(self.meshes[i]);
     self.pass.remove_id(self.vb_data[i].id.into());
     self.vb_free.insert(i);
@@ -146,7 +193,8 @@ impl Rects {
   ///
   /// # Returns
   /// Reference to the vertex buffer content
-  pub fn get(&self, i: usize) -> &Vertex {
+  pub fn get(&self, i: RectId) -> &Vertex {
+    let i: usize = i.into();
     &self.vb_data[i]
   }
 
@@ -157,7 +205,8 @@ impl Rects {
   ///
   /// # Returns
   /// The SelectId
-  pub fn get_select_id(&self, i: usize) -> SelectId {
+  pub fn get_select_id(&self, i: RectId) -> SelectId {
+    let i: usize = i.into();
     SelectId::from(self.vb_data[i].id)
   }
 
@@ -168,7 +217,8 @@ impl Rects {
   ///
   /// # Returns
   /// The MeshId
-  pub fn get_mesh(&self, i: usize) -> MeshId {
+  pub fn get_mesh(&self, i: RectId) -> MeshId {
+    let i: usize = i.into();
     self.meshes[i]
   }
 

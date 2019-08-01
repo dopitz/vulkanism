@@ -1,5 +1,6 @@
 use crate::font::*;
 use crate::rect::Rect;
+use crate::select::rects::RectId;
 use crate::select::SelectId;
 use crate::text::Text;
 use crate::window::Component;
@@ -18,7 +19,7 @@ pub enum Event {
 pub struct TextBox {
   rect: Rect,
   text: Text,
-  select_rect: usize,
+  select_rect: RectId,
   select_mesh: MeshId,
   select_id: SelectId,
 }
