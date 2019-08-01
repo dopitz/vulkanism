@@ -102,40 +102,40 @@ impl crate::Asset for Asset {
         let mut stage = up.get_staging((o.vertices.len() * std::mem::size_of::<vkm::Vec3f>()) as vk::DeviceSize);
         let map = stage.map().unwrap();
         map.host_to_device_slice(&o.vertices);
-        up.push_buffer((
+        up.push_buffer(
           stage.copy_into_buffer(s.vertices, 0),
           Some(BufferBarrier::new(s.vertices).to(vk::ACCESS_VERTEX_ATTRIBUTE_READ_BIT)),
-        ));
+        );
       }
 
       if !o.normals.is_empty() {
         let mut stage = up.get_staging((o.normals.len() * std::mem::size_of::<vkm::Vec3f>()) as vk::DeviceSize);
         let map = stage.map().unwrap();
         map.host_to_device_slice(&o.normals);
-        up.push_buffer((
+        up.push_buffer(
           stage.copy_into_buffer(s.normals, 0),
           Some(BufferBarrier::new(s.normals).to(vk::ACCESS_VERTEX_ATTRIBUTE_READ_BIT)),
-        ));
+        );
       }
 
       if !o.uvs.is_empty() {
         let mut stage = up.get_staging((o.uvs.len() * std::mem::size_of::<vkm::Vec2f>()) as vk::DeviceSize);
         let map = stage.map().unwrap();
         map.host_to_device_slice(&o.uvs);
-        up.push_buffer((
+        up.push_buffer(
           stage.copy_into_buffer(s.uvs, 0),
           Some(BufferBarrier::new(s.uvs).to(vk::ACCESS_VERTEX_ATTRIBUTE_READ_BIT)),
-        ));
+        );
       }
 
       if !o.indices.is_empty() {
         let mut stage = up.get_staging((o.indices.len() * std::mem::size_of::<u32>()) as vk::DeviceSize);
         let map = stage.map().unwrap();
         map.host_to_device_slice(&o.indices);
-        up.push_buffer((
+        up.push_buffer(
           stage.copy_into_buffer(s.indices, 0),
           Some(BufferBarrier::new(s.indices).to(vk::ACCESS_VERTEX_ATTRIBUTE_READ_BIT)),
-        ));
+        );
       }
     }
 

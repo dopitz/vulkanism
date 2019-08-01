@@ -36,7 +36,7 @@ impl crate::Asset for Asset {
     let mut stage = up.get_staging(tga.img.data().len() as vk::DeviceSize);
     stage.map().unwrap().host_to_device_slice(tga.img.data());
 
-    up.push_image((
+    up.push_image(
       stage.copy_into_image(
         handle,
         vk::BufferImageCopy::build()
@@ -44,7 +44,7 @@ impl crate::Asset for Asset {
           .image_extent(vk::Extent3D::build().set(tga.img.size().x, tga.img.size().y, 1).into()),
       ),
       Some(ImageBarrier::to_shader_read(handle)),
-    ));
+    );
 
     Self { handle }
   }

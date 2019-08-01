@@ -31,12 +31,12 @@ impl Update {
     self.stagings.push(s);
     range
   }
-  pub fn push_buffer(&mut self, c: (BufferCopy, Option<BufferBarrier>)) -> &mut Self {
-    self.buffer_copy.push(c);
+  pub fn push_buffer(&mut self, c: BufferCopy, b: Option<BufferBarrier>) -> &mut Self {
+    self.buffer_copy.push((c, b));
     self
   }
-  pub fn push_image(&mut self, c: (BufferImageCopy, Option<ImageBarrier>)) -> &mut Self {
-    self.texture_copy.push(c);
+  pub fn push_image(&mut self, c: BufferImageCopy, b: Option<ImageBarrier>) -> &mut Self {
+    self.texture_copy.push((c, b));
     self
   }
 }
