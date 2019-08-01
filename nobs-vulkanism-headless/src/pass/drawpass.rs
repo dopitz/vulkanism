@@ -146,7 +146,7 @@ impl<T: Clone + Copy> std::ops::IndexMut<std::ops::Range<usize>> for BlockAlloc<
 ///
 /// We can also forbid certain operations on ids (eg. mul, div, bit logic) because that doesn't make sense for ids.
 /// However we allow addition with ***vanilla*** usize and getting the difference between two MeshIds.
-#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct MeshId {
   id: usize,
 }
