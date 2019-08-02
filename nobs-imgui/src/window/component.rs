@@ -1,6 +1,7 @@
 use super::Layout;
 use super::Window;
 use crate::rect::Rect;
+use crate::select::SelectId;
 use vk::pass::MeshId;
 
 /// Basic trait for renderable and selectable gui components
@@ -27,5 +28,5 @@ pub trait Component {
   ///
   /// The component is added to the Screen referenced by `wnd`.
   /// The window is used to resize and set the position of the component with [rect](trait.Component.html#method.rect).
-  fn draw<T: Layout>(&mut self, wnd: &mut Window<T>) -> Option<Self::Event>;
+  fn draw<T: Layout>(&mut self, wnd: &mut Window<T>, focused: &mut SelectId) -> Option<Self::Event>;
 }

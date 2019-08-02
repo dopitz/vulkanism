@@ -99,8 +99,10 @@ impl Component for TextBox {
   }
 
   type Event = Event;
-  fn draw<T: Layout>(&mut self, wnd: &mut Window<T>) -> Option<Event> {
+  fn draw<T: Layout>(&mut self, wnd: &mut Window<T>, focused: &mut SelectId) -> Option<Event> {
     wnd.push(self);
+
+    let select_result = wnd.get_select_result();
 
     let mut clicked = false;
     for e in wnd.get_events() {
@@ -111,15 +113,38 @@ impl Component for TextBox {
             state: vk::winit::ElementState::Pressed,
           },
           ..
-        } if *button == 1 => clicked = true,
+        } if *button == 1 => {
+          clicked = select_result
+            .and_then(|id| if id == self.select_id { Some(Event::Clicked) } else { None })
+            .is_some();
+
+          if clicked {
+            *focused = self.select_id;
+          }
+        }
         _ => (),
+      }
+
+      if *focused == self.select_id {
+        match e {
+          vk::winit::Event::WindowEvent {
+            event: vk::winit::WindowEvent::ReceivedCharacter(c),
+            ..
+          } => {
+            // TODO: multiline flag?
+            let mut c = *c;
+            if c == '\r' {
+              c = '\n';
+            }
+            self.text(&format!("{}{}", self.get_text(), c));
+          }
+          _ => (),
+        }
       }
     }
 
     if clicked {
-      wnd
-        .get_select_result()
-        .and_then(|id| if id == self.select_id { Some(Event::Clicked) } else { None })
+      Some(Event::Clicked)
     } else {
       None
     }

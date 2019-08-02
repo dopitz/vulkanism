@@ -182,6 +182,8 @@ struct Gui {
   //text: imgui::text::Text,
   text: imgui::textbox::TextBox,
   text2: imgui::textbox::TextBox,
+
+  focus: imgui::select::SelectId,
 }
 
 impl Gui {
@@ -195,7 +197,12 @@ impl Gui {
     let mut text2 = imgui::textbox::TextBox::new(&gui);
     text2.text("aoeu");
     text2.typeset(text2.get_typeset().size(70).cursor(Some(vec2!(1, 0))));
-    Self { gui, text, text2 }
+    Self {
+      gui,
+      text,
+      text2,
+      focus: imgui::select::SelectId::invalid(),
+    }
   }
 
   pub fn handle_events(&mut self, e: &vk::winit::Event) {
@@ -207,8 +214,8 @@ impl Gui {
     if c == '\r' {
       c = '\n';
     }
-    self.text.text(&format!("{}{}", self.text.get_text(), c));
-    self.text2.text(&format!("{}{}", c, self.text2.get_text()));
+    //self.text.text(&format!("{}{}", self.text.get_text(), c));
+    //self.text2.text(&format!("{}{}", c, self.text2.get_text()));
   }
 }
 
@@ -220,12 +227,13 @@ impl StreamPushMut for Gui {
     let mut scr = self.gui.begin();
     let mut wnd = Window::new(&mut scr).position(200, 200).size(500, 200);;
 
-    if let Some(e) = self.text.draw(&mut wnd) {
+    if let Some(e) = self.text.draw(&mut wnd, &mut self.focus) {
       println!("{:?}", e);
     };
 
+
     let mut wnd = Window::new(&mut scr).position(900, 200).size(500, 200);;
-    self.text2.draw(&mut wnd);
+    self.text2.draw(&mut wnd, &mut self.focus);
 
     cs.push_mut(&mut scr)
   }
