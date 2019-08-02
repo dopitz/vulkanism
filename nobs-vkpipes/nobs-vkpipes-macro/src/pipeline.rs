@@ -98,7 +98,7 @@ impl Builder {
 
         // if the binding already exists add the shader stage to binding
         // else we create a new binding for the pipeline
-        if let Some(p) = bindings.iter_mut().position(|bind| *bind == *b) {
+        if let Some(p) = bindings.iter().position(|bind| Binding::same_stage(bind, b)) {
           bindings[p].stageflags |= stage_bit;
         } else {
           bindings.push(b.clone());

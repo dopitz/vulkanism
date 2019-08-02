@@ -59,8 +59,7 @@ impl Binding {
         setter = setter,
         desctype = desctype
       )
-    }
-    else {
+    } else {
       format!(
         "
         pub fn {name}_elem(&mut self, array_elem: u32, info: {desctype}) -> &mut {dset_name} {{
@@ -79,7 +78,11 @@ impl Binding {
         setter = setter,
         desctype = desctype
       )
-
     }
+  }
+
+  /// Comparecs everything for equality except `stageflags`
+  pub fn same_stage(a: &Self, b: &Self) -> bool {
+    a.name == b.name && a.binding == b.binding && a.descset == b.descset && a.desctype == b.desctype && a.arrayelems == b.arrayelems
   }
 }

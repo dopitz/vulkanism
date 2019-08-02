@@ -51,6 +51,7 @@ fn get_stages_from_access(access: vk::AccessFlags) -> vk::PipelineStageFlags {
 }
 
 /// Creates a read after write protecting barrier for an image resource in a command stream
+#[derive(Debug)]
 pub struct ImageBarrier {
   pub src_stages: vk::PipelineStageFlags,
   pub dst_stages: vk::PipelineStageFlags,
@@ -158,6 +159,7 @@ impl StreamPush for ImageBarrier {
 }
 
 /// Creates a read after write protecting barrier for a buffer resource in a command stream
+#[derive(Debug)]
 pub struct BufferBarrier {
   pub src_stages: vk::PipelineStageFlags,
   pub dst_stages: vk::PipelineStageFlags,
