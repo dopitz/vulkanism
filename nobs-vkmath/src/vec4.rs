@@ -1,4 +1,6 @@
 use crate::common_traits::*;
+use crate::vec2::Vec2;
+use crate::vec3::Vec3;
 
 #[repr(C)]
 #[derive(Default, Clone, Copy, Debug)]
@@ -41,6 +43,14 @@ impl<T: Copy> Vec4<T> {
       z: self.z.vec_into(),
       w: self.w.vec_into(),
     }
+  }
+
+  pub fn xy(&self) -> Vec2<T> {
+    vec2!(self.x, self.y)
+  }
+
+  pub fn xyz(&self) -> Vec3<T> {
+    vec3!(self.x, self.y, self.z)
   }
 }
 
