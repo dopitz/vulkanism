@@ -164,6 +164,8 @@ vec_into!(u64, f64);
 vec_into!(usize, f32);
 vec_into!(usize, f64);
 
+vec_into!(f64, f32);
+
 pub trait Identity {
   type Output;
   fn zero() -> Self::Output;
