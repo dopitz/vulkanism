@@ -14,13 +14,24 @@ pub trait Component {
   fn get_rect(&self) -> Rect;
 
   /// Gets the ideal size of the component
+  ///
+  /// A [Layout](struct.Layout.html) may use this size as a guide and will (implementation dependent try) to adhere by the component's ideal size.
   fn get_size_hint(&self) -> vkm::Vec2u;
 
   /// Event type that can be used to handle user interaction when the component is [drawn](trait.Component.html#method.draw)
   type Event;
   /// Draws the component and returns an Event for handling user interaction
   ///
-  /// The component is added to the Screen referenced by `wnd`.
-  /// The window is used to resize and set the position of the component with [rect](trait.Component.html#method.rect).
+  /// This function may sereve a double purpose
+  ///  1. Draw the component (normal + object selection)
+  ///  2. Handle events
+  ///
+  /// # Arguments
+  ///  * `wnd` - Layout and screen to draw to
+  ///  * `focus` - The currently focused component (should be ignored when this does not match the select id of self)
+  ///
+  /// # Returns
+  ///  * `None` - if no event was handles
+  ///  * `Some(Event)` - if an event was handled
   fn draw<T: Layout>(&mut self, wnd: &mut Window<T>, focus: &mut SelectId) -> Option<Self::Event>;
 }

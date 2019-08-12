@@ -92,10 +92,12 @@ impl Component for TextBox {
 
   type Event = Event;
   fn draw<T: Layout>(&mut self, wnd: &mut Window<T>, focus: &mut SelectId) -> Option<Event> {
+    // draw and select
     let scissor = wnd.apply_layout(self);
     wnd.push_draw(self.text.get_mesh(), scissor);
     wnd.push_select(self.select_mesh, scissor);
 
+    // event handling
     let select_result = wnd.get_select_result();
 
     let mut clicked = false;
