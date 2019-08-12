@@ -223,6 +223,7 @@ impl StreamPushMut for Gui {
   fn enqueue_mut(&mut self, cs: CmdBuffer) -> CmdBuffer {
     use imgui::window::Component;
     use imgui::window::Window;
+    use imgui::window::Layout;
 
     let mut scr = self.gui.begin();
     let mut wnd = Window::new(&mut scr).position(200, 200).size(500, 200);;

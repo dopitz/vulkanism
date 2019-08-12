@@ -90,17 +90,11 @@ impl Component for TextBox {
     vec2!(w, h as u32)
   }
 
-  fn get_mesh(&self) -> MeshId {
-    self.text.get_mesh()
-  }
-
-  fn get_select_mesh(&self) -> Option<MeshId> {
-    Some(self.select_mesh)
-  }
-
   type Event = Event;
-  fn draw<T: Layout>(&mut self, wnd: &mut Window<T>, focused: &mut SelectId) -> Option<Event> {
-    wnd.push(self);
+  fn draw<T: Layout>(&mut self, wnd: &mut Window<T>, focus: &mut SelectId) -> Option<Event> {
+    let scissor = wnd.apply_layout(self);
+    wnd.push_draw(self.text.get_mesh(), scissor);
+    wnd.push_select(self.select_mesh, scissor);
 
     let select_result = wnd.get_select_result();
 
@@ -119,13 +113,13 @@ impl Component for TextBox {
             .is_some();
 
           if clicked {
-            *focused = self.select_id;
+            *focus = self.select_id;
           }
         }
         _ => (),
       }
 
-      if *focused == self.select_id {
+      if *focus == self.select_id {
         match e {
           vk::winit::Event::WindowEvent {
             event: vk::winit::WindowEvent::ReceivedCharacter(c),

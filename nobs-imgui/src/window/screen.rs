@@ -1,4 +1,3 @@
-use super::Component;
 use crate::select::Query;
 use crate::select::SelectId;
 use crate::ImGui;
@@ -10,8 +9,7 @@ use vk::pass::MeshId;
 
 struct WindowComponent {
   scissor: Scissor,
-  draw_mesh: MeshId,
-  select_mesh: Option<MeshId>,
+  mesh: MeshId,
 }
 
 /// Cache for gui components and selection query
@@ -97,19 +95,28 @@ impl Screen {
     }
   }
 
-  /// Records a gui component for rendering and selection querrying
+  /// Records a mesh for drawing
   ///
-  /// Gui components are first collected in a buffer storing their scissor rect, mesh id for drawing and mesh id for the selection query (if set).
+  /// We first collect meshes in the `Screen` and then build the command buffer when the `Screen` is ready for rendering.
   ///
   /// # Arguments
-  /// * `c` - The gui component to be recorded
-  pub fn push<T: Component>(&mut self, c: &T) {
+  /// `mesh` - the MeshId to be drawn, the mesh id id MUST be retrieved and managed by the gui's [DrawPass](../struct.ImGui.html#method.get_drawpass)
+  /// `scissor` - the scissor rect for the mesh
+  pub fn push_draw(&mut self, mesh: MeshId, scissor: Scissor) {
     if let Some(components) = self.components.as_mut() {
-      components.push(WindowComponent {
-        scissor: Scissor::with_rect(c.get_rect().into()),
-        draw_mesh: c.get_mesh(),
-        select_mesh: c.get_select_mesh(),
-      });
+      components.push(WindowComponent { scissor, mesh });
+    }
+  }
+  /// Records a mesh for object selection
+  ///
+  /// Pushes the mesh into the current queue for object selection.
+  ///
+  /// # Arguments
+  /// `mesh` - the MeshId to be drawn, the mesh id id MUST be retrieved and managed by the gui's [SelectPass](../select/struct.Select.html)
+  /// `scissor` - the scissor rect for the mesh
+  pub fn push_select(&mut self, mesh: MeshId, scissor: Scissor) {
+    if let Some(query) = self.query.as_mut() {
+      query[0].push(mesh, Some(scissor));
     }
   }
 
@@ -148,19 +155,21 @@ impl StreamPushMut for Screen {
 
       let draw = gui.get_drawpass();
       for c in components.iter() {
-        cs = cs.push(&c.scissor).push(&draw.get(c.draw_mesh));
+        cs = cs.push(&c.scissor).push(&draw.get(c.mesh));
       }
 
       cs = cs.push(&self.draw_end);
 
       // Select Query
       if let Some(query) = self.query.as_mut() {
-        query[0].clear();
-        for c in components.iter().filter(|c| c.select_mesh.is_some()) {
-          query[0].push(c.select_mesh.unwrap(), Some(c.scissor))
-        }
+        //query[0].clear();
+        //for c in components.iter().filter(|c| c.select_mesh.is_some()) {
+        //  query[0].push(c.select_mesh.unwrap(), Some(c.scissor))
+        //}
         cs = cs.push_mut(&mut gui.select.push_query(&mut query[0]));
-
+        // only clears meshes, leaves result untouched...
+        query[0].clear();
+        // swap queries
         query.swap(0, 1);
       }
 

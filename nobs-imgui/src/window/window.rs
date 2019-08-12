@@ -4,10 +4,13 @@ use super::Layout;
 use super::Screen;
 use crate::rect::Rect;
 use crate::select::SelectId;
+use vk::cmd::commands::Scissor;
+use vk::pass::MeshId;
 
 /// Window used to set position and size of gui components
 ///
 /// The Window defines a region on the screen on which components are draw
+/// It is basically a builder pattern around a [Layout](struct.Layout.html) and [Screen](struct.Streen.html)
 pub struct Window<'a, T: Layout> {
   scr: &'a mut Screen,
   layout: T,
@@ -46,12 +49,23 @@ impl<'a, T: Layout> Window<'a, T> {
     self
   }
 
-  /// Add the spcified component to the window
+  /// Resizes component according to the window`s layout
   ///
-  /// The component will be positioned and resized according to the Window's [Layout](trait.Layout.html)
-  pub fn push<C: Component>(&mut self, c: &mut C) {
-    self.layout.push(c);
-    self.scr.push(c);
+  /// See [Layout](struct.Layout.html)
+  pub fn apply_layout<C: Component>(&mut self, c: &mut C) -> Scissor {
+    self.layout.apply(c)
+  }
+  /// Records a mesh for drawing
+  ///
+  /// See [Screen](struct.Screen.html)
+  pub fn push_draw(&mut self, mesh: MeshId, scissor: Scissor) {
+    self.scr.push_draw(mesh, scissor);
+  }
+  /// Records a mesh for drawing
+  ///
+  /// See [Screen](struct.Screen.html)
+  pub fn push_select(&mut self, mesh: MeshId, scissor: Scissor) {
+    self.scr.push_select(mesh, scissor);
   }
 
   /// Get the selection result of the last object query

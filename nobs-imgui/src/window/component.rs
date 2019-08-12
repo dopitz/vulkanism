@@ -16,17 +16,11 @@ pub trait Component {
   /// Gets the ideal size of the component
   fn get_size_hint(&self) -> vkm::Vec2u;
 
-  /// Gets the MeshId for drawing the component
-  fn get_mesh(&self) -> MeshId;
-
-  /// Gets the MeshId for object selection of this component
-  fn get_select_mesh(&self) -> Option<MeshId>;
-
   /// Event type that can be used to handle user interaction when the component is [drawn](trait.Component.html#method.draw)
   type Event;
   /// Draws the component and returns an Event for handling user interaction
   ///
   /// The component is added to the Screen referenced by `wnd`.
   /// The window is used to resize and set the position of the component with [rect](trait.Component.html#method.rect).
-  fn draw<T: Layout>(&mut self, wnd: &mut Window<T>, focused: &mut SelectId) -> Option<Self::Event>;
+  fn draw<T: Layout>(&mut self, wnd: &mut Window<T>, focus: &mut SelectId) -> Option<Self::Event>;
 }
