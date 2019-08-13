@@ -10,8 +10,6 @@ pub struct PipePool {
 
 pub struct Pipelines {
   pub sprites: PipePool,
-  //select_rects: PipePool,
-  //style_simple: PipePool,
   pub shared_pool: DescriptorPool,
   pub ds_viewport: vk::DescriptorSet,
 }

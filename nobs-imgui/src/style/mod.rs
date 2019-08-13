@@ -23,5 +23,5 @@ pub trait ComponentStyle<S: Style>: Component<S> {
 pub trait Style: Clone {
   type Component: ComponentStyle<Self>;
 
-  fn new(mem: vk::mem::Mem) -> Self;
+  fn new(mem: vk::mem::Mem, pass: vk::RenderPass, ds_viewport: vk::DescriptorSet) -> Self;
 }

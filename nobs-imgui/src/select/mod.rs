@@ -52,32 +52,32 @@ impl Select {
   /// Resize the [SelectPass](struct.SelectPass.html)
   ///
   /// See [new_id](struct.SelectPass.html#method.new_id).
-  pub fn new_id(&mut self) -> SelectId {
+  pub fn new_id(&self) -> SelectId {
     self.pass.new_id()
   }
   /// Resize the [SelectPass](struct.SelectPass.html)
   ///
   /// See [new_ids](struct.SelectPass.html#method.new_ids).
-  pub fn new_ids(&mut self, count: u32) -> SelectId {
+  pub fn new_ids(&self, count: u32) -> SelectId {
     self.pass.new_ids(count)
   }
   /// Resize the [SelectPass](struct.SelectPass.html)
   ///
   /// See [remove_id](struct.SelectPass.html#method.remove_id).
-  pub fn remove_id(&mut self, id: SelectId) {
+  pub fn remove_id(&self, id: SelectId) {
     self.pass.remove_id(id);
   }
   /// Resize the [SelectPass](struct.SelectPass.html)
   ///
   /// See [remove_ids](struct.SelectPass.html#method.remove_ids).
-  pub fn remove_ids(&mut self, id: SelectId, count: u32) {
+  pub fn remove_ids(&self, id: SelectId, count: u32) {
     self.pass.remove_ids(id, count);
   }
 
   /// Resize the [SelectPass](struct.SelectPass.html)
   ///
   /// See [new_mesh](struct.SelectPass.html#method.new_mesh).
-  pub fn new_mesh(&mut self, pipe: BindPipeline, dsets: &[BindDset], draw: DrawManaged) -> MeshId {
+  pub fn new_mesh(&self, pipe: BindPipeline, dsets: &[BindDset], draw: DrawManaged) -> MeshId {
     self.pass.new_mesh(pipe, dsets, draw)
   }
 
@@ -105,7 +105,7 @@ impl Select {
   /// Resize the [SelectPass](struct.SelectPass.html)
   ///
   /// See [remove_mesh](struct.SelectPass.html#method.remove_mesh).
-  pub fn remove_mesh(&mut self, mesh: MeshId) -> bool {
+  pub fn remove_mesh(&self, mesh: MeshId) -> bool {
     self.pass.remove_mesh(mesh)
   }
 

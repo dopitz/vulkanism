@@ -202,7 +202,7 @@ impl SelectPass {
   ///
   /// # Returns
   /// The id to identify an object on the framebuffer
-  pub fn new_id(&mut self) -> SelectId {
+  pub fn new_id(&self) -> SelectId {
     self.new_ids(1)
   }
   /// Create several ids for object selection in a block
@@ -212,7 +212,7 @@ impl SelectPass {
   ///
   /// # Returns
   /// The first [SelectId](struct.SelectId.html) of the block. Ids in the block are continuous meaning the (inclusive) last id in this block is `result + (count - 1)`.
-  pub fn new_ids(&mut self, count: u32) -> SelectId {
+  pub fn new_ids(&self, count: u32) -> SelectId {
     // find and remove block with enough free ids
     let free = &mut self.pass.lock().unwrap().free_ids;
     let ids = *free.iter().find(|ids| ids.beg + count <= ids.end).unwrap();
@@ -233,7 +233,7 @@ impl SelectPass {
   ///
   /// # Arguments
   /// * `id` - id to be freed
-  pub fn remove_id(&mut self, id: SelectId) {
+  pub fn remove_id(&self, id: SelectId) {
     self.remove_ids(id, 1);
   }
   /// Frees multiple [SelectIds](struct.SelectId.html) in a block.
@@ -245,7 +245,7 @@ impl SelectPass {
   /// # Arguments
   /// * `id` - first id to be freed
   /// * `count` - number of ids to free
-  pub fn remove_ids(&mut self, id: SelectId, count: u32) {
+  pub fn remove_ids(&self, id: SelectId, count: u32) {
     let mut f = Ids { beg: id, end: id + count };
 
     let free = &mut self.pass.lock().unwrap().free_ids;
@@ -268,7 +268,7 @@ impl SelectPass {
   ///
   /// # Returns
   /// The MeshId
-  pub fn new_mesh(&mut self, pipe: BindPipeline, dsets: &[BindDset], draw: DrawManaged) -> MeshId {
+  pub fn new_mesh(&self, pipe: BindPipeline, dsets: &[BindDset], draw: DrawManaged) -> MeshId {
     self.pass.lock().unwrap().pass.new_mesh(pipe, dsets, draw)
   }
 
@@ -276,7 +276,7 @@ impl SelectPass {
   ///
   /// See [update_mesh](https://docs.rs/nobs-vulkanism-headless/0.1.0/nobs_vulkanism_headless/pass/struct.DrawPass.html#method.update_mesh) for details.
   pub fn update_mesh(
-    &mut self,
+    &self,
     mesh: MeshId,
     pipe: Option<BindPipeline>,
     dsets: &[Option<BindDset>],
@@ -296,7 +296,7 @@ impl SelectPass {
   /// Removes the mesh with the specified mesh id if present
   ///
   /// See [remove_mesh](https://docs.rs/nobs-vulkanism-headless/0.1.0/nobs_vulkanism_headless/pass/struct.DrawPass.html#method.remove_mesh) for details.
-  pub fn remove_mesh(&mut self, mesh: MeshId) -> bool {
+  pub fn remove_mesh(&self, mesh: MeshId) -> bool {
     self.pass.lock().unwrap().pass.remove(mesh)
   }
 

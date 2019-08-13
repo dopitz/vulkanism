@@ -36,13 +36,12 @@ impl<S: Style> Drop for TextBox<S> {
 
 impl<S: Style> TextBox<S> {
   pub fn new(gui: &ImGui<S>) -> Self {
-    let rect = Rect::from_rect(0, 0, 200, 20);
+    let rect = Rect::from_rect(0, 0, 0, 0);
     let text = Text::new(gui);
     let select_rect = gui.select.rects().new_rect(vec2!(0), vec2!(0));
     let select_id = gui.select.rects().get_select_id(select_rect);
     let select_mesh = gui.select.rects().get_mesh(select_rect);
     let mut style = S::Component::new(gui);
-    style.rect(rect);
     Self {
       rect,
       text,
@@ -77,6 +76,8 @@ impl<S: Style> TextBox<S> {
 impl<S: Style> Component<S> for TextBox<S> {
   fn rect(&mut self, rect: Rect) -> &mut Self {
     if self.rect != rect {
+      self.style.rect(rect);
+      // TODO: border thickness....
       self
         .get_gui()
         .select
@@ -99,11 +100,11 @@ impl<S: Style> Component<S> for TextBox<S> {
 
   type Event = Event;
   fn draw<L: Layout>(&mut self, wnd: &mut Window<L, S>, focus: &mut SelectId) -> Option<Event> {
-    // draw the style
-    self.style.draw(wnd, focus);
+    // style is resized along with the textbox
+    let scissor = wnd.apply_layout(self);
 
     // draw and select
-    let scissor = wnd.apply_layout(self);
+    self.style.draw(wnd, focus);
     wnd.push_draw(self.text.get_mesh(), scissor);
     wnd.push_select(self.select_mesh, scissor);
 

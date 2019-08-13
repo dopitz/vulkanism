@@ -14,8 +14,12 @@ fn main() {
     .depends("pipeline.rs");
 
   ShaderUsage::with_prefix("src/style/simple/pipeline")
-    .uses("simple.vert")
-    .uses("simple.frag")
-    .depends("mod.rs");
+    .uses("border.vert")
+    .uses("borderless.vert")
+    .uses("color.frag")
+    .uses("select.frag")
+    .depends("border.rs")
+    .depends("borderless.rs")
+    .depends("select.rs")
+    .depends("selectborderless.rs");
 }
-

@@ -127,7 +127,7 @@ impl<S: Style> ImGui<S> {
     let pipes = Mutex::new(Pipelines::new(device.handle, draw.rp.pass, 0, ub_viewport));
 
     // creates style resources
-    let style = S::new(mem.clone());
+    let style = S::new(mem.clone(), draw.rp.pass, pipes.lock().unwrap().ds_viewport);
 
     // selection components
     let select = Select::new(device.handle, extent, dpi, mem.clone(), pipes.lock().unwrap().ds_viewport);
