@@ -1,7 +1,7 @@
 vk::pipes::pipeline! {
   stage = {
     ty = "vert",
-    glsl = "src/style/simple/pipeline/border.vert",
+    glsl = "src/style/simple/pipeline/select.vert",
   }
 
   stage = {

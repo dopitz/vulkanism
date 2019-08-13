@@ -1,7 +1,7 @@
 vk::pipes::pipeline! {
   stage = {
     ty = "vert",
-    glsl = "src/style/simple/pipeline/borderless.vert",
+    glsl = "src/style/simple/pipeline/color.vert",
   }
 
   stage = {
@@ -12,4 +12,3 @@ vk::pipes::pipeline! {
   dset_name[0] = "DsViewport",
   dset_name[1] = "DsStyle",
 }
-

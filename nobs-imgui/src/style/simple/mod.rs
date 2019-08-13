@@ -1,10 +1,7 @@
 mod pipeline;
-//mod pipeline;
-//mod pipeselect;
 
 use super::ComponentStyle;
 use super::Style;
-use crate::pipelines::PipePool;
 use crate::rect::Rect;
 use crate::select::SelectId;
 use crate::ImGui;
@@ -32,7 +29,7 @@ impl Style for Simple {
 }
 
 pub struct ComponentSimple {
-  mem: vk::mem::Mem,
+  gui: ImGui<Simple>,
   ub: vk::Buffer,
 
   rect: Rect,
@@ -44,7 +41,10 @@ pub struct ComponentSimple {
 
 impl Drop for ComponentSimple {
   fn drop(&mut self) {
-    self.mem.trash.push_buffer(self.ub);
+    self.gui.get_mem().trash.push_buffer(self.ub);
+    self.gui.get_drawpass().remove(self.draw_mesh);
+    self.gui.select.remove_mesh(self.select_mesh);
+    self.gui.select.remove_ids(self.select_id_body, 2);
   }
 }
 
@@ -58,7 +58,7 @@ impl ComponentStyle<Simple> for ComponentSimple {
       .bind(&mut mem.alloc, vk::mem::BindType::Block)
       .unwrap();
 
-    let pipe = Pipeline::new_border(&mut gui.style.pipe.lock().unwrap(), gui.style.ds_viewport);
+    let pipe = Pipeline::new_color(&mut gui.style.pipe.lock().unwrap(), gui.style.ds_viewport);
     pipe.update_dsets(gui.get_device(), ub);
 
     let draw_mesh = gui.get_drawpass().new_mesh(
@@ -76,7 +76,7 @@ impl ComponentStyle<Simple> for ComponentSimple {
     let select_id_border = select_id_body + 1;
 
     Self {
-      mem,
+      gui: gui.clone(),
       ub,
 
       rect: Rect::from_rect(0, 0, 0, 0),
@@ -92,7 +92,7 @@ impl Component<Simple> for ComponentSimple {
   fn rect(&mut self, rect: Rect) -> &mut Self {
     if self.rect != rect {
       self.rect = rect;
-      let mut map = self.mem.alloc.get_mapped(vk::mem::Handle::Buffer(self.ub)).unwrap();
+      let mut map = self.gui.get_mem().alloc.get_mapped(vk::mem::Handle::Buffer(self.ub)).unwrap();
       let data = map.as_slice_mut::<pipeline::UbStyle>();
       data[0].position = rect.position;
       data[0].size = rect.size.into();

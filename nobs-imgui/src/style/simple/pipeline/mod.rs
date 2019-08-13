@@ -1,14 +1,5 @@
-mod border;
-mod borderless;
+mod color;
 mod select;
-mod selectborderless;
-
-#[repr(C)]
-#[derive(Debug)]
-pub struct Vertex {
-  pub pos: vkm::Vec2f,
-  pub size: vkm::Vec2f,
-}
 
 #[repr(C)]
 #[derive(Debug)]
@@ -18,7 +9,6 @@ pub struct UbStyle {
   pub bd_thickness: vkm::Vec2i,
 }
 
-use crate::pipelines::PipePool;
 use vk;
 use vk::builder::Buildable;
 use vk::cmd::commands::BindDset;
@@ -27,8 +17,7 @@ use vk::cmd::stream::*;
 use vk::cmd::CmdBuffer;
 
 pub struct Pipeline {
-  pub border: vk::pipes::Pipeline,
-  pub borderless: vk::pipes::Pipeline,
+  pub color: vk::pipes::Pipeline,
   pub select: vk::pipes::Pipeline,
   pub pool: vk::pipes::DescriptorPool,
 }
@@ -66,27 +55,29 @@ impl Pipeline {
         .unwrap()
     };
 
-    let border = config_pipeline(border::new(device, pass, subpass));
-    let borderless = config_pipeline(border::new(device, pass, subpass));
-    let select = config_pipeline(border::new(device, pass, subpass));
+    let color = config_pipeline(color::new(device, pass, subpass));
+    let select = config_pipeline(color::new(device, pass, subpass));
 
     let pool = vk::pipes::DescriptorPool::new(
       device,
       vk::pipes::DescriptorPool::new_capacity()
-        .add(&border.dsets[1], 32)
+        .add(&color.dsets[1], 32)
         .add(&select.dsets[1], 32),
     );
 
     Self {
-      border,
-      borderless,
+      color,
       select,
       pool,
     }
   }
 
-  pub fn new_border(&mut self, ds_viewport: vk::DescriptorSet) -> Bind {
-    Self::new_instance(&self.border, &mut self.pool, ds_viewport)
+  pub fn new_color(&mut self, ds_viewport: vk::DescriptorSet) -> Bind {
+    Self::new_instance(&self.color, &mut self.pool, ds_viewport)
+  }
+
+  pub fn new_select(&mut self, ds_viewport: vk::DescriptorSet) -> Bind {
+    Self::new_instance(&self.select, &mut self.pool, ds_viewport)
   }
 
   fn new_instance(pipe: &vk::pipes::Pipeline, pool: &mut vk::pipes::DescriptorPool, ds_viewport: vk::DescriptorSet) -> Bind {
@@ -105,7 +96,7 @@ impl Pipeline {
 
 impl Bind {
   pub fn update_dsets(&self, device: vk::Device, ub_style: vk::Buffer) {
-    border::DsStyle::write(device, self.bind_ds_style.dset)
+    color::DsStyle::write(device, self.bind_ds_style.dset)
       .ub(vk::DescriptorBufferInfo::build().buffer(ub_style).into())
       .update();
   }

@@ -124,10 +124,6 @@ pub fn main() {
           ..
         } => close = true,
         winit::Event::WindowEvent {
-          event: winit::WindowEvent::ReceivedCharacter(c),
-          ..
-        } => gui.input(c),
-        winit::Event::WindowEvent {
           event: winit::WindowEvent::Resized(size),
           ..
         } => {
@@ -208,15 +204,6 @@ impl Gui {
 
   pub fn handle_events(&mut self, e: &vk::winit::Event) {
     self.gui.handle_events(e);
-  }
-
-  pub fn input(&mut self, c: char) {
-    let mut c = c;
-    if c == '\r' {
-      c = '\n';
-    }
-    //self.text.text(&format!("{}{}", self.text.get_text(), c));
-    //self.text2.text(&format!("{}{}", c, self.text2.get_text()));
   }
 }
 

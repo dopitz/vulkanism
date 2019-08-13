@@ -41,7 +41,7 @@ impl<S: Style> TextBox<S> {
     let select_rect = gui.select.rects().new_rect(vec2!(0), vec2!(0));
     let select_id = gui.select.rects().get_select_id(select_rect);
     let select_mesh = gui.select.rects().get_mesh(select_rect);
-    let mut style = S::Component::new(gui);
+    let style = S::Component::new(gui);
     Self {
       rect,
       text,
