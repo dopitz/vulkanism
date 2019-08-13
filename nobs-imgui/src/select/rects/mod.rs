@@ -3,7 +3,6 @@ mod pipeline;
 pub use pipeline::Pipeline;
 pub use pipeline::Vertex;
 
-use crate::pipeid::*;
 use crate::select::SelectId;
 use crate::select::SelectPass;
 use std::collections::BTreeSet;
@@ -97,10 +96,10 @@ impl Rects {
   /// * `pass` - the select pass from which object ids and mesh ids are retrieved
   /// * `pipes` - pipeline manager of [ImGui](../../struct.ImGui.html)
   /// * `mem` - memory manager to allocate vertex buffers
-  pub fn new(pass: SelectPass, pipes: &PipeCache, mem: vk::mem::Mem) -> Self {
+  pub fn new(pass: SelectPass, mem: vk::mem::Mem, ds_viewport: vk::DescriptorSet) -> Self {
     let vb = vk::NULL_HANDLE;
 
-    let pipe = Pipeline::new(&pipes[PipeId::SelectRects]);
+    let pipe = Pipeline::new(pass.get_device(), pass.get_renderpass(), 0, ds_viewport);
 
     Rects {
       pass,

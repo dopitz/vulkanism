@@ -2,12 +2,12 @@ use super::Layout;
 use super::Window;
 use crate::rect::Rect;
 use crate::select::SelectId;
-use vk::pass::MeshId;
+use crate::style::Style;
 
 /// Basic trait for renderable and selectable gui components
 ///
 /// Enforces functions for resizing and drawing components.
-pub trait Component {
+pub trait Component<S: Style> {
   /// Sets the size and position of the component
   fn rect(&mut self, rect: Rect) -> &mut Self;
   /// Gets the current size and position of the component
@@ -33,5 +33,5 @@ pub trait Component {
   /// # Returns
   ///  * `None` - if no event was handles
   ///  * `Some(Event)` - if an event was handled
-  fn draw<T: Layout>(&mut self, wnd: &mut Window<T>, focus: &mut SelectId) -> Option<Self::Event>;
+  fn draw<L: Layout>(&mut self, wnd: &mut Window<L, S>, focus: &mut SelectId) -> Option<Self::Event>;
 }

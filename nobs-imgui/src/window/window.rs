@@ -3,6 +3,7 @@ use super::Component;
 use super::Layout;
 use super::Screen;
 use crate::rect::Rect;
+use crate::style::Style;
 use crate::select::SelectId;
 use vk::cmd::commands::Scissor;
 use vk::pass::MeshId;
@@ -11,25 +12,25 @@ use vk::pass::MeshId;
 ///
 /// The Window defines a region on the screen on which components are draw
 /// It is basically a builder pattern around a [Layout](struct.Layout.html) and [Screen](struct.Streen.html)
-pub struct Window<'a, T: Layout> {
-  scr: &'a mut Screen,
-  layout: T,
+pub struct Window<'a, L: Layout, S: Style> {
+  scr: &'a mut Screen<S>,
+  layout: L,
 }
 
-impl<'a> Window<'a, ColumnLayout> {
+impl<'a, S: Style> Window<'a, ColumnLayout, S> {
   /// Creates a new window on the spcified [Screen](struct.Screen.html).
   ///
   /// The windows layout will be a [ColumnLayout](struct.ColumnLayout.html)
-  pub fn new(scr: &'a mut Screen) -> Self {
+  pub fn new(scr: &'a mut Screen<S>) -> Self {
     Self::with_layout(scr, ColumnLayout::default())
   }
 }
 
-impl<'a, T: Layout> Window<'a, T> {
+impl<'a, L: Layout, S: Style> Window<'a, L, S> {
   /// Creates a new window on the spcified [Screen](struct.Screen.html).
   ///
   /// Sets the specified layout for the window
-  pub fn with_layout(scr: &'a mut Screen, layout: T) -> Self {
+  pub fn with_layout(scr: &'a mut Screen<S>, layout: L) -> Self {
     Self { scr, layout }
   }
 
@@ -52,7 +53,7 @@ impl<'a, T: Layout> Window<'a, T> {
   /// Resizes component according to the window`s layout
   ///
   /// See [Layout](struct.Layout.html)
-  pub fn apply_layout<C: Component>(&mut self, c: &mut C) -> Scissor {
+  pub fn apply_layout<C: Component<S>>(&mut self, c: &mut C) -> Scissor {
     self.layout.apply(c)
   }
   /// Records a mesh for drawing

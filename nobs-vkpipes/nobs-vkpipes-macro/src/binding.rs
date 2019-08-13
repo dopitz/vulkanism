@@ -47,8 +47,8 @@ impl Binding {
     if self.arrayelems == 1 {
       format!(
         "
-        pub fn {name}(&mut self, info: {desctype}) -> &mut {dset_name} {{
-          self.inner.{setter}({binding}, 0, {ty}, info);
+        pub fn {name}(mut self, info: {desctype}) -> {dset_name} {{
+          self.inner = self.inner.{setter}({binding}, 0, {ty}, info);
           self
         }}
         ",
@@ -62,12 +62,12 @@ impl Binding {
     } else {
       format!(
         "
-        pub fn {name}_elem(&mut self, array_elem: u32, info: {desctype}) -> &mut {dset_name} {{
-          self.inner.{setter}({binding}, array_elem, {ty}, info);
+        pub fn {name}_elem(mut self, array_elem: u32, info: {desctype}) -> {dset_name} {{
+          self.inner = self.inner.{setter}({binding}, array_elem, {ty}, info);
           self
         }}
-        pub fn {name}(&mut self, infos: &[{desctype}]) -> &mut {dset_name} {{
-          self.inner.{setter}s({binding}, 0, {ty}, infos);
+        pub fn {name}(mut self, infos: &[{desctype}]) -> {dset_name} {{
+          self.inner = self.inner.{setter}s({binding}, 0, {ty}, infos);
           self
         }}
         ",

@@ -1,6 +1,6 @@
-use crate::pipeid::*;
+use crate::pipelines::Pipelines;
 use crate::select::Select;
-use crate::select::SelectPass;
+use crate::style::Style;
 use crate::window::Screen;
 use font::*;
 use std::sync::Arc;
@@ -8,7 +8,6 @@ use std::sync::Mutex;
 use vk::builder::Buildable;
 use vk::mem::Handle;
 use vk::pass::DrawPass;
-use vk::pipes::CachedPipeline;
 
 struct Pass {
   rp: vk::pass::Renderpass,
@@ -16,21 +15,21 @@ struct Pass {
   draw: Mutex<DrawPass>,
 }
 
-struct ImGuiImpl {
+struct ImGuiImpl<S: Style> {
   device: vk::Device,
   mem: vk::mem::Mem,
 
   draw: Pass,
   ub_viewport: Mutex<vk::Buffer>,
 
-  pipes: PipeCache,
+  pipes: Mutex<Pipelines>,
 
-  scr: Mutex<Option<Screen>>,
+  scr: Mutex<Option<Screen<S>>>,
 
   font: Arc<Font>,
 }
 
-impl Drop for ImGuiImpl {
+impl<S: Style> Drop for ImGuiImpl<S> {
   fn drop(&mut self) {
     self.mem.trash.push_buffer(*self.ub_viewport.lock().unwrap());
   }
@@ -46,12 +45,13 @@ impl Drop for ImGuiImpl {
 /// Rendering a gui is done with associated funcions declared by gui components.
 /// These funcions require a [Window](window/struct.Window.html) that handles positioning and resizing with [Layout](window/trait.Layout.html).
 #[derive(Clone)]
-pub struct ImGui {
+pub struct ImGui<S: Style> {
+  pub style: S,
   pub select: Select,
-  gui: Arc<ImGuiImpl>,
+  gui: Arc<ImGuiImpl<S>>,
 }
 
-impl ImGui {
+impl<S: Style> ImGui<S> {
   /// Create a new gui object.
   ///
   /// Also creates an [Select](select/struct.Select.html) instance, which may be used outside the gui.
@@ -123,24 +123,17 @@ impl ImGui {
       }
     };
 
-    // the select pass is needed for pipeline creation
-    let select = SelectPass::new(device.handle, extent, dpi, mem.clone());
+    // cached pipelines are created at startup
+    let pipes = Mutex::new(Pipelines::new(device.handle, draw.rp.pass, 0, ub_viewport));
 
-    // pipelines used in gui, caches individual and shared descriptor pools
-    let pipes = PipeCache::new(&PipeCreateInfo {
-      device: device.handle,
-      pass: draw.rp.pass,
-      subpass: 0,
-      ub_viewport,
-
-      select_pass: select.get_renderpass(),
-      select_subpass: 0,
-    });
+    // creates style resources
+    let style = S::new(mem.clone());
 
     // selection components
-    let select = Select::new(select, &pipes, mem.clone());
+    let select = Select::new(device.handle, extent, dpi, mem.clone(), pipes.lock().unwrap().ds_viewport);
 
     Self {
+      style,
       select,
       gui: Arc::new(ImGuiImpl {
         device: device.handle,
@@ -174,8 +167,9 @@ impl ImGui {
   ///
   /// # Arguments
   /// * `id` - Pipeline identifier
-  pub fn get_pipe(&self, id: PipeId) -> &CachedPipeline {
-    &self.gui.pipes[id]
+
+  pub fn get_pipes<'a>(&'a self) -> std::sync::MutexGuard<'a, Pipelines> {
+    self.gui.pipes.lock().unwrap()
   }
 
   /// Get the gui's draw pass
@@ -226,7 +220,7 @@ impl ImGui {
   ///
   /// # Returns
   /// [Screen](window/struct.Screen.html) that submits components into command buffer and a [select query](select/struct.Query.html).
-  pub fn begin(&mut self) -> Screen {
+  pub fn begin(&mut self) -> Screen<S> {
     let fb = self.gui.draw.fb.lock().unwrap();
     match self.gui.scr.lock().unwrap().take() {
       Some(rw) => Screen::from_cached(self.clone(), fb.extent, fb.images[0], fb.begin(), fb.end(), rw),
@@ -241,7 +235,7 @@ impl ImGui {
   ///
   /// # Arguments
   /// * `scr` - The [Screen](window/struct.Screen.html) returned from [begin](struct.ImGui.html#method.begin).
-  pub fn end(&mut self, scr: Screen) {
+  pub fn end(&mut self, scr: Screen<S>) {
     self.gui.scr.lock().unwrap().replace(scr);
   }
 }

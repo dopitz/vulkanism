@@ -1,19 +1,20 @@
 use crate::font::*;
 use crate::sprites;
+use crate::style::Style;
 use crate::ImGui;
 
 use vk::pass::MeshId;
 use vkm::Vec2i;
 
-pub struct Text {
-  sprites: sprites::Sprites,
+pub struct Text<S: Style> {
+  sprites: sprites::Sprites<S>,
 
   text: String,
   typeset: TypeSet,
 }
 
-impl Text {
-  pub fn new(gui: &ImGui) -> Self {
+impl<S: Style> Text<S> {
+  pub fn new(gui: &ImGui<S>) -> Self {
     let sprites = sprites::Sprites::new(gui);
     let typeset = TypeSet::new(gui.get_font());
     Self {
@@ -23,7 +24,7 @@ impl Text {
     }
   }
 
-  pub fn get_gui(&self) -> ImGui {
+  pub fn get_gui(&self) -> ImGui<S> {
     self.sprites.get_gui()
   }
 

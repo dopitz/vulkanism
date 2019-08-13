@@ -158,12 +158,12 @@ impl Writes {
   }
 
   /// Sets the sepecified buffer for the binding and derscriptor type, at array element
-  pub fn buffer(&mut self, binding: u32, array_elem: u32, ty: vk::DescriptorType, info: vk::DescriptorBufferInfo) {
+  pub fn buffer(self, binding: u32, array_elem: u32, ty: vk::DescriptorType, info: vk::DescriptorBufferInfo) -> Self {
     self.buffers(binding, array_elem, ty, &[info])
   }
 
   /// Sets the sepecified buffers for the binding and descriptor type, starting at array element
-  pub fn buffers(&mut self, binding: u32, array_elem: u32, ty: vk::DescriptorType, infos: &[vk::DescriptorBufferInfo]) {
+  pub fn buffers(mut self, binding: u32, array_elem: u32, ty: vk::DescriptorType, infos: &[vk::DescriptorBufferInfo]) -> Self {
     self.writes.push(vk::WriteDescriptorSet {
       sType: vk::STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
       pNext: std::ptr::null(),
@@ -189,15 +189,16 @@ impl Writes {
     for info in infos.iter() {
       self.buffer_infos.push(*info);
     }
+    self
   }
 
   /// Sets the sepecified image for the binding and derscriptor type, at array element
-  pub fn image(&mut self, binding: u32, array_elem: u32, ty: vk::DescriptorType, info: vk::DescriptorImageInfo) {
-    self.images(binding, array_elem, ty, &[info]);
+  pub fn image(self, binding: u32, array_elem: u32, ty: vk::DescriptorType, info: vk::DescriptorImageInfo) -> Self{
+    self.images(binding, array_elem, ty, &[info])
   }
 
   /// Sets the sepecified image for the binding and descriptor type, starting at array element
-  pub fn images(&mut self, binding: u32, array_elem: u32, ty: vk::DescriptorType, infos: &[vk::DescriptorImageInfo]) {
+  pub fn images(mut self, binding: u32, array_elem: u32, ty: vk::DescriptorType, infos: &[vk::DescriptorImageInfo]) -> Self{
     self.writes.push(vk::WriteDescriptorSet {
       sType: vk::STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
       pNext: std::ptr::null(),
@@ -223,15 +224,16 @@ impl Writes {
     for info in infos.iter() {
       self.image_infos.push(*info);
     }
+    self
   }
 
   /// Sets the sepecified buffer view for the binding, array element and descriptor type
-  pub fn bufferview(&mut self, binding: u32, array_elem: u32, ty: vk::DescriptorType, view: vk::BufferView) {
-    self.bufferviews(binding, array_elem, ty, &[view]);
+  pub fn bufferview(self, binding: u32, array_elem: u32, ty: vk::DescriptorType, view: vk::BufferView) -> Self{
+    self.bufferviews(binding, array_elem, ty, &[view])
   }
 
   /// Sets the sepecified buffer view for the binding, array element and descriptor type
-  pub fn bufferviews(&mut self, binding: u32, array_elem: u32, ty: vk::DescriptorType, views: &[vk::BufferView]) {
+  pub fn bufferviews(mut self, binding: u32, array_elem: u32, ty: vk::DescriptorType, views: &[vk::BufferView]) -> Self{
     self.writes.push(vk::WriteDescriptorSet {
       sType: vk::STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
       pNext: std::ptr::null(),
@@ -251,10 +253,11 @@ impl Writes {
     for view in views.iter() {
       self.buffer_views.push(*view);
     }
+    self
   }
 
   /// Updates the descriptor set with the configured writes
-  pub fn update(&mut self) {
+  pub fn update(mut self) {
     for i in 0..self.writes.len() {
       match self.write_offsets[i] {
         WriteOffset::Buffer(off) => self.writes[i].pBufferInfo = unsafe { self.buffer_infos.as_ptr().offset(off) },

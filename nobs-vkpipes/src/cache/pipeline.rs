@@ -1,3 +1,4 @@
+use super::Cache;
 use crate::DescriptorPool;
 use crate::Pipeline;
 use std::collections::HashMap;
@@ -23,7 +24,7 @@ pub trait PipelineId: std::hash::Hash + PartialEq + Eq + Clone + Copy {
   /// 
   /// The variant of self should be removed from `pipes` and inserted into `cache`.
   /// We use this two step setup with pipeline creation and descriptor pool setup, so that different pipelines can share the same descriptor pool.
-  fn setup_dsets(&self, info: &Self::CreateInfo, pipes: &mut HashMap<Self, Pipeline>, cache: &mut HashMap<Self, CachedPipeline>);
+  fn setup_dsets(&self, info: &Self::CreateInfo, pipes: &mut HashMap<Self, Pipeline>) -> HashMap<Self, CachedPipeline>;
 
   /// Returns all variants of the PipelineId
   fn ids() -> Vec<Self>;

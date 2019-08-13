@@ -5,13 +5,13 @@ use vk::mem::Handle;
 use vkm::Vec2i;
 
 use super::pipeline::*;
-use crate::pipeid::*;
+use crate::style::Style;
 use crate::ImGui;
 use vk::pass::MeshId;
 
-pub struct Sprites {
+pub struct Sprites<S: Style> {
   device: vk::Device,
-  gui: ImGui,
+  gui: ImGui<S>,
 
   position: Vec2i,
 
@@ -25,23 +25,17 @@ pub struct Sprites {
   pipe: Pipeline,
 }
 
-impl Drop for Sprites {
+impl<S: Style> Drop for Sprites<S> {
   fn drop(&mut self) {
     self.gui.get_mem().trash.push_buffer(self.ub);
     self.gui.get_mem().trash.push_buffer(self.vb);
-    self
-      .gui
-      .get_pipe(PipeId::Sprites)
-      .dsets
-      .as_ref()
-      .unwrap()
-      .free_dset(self.pipe.bind_ds_instance.dset);
+    self.gui.get_pipes().sprites.pool.free_dset(self.pipe.bind_ds_instance.dset);
     self.gui.get_drawpass().remove(self.mesh);
   }
 }
 
-impl Sprites {
-  pub fn new(gui: &ImGui) -> Self {
+impl<S: Style> Sprites<S> {
+  pub fn new(gui: &ImGui<S>) -> Self {
     let vb = vk::NULL_HANDLE;
 
     let device = gui.get_device();
@@ -56,7 +50,7 @@ impl Sprites {
 
     let font = gui.get_font();
 
-    let pipe = Pipeline::new(gui.get_pipe(PipeId::Sprites));
+    let pipe = Pipeline::new_instance(&gui.get_pipes());
     pipe.update_dsets(device, ub, font.texview, font.sampler);
 
     let mesh = gui.get_drawpass().new_mesh(
@@ -82,7 +76,7 @@ impl Sprites {
     }
   }
 
-  pub fn get_gui(&self) -> ImGui {
+  pub fn get_gui(&self) -> ImGui<S> {
     self.gui.clone()
   }
 

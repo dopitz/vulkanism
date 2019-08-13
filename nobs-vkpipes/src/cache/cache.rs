@@ -3,7 +3,7 @@ use std::collections::HashMap;
 
 /// Collection of cached vulkan pipelines.
 ///
-/// With a user implemented [PipelineId](trait.PipelineId.html) 
+/// With a user implemented [PipelineId](trait.PipelineId.html)
 /// this cache will create pipelines once and makes them easily accassible through [CachedPipeline](struct.CachedPipeline.html)
 pub struct Cache<T: PipelineId> {
   pipes: HashMap<T, CachedPipeline>,
@@ -16,8 +16,15 @@ impl<T: PipelineId> Cache<T> {
   pub fn new(info: &T::CreateInfo) -> Self {
     let mut tmp = T::ids().iter().map(|id| (*id, id.create_pipeline(info))).collect::<HashMap<_, _>>();
     let mut pipes = HashMap::with_capacity(tmp.len());
-    for id in T::ids().iter() {
-      id.setup_dsets(info, &mut tmp, &mut pipes);
+
+    loop {
+      if let Some(id) = tmp.keys().next().cloned() {
+        for (id, pipe) in id.setup_dsets(info, &mut tmp).into_iter() {
+          pipes.insert(id, pipe);
+        }
+      } else {
+        break;
+      }
     }
 
     Self { pipes }

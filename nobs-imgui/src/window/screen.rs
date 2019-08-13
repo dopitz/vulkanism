@@ -1,5 +1,6 @@
 use crate::select::Query;
 use crate::select::SelectId;
+use crate::style::Style;
 use crate::ImGui;
 use vk::cmd::commands::RenderpassBegin;
 use vk::cmd::commands::RenderpassEnd;
@@ -25,8 +26,8 @@ struct WindowComponent {
 ///
 /// Screen creation and lifetime management is handled by [ImGui](../struct.ImGui.html).
 /// Pushing the Screen into a command buffer will automatically yield the Screen to the gui again, so that buffers and the select query can be reused in the next frame
-pub struct Screen {
-  gui: Option<ImGui>,
+pub struct Screen<S: Style> {
+  gui: Option<ImGui<S>>,
   size: vk::Extent2D,
   image: vk::Image,
   draw_begin: RenderpassBegin,
@@ -36,7 +37,7 @@ pub struct Screen {
   query: Option<[Query; 2]>,
 }
 
-impl Screen {
+impl<S: Style> Screen<S> {
   /// Creates a new Screen
   ///
   /// [ImGui](../struct.ImGui.html) contains a cached Screen that will be reused.
@@ -49,7 +50,7 @@ impl Screen {
   /// * `image` - Color render target of the gui (needed to enqueue a barrier before the draw pass is started)
   /// * `draw_begin` - Command to start the draw pass to render gui components
   /// * `draw_end` - Command to finish the draw pass to render gui components
-  pub fn new(gui: ImGui, size: vk::Extent2D, image: vk::Image, draw_begin: RenderpassBegin, draw_end: RenderpassEnd) -> Self {
+  pub fn new(gui: ImGui<S>, size: vk::Extent2D, image: vk::Image, draw_begin: RenderpassBegin, draw_end: RenderpassEnd) -> Self {
     let query = Some([Query::new(gui.get_mem().clone()), Query::new(gui.get_mem().clone())]);
     Screen {
       gui: Some(gui),
@@ -76,7 +77,7 @@ impl Screen {
   /// * `draw_end` - Command to finish the draw pass to render gui components
   /// * `scr` - Screen from which heap allocated objects are retrieved
   pub fn from_cached(
-    gui: ImGui,
+    gui: ImGui<S>,
     size: vk::Extent2D,
     image: vk::Image,
     draw_begin: RenderpassBegin,
@@ -140,7 +141,7 @@ impl Screen {
   }
 }
 
-impl StreamPushMut for Screen {
+impl<S: Style> StreamPushMut for Screen<S> {
   fn enqueue_mut(&mut self, cs: CmdBuffer) -> CmdBuffer {
     let gui = self.gui.as_ref().unwrap();
     gui.select.rects().update();

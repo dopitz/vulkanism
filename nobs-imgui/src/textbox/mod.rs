@@ -2,6 +2,8 @@ use crate::font::*;
 use crate::rect::Rect;
 use crate::select::rects::RectId;
 use crate::select::SelectId;
+use crate::style::ComponentStyle;
+use crate::style::Style;
 use crate::text::Text;
 use crate::window::Component;
 use crate::window::Layout;
@@ -16,37 +18,42 @@ pub enum Event {
   Changed,
 }
 
-pub struct TextBox {
+pub struct TextBox<S: Style> {
   rect: Rect,
-  text: Text,
+  text: Text<S>,
   select_rect: RectId,
   select_mesh: MeshId,
   select_id: SelectId,
+
+  style: S::Component,
 }
 
-impl Drop for TextBox {
+impl<S: Style> Drop for TextBox<S> {
   fn drop(&mut self) {
     self.get_gui().select.rects().remove(self.select_rect);
   }
 }
 
-impl TextBox {
-  pub fn new(gui: &ImGui) -> Self {
+impl<S: Style> TextBox<S> {
+  pub fn new(gui: &ImGui<S>) -> Self {
     let rect = Rect::from_rect(0, 0, 200, 20);
     let text = Text::new(gui);
     let select_rect = gui.select.rects().new_rect(vec2!(0), vec2!(0));
     let select_id = gui.select.rects().get_select_id(select_rect);
     let select_mesh = gui.select.rects().get_mesh(select_rect);
+    let mut style = S::Component::new(gui);
+    style.rect(rect);
     Self {
       rect,
       text,
       select_rect,
       select_mesh,
       select_id,
+      style,
     }
   }
 
-  pub fn get_gui(&self) -> ImGui {
+  pub fn get_gui(&self) -> ImGui<S> {
     self.text.get_gui()
   }
 
@@ -67,7 +74,7 @@ impl TextBox {
   }
 }
 
-impl Component for TextBox {
+impl<S: Style> Component<S> for TextBox<S> {
   fn rect(&mut self, rect: Rect) -> &mut Self {
     if self.rect != rect {
       self
@@ -91,7 +98,10 @@ impl Component for TextBox {
   }
 
   type Event = Event;
-  fn draw<T: Layout>(&mut self, wnd: &mut Window<T>, focus: &mut SelectId) -> Option<Event> {
+  fn draw<L: Layout>(&mut self, wnd: &mut Window<L, S>, focus: &mut SelectId) -> Option<Event> {
+    // draw the style
+    self.style.draw(wnd, focus);
+
     // draw and select
     let scissor = wnd.apply_layout(self);
     wnd.push_draw(self.text.get_mesh(), scissor);

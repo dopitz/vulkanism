@@ -177,11 +177,12 @@ pub fn main() {
   batch.sync().unwrap();
 }
 
+use imgui::style::simple as gui;
+
 struct Gui {
-  gui: imgui::ImGui,
-  //text: imgui::text::Text,
-  text: imgui::textbox::TextBox,
-  text2: imgui::textbox::TextBox,
+  gui: gui::Gui,
+  text:  gui::TextBox,
+  text2: gui::TextBox,
 
   focus: imgui::select::SelectId,
 }
@@ -221,9 +222,7 @@ impl Gui {
 
 impl StreamPushMut for Gui {
   fn enqueue_mut(&mut self, cs: CmdBuffer) -> CmdBuffer {
-    use imgui::window::Component;
-    use imgui::window::Window;
-    use imgui::window::Layout;
+    use gui::*;
 
     let mut scr = self.gui.begin();
     let mut wnd = Window::new(&mut scr).position(200, 200).size(500, 200);;

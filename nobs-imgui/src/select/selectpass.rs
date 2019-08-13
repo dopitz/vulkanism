@@ -339,6 +339,11 @@ impl SelectPass {
   pub fn get_renderpass(&self) -> vk::RenderPass {
     self.pass.lock().unwrap().rp.pass
   }
+
+  /// Get the vulkan device of this pass
+  pub fn get_device(&self) -> vk::Device {
+    self.pass.lock().unwrap().rp.device
+  }
 }
 
 /// Query that collects meshes and reads back the SelectId.

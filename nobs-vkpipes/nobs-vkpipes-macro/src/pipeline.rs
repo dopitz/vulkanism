@@ -190,7 +190,7 @@ impl Pipeline {
 
             {setter}
 
-            pub fn update(&mut self) {{
+            pub fn update(self) {{
               self.inner.update();
             }}
           }}

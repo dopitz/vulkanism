@@ -43,14 +43,13 @@ pub struct UbText {
   pub offset: vkm::Vec2i,
 }
 
+use crate::pipelines::Pipelines;
 use vk;
 use vk::builder::Buildable;
 use vk::cmd::commands::BindDset;
 use vk::cmd::commands::BindPipeline;
 use vk::cmd::stream::*;
 use vk::cmd::CmdBuffer;
-use vk::pipes::CachedPipeline;
-use vk::pipes::DescriptorPool;
 
 pub struct Pipeline {
   pub bind_pipe: BindPipeline,
@@ -120,42 +119,15 @@ impl Pipeline {
       .unwrap()
   }
 
-  pub fn setup_dsets(pipe: vk::pipes::Pipeline, ub_viewport: vk::Buffer) -> CachedPipeline {
-    let dsets = Some(DescriptorPool::new(
-      pipe.device,
-      DescriptorPool::new_capacity().add(&pipe.dsets[1], 32),
-    ));
-    let shared = DescriptorPool::new(pipe.device, DescriptorPool::new_capacity().add(&pipe.dsets[0], 1));
-    let ds_viewport = shared.new_dset(&pipe.dsets[0]).unwrap();
-
-    pipe::DsViewport::write(pipe.device, ds_viewport)
-      .ub_viewport(vk::DescriptorBufferInfo::build().buffer(ub_viewport).into())
-      .update();
-
-    CachedPipeline {
-      pipe,
-      dsets,
-      dsets_shared: Some((shared, vec![ds_viewport])),
-    }
-  }
-
-  pub fn new(cache: &CachedPipeline) -> Self {
+  pub fn new_instance(pipes: &Pipelines) -> Self {
     Self {
-      bind_pipe: BindPipeline::graphics(cache.pipe.handle),
-      bind_ds_viewport: BindDset::new(
-        vk::PIPELINE_BIND_POINT_GRAPHICS,
-        cache.pipe.layout,
-        0,
-        match cache.dsets_shared {
-          Some((_, ref ds)) => ds[0],
-          None => panic!("should never happen"),
-        },
-      ),
+      bind_pipe: BindPipeline::graphics(pipes.sprites.pipe.handle),
+      bind_ds_viewport: BindDset::new(vk::PIPELINE_BIND_POINT_GRAPHICS, pipes.sprites.pipe.layout, 0, pipes.ds_viewport),
       bind_ds_instance: BindDset::new(
         vk::PIPELINE_BIND_POINT_GRAPHICS,
-        cache.pipe.layout,
+        pipes.sprites.pipe.layout,
         1,
-        cache.dsets.as_ref().unwrap().new_dset(&cache.pipe.dsets[1]).unwrap(),
+        pipes.sprites.pool.new_dset(&pipes.sprites.pipe.dsets[1]).unwrap(),
       ),
     }
   }

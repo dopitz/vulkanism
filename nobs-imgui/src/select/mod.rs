@@ -6,7 +6,6 @@ pub use selectpass::Query;
 pub use selectpass::SelectId;
 pub use selectpass::SelectPass;
 
-use crate::pipeid::*;
 use std::sync::Arc;
 use std::sync::Mutex;
 use std::sync::MutexGuard;
@@ -30,8 +29,9 @@ pub struct Select {
 
 impl Select {
   /// Creates a new [SelectPass](struct.SelectPass.html) and managers for selectable objects.
-  pub fn new(pass: SelectPass, pipes: &PipeCache, mem: vk::mem::Mem) -> Self {
-    let rects = Arc::new(Mutex::new(SelectRects::new(pass.clone(), &pipes, mem)));
+  pub fn new(device: vk::Device, extent: vk::Extent2D, dpi: f64, mem: vk::mem::Mem, ds_viewport: vk::DescriptorSet) -> Self {
+    let pass = SelectPass::new(device, extent, dpi, mem.clone());
+    let rects = Arc::new(Mutex::new(SelectRects::new(pass.clone(), mem, ds_viewport)));
     Self { pass, rects }
   }
 

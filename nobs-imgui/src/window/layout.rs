@@ -1,5 +1,6 @@
 use super::Component;
 use crate::rect::Rect;
+use crate::style::Style;
 use vk::cmd::commands::Scissor;
 
 /// Defines rules for positioning and resizing gui components, when they are adden to a [Window](struct.Window.html).
@@ -24,7 +25,7 @@ pub trait Layout: Default {
   ///
   /// # Returns
   /// The scissor rect for the component
-  fn apply<T: Component>(&mut self, c: &mut T) -> Scissor;
+  fn apply<S: Style, C: Component<S>>(&mut self, c: &mut C) -> Scissor;
 }
 
 /// Float layout that does not modify componets
@@ -42,7 +43,7 @@ impl Layout for FloatLayout {
     self.rect
   }
 
-  fn apply<T: Component>(&mut self, _c: &mut T) -> Scissor {
+  fn apply<S: Style, C: Component<S>>(&mut self, _c: &mut C) -> Scissor {
     Scissor::with_rect(self.rect.into())
   }
 }
@@ -63,7 +64,7 @@ impl Layout for ColumnLayout {
     self.rect
   }
 
-  fn apply<T: Component>(&mut self, c: &mut T) -> Scissor {
+  fn apply<S: Style, C: Component<S>>(&mut self, c: &mut C) -> Scissor {
     let mut rect = Rect::new(self.rect.position + vec2!(0, self.top as i32), c.get_size_hint());
     if rect.size.x == 0 {
       rect.size.x = self.rect.size.x;
