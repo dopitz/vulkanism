@@ -191,6 +191,7 @@ struct DrawMesh {
   draw: Draw,
 }
 /// Compiled info for a single draw call
+#[derive(Debug)]
 pub struct DrawMeshRef<'a> {
   pub pipe: &'a BindPipeline,
   pub dset: &'a [BindDset],

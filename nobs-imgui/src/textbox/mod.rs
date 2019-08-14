@@ -104,9 +104,15 @@ impl<S: Style> Component<S> for TextBox<S> {
     let scissor = wnd.apply_layout(self);
 
     // draw and select
-    self.style.draw(wnd, focus);
+    let e = self.style.draw(wnd, focus);
     wnd.push_draw(self.text.get_mesh(), scissor);
-    wnd.push_select(self.select_mesh, scissor);
+    //wnd.push_select(self.select_mesh, scissor);
+
+    if let Some(e) = e {
+      println!("{:?}", e);
+    }
+
+    return None;
 
     // event handling
     let select_result = wnd.get_select_result();

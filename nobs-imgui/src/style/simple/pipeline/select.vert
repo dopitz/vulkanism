@@ -38,12 +38,14 @@ void main() {
   
   if (gl_VertexIndex < 11 && (gl_VertexIndex % 2 == 1 || gl_VertexIndex < 4)) {
     pos = (0.5 * positions[gl_VertexIndex] + 0.5) * 2 / vp * (size - 2 * bd_thickness) + (position + bd_thickness) * 2 / vp - vec2(1);
-    id = id_body;
   }
   else {
     pos = (0.5 * positions[gl_VertexIndex] + 0.5) * 2 / vp * size + position * 2 / vp - vec2(1);
-    id = id_border;
   }
+
+  // smaller 3 works because id is interpolated with flat
+  if (gl_VertexIndex < 3) id = id_body;
+  else id = id_border;
 
   gl_Position = vec4(pos, 0, 1);
 }

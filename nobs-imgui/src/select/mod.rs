@@ -123,6 +123,29 @@ impl Select {
     self.pass.get_renderpass()
   }
 
+  /// Converts `pos` into winit logical coordinates
+  ///
+  /// Winit uses a dpi factor, but we usually want pixel coordinates.
+  /// Use this function to convert a logical position from winit into pixel coordinate values.
+  pub fn logic_to_real_position(&self, pos: vk::winit::dpi::LogicalPosition) -> vkm::Vec2i {
+    self.pass.logic_to_real_position(pos)
+  }
+
+  /// Converts `pos` into winit logical coordinates
+  ///
+  /// Winit uses a dpi factor, but we usually want pixel coordinates.
+  /// Use this function to convert pixel coordinate values with the current dpi settings
+  pub fn real_to_logic_position(&self, pos: vkm::Vec2u) -> vk::winit::dpi::LogicalPosition {
+    self.pass.real_to_logic_position(pos)
+  }
+
+  /// Gets the current mouse cursor position
+  ///
+  /// The cursor position is tracked in pixel coordinates with `(0,0)` in top left corner
+  pub fn get_current_position(&self) -> vkm::Vec2u {
+    self.pass.get_current_position()
+  }
+
   /// Gets the manager for [Rects](rects/struct.Rects.html)
   pub fn rects<'a>(&'a self) -> MutexGuard<'a, SelectRects> {
     self.rects.lock().unwrap()

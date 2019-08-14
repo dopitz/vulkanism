@@ -344,6 +344,31 @@ impl SelectPass {
   pub fn get_device(&self) -> vk::Device {
     self.pass.lock().unwrap().rp.device
   }
+
+
+  /// Converts `pos` into winit logical coordinates
+  ///
+  /// Winit uses a dpi factor, but we usually want pixel coordinates.
+  /// Use this function to convert a logical position from winit into pixel coordinate values.
+  pub fn logic_to_real_position(&self, pos: vk::winit::dpi::LogicalPosition) -> vkm::Vec2i {
+    (vec2!(pos.x, pos.y) * self.pass.lock().unwrap().dpi).into()
+  }
+
+  /// Converts `pos` into winit logical coordinates
+  ///
+  /// Winit uses a dpi factor, but we usually want pixel coordinates.
+  /// Use this function to convert pixel coordinate values with the current dpi settings
+  pub fn real_to_logic_position(&self, pos: vkm::Vec2u) -> vk::winit::dpi::LogicalPosition {
+    let pos = pos.into() / self.pass.lock().unwrap().dpi;
+    vk::winit::dpi::LogicalPosition { x: pos.x, y: pos.y }
+  }
+
+  /// Gets the current mouse cursor position
+  ///
+  /// The cursor position is tracked in pixel coordinates with `(0,0)` in top left corner
+  pub fn get_current_position(&self) -> vkm::Vec2u {
+    self.pass.lock().unwrap().current_pos
+  }
 }
 
 /// Query that collects meshes and reads back the SelectId.

@@ -19,7 +19,7 @@ pub trait Component<S: Style> {
   fn get_size_hint(&self) -> vkm::Vec2u;
 
   /// Event type that can be used to handle user interaction when the component is [drawn](trait.Component.html#method.draw)
-  type Event;
+  type Event : std::fmt::Debug;
   /// Draws the component and returns an Event for handling user interaction
   ///
   /// This function may sereve a double purpose

@@ -177,7 +177,7 @@ use imgui::style::simple as gui;
 
 struct Gui {
   gui: gui::Gui,
-  text:  gui::TextBox,
+  text: gui::TextBox,
   text2: gui::TextBox,
 
   focus: imgui::select::SelectId,
@@ -217,7 +217,6 @@ impl StreamPushMut for Gui {
     if let Some(e) = self.text.draw(&mut wnd, &mut self.focus) {
       println!("{:?}", e);
     };
-
 
     let mut wnd = Window::new(&mut scr).position(900, 200).size(500, 200);;
     self.text2.draw(&mut wnd, &mut self.focus);

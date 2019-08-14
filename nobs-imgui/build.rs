@@ -18,6 +18,5 @@ fn main() {
     .uses("color.frag")
     .uses("select.vert")
     .uses("select.frag")
-    .depends("color.rs")
-    .depends("select.rs");
+    .depends("mod.rs");
 }

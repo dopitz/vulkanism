@@ -16,12 +16,12 @@ pub mod simple;
 use crate::window::Component;
 use crate::ImGui;
 
-pub trait ComponentStyle<S: Style>: Component<S> {
-  fn new(gui: &ImGui<S>) -> Self;
-}
-
 pub trait Style: Clone {
   type Component: ComponentStyle<Self>;
 
-  fn new(mem: vk::mem::Mem, pass: vk::RenderPass, ds_viewport: vk::DescriptorSet) -> Self;
+  fn new(mem: vk::mem::Mem, pass_draw: vk::RenderPass, pass_select: vk::RenderPass, ds_viewport: vk::DescriptorSet) -> Self;
+}
+
+pub trait ComponentStyle<S: Style>: Component<S> {
+  fn new(gui: &ImGui<S>) -> Self;
 }
