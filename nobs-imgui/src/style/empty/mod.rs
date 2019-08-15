@@ -10,6 +10,7 @@ pub struct Empty {
 
 impl Style for Empty {
   type Component = ComponentEmpty;
+  type Template = ();
 
   fn new(_mem: vk::mem::Mem, _pass_draw: vk::RenderPass, _pass_select: vk::RenderPass, _ds_viewport: vk::DescriptorSet) -> Self {
     Self {}

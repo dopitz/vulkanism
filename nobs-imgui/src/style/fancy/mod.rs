@@ -9,6 +9,7 @@ pub struct Fancy {}
 
 impl Style for Fancy {
   type Component = ComponentFancy;
+  type Template = ();
 
   fn new(_mem: vk::mem::Mem, _pass_draw: vk::RenderPass, _pass_select: vk::RenderPass, _ds_viewport: vk::DescriptorSet) -> Self {
     Self {}

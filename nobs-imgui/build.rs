@@ -14,6 +14,7 @@ fn main() {
     .depends("pipeline.rs");
 
   ShaderUsage::with_prefix("src/style/simple/pipeline")
+    .uses("prelude.glsl")
     .uses("color.vert")
     .uses("color.frag")
     .uses("select.vert")

@@ -2,7 +2,7 @@ use crate::font::*;
 use crate::rect::Rect;
 use crate::select::rects::RectId;
 use crate::select::SelectId;
-use crate::style::ComponentStyle;
+use crate::style::StyleComponent;
 use crate::style::Style;
 use crate::text::Text;
 use crate::window::Component;
