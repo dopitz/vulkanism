@@ -15,6 +15,7 @@ pub mod simple;
 
 use crate::window::Component;
 use crate::ImGui;
+use crate::rect::Rect;
 use std::collections::HashMap;
 
 pub trait Style: Clone {
@@ -31,4 +32,7 @@ pub trait Style: Clone {
 
 pub trait StyleComponent<S: Style>: Component<S> {
   fn new(gui: &ImGui<S>) -> Self;
+
+  fn get_client_rect(&self) -> Rect;
+  fn get_padded_size(&self, size: vkm::Vec2u) -> vkm::Vec2u;
 }

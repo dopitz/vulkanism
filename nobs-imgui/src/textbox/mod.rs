@@ -2,8 +2,8 @@ use crate::font::*;
 use crate::rect::Rect;
 use crate::select::rects::RectId;
 use crate::select::SelectId;
-use crate::style::StyleComponent;
 use crate::style::Style;
+use crate::style::StyleComponent;
 use crate::text::Text;
 use crate::window::Component;
 use crate::window::Layout;
@@ -77,14 +77,15 @@ impl<S: Style> Component<S> for TextBox<S> {
   fn rect(&mut self, rect: Rect) -> &mut Self {
     if self.rect != rect {
       self.style.rect(rect);
+      self.rect = self.style.get_client_rect();
       // TODO: border thickness....
       self
         .get_gui()
         .select
         .rects()
         .update_rect(self.select_rect, rect.position, rect.size);
-      self.text.position(rect.position);
-      self.rect = rect;
+      self.text.position(self.rect.position);
+      //self.rect = rect;
     }
     self
   }
@@ -93,9 +94,8 @@ impl<S: Style> Component<S> for TextBox<S> {
   }
 
   fn get_size_hint(&self) -> vkm::Vec2u {
-    let w = 0;
     let h = self.get_text().lines().count() as f32 * self.get_typeset().line_spacing * self.get_typeset().size as f32;
-    vec2!(w, h as u32)
+    vec2!(0, self.style.get_padded_size(vec2!(0, h as u32)).y)
   }
 
   type Event = Event;

@@ -2,7 +2,6 @@ mod pipeline;
 
 use super::Style;
 use super::StyleComponent;
-use crate::pipelines::PipePool;
 use crate::rect::Rect;
 use crate::select::SelectId;
 use crate::ImGui;
@@ -15,86 +14,115 @@ use vk::pass::MeshId;
 
 pub use pipeline::Pipeline;
 
+#[derive(Clone, Copy)]
 struct LUTEntry {
   style: pipeline::UbStyleLUT,
   ds: vk::DescriptorSet,
   ub: vk::Buffer,
 }
 
-#[derive(Clone)]
-pub struct Simple {
+struct Impl {
   mem: vk::mem::Mem,
-  pipe: Arc<Mutex<Pipeline>>,
-  style_lut: Arc<Mutex<HashMap<String, LUTEntry>>>,
-  ds_style_default: vk::DescriptorSet,
-  ds_viewport: vk::DescriptorSet,
+  pipe: Pipeline,
+  style_lut: HashMap<String, LUTEntry>,
+  style_default: LUTEntry,
 }
 
-/// TODO: drop Simple
+impl Drop for Impl {
+  fn drop(&mut self) {
+    for ub in self.style_lut.iter().map(|(_, e)| e.ub) {
+      self.mem.trash.push_buffer(ub);
+    }
+    self.mem.trash.push_buffer(self.style_default.ub);
+  }
+}
+
+#[derive(Clone)]
+pub struct Simple {
+  im: Arc<Mutex<Impl>>,
+  ds_viewport: vk::DescriptorSet,
+}
 
 impl Style for Simple {
   type Component = SimpleComponent;
   type Template = pipeline::UbStyleLUT;
 
   fn new(mut mem: vk::mem::Mem, pass_draw: vk::RenderPass, pass_select: vk::RenderPass, ds_viewport: vk::DescriptorSet) -> Self {
-    let pipe = Arc::new(Mutex::new(Pipeline::new(mem.alloc.get_device(), pass_draw, 0, pass_select, 0)));
-    let style_lut = Arc::new(Mutex::new(HashMap::new()));
+    let pipe = Pipeline::new(mem.alloc.get_device(), pass_draw, 0, pass_select, 0);
+    let style_lut = HashMap::new();
+    let style_default = {
+      let style = pipeline::UbStyleLUT {
+        color: vec4!(0.0, 0.3, 1.0, 0.2),
+        bd_color_inner: vec4!(0.1, 0.0, 0.8, 0.8),
+        bd_color_outer: vec4!(0.3, 0.1, 1.0, 1.0),
+        bd_thickness: vec2!(10),
+      };
 
-    let mut ub = vk::NULL_HANDLE;
-    vk::mem::Buffer::new(&mut ub)
-      .uniform_buffer(std::mem::size_of::<pipeline::UbStyleLUT>() as vk::DeviceSize)
-      .devicelocal(false)
-      .bind(&mut mem.alloc, vk::mem::BindType::Block)
-      .unwrap();
+      let mut ub = vk::NULL_HANDLE;
+      vk::mem::Buffer::new(&mut ub)
+        .uniform_buffer(std::mem::size_of::<pipeline::UbStyleLUT>() as vk::DeviceSize)
+        .devicelocal(false)
+        .bind(&mut mem.alloc, vk::mem::BindType::Block)
+        .unwrap();
 
-    {
       let mut map = mem.alloc.get_mapped(vk::mem::Handle::Buffer(ub)).unwrap();
       let data = map.as_slice_mut::<pipeline::UbStyleLUT>();
-      data[0].color = vec4!(0.0, 1.0, 0.0, 1.0);
-      data[0].bd_color_inner = vec4!(0.1, 0.0, 0.4, 1.0);
-      data[0].bd_color_outer = vec4!(1.0, 1.0, 1.0, 1.0);
-      data[0].bd_thickness = vec2!(10);
-    }
+      data[0] = style;
 
-    let ds_style_default = pipe.lock().unwrap().new_style(ub);
+      LUTEntry {
+        style,
+        ds: pipe.new_style(ub),
+        ub,
+      }
+    };
 
     Self {
-      mem,
-      pipe,
-      style_lut,
-      ds_style_default,
+      im: Arc::new(Mutex::new(Impl {
+        mem,
+        pipe,
+        style_lut,
+        style_default,
+      })),
       ds_viewport,
     }
   }
 
   fn set_style(&mut self, name: String, style: Self::Template) {
-    let mut styles = self.style_lut.lock().unwrap();
+    let mut im = self.im.lock().unwrap();
 
-    let (ds, ub) = if let Some(e) = styles.get(&name) {
+    let (ds, ub) = if let Some(e) = im.style_lut.get(&name) {
       (e.ds, e.ub)
     } else {
       let mut ub = vk::NULL_HANDLE;
       vk::mem::Buffer::new(&mut ub)
         .uniform_buffer(std::mem::size_of::<pipeline::UbStyleLUT>() as vk::DeviceSize)
         .devicelocal(false)
-        .bind(&mut self.mem.alloc, vk::mem::BindType::Block)
+        .bind(&mut im.mem.alloc, vk::mem::BindType::Block)
         .unwrap();
 
-      (self.pipe.lock().unwrap().new_style(ub), ub)
+      (im.pipe.new_style(ub), ub)
     };
 
-    let mut map = self.mem.alloc.get_mapped(vk::mem::Handle::Buffer(ub)).unwrap();
+    let mut map = im.mem.alloc.get_mapped(vk::mem::Handle::Buffer(ub)).unwrap();
     let data = map.as_slice_mut::<pipeline::UbStyleLUT>();
     data[0] = style;
 
-    styles.insert(name, LUTEntry { style, ds, ub });
+    im.style_lut.insert(name, LUTEntry { style, ds, ub });
   }
   fn get_style(&self, name: &str) -> Option<Self::Template> {
-    self.style_lut.lock().unwrap().get(name).map(|e| e.style)
+    self.im.lock().unwrap().style_lut.get(name).map(|e| e.style)
   }
 
   fn load_styles(&mut self, styles: HashMap<String, Self::Template>) {
-    let styles = styles
+    // delete old descriptors and buffers
+    let mut im = self.im.lock().unwrap();
+
+    for (ds, ub) in im.style_lut.values().map(|e| (e.ds, e.ub)) {
+      im.pipe.pool_lut.free_dset(ds);
+      im.mem.trash.push_buffer(ub);
+    }
+
+    let mut styles = styles
       .into_iter()
       .map(|(k, style)| {
         (
@@ -108,10 +136,21 @@ impl Style for Simple {
       })
       .collect::<HashMap<_, _>>();
 
-    /// TODO: delete ds / ub
-    self.style_lut.lock().unwrap().clear();
+    let mut builder = vk::mem::Resource::new();
+    for (_, e) in styles.iter_mut() {
+      builder = builder
+        .new_buffer(&mut e.ub)
+        .uniform_buffer(std::mem::size_of::<pipeline::UbStyleLUT>() as vk::DeviceSize)
+        .devicelocal(false)
+        .submit()
+    }
+    builder.bind(&mut im.mem.alloc, vk::mem::BindType::Block).unwrap();
 
-    /// TODO: create buffers
+    for (_, e) in styles.iter_mut() {
+      e.ds = im.pipe.new_style(e.ub);
+    }
+
+    im.style_lut = styles;
   }
 }
 
@@ -121,6 +160,8 @@ pub struct SimpleComponent {
   ub: vk::Buffer,
   ub_data: pipeline::UbStyle,
   dirty: bool,
+
+  bd_thickness: vkm::Vec2i,
 
   draw_mesh: MeshId,
   select_mesh: MeshId,
@@ -134,7 +175,7 @@ pub struct SimpleComponent {
 impl Drop for SimpleComponent {
   fn drop(&mut self) {
     self.mem.trash.push_buffer(self.ub);
-    self.gui.style.pipe.lock().unwrap().pool.free_dset(self.ds_style);
+    self.gui.style.im.lock().unwrap().pipe.pool.free_dset(self.ds_style);
   }
 }
 
@@ -148,13 +189,15 @@ impl StyleComponent<Simple> for SimpleComponent {
       .bind(&mut mem.alloc, vk::mem::BindType::Block)
       .unwrap();
 
+    let mut sim = gui.style.im.lock().unwrap();
+
+    let style = sim.style_lut.get("TODO NAME").unwrap_or(&sim.style_default);
+
+    let bd_thickness = style.style.bd_thickness;
+
     let (draw_mesh, select_mesh, ds_style) = {
-      let (color, select) = gui
-        .style
-        .pipe
-        .lock()
-        .unwrap()
-        .new_instance(gui.style.ds_viewport, gui.style.ds_style_default, ub);
+      let ds_style_lut = sim.style_default.ds;
+      let (color, select) = sim.pipe.new_instance(gui.style.ds_viewport, ds_style_lut, ub);
 
       (
         gui.get_drawpass().new_mesh(
@@ -193,6 +236,8 @@ impl StyleComponent<Simple> for SimpleComponent {
       ub_data,
       dirty: true,
 
+      bd_thickness,
+
       draw_mesh,
       select_mesh,
 
@@ -201,6 +246,17 @@ impl StyleComponent<Simple> for SimpleComponent {
       mouse_pressed: None,
       dragging: None,
     }
+  }
+
+  fn get_client_rect(&self) -> Rect {
+    let mut rect = self.get_rect();
+    rect.position += self.bd_thickness;
+    rect.size -= self.bd_thickness.into() * 2;
+    rect
+  }
+
+  fn get_padded_size(&self, size: vkm::Vec2u) -> vkm::Vec2u {
+    size + self.bd_thickness.into() * 2
   }
 }
 
