@@ -1,0 +1,305 @@
+use super::pipeline::Ub;
+use super::*;
+use crate::rect::Rect;
+use crate::select::SelectId;
+use crate::style::event::*;
+use crate::ImGui;
+use vk::cmd::commands::DrawManaged;
+use vk::cmd::commands::DrawVertices;
+use vk::pass::MeshId;
+
+pub struct SimpleComponent {
+  mem: vk::mem::Mem,
+  gui: ImGui<Simple>,
+  ub: vk::Buffer,
+  ub_data: Ub,
+  dirty: bool,
+
+  style: String,
+  bd_thickness: vkm::Vec2i,
+  movable: bool,
+  resizable: bool,
+
+  draw_mesh: MeshId,
+  select_mesh: MeshId,
+  ds: vk::DescriptorSet,
+
+  has_focus: bool,
+  mouse_pressed: Option<EventButton>,
+  dragging: Option<EventDrag>,
+}
+
+impl Drop for SimpleComponent {
+  fn drop(&mut self) {
+    self.mem.trash.push_buffer(self.ub);
+    self.gui.style.lock().pipe.pool.free_dset(self.ds);
+  }
+}
+
+impl StyleComponent<Simple> for SimpleComponent {
+  fn new(gui: &ImGui<Simple>, style: String, movable: bool, resizable: bool) -> Self {
+    let mut mem = gui.get_mem();
+    let mut ub = vk::NULL_HANDLE;
+    vk::mem::Buffer::new(&mut ub)
+      .uniform_buffer(std::mem::size_of::<super::pipeline::UbStyle>() as vk::DeviceSize)
+      .devicelocal(false)
+      .bind(&mut mem.alloc, vk::mem::BindType::Block)
+      .unwrap();
+
+    let mut sim = gui.style.im.lock().unwrap();
+
+    let lutentry = *sim.style_lut.get(&style).unwrap_or(&sim.style_default);
+    let bd_thickness = lutentry.style.bd_thickness;
+
+    println!("{:?}", lutentry);
+
+    let (draw_mesh, select_mesh, ds) = {
+      let (color, select) = sim.pipe.new_instance(gui.style.ds_viewport, lutentry.ds, ub);
+
+      (
+        gui.get_drawpass().new_mesh(
+          color.bind_pipe,
+          &[color.bind_ds_viewport, color.bind_ds_style, color.bind_ds],
+          DrawManaged::new([].iter().into(), DrawVertices::with_vertices(6).instance_count(9).into()),
+        ),
+        gui.select.new_mesh(
+          select.bind_pipe,
+          &[color.bind_ds_viewport, color.bind_ds_style, color.bind_ds],
+          DrawManaged::new([].iter().into(), DrawVertices::with_vertices(6).instance_count(9).into()),
+        ),
+        color.bind_ds.dset,
+      )
+    };
+
+    let select_id = gui.select.new_ids(9);
+    let ub_data = Ub {
+      position: vec2!(0),
+      size: vec2!(0),
+      id_body: select_id.into(),
+    };
+
+    Self {
+      mem,
+      gui: gui.clone(),
+      ub,
+      ub_data,
+      dirty: true,
+
+      style,
+      bd_thickness,
+      movable,
+      resizable,
+
+      draw_mesh,
+      select_mesh,
+
+      ds,
+
+      has_focus: false,
+      mouse_pressed: None,
+      dragging: None,
+    }
+  }
+
+  fn get_client_rect(&self) -> Rect {
+    let mut rect = self.get_rect();
+    rect.position += self.bd_thickness;
+    rect.size -= self.bd_thickness.into() * 2;
+    rect
+  }
+
+  fn get_padded_size(&self, size: vkm::Vec2u) -> vkm::Vec2u {
+    size + self.bd_thickness.into() * 2
+  }
+
+  fn has_focus(&self) -> bool {
+    self.has_focus
+  }
+}
+
+impl Component<Simple> for SimpleComponent {
+  fn rect(&mut self, rect: Rect) -> &mut Self {
+    if self.get_rect() != rect {
+      self.ub_data.position = rect.position;
+      self.ub_data.size = rect.size.into();
+      self.dirty = true;
+    }
+    self
+  }
+  fn get_rect(&self) -> Rect {
+    Rect::new(self.ub_data.position, self.ub_data.size.into())
+  }
+
+  fn get_size_hint(&self) -> vkm::Vec2u {
+    self.ub_data.size.into()
+  }
+
+  type Event = Event;
+  fn draw<L: Layout>(&mut self, wnd: &mut Window<L, Simple>, focus: &mut SelectId) -> Option<Event> {
+    // update the uniform buffer if size changed
+    if self.dirty {
+      let mut map = self.mem.alloc.get_mapped(vk::mem::Handle::Buffer(self.ub)).unwrap();
+      let data = map.as_slice_mut::<Ub>();
+      data[0] = self.ub_data;
+      self.dirty = false;
+    }
+
+    // apply_layout should be called by the wrapping gui element
+    let scissor = vk::cmd::commands::Scissor::with_rect(self.get_rect().into());
+    wnd.push_draw(self.draw_mesh, scissor);
+    wnd.push_select(self.select_mesh, scissor);
+
+    // event handling
+    let clicked = wnd
+      .get_select_result()
+      .and_then(|id| ClickLocation::from_id(self.ub_data.id_body, id.into()));
+
+    self.has_focus = clicked.is_some();
+
+    // assume a drag event if a mouse button is already pressed
+    let mut event = if self.mouse_pressed.is_some() {
+      let drag = self.dragging.take().map_or_else(
+        || EventDrag {
+          location: self.mouse_pressed.as_ref().unwrap().location,
+          begin: self.mouse_pressed.as_ref().unwrap().position,
+          end: self.mouse_pressed.as_ref().unwrap().position,
+          delta: vec2!(0),
+        },
+        |mut d| {
+          d.delta = self.gui.select.get_current_position().into() - d.end.into();
+          d.end = self.gui.select.get_current_position();
+          d
+        },
+      );
+
+      self.dragging = Some(drag);
+      Some(Event::Drag(drag))
+    } else {
+      None
+    };
+
+    for e in wnd.get_events() {
+      match e {
+        vk::winit::Event::DeviceEvent {
+          event: vk::winit::DeviceEvent::Button {
+            button,
+            state: vk::winit::ElementState::Released,
+          },
+          ..
+        } => {
+          self.mouse_pressed = None;
+          self.dragging = None;
+          if clicked.is_some() {
+            event = Some(Event::Released(EventButton {
+              location: *clicked.as_ref().unwrap(),
+              button: *button,
+              position: self.gui.select.get_current_position(),
+            }));
+          }
+        }
+        vk::winit::Event::DeviceEvent {
+          event: vk::winit::DeviceEvent::Button {
+            button,
+            state: vk::winit::ElementState::Pressed,
+          },
+          ..
+        } if clicked.is_some() => {
+          let bt = EventButton {
+            location: *clicked.as_ref().unwrap(),
+            button: *button,
+            position: self.gui.select.get_current_position(),
+          };
+          self.mouse_pressed = Some(bt);
+          event = Some(Event::Pressed(bt));
+        }
+        vk::winit::Event::WindowEvent {
+          event: vk::winit::WindowEvent::CursorMoved { position, .. },
+          ..
+        } if self.mouse_pressed.is_some() => {
+          let pos = self.gui.select.logic_to_real_position(*position).into();
+
+          let drag = self.dragging.take().map_or_else(
+            || EventDrag {
+              location: self.mouse_pressed.as_ref().unwrap().location,
+              begin: self.mouse_pressed.as_ref().unwrap().position,
+              end: self.mouse_pressed.as_ref().unwrap().position,
+              delta: vec2!(0),
+            },
+            |mut d| {
+              d.delta = pos.into() - d.end.into();
+              d.end = pos;
+              d
+            },
+          );
+
+          self.dragging = Some(drag);
+          event = Some(Event::Drag(drag));
+        }
+        _ => (),
+      }
+    }
+
+    // moving and resizing
+    match event.as_ref() {
+      Some(Event::Drag(drag)) => {
+        event = if drag.delta != vec2!(0) {
+          let mut d = drag.delta;
+          let mut pos = self.get_rect().position;
+          let mut size = self.get_rect().size.into();
+
+          if self.resizable {
+            match drag.location {
+              ClickLocation::TopLeft => {
+                pos += d;
+                size = size - d;
+              }
+              ClickLocation::TopRight => {
+                d.y = -d.y;
+                pos = vec2!(pos.x, pos.y - d.y);
+                size = size + d;
+              }
+              ClickLocation::BottomLeft => {
+                d.x = -d.x;
+                pos = vec2!(pos.x - d.x, pos.y);
+                size = size + d;
+              }
+              ClickLocation::BottomRight => size = size + d,
+
+              ClickLocation::Top => {
+                pos = vec2!(pos.x, pos.y + d.y);
+                size = vec2!(size.x, size.y - d.y);
+              }
+              ClickLocation::Bottom => {
+                size = vec2!(size.x, size.y + d.y);
+              }
+              ClickLocation::Left => {
+                pos = vec2!(pos.x + d.x, pos.y);
+                size = vec2!(size.x - d.x, size.y);
+              }
+              ClickLocation::Right => {
+                size = vec2!(size.x + d.x, size.y);
+              }
+              _ => {}
+            }
+          }
+
+          match drag.location {
+            ClickLocation::Body if self.movable => pos += d,
+            _ => {}
+          }
+
+          if self.movable || self.resizable {
+            Some(Event::Resize(Rect::new(pos, size.into())))
+          } else {
+            None
+          }
+        } else {
+          None
+        }
+      }
+      _ => {}
+    };
+
+    event
+  }
+}

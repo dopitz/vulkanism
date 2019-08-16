@@ -2,6 +2,7 @@ use crate::font::*;
 use crate::rect::Rect;
 use crate::select::rects::RectId;
 use crate::select::SelectId;
+use crate::style::event;
 use crate::style::Style;
 use crate::style::StyleComponent;
 use crate::text::Text;
@@ -19,37 +20,15 @@ pub enum Event {
 }
 
 pub struct TextBox<S: Style> {
-  rect: Rect,
   text: Text<S>,
-  select_rect: RectId,
-  select_mesh: MeshId,
-  select_id: SelectId,
-
   style: S::Component,
-}
-
-impl<S: Style> Drop for TextBox<S> {
-  fn drop(&mut self) {
-    self.get_gui().select.rects().remove(self.select_rect);
-  }
 }
 
 impl<S: Style> TextBox<S> {
   pub fn new(gui: &ImGui<S>) -> Self {
-    let rect = Rect::from_rect(0, 0, 0, 0);
     let text = Text::new(gui);
-    let select_rect = gui.select.rects().new_rect(vec2!(0), vec2!(0));
-    let select_id = gui.select.rects().get_select_id(select_rect);
-    let select_mesh = gui.select.rects().get_mesh(select_rect);
-    let style = S::Component::new(gui);
-    Self {
-      rect,
-      text,
-      select_rect,
-      select_mesh,
-      select_id,
-      style,
-    }
+    let style = S::Component::new(gui, "TextBox".to_owned(), false, false);
+    Self { text, style }
   }
 
   pub fn get_gui(&self) -> ImGui<S> {
@@ -75,22 +54,13 @@ impl<S: Style> TextBox<S> {
 
 impl<S: Style> Component<S> for TextBox<S> {
   fn rect(&mut self, rect: Rect) -> &mut Self {
-    if self.rect != rect {
-      self.style.rect(rect);
-      self.rect = self.style.get_client_rect();
-      // TODO: border thickness....
-      self
-        .get_gui()
-        .select
-        .rects()
-        .update_rect(self.select_rect, rect.position, rect.size);
-      self.text.position(self.rect.position);
-      //self.rect = rect;
-    }
+    // set the rect of the style first, we get the client area for the textbox from the style
+    self.style.rect(rect);
+    self.text.position(self.style.get_client_rect().position);
     self
   }
   fn get_rect(&self) -> Rect {
-    self.rect
+    self.style.get_rect()
   }
 
   fn get_size_hint(&self) -> vkm::Vec2u {
@@ -106,39 +76,9 @@ impl<S: Style> Component<S> for TextBox<S> {
     // draw and select
     let e = self.style.draw(wnd, focus);
     wnd.push_draw(self.text.get_mesh(), scissor);
-    //wnd.push_select(self.select_mesh, scissor);
 
-    if let Some(e) = e {
-      println!("{:?}", e);
-    }
-
-    return None;
-
-    // event handling
-    let select_result = wnd.get_select_result();
-
-    let mut clicked = false;
-    for e in wnd.get_events() {
-      match e {
-        vk::winit::Event::DeviceEvent {
-          event: vk::winit::DeviceEvent::Button {
-            button,
-            state: vk::winit::ElementState::Pressed,
-          },
-          ..
-        } if *button == 1 => {
-          clicked = select_result
-            .and_then(|id| if id == self.select_id { Some(Event::Clicked) } else { None })
-            .is_some();
-
-          if clicked {
-            *focus = self.select_id;
-          }
-        }
-        _ => (),
-      }
-
-      if *focus == self.select_id {
+    if self.style.has_focus() {
+      for e in wnd.get_events() {
         match e {
           vk::winit::Event::WindowEvent {
             event: vk::winit::WindowEvent::ReceivedCharacter(c),
@@ -151,12 +91,12 @@ impl<S: Style> Component<S> for TextBox<S> {
             }
             self.text(&format!("{}{}", self.get_text(), c));
           }
-          _ => (),
+          _ => {}
         }
       }
     }
 
-    if clicked {
+    if let Some(event::Event::Pressed(_)) = e {
       Some(Event::Clicked)
     } else {
       None

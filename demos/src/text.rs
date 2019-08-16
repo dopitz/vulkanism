@@ -185,7 +185,9 @@ struct Gui {
 
 impl Gui {
   pub fn new(device: &vk::device::Device, wnd: &vk::wnd::Window, target: vk::Image, mem: vk::mem::Mem) -> Self {
-    let gui = imgui::ImGui::new(device, wnd, target, mem);
+    use gui::*;
+    let mut gui = gui::Gui::new(device, wnd, target, mem);
+    gui.style.load_styles(gui::get_default_styles());
 
     let mut text = imgui::textbox::TextBox::new(&gui);
     text.text("aoeu");
