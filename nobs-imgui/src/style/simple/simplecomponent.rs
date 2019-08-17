@@ -154,8 +154,6 @@ impl Component<Simple> for SimpleComponent {
       .get_select_result()
       .and_then(|id| ClickLocation::from_id(self.ub_data.id_body, id.into()));
 
-    self.has_focus = clicked.is_some();
-
     // assume a drag event if a mouse button is already pressed
     let mut event = if self.mouse_pressed.is_some() {
       let drag = self.dragging.take().map_or_else(
@@ -195,6 +193,8 @@ impl Component<Simple> for SimpleComponent {
               button: *button,
               position: self.gui.select.get_current_position(),
             }));
+          } else {
+            self.has_focus = false;
           }
         }
         vk::winit::Event::DeviceEvent {
@@ -209,6 +209,7 @@ impl Component<Simple> for SimpleComponent {
             button: *button,
             position: self.gui.select.get_current_position(),
           };
+          self.has_focus = true;
           self.mouse_pressed = Some(bt);
           event = Some(Event::Pressed(bt));
         }
