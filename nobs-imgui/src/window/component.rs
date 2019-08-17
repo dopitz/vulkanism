@@ -1,5 +1,5 @@
+use super::Screen;
 use super::Layout;
-use super::Window;
 use crate::rect::Rect;
 use crate::select::SelectId;
 use crate::style::Style;
@@ -27,11 +27,12 @@ pub trait Component<S: Style> {
   ///  2. Handle events
   ///
   /// # Arguments
-  ///  * `wnd` - Layout and screen to draw to
+  ///  * `screen` - Screen to draw on
+  ///  * `layout` - Layout to position and resize the component
   ///  * `focus` - The currently focused component (should be ignored when this does not match the select id of self)
   ///
   /// # Returns
   ///  * `None` - if no event was handles
   ///  * `Some(Event)` - if an event was handled
-  fn draw<L: Layout>(&mut self, wnd: &mut Window<L, S>, focus: &mut SelectId) -> Option<Self::Event>;
+  fn draw<L: Layout>(&mut self, screen: &mut Screen<S>, layout: &mut L, focus: &mut SelectId) -> Option<Self::Event>;
 }

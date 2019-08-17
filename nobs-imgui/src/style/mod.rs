@@ -1,8 +1,7 @@
 macro_rules! make_style {
   ($name:ty) => {
-    pub use crate::window::Component;
-    pub use crate::window::Layout;
-    pub use crate::window::Window;
+    pub use crate::rect::Rect;
+    pub use crate::window::*;
 
     pub type Gui = crate::ImGui<$name>;
     pub type TextBox = crate::textbox::TextBox<$name>;

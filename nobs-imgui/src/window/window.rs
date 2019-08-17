@@ -12,72 +12,48 @@ use vk::pass::MeshId;
 ///
 /// The Window defines a region on the screen on which components are draw
 /// It is basically a builder pattern around a [Layout](struct.Layout.html) and [Screen](struct.Streen.html)
-pub struct Window<'a, L: Layout, S: Style> {
-  scr: &'a mut Screen<S>,
+pub struct Window<L: Layout> {
   layout: L,
 }
 
-impl<'a, S: Style> Window<'a, ColumnLayout, S> {
-  /// Creates a new window on the spcified [Screen](struct.Screen.html).
-  ///
-  /// The windows layout will be a [ColumnLayout](struct.ColumnLayout.html)
-  pub fn new(scr: &'a mut Screen<S>) -> Self {
-    Self::with_layout(scr, ColumnLayout::default())
+impl<L: Layout> Layout for Window<L> {
+  fn new(rect: Rect) -> Self {
+    Self { layout: L::new(rect) }
+  }
+
+  fn get_rect(&self) -> Rect {
+    self.layout.get_rect()
+  }
+
+  fn apply<S: Style, C: Component<S>>(&mut self, c: &mut C) -> Scissor {
+    self.layout.apply(c)
   }
 }
 
-impl<'a, L: Layout, S: Style> Window<'a, L, S> {
-  /// Creates a new window on the spcified [Screen](struct.Screen.html).
-  ///
-  /// Sets the specified layout for the window
-  pub fn with_layout(scr: &'a mut Screen<S>, layout: L) -> Self {
-    Self { scr, layout }
+impl Default for Window<ColumnLayout> {
+  fn default() -> Self {
+    Self::new(Default::default())
+  }
+}
+
+impl<L: Layout> Window<L> {
+  pub fn reset(&mut self) {
+    self.layout = L::new(self.get_rect());
+  }
+
+  pub fn rect(mut self, rect: Rect) -> Self {
+    self.layout = L::new(rect);
+    self
   }
 
   /// Sets size and position of the Window in pixel coordinates
-  pub fn rect(mut self, rect: Rect) -> Self {
-    self.layout.reset(rect);
-    self
-  }
-  /// Sets the size of the Window in pixel coordinates
   pub fn size(mut self, w: u32, h: u32) -> Self {
-    self.layout.reset(Rect::new(self.layout.get_rect().position, vkm::Vec2::new(w, h)));
-    self
+    let pos = self.layout.get_rect().position;
+    self.rect(Rect::new(pos, vkm::Vec2::new(w, h)))
   }
   /// Sets the position of the Window in pixel coordinates
   pub fn position(mut self, x: i32, y: i32) -> Self {
-    self.layout.reset(Rect::new(vkm::Vec2::new(x, y), self.layout.get_rect().size));
-    self
-  }
-
-  /// Resizes component according to the window`s layout
-  ///
-  /// See [Layout](struct.Layout.html)
-  pub fn apply_layout<C: Component<S>>(&mut self, c: &mut C) -> Scissor {
-    self.layout.apply(c)
-  }
-  /// Records a mesh for drawing
-  ///
-  /// See [Screen](struct.Screen.html)
-  pub fn push_draw(&mut self, mesh: MeshId, scissor: Scissor) {
-    self.scr.push_draw(mesh, scissor);
-  }
-  /// Records a mesh for drawing
-  ///
-  /// See [Screen](struct.Screen.html)
-  pub fn push_select(&mut self, mesh: MeshId, scissor: Scissor) {
-    self.scr.push_select(mesh, scissor);
-  }
-
-  /// Get the selection result of the last object query
-  ///
-  /// See [get_select_result](struct.Screen.html#method.get_select_result).
-  pub fn get_select_result(&mut self) -> Option<SelectId> {
-    self.scr.get_select_result()
-  }
-
-  /// Gets the list of events since last time [ImGui::handle_events](../struct.Imgui.html#method.handle_events) was called.
-  pub fn get_events(&'a self) -> &'a [vk::winit::Event] {
-    self.scr.get_events()
+    let size = self.layout.get_rect().size;
+    self.rect(Rect::new(vkm::Vec2::new(x, y), size))
   }
 }

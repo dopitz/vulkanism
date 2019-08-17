@@ -8,15 +8,8 @@ use vk::cmd::commands::Scissor;
 /// Layouting gui components has to be incremental.
 /// This means that the layout for a single components needs to be decided without knolwledge about other components.
 /// The layouts internal state must be used instead.
-pub trait Layout: Default {
-  fn new() -> Self {
-    Default::default()
-  }
-  /// Resets the layout
-  ///
-  /// # Arguments
-  /// * `rect` - The draw area which may be used by components
-  fn reset(&mut self, rect: Rect);
+pub trait Layout {
+  fn new(rect: Rect) -> Self;
   /// Gets the draw area
   fn get_rect(&self) -> Rect;
   /// Applys layout to componet
@@ -35,8 +28,8 @@ pub struct FloatLayout {
 }
 
 impl Layout for FloatLayout {
-  fn reset(&mut self, rect: Rect) {
-    self.rect = rect;
+  fn new(rect: Rect) -> Self {
+    Self { rect }
   }
 
   fn get_rect(&self) -> Rect {
@@ -56,8 +49,8 @@ pub struct ColumnLayout {
 }
 
 impl Layout for ColumnLayout {
-  fn reset(&mut self, rect: Rect) {
-    self.rect = rect;
+  fn new(rect: Rect) -> Self {
+    Self { rect, top: 0 }
   }
 
   fn get_rect(&self) -> Rect {

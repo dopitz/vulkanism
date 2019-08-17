@@ -3,6 +3,7 @@ use super::*;
 use crate::rect::Rect;
 use crate::select::SelectId;
 use crate::style::event::*;
+use crate::window::Screen;
 use crate::ImGui;
 use vk::cmd::commands::DrawManaged;
 use vk::cmd::commands::DrawVertices;
@@ -135,7 +136,7 @@ impl Component<Simple> for SimpleComponent {
   }
 
   type Event = Event;
-  fn draw<L: Layout>(&mut self, wnd: &mut Window<L, Simple>, focus: &mut SelectId) -> Option<Event> {
+  fn draw<L: Layout>(&mut self, screen: &mut Screen<Simple>, layout: &mut L, focus: &mut SelectId) -> Option<Event> {
     // update the uniform buffer if size changed
     if self.dirty {
       let mut map = self.mem.alloc.get_mapped(vk::mem::Handle::Buffer(self.ub)).unwrap();
@@ -146,11 +147,11 @@ impl Component<Simple> for SimpleComponent {
 
     // apply_layout should be called by the wrapping gui element
     let scissor = vk::cmd::commands::Scissor::with_rect(self.get_rect().into());
-    wnd.push_draw(self.draw_mesh, scissor);
-    wnd.push_select(self.select_mesh, scissor);
+    screen.push_draw(self.draw_mesh, scissor);
+    screen.push_select(self.select_mesh, scissor);
 
     // event handling
-    let clicked = wnd
+    let clicked = screen
       .get_select_result()
       .and_then(|id| ClickLocation::from_id(self.ub_data.id_body, id.into()));
 
@@ -176,7 +177,7 @@ impl Component<Simple> for SimpleComponent {
       None
     };
 
-    for e in wnd.get_events() {
+    for e in screen.get_events() {
       match e {
         vk::winit::Event::DeviceEvent {
           event: vk::winit::DeviceEvent::Button {

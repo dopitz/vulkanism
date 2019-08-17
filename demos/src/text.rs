@@ -177,6 +177,8 @@ use imgui::style::simple as gui;
 
 struct Gui {
   gui: gui::Gui,
+
+  wnd: gui::Window<gui::ColumnLayout>,
   text: gui::TextBox,
   text2: gui::TextBox,
 
@@ -189,6 +191,8 @@ impl Gui {
     let mut gui = gui::Gui::new(device, wnd, target, mem);
     gui.style.load_styles(gui::get_default_styles());
 
+    let mut wnd = gui::Window::default().position(200, 200).size(500, 200);
+
     let mut text = imgui::textbox::TextBox::new(&gui);
     text.text("aoeu");
     text.typeset(text.get_typeset().size(70).cursor(Some(vec2!(1, 0))));
@@ -198,6 +202,7 @@ impl Gui {
     text2.typeset(text2.get_typeset().size(70).cursor(Some(vec2!(1, 0))));
     Self {
       gui,
+      wnd,
       text,
       text2,
       focus: imgui::select::SelectId::invalid(),
@@ -214,14 +219,20 @@ impl StreamPushMut for Gui {
     use gui::*;
 
     let mut scr = self.gui.begin();
-    let mut wnd = Window::new(&mut scr).position(200, 200).size(500, 200);;
-
-    if let Some(e) = self.text.draw(&mut wnd, &mut self.focus) {
+    self.wnd.reset();
+    if let Some(e) = self.text.draw(
+      &mut scr,
+      &mut self.wnd,
+      &mut self.focus,
+    ) {
       println!("{:?}", e);
     };
 
-    let mut wnd = Window::new(&mut scr).position(900, 200).size(500, 200);;
-    self.text2.draw(&mut wnd, &mut self.focus);
+    self.text2.draw(
+      &mut scr,
+      &mut self.wnd,
+      &mut self.focus,
+    );
 
     cs.push_mut(&mut scr)
   }

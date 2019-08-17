@@ -8,7 +8,7 @@ use crate::style::StyleComponent;
 use crate::text::Text;
 use crate::window::Component;
 use crate::window::Layout;
-use crate::window::Window;
+use crate::window::Screen;
 use crate::ImGui;
 use vk::pass::MeshId;
 
@@ -69,16 +69,16 @@ impl<S: Style> Component<S> for TextBox<S> {
   }
 
   type Event = Event;
-  fn draw<L: Layout>(&mut self, wnd: &mut Window<L, S>, focus: &mut SelectId) -> Option<Event> {
+  fn draw<L: Layout>(&mut self, screen: &mut Screen<S>, layout: &mut L, focus: &mut SelectId) -> Option<Event> {
     // style is resized along with the textbox
-    let scissor = wnd.apply_layout(self);
+    let scissor = layout.apply(self);
 
     // draw and select
-    let e = self.style.draw(wnd, focus);
-    wnd.push_draw(self.text.get_mesh(), scissor);
+    let e = self.style.draw(screen, layout, focus);
+    screen.push_draw(self.text.get_mesh(), scissor);
 
     if self.style.has_focus() {
-      for e in wnd.get_events() {
+      for e in screen.get_events() {
         match e {
           vk::winit::Event::WindowEvent {
             event: vk::winit::WindowEvent::ReceivedCharacter(c),
