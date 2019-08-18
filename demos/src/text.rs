@@ -191,7 +191,7 @@ impl Gui {
     let mut gui = gui::Gui::new(device, wnd, target, mem);
     gui.style.load_styles(gui::get_default_styles());
 
-    let mut wnd = gui::Window::default().position(200, 200).size(500, 200);
+    let mut wnd = gui::Window::default().position(200, 200).size(500, 300);
 
     let mut text = imgui::textbox::TextBox::new(&gui);
     text.text("aoeu");

@@ -19,6 +19,14 @@ pub trait Layout {
   /// # Returns
   /// The scissor rect for the component
   fn apply<S: Style, C: Component<S>>(&mut self, c: &mut C) -> Scissor;
+
+  fn get_scissor(&self, mut rect: Rect) -> Scissor {
+    let lo = self.get_rect().position;
+    let hi = lo + self.get_rect().size.into();
+    rect.position = vkm::Vec2::clamp(rect.position, lo, hi);
+    rect.size = (vkm::Vec2::clamp(rect.position + rect.size.into(), lo, hi) - rect.position).into();
+    Scissor::with_rect(rect.into())
+  }
 }
 
 /// Float layout that does not modify componets
@@ -65,12 +73,13 @@ impl Layout for ColumnLayout {
     if rect.size.x >= self.rect.size.x {
       rect.size.x = self.rect.size.x;
     }
-    if self.top + rect.size.y >= self.rect.size.y {
-      rect.size.y = self.rect.size.y - self.top;
-    }
+    //if self.top + rect.size.y >= self.rect.size.y {
+    //  rect.size.y = self.rect.size.y - self.top;
+    //}
     c.rect(rect);
     self.top += rect.size.y;
 
-    Scissor::with_rect(rect.into())
+    self.get_scissor(rect)
   }
+
 }
