@@ -8,10 +8,15 @@ use vk::cmd::commands::Scissor;
 /// Layouting gui components has to be incremental.
 /// This means that the layout for a single components needs to be decided without knolwledge about other components.
 /// The layouts internal state must be used instead.
-pub trait Layout {
-  fn new(rect: Rect) -> Self;
+pub trait Layout: Default {
+  /// Restarts the layout
+  fn restart(&mut self);
+
+  /// Sets the draw area
+  fn set_rect(&mut self, rect: Rect);
   /// Gets the draw area
   fn get_rect(&self) -> Rect;
+
   /// Applys layout to componet
   ///
   /// This function should modify the components layout (position and size) using [Component::rect](trait.Component.html#method.rect).
@@ -20,6 +25,7 @@ pub trait Layout {
   /// The scissor rect for the component
   fn apply<S: Style, C: Component<S>>(&mut self, c: &mut C) -> Scissor;
 
+  /// Get the overlapping scissor rect from the layouts draw area  and `rect`
   fn get_scissor(&self, mut rect: Rect) -> Scissor {
     let lo = self.get_rect().position;
     let hi = lo + self.get_rect().size.into();
@@ -36,16 +42,18 @@ pub struct FloatLayout {
 }
 
 impl Layout for FloatLayout {
-  fn new(rect: Rect) -> Self {
-    Self { rect }
+  fn restart(&mut self) {}
+
+  fn set_rect(&mut self, rect: Rect) {
+    self.rect = rect;
   }
 
   fn get_rect(&self) -> Rect {
     self.rect
   }
 
-  fn apply<S: Style, C: Component<S>>(&mut self, _c: &mut C) -> Scissor {
-    Scissor::with_rect(self.rect.into())
+  fn apply<S: Style, C: Component<S>>(&mut self, c: &mut C) -> Scissor {
+    self.get_scissor(c.get_rect())
   }
 }
 
@@ -57,8 +65,12 @@ pub struct ColumnLayout {
 }
 
 impl Layout for ColumnLayout {
-  fn new(rect: Rect) -> Self {
-    Self { rect, top: 0 }
+  fn restart(&mut self) {
+    self.top = 0;
+  }
+
+  fn set_rect(&mut self, rect: Rect) {
+    self.rect = rect;
   }
 
   fn get_rect(&self) -> Rect {
@@ -81,5 +93,4 @@ impl Layout for ColumnLayout {
 
     self.get_scissor(rect)
   }
-
 }

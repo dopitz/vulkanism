@@ -130,7 +130,7 @@ impl StyleComponent<Simple> for SimpleComponent {
   fn get_client_rect(&self) -> Rect {
     let mut rect = self.get_rect();
     rect.position += self.bd_thickness;
-    rect.size -= self.bd_thickness.into() * 2;
+    rect.size = vkm::Vec2::clamp(rect.size.into() - self.bd_thickness * 2, vec2!(0), rect.size.into()).into();
     rect
   }
 
@@ -270,41 +270,42 @@ impl Component<Simple> for SimpleComponent {
     match event.as_ref() {
       Some(Event::Drag(drag)) => {
         event = if drag.delta != vec2!(0) {
-          let mut d = drag.delta;
+          let mut d = (drag.delta.into() * 1.6666666).into();
           let mut pos = self.get_rect().position;
           let mut size = self.get_rect().size.into();
 
+          let mp = self.gui.select.get_current_position().into();
           if self.resizable {
             match drag.location {
               ClickLocation::TopLeft => {
-                pos += d;
-                size = size - d;
+                size = pos + size - mp;
+                pos = mp;
               }
               ClickLocation::TopRight => {
-                d.y = -d.y;
-                pos = vec2!(pos.x, pos.y - d.y);
-                size = size + d;
+                size = vec2!(mp.x - pos.x, pos.y + size.y - mp.y);
+                pos = vec2!(pos.x, mp.y);
               }
               ClickLocation::BottomLeft => {
-                d.x = -d.x;
-                pos = vec2!(pos.x - d.x, pos.y);
-                size = size + d;
+                size = vec2!(pos.x + size.x - mp.x, mp.y - pos.y);
+                pos = vec2!(mp.x, pos.y);
               }
-              ClickLocation::BottomRight => size = size + d,
+              ClickLocation::BottomRight => {
+                size = mp - pos;
+              }
 
               ClickLocation::Top => {
-                pos = vec2!(pos.x, pos.y + d.y);
-                size = vec2!(size.x, size.y - d.y);
+                size.y = pos.y + size.y - mp.y;
+                pos.y = mp.y;
               }
               ClickLocation::Bottom => {
-                size = vec2!(size.x, size.y + d.y);
+                size.y = mp.y - pos.y;
               }
               ClickLocation::Left => {
-                pos = vec2!(pos.x + d.x, pos.y);
-                size = vec2!(size.x - d.x, size.y);
+                size.x = pos.x + size.x - mp.x;
+                pos.x = mp.x;
               }
               ClickLocation::Right => {
-                size = vec2!(size.x + d.x, size.y);
+                size.x = mp.x - pos.x;
               }
               _ => {}
             }
