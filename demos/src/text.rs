@@ -191,10 +191,10 @@ impl Gui {
     let mut gui = gui::Gui::new(device, wnd, target, mem);
     gui.style.load_styles(gui::get_default_styles());
 
-    let mut wnd = gui::Window::default().position(200, 200).size(500, 300);
+    let mut wnd = gui::Window::new(&gui).position(200, 200).size(500, 320);
 
     let mut text = imgui::textbox::TextBox::new(&gui);
-    text.text("aoeu");
+    text.text("aoeu\naoeu\naoeu\naoeu");
     text.typeset(text.get_typeset().size(70).cursor(Some(vec2!(1, 0))));
 
     let mut text2 = imgui::textbox::TextBox::new(&gui);
@@ -219,7 +219,10 @@ impl StreamPushMut for Gui {
     use gui::*;
 
     let mut scr = self.gui.begin();
-    self.wnd.reset();
+    let mut layout = gui::FloatLayout::default();
+    layout.set_rect(scr.get_rect());
+
+    self.wnd.draw(&mut scr, &mut layout, &mut self.focus);
     if let Some(e) = self.text.draw(
       &mut scr,
       &mut self.wnd,

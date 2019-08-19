@@ -2,6 +2,7 @@ use crate::select::Query;
 use crate::select::SelectId;
 use crate::style::Style;
 use crate::ImGui;
+use crate::rect::Rect;
 use vk::cmd::commands::RenderpassBegin;
 use vk::cmd::commands::RenderpassEnd;
 use vk::cmd::commands::Scissor;
@@ -130,6 +131,15 @@ impl<S: Style> Screen<S> {
   /// The id of the selection, `None` if no valid object in the [Selection](../select/struct.Select.html) was selected or the query was not executed.
   pub fn get_select_result(&mut self) -> Option<SelectId> {
     self.query.as_mut().and_then(|q| q[1].get())
+  }
+
+  /// Get the size of the Screen
+  ///
+  /// # Returns
+  /// The size of the screen as [Rect](struct.Rect.html).
+  /// The top left of the screen (`rect.position`) is set to (0,0).
+  pub fn get_rect(&self) -> Rect {
+    Rect::new(vec2!(0), vec2!(self.size.width, self.size.height))
   }
 
   pub fn push_event(&mut self, e: &vk::winit::Event) {

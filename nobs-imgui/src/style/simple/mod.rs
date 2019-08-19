@@ -108,11 +108,7 @@ impl Style for Simple {
       (im.pipe.new_style(ub), ub)
     };
 
-    im.mem
-      .alloc
-      .get_mapped(vk::mem::Handle::Buffer(ub))
-      .unwrap()
-      .host_to_device(&style);
+    im.mem.alloc.get_mapped(vk::mem::Handle::Buffer(ub)).unwrap().host_to_device(&style);
 
     im.style_lut.insert(name, LUTEntry { style, ds, ub });
   }
@@ -171,12 +167,48 @@ make_style!(Simple);
 pub fn get_default_styles() -> HashMap<String, UbStyle> {
   let mut styles = HashMap::new();
   styles.insert(
+    "Window".to_owned(),
+    UbStyle {
+      color: vec4!(0.1, 0.05, 0.3, 0.6),
+      bd_color_inner: vec4!(0.1, 0.1, 0.3, 1.0),
+      bd_color_outer: vec4!(0.1, 0.05, 0.3, 1.0),
+      bd_thickness: vec2!(3),
+    },
+  );
+  styles.insert(
+    "WindowBorderless".to_owned(),
+    UbStyle {
+      color: vec4!(0.1, 0.05, 0.3, 0.6),
+      bd_color_inner: vec4!(0.0),
+      bd_color_outer: vec4!(0.0),
+      bd_thickness: vec2!(0),
+    },
+  );
+  styles.insert(
+    "WindowHeading".to_owned(),
+    UbStyle {
+      color: vec4!(0.1, 0.1, 0.3, 0.6),
+      bd_color_inner: vec4!(0.0),
+      bd_color_outer: vec4!(0.0),
+      bd_thickness: vec2!(0),
+    },
+  );
+  styles.insert(
     "TextBox".to_owned(),
     UbStyle {
       color: vec4!(1.0, 0.3, 1.0, 0.9),
       bd_color_inner: vec4!(0.1, 0.0, 0.8, 0.8),
       bd_color_outer: vec4!(0.3, 0.1, 1.0, 1.0),
       bd_thickness: vec2!(10),
+    },
+  );
+  styles.insert(
+    "TextBoxBorderless".to_owned(),
+    UbStyle {
+      color: vec4!(1.0, 0.3, 1.0, 0.9),
+      bd_color_inner: vec4!(0.0),
+      bd_color_outer: vec4!(0.0),
+      bd_thickness: vec2!(0),
     },
   );
   styles

@@ -4,6 +4,7 @@ macro_rules! make_style {
     pub use crate::window::*;
 
     pub type Gui = crate::ImGui<$name>;
+    pub type Window<L: Layout> = crate::window::Window<L, $name>;
     pub type TextBox = crate::textbox::TextBox<$name>;
   };
 }
