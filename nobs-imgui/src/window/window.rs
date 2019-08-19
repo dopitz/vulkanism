@@ -1,6 +1,6 @@
-use super::ColumnLayout;
 use super::Component;
 use super::Layout;
+use super::Screen;
 use crate::rect::Rect;
 use crate::select::SelectId;
 use crate::style::event;
@@ -90,7 +90,9 @@ impl<L: Layout, S: Style> Component<S> for Window<L, S> {
 
     if let Some(e) = e {
       match e {
-        event::Event::Resize(rect) => {self.rect(rect);},
+        event::Event::Resize(rect) => {
+          self.rect(rect);
+        }
         _ => (),
       }
     }
@@ -110,13 +112,13 @@ impl<L: Layout, S: Style> Window<L, S> {
   }
 
   /// Sets size and position of the Window in pixel coordinates
-  pub fn size(self, w: u32, h: u32) -> Self {
+  pub fn size(mut self, w: u32, h: u32) -> Self {
     let pos = self.layout.get_rect().position;
     self.set_rect(Rect::new(pos, vkm::Vec2::new(w, h)));
     self
   }
   /// Sets the position of the Window in pixel coordinates
-  pub fn position(self, x: i32, y: i32) -> Self {
+  pub fn position(mut self, x: i32, y: i32) -> Self {
     let size = self.layout.get_rect().size;
     self.set_rect(Rect::new(vkm::Vec2::new(x, y), size));
     self

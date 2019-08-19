@@ -27,7 +27,7 @@ pub trait Layout: Default {
 
   /// Get the overlapping scissor rect from the layouts draw area  and `rect`
   fn get_scissor(&self, mut rect: Rect) -> Scissor {
-    let lo = self.get_rect().position;
+    let lo = vkm::Vec2::clamp(self.get_rect().position, vec2!(0), vec2!(i32::max_value()));
     let hi = lo + self.get_rect().size.into();
     rect.position = vkm::Vec2::clamp(rect.position, lo, hi);
     rect.size = (vkm::Vec2::clamp(rect.position + rect.size.into(), lo, hi) - rect.position).into();

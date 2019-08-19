@@ -169,7 +169,6 @@ impl<S: Style> Component<S> for TextEdit<S> {
     //let e = self.style.draw(screen, layout, focus);
     //screen.push_draw(self.text.get_mesh(), scissor);
 
-
     //if self.style.has_focus() {
     //  for e in screen.get_events() {
     //    match e {

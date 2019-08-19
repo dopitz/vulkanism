@@ -270,7 +270,6 @@ impl Component<Simple> for SimpleComponent {
     match event.as_ref() {
       Some(Event::Drag(drag)) => {
         event = if drag.delta != vec2!(0) {
-          let mut d = (drag.delta.into() * 1.6666666).into();
           let mut pos = self.get_rect().position;
           let mut size = self.get_rect().size.into();
 
@@ -312,7 +311,7 @@ impl Component<Simple> for SimpleComponent {
           }
 
           match drag.location {
-            ClickLocation::Body if self.movable => pos += d,
+            ClickLocation::Body if self.movable => pos += drag.delta,
             _ => {}
           }
 
