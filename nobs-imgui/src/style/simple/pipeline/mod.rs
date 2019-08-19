@@ -135,14 +135,17 @@ impl Pipeline {
       .ub(vk::DescriptorBufferInfo::build().buffer(ub).into())
       .update();
 
+    self.get_bindings(ds_viewport, ds_style, ds)
+  }
+
+  pub fn get_bindings(&self, ds_viewport: vk::DescriptorSet, ds_style: vk::DescriptorSet, ds: vk::DescriptorSet) -> (Bind, Bind) {
     (
-      self.new_instance_inner(&self.color, ds_viewport, ds_style, ds),
-      self.new_instance_inner(&self.select, ds_viewport, ds_style, ds),
+      Self::new_instance_inner(&self.color, ds_viewport, ds_style, ds),
+      Self::new_instance_inner(&self.select, ds_viewport, ds_style, ds),
     )
   }
 
   fn new_instance_inner(
-    &self,
     pipe: &vk::pipes::Pipeline,
     ds_viewport: vk::DescriptorSet,
     ds_style: vk::DescriptorSet,

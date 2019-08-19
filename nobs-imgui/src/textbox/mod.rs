@@ -1,6 +1,5 @@
 use crate::font::*;
 use crate::rect::Rect;
-use crate::select::rects::RectId;
 use crate::select::SelectId;
 use crate::style::event;
 use crate::style::Style;
@@ -10,7 +9,6 @@ use crate::window::Component;
 use crate::window::Layout;
 use crate::window::Screen;
 use crate::ImGui;
-use vk::pass::MeshId;
 
 #[derive(Debug)]
 pub enum Event {
@@ -72,7 +70,6 @@ impl<S: Style> Component<S> for TextBox<S> {
   fn draw<L: Layout>(&mut self, screen: &mut Screen<S>, layout: &mut L, focus: &mut SelectId) -> Option<Event> {
     // style is resized along with the textbox
     let scissor = layout.apply(self);
-    let scissor = vk::cmd::commands::Scissor::with_rect(layout.get_rect().into());
 
     // draw and select
     let e = self.style.draw(screen, layout, focus);

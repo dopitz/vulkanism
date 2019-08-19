@@ -52,8 +52,6 @@ impl StyleComponent<Simple> for SimpleComponent {
     let lutentry = *sim.style_lut.get(&style).unwrap_or(&sim.style_default);
     let bd_thickness = lutentry.style.bd_thickness;
 
-    println!("{:?}", lutentry);
-
     let (draw_mesh, select_mesh, ds) = {
       let (color, select) = sim.pipe.new_instance(gui.style.ds_viewport, lutentry.ds, ub);
 
@@ -102,6 +100,33 @@ impl StyleComponent<Simple> for SimpleComponent {
     }
   }
 
+  fn change_style(&mut self, style: String, movable: bool, resizable: bool) {
+    let sim = self.gui.style.lock();
+    self.style = style;
+    let lutentry = sim.style_lut.get(&self.style).unwrap_or(&sim.style_default);
+    self.bd_thickness = lutentry.style.bd_thickness;
+
+    let (color, select) = sim.pipe.get_bindings(self.gui.style.ds_viewport, lutentry.ds, self.ds);
+
+    self.gui.get_drawpass().update_mesh(
+      self.draw_mesh,
+      None,
+      &[Some(color.bind_ds_viewport), Some(color.bind_ds_style), Some(color.bind_ds)],
+      &[],
+      None,
+    );
+    self.gui.select.update_mesh(
+      self.select_mesh,
+      None,
+      &[Some(select.bind_ds_viewport), Some(select.bind_ds_style), Some(select.bind_ds)],
+      &[],
+      None,
+    );
+
+    self.movable = movable;
+    self.resizable = resizable;
+  }
+
   fn get_client_rect(&self) -> Rect {
     let mut rect = self.get_rect();
     rect.position += self.bd_thickness;
@@ -136,7 +161,7 @@ impl Component<Simple> for SimpleComponent {
   }
 
   type Event = Event;
-  fn draw<L: Layout>(&mut self, screen: &mut Screen<Simple>, layout: &mut L, focus: &mut SelectId) -> Option<Event> {
+  fn draw<L: Layout>(&mut self, screen: &mut Screen<Simple>, layout: &mut L, _focus: &mut SelectId) -> Option<Event> {
     // update the uniform buffer if size changed
     if self.dirty {
       let mut map = self.mem.alloc.get_mapped(vk::mem::Handle::Buffer(self.ub)).unwrap();

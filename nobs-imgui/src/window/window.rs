@@ -1,12 +1,10 @@
 use super::ColumnLayout;
 use super::Component;
 use super::Layout;
-use super::Screen;
 use crate::rect::Rect;
 use crate::style::Style;
 use crate::select::SelectId;
 use vk::cmd::commands::Scissor;
-use vk::pass::MeshId;
 
 /// Window used to set position and size of gui components
 ///
@@ -47,12 +45,12 @@ impl<L: Layout> Window<L> {
   }
 
   /// Sets size and position of the Window in pixel coordinates
-  pub fn size(mut self, w: u32, h: u32) -> Self {
+  pub fn size(self, w: u32, h: u32) -> Self {
     let pos = self.layout.get_rect().position;
     self.rect(Rect::new(pos, vkm::Vec2::new(w, h)))
   }
   /// Sets the position of the Window in pixel coordinates
-  pub fn position(mut self, x: i32, y: i32) -> Self {
+  pub fn position(self, x: i32, y: i32) -> Self {
     let size = self.layout.get_rect().size;
     self.rect(Rect::new(vkm::Vec2::new(x, y), size))
   }

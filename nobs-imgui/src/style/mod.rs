@@ -91,6 +91,7 @@ pub mod event {
 
 pub trait StyleComponent<S: Style>: Component<S, Event = event::Event> {
   fn new(gui: &ImGui<S>, style: String, movable: bool, resizable: bool) -> Self;
+  fn change_style(&mut self, style: String, movable: bool, resizable: bool);
 
   fn get_client_rect(&self) -> Rect;
   fn get_padded_size(&self, size: vkm::Vec2u) -> vkm::Vec2u;
