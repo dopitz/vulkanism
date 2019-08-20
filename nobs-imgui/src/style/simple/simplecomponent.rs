@@ -28,6 +28,7 @@ pub struct SimpleComponent {
   has_focus: bool,
   mouse_pressed: Option<EventButton>,
   dragging: Option<EventDrag>,
+  movedelta: Option<vkm::Vec2i>,
 }
 
 impl Drop for SimpleComponent {
@@ -97,12 +98,13 @@ impl StyleComponent<Simple> for SimpleComponent {
       has_focus: false,
       mouse_pressed: None,
       dragging: None,
+      movedelta: None,
     }
   }
 
-  fn change_style(&mut self, style: String, movable: bool, resizable: bool) {
+  fn change_style(&mut self, style: &str, movable: bool, resizable: bool) {
     let sim = self.gui.style.lock();
-    self.style = style;
+    self.style = style.to_owned();
     let lutentry = sim.style_lut.get(&self.style).unwrap_or(&sim.style_default);
     self.bd_thickness = lutentry.style.bd_thickness;
 
@@ -213,6 +215,7 @@ impl Component<Simple> for SimpleComponent {
         } => {
           self.mouse_pressed = None;
           self.dragging = None;
+          self.movedelta = None;
           if clicked.is_some() {
             event = Some(Event::Released(EventButton {
               location: *clicked.as_ref().unwrap(),
@@ -237,6 +240,7 @@ impl Component<Simple> for SimpleComponent {
           };
           self.has_focus = true;
           self.mouse_pressed = Some(bt);
+          self.movedelta = Some(self.gui.select.get_current_position().into() - self.get_rect().position);
           event = Some(Event::Pressed(bt));
         }
         vk::winit::Event::WindowEvent {
@@ -269,7 +273,7 @@ impl Component<Simple> for SimpleComponent {
     // moving and resizing
     match event.as_ref() {
       Some(Event::Drag(drag)) => {
-        event = if drag.delta != vec2!(0) {
+        if drag.delta != vec2!(0) {
           let mut pos = self.get_rect().position;
           let mut size = self.get_rect().size.into();
 
@@ -311,17 +315,13 @@ impl Component<Simple> for SimpleComponent {
           }
 
           match drag.location {
-            ClickLocation::Body if self.movable => pos += drag.delta,
+            ClickLocation::Body if self.movable => pos = mp - *self.movedelta.as_ref().unwrap(),
             _ => {}
           }
 
           if self.movable || self.resizable {
-            Some(Event::Resize(Rect::new(pos, size.into())))
-          } else {
-            None
+            event = Some(Event::Resize(Rect::new(pos, size.into())));
           }
-        } else {
-          None
         }
       }
       _ => {}

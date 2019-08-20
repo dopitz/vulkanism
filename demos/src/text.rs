@@ -179,7 +179,7 @@ struct Gui {
   gui: gui::Gui,
 
   wnd: gui::Window<gui::ColumnLayout>,
-  text: gui::TextBox,
+  text: gui::TextEdit,
   text2: gui::TextBox,
 
   focus: imgui::select::SelectId,
@@ -194,7 +194,7 @@ impl Gui {
     let mut wnd = gui::Window::new(&gui).position(200, 200).size(500, 320);
 
     let mut text = imgui::textbox::TextBox::new(&gui);
-    text.text("aoeu\naoeu\naoeu\naoeu");
+    text.text("aoeu");
     text.typeset(text.get_typeset().size(70).cursor(Some(vec2!(1, 0))));
 
     let mut text2 = imgui::textbox::TextBox::new(&gui);
@@ -231,11 +231,14 @@ impl StreamPushMut for Gui {
       println!("{:?}", e);
     };
 
-    self.text2.draw(
+    if let Some(e) = self.text2.draw(
       &mut scr,
       &mut self.wnd,
       &mut self.focus,
-    );
+    ){
+      println!("{:?}", e);
+    };
+
 
     cs.push_mut(&mut scr)
   }

@@ -6,6 +6,7 @@ use crate::select::SelectId;
 use crate::style::event;
 use crate::style::Style;
 use crate::style::StyleComponent;
+use crate::textbox::TextBox;
 use crate::ImGui;
 use vk::cmd::commands::Scissor;
 
@@ -16,6 +17,7 @@ use vk::cmd::commands::Scissor;
 pub struct Window<L: Layout, S: Style> {
   layout: L,
   style: Option<S::Component>,
+  heading: Option<TextBox<S>>,
 }
 
 impl<L: Layout, S: Style> Default for Window<L, S> {
@@ -23,6 +25,7 @@ impl<L: Layout, S: Style> Default for Window<L, S> {
     Self {
       layout: Default::default(),
       style: None,
+      heading: None,
     }
   }
 }
@@ -80,8 +83,18 @@ impl<L: Layout, S: Style> Component<S> for Window<L, S> {
   fn draw<LSuper: Layout>(&mut self, screen: &mut Screen<S>, layout: &mut LSuper, focus: &mut SelectId) -> Option<Self::Event> {
     // restart the layout for components that are using this window as layouting scheme
     self.restart();
-
     let scissor = layout.apply(self);
+
+      let mut r = Component::get_rect(self);
+    if let Some(heading) = self.heading.as_mut() {
+      let mut cl = super::ColumnLayout::default();
+      cl.set_rect(r);
+      if let Some(event::Event::Drag(drag)) = heading.draw(screen, &mut self.layout, focus) {
+        r.position += drag.delta;
+        self.rect(r);
+      }
+    } 
+
     let e = if let Some(style) = self.style.as_mut() {
       style.draw(screen, layout, focus)
     } else {
@@ -104,10 +117,16 @@ impl<L: Layout, S: Style> Component<S> for Window<L, S> {
 impl<L: Layout, S: Style> Window<L, S> {
   pub fn new(gui: &ImGui<S>) -> Self {
     let style = Some(S::Component::new(gui, "Window".to_owned(), true, true));
+    let mut heading = TextBox::new(gui);
+    heading.text("A fancy window");
+    heading.typeset(heading.get_typeset().size(32).cursor(None));
+    heading.style("WindowHeading");
+    let heading = Some(heading);
 
     Self {
       layout: Default::default(),
       style,
+      heading,
     }
   }
 
