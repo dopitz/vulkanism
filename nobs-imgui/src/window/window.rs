@@ -39,7 +39,13 @@ impl<L: Layout, S: Style> Layout for Window<L, S> {
     // Sets the rect of the style and uses the client rect for the layout
     if let Some(style) = self.style.as_mut() {
       style.rect(rect);
-      self.layout.set_rect(style.get_client_rect());
+      let cr = style.get_client_rect();
+      let mut head = cr;
+      let mut body = cr;
+      head.size.y = self.heading.as_ref().unwrap().get_typeset().size;
+      body.position.y += head.size.y as i32;
+      body.size.y = body.size.y.saturating_sub(head.size.y);
+      self.layout.set_rect(body);
     } else {
       self.layout.set_rect(rect);
     }
@@ -85,7 +91,7 @@ impl<L: Layout, S: Style> Component<S> for Window<L, S> {
     self.restart();
     let scissor = layout.apply(self);
 
-      let mut r = Component::get_rect(self);
+    let mut r = Component::get_rect(self);
     if let Some(heading) = self.heading.as_mut() {
       let mut cl = super::ColumnLayout::default();
       cl.set_rect(r);
@@ -93,7 +99,7 @@ impl<L: Layout, S: Style> Component<S> for Window<L, S> {
         r.position += drag.delta;
         self.rect(r);
       }
-    } 
+    }
 
     let e = if let Some(style) = self.style.as_mut() {
       style.draw(screen, layout, focus)

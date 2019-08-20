@@ -85,9 +85,6 @@ impl Layout for ColumnLayout {
     if rect.size.x >= self.rect.size.x {
       rect.size.x = self.rect.size.x;
     }
-    //if self.top + rect.size.y >= self.rect.size.y {
-    //  rect.size.y = self.rect.size.y - self.top;
-    //}
     c.rect(rect);
     self.top += rect.size.y;
 
