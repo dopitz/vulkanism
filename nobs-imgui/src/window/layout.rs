@@ -91,3 +91,9 @@ impl Layout for ColumnLayout {
     self.get_scissor(rect)
   }
 }
+
+impl From<Rect> for ColumnLayout {
+  fn from(rect: Rect) -> Self {
+    Self { rect, top: 0 }
+  }
+}
