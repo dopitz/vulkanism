@@ -14,6 +14,7 @@ macro_rules! make_style {
 //pub mod fancy;
 pub mod simple;
 
+use crate::font::TypeSet;
 use crate::rect::Rect;
 use crate::window::Component;
 use crate::ImGui;
@@ -23,12 +24,26 @@ pub trait Style: Clone {
   type Component: StyleComponent<Self>;
   type Template: Clone;
 
-  fn new(mem: vk::mem::Mem, pass_draw: vk::RenderPass, pass_select: vk::RenderPass, ds_viewport: vk::DescriptorSet) -> Self;
+  fn new(
+    device: &vk::device::Device,
+    mem: vk::mem::Mem,
+    pass_draw: vk::RenderPass,
+    pass_select: vk::RenderPass,
+    ds_viewport: vk::DescriptorSet,
+  ) -> Self;
 
   fn set_style(&mut self, name: String, style: Self::Template);
   fn get_style(&self, name: &str) -> Option<Self::Template>;
 
   fn load_styles(&mut self, styles: HashMap<String, Self::Template>);
+
+  fn set_dpi(&mut self, dpi: f64);
+
+  fn get_typeset_tini(&self) -> TypeSet;
+  fn get_typeset_small(&self) -> TypeSet;
+  fn get_typeset(&self) -> TypeSet;
+  fn get_typeset_large(&self) -> TypeSet;
+  fn get_typeset_huge(&self) -> TypeSet;
 }
 
 pub mod event {

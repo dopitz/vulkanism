@@ -134,7 +134,7 @@ impl<L: Layout, S: Style> Window<L, S> {
     let style = Some(S::Component::new(gui, "Window".to_owned(), true, true));
     let mut heading = TextBox::new(gui);
     heading.text("A fancy window");
-    heading.typeset(heading.get_typeset().size(24).cursor(None));
+    heading.typeset(gui.style.get_typeset().cursor(None));
     heading.style("WindowHeading");
     let heading = Some(heading);
 

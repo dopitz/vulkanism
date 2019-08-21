@@ -190,16 +190,17 @@ impl Gui {
     use gui::*;
     let mut gui = gui::Gui::new(device, wnd, target, mem);
     gui.style.load_styles(gui::get_default_styles());
+    gui.style.set_dpi(1.6);
 
     let mut wnd = gui::Window::new(&gui).position(200, 200).size(500, 320);
 
     let mut text = gui::TextBox::new(&gui);
     text.text("aoeu");
-    text.typeset(text.get_typeset().size(70).cursor(Some(vec2!(1, 0))));
+    text.typeset(text.get_typeset().cursor(Some(vec2!(1, 0))));
 
     let mut text2 = gui::TextBox::new(&gui);
     text2.text("aoeu");
-    text2.typeset(text2.get_typeset().size(70).cursor(Some(vec2!(1, 0))));
+    text2.typeset(text2.get_typeset().cursor(Some(vec2!(1, 0))));
     Self {
       gui,
       wnd,

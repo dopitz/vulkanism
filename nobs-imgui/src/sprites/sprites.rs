@@ -9,6 +9,12 @@ use crate::style::Style;
 use crate::ImGui;
 use vk::pass::MeshId;
 
+/// Stprite rendering
+///
+/// Renders textured, 2D rectangles. Rectangles are defined in screen space with position (0,0) as the top left corner of the screen and size in pixel.
+///
+/// Note that you have to set a valid texture and sampler for the sprites with [texture](struct.Sprites.html#method.texture) 
+/// otherwise no descriptor set is bound to the sprite rendering pipeline.
 pub struct Sprites<S: Style> {
   device: vk::Device,
   gui: ImGui<S>,
@@ -48,10 +54,7 @@ impl<S: Style> Sprites<S> {
       .bind(&mut mem.alloc, vk::mem::BindType::Block)
       .unwrap();
 
-    let font = gui.get_font();
-
     let pipe = Pipeline::new_instance(&gui.get_pipes());
-    pipe.update_dsets(device, ub, font.texview, font.sampler);
 
     let mesh = gui.get_drawpass().new_mesh(
       pipe.bind_pipe,
@@ -65,8 +68,8 @@ impl<S: Style> Sprites<S> {
 
       position: Default::default(),
 
-      tex: font.texview,
-      sampler: font.sampler,
+      tex: vk::NULL_HANDLE,
+      sampler: vk::NULL_HANDLE,
       vb,
       ub,
       mesh,

@@ -25,8 +25,6 @@ struct ImGuiImpl<S: Style> {
   pipes: Mutex<Pipelines>,
 
   scr: Mutex<Option<Screen<S>>>,
-
-  font: Arc<Font>,
 }
 
 impl<S: Style> Drop for ImGuiImpl<S> {
@@ -68,10 +66,6 @@ impl<S: Style> ImGui<S> {
     let extent: vk::Extent2D = vk::Extent2D::build()
       .set((extent.width * dpi) as u32, (extent.height * dpi) as u32)
       .into();
-
-    // we temporarily create a command pool to create the default font
-    let cmds = vk::cmd::CmdPool::new(device.handle, device.queues[0].family).unwrap();
-    let font = Arc::new(font::dejavu_mono::new(device.handle, mem.clone(), device.queues[0].handle, &cmds));
 
     // we have a single uniform buffer with the viewport dimensions
     // this ub is shared by all gui components
@@ -131,6 +125,7 @@ impl<S: Style> ImGui<S> {
 
     // creates style resources
     let style = S::new(
+      device,
       mem.clone(),
       draw.rp.pass,
       select.get_renderpass(),
@@ -150,8 +145,6 @@ impl<S: Style> ImGui<S> {
         pipes,
 
         scr: Mutex::new(None),
-
-        font,
       }),
     }
   }
@@ -164,15 +157,7 @@ impl<S: Style> ImGui<S> {
   pub fn get_mem(&self) -> vk::mem::Mem {
     self.gui.mem.clone()
   }
-  /// Get the gui's default font
-  pub fn get_font(&self) -> Arc<Font> {
-    self.gui.font.clone()
-  }
-  /// Get the specified pipeline from the gui's cached pipelines
-  ///
-  /// # Arguments
-  /// * `id` - Pipeline identifier
-
+  /// Get the gui's cache of pipelines
   pub fn get_pipes<'a>(&'a self) -> std::sync::MutexGuard<'a, Pipelines> {
     self.gui.pipes.lock().unwrap()
   }

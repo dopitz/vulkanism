@@ -15,8 +15,9 @@ pub struct Text<S: Style> {
 
 impl<S: Style> Text<S> {
   pub fn new(gui: &ImGui<S>) -> Self {
-    let sprites = sprites::Sprites::new(gui);
-    let typeset = TypeSet::new(gui.get_font());
+    let typeset = gui.style.get_typeset();//TypeSet::new(gui.style.get_font());
+    let mut sprites = sprites::Sprites::new(gui);
+    sprites.texture(typeset.font.texview, typeset.font.sampler);
     Self {
       sprites,
       text: "".to_string(),
@@ -58,6 +59,7 @@ impl<S: Style> Text<S> {
 
   pub fn typeset(&mut self, ts: TypeSet) -> &mut Self {
     if self.typeset != ts {
+      self.sprites.texture(ts.font.texview, ts.font.sampler);
       self.typeset = ts;
       self.update_sprites();
     }

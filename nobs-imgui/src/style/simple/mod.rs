@@ -7,6 +7,8 @@ pub use super::StyleComponent;
 pub use simplecomponent::SimpleComponent;
 
 use super::*;
+use crate::font::Font;
+use crate::font::TypeSet;
 use pipeline::Pipeline;
 use pipeline::UbStyle;
 use std::collections::HashMap;
@@ -25,6 +27,8 @@ struct Impl {
   pipe: Pipeline,
   style_lut: HashMap<String, LUTEntry>,
   style_default: LUTEntry,
+  font: Arc<Font>,
+  dpi: f64,
 }
 
 impl Drop for Impl {
@@ -52,7 +56,13 @@ impl Style for Simple {
   type Component = SimpleComponent;
   type Template = UbStyle;
 
-  fn new(mut mem: vk::mem::Mem, pass_draw: vk::RenderPass, pass_select: vk::RenderPass, ds_viewport: vk::DescriptorSet) -> Self {
+  fn new(
+    device: &vk::device::Device,
+    mut mem: vk::mem::Mem,
+    pass_draw: vk::RenderPass,
+    pass_select: vk::RenderPass,
+    ds_viewport: vk::DescriptorSet,
+  ) -> Self {
     let pipe = Pipeline::new(mem.alloc.get_device(), pass_draw, 0, pass_select, 0);
     let style_lut = HashMap::new();
     let style_default = {
@@ -81,12 +91,17 @@ impl Style for Simple {
       }
     };
 
+    let cmds = vk::cmd::CmdPool::new(device.handle, device.queues[0].family).unwrap();
+    let font = Arc::new(font::dejavu_mono::new(device.handle, mem.clone(), device.queues[0].handle, &cmds));
+
     Self {
       im: Arc::new(Mutex::new(Impl {
         mem,
         pipe,
         style_lut,
         style_default,
+        font,
+        dpi: 1.0,
       })),
       ds_viewport,
     }
@@ -159,6 +174,32 @@ impl Style for Simple {
     }
 
     im.style_lut = styles;
+  }
+
+  fn set_dpi(&mut self, dpi: f64) {
+    let mut s = self.lock();
+    let fac = dpi / s.dpi ;
+    for (_, s) in s.style_lut.iter_mut() {
+      s.style.bd_thickness = (s.style.bd_thickness.into() * fac).into();
+    }
+    s.dpi = dpi;
+    // TODO: update uniform buffers
+  }
+
+  fn get_typeset_tini(&self) -> TypeSet {
+    self.get_typeset().size(12)
+  }
+  fn get_typeset_small(&self) -> TypeSet {
+    self.get_typeset().size(18)
+  }
+  fn get_typeset(&self) -> TypeSet {
+    TypeSet::new(self.lock().font.clone()).size(24)
+  }
+  fn get_typeset_large(&self) -> TypeSet {
+    self.get_typeset().size(32)
+  }
+  fn get_typeset_huge(&self) -> TypeSet {
+    self.get_typeset().size(38)
   }
 }
 
