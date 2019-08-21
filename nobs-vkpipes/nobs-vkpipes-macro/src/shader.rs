@@ -114,9 +114,15 @@ impl Builder {
       b.entry = "main".to_string();
     }
 
-    // include dirs in abs path
+    // add the parent folder of the root glsl sourcse file to the include paths (if glsl is specified)
+    if !b.path_glsl.is_empty() {
+      if let Some(parent) = Path::new(&b.path_glsl).parent() {
+        b.includes.push(parent.to_str().unwrap().to_owned());
+      }
+    }
+    // make include dirs absolute
     b.includes = b.includes.iter_mut().filter_map(|i| Self::make_abs_path(i)).collect::<Vec<_>>();
-
+    
     stage_from_stirng(&b.stage)?;
 
     Ok(b)
@@ -231,6 +237,21 @@ impl Builder {
             break;
           }
         }
+
+        //if found.is_none() {
+        //  let parent_dir = Path::new(includer).parent().unwrap();
+        //  let resolved = parent_dir.join(includee);
+
+        //  //panic!("resolved: {:?}", resolved);
+
+        //  //if !resolved.is_file() {
+        //  //  return Err(format!("Include `{}` is not a file, included from `{}`", includee, includer));
+        //  //}
+        //  resolved
+        //}
+        //else {
+        //  found.unwrap()
+        //}
 
         if found.is_none() {
           return Err(format!("Include `{}` is not a file, included from `{}`", includee, includer));
