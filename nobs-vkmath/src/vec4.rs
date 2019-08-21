@@ -52,6 +52,50 @@ impl<T: Copy> Vec4<T> {
   pub fn xyz(&self) -> Vec3<T> {
     vec3!(self.x, self.y, self.z)
   }
+
+  pub fn from_xy(v: Vec2<T>, z: T, w: T) -> Self {
+    Self::new(v.x, v.y, z, w)
+  }
+
+  pub fn from_xyz(v: Vec3<T>, w: T) -> Self {
+    Self::new(v.x, v.y, v.z, w)
+  }
+
+  pub fn map_x<F: Fn(&Self) -> T>(mut self, f: F) -> Self {
+    self.x = f(&self);
+    self
+  }
+  pub fn map_y<F: Fn(&Self) -> T>(mut self, f: F) -> Self {
+    self.y = f(&self);
+    self
+  }
+  pub fn map_z<F: Fn(&Self) -> T>(mut self, f: F) -> Self {
+    self.z = f(&self);
+    self
+  }
+  pub fn map_w<F: Fn(&Self) -> T>(mut self, f: F) -> Self {
+    self.w = f(&self);
+    self
+  }
+  pub fn map_xy<F: Fn(&Self) -> Vec2<T>>(mut self, f: F) -> Self {
+    let v = f(&self);
+    self.x = v.x;
+    self.y = v.y;
+    self
+  }
+  pub fn map_xyz<F: Fn(&Self) -> Vec3<T>>(mut self, f: F) -> Self {
+    let v = f(&self);
+    self.x = v.x;
+    self.y = v.y;
+    self.z = v.z;
+    self
+  }
+  pub fn map<F: Fn(&Self) -> Self>(self, f: F) -> Self {
+    f(&self)
+  }
+  pub fn map_into<U, F: Fn(&Self) -> U>(self, f: F) -> U {
+    f(&self)
+  }
 }
 
 // Compare
@@ -456,4 +500,3 @@ mod tests {
     assert_eq!(fi, vec4!(1.1, 4.4, 3.0 * 3.3, 4.0 * 4.4));
   }
 }
-

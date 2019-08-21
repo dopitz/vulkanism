@@ -1,4 +1,5 @@
 use crate::common_traits::*;
+use crate::vec2::Vec2;
 
 #[repr(C)]
 #[derive(Default, Clone, Copy, Debug)]
@@ -36,6 +37,39 @@ impl<T: Copy> Vec3<T> {
       y: self.y.vec_into(),
       z: self.z.vec_into(),
     }
+  }
+
+  pub fn xy(&self) -> Vec2<T> {
+    vec2!(self.x, self.y)
+  }
+
+  pub fn from_xy(v: Vec2<T>, z: T, w: T) -> Self {
+    Self::new(v.x, v.y, z)
+  }
+
+  pub fn map_x<F: Fn(&Self) -> T>(mut self, f: F) -> Self {
+    self.x = f(&self);
+    self
+  }
+  pub fn map_y<F: Fn(&Self) -> T>(mut self, f: F) -> Self {
+    self.y = f(&self);
+    self
+  }
+  pub fn map_z<F: Fn(&Self) -> T>(mut self, f: F) -> Self {
+    self.z = f(&self);
+    self
+  }
+  pub fn map_xy<F: Fn(&Self) -> Vec2<T>>(mut self, f: F) -> Self {
+    let v = f(&self);
+    self.x = v.x;
+    self.y = v.y;
+    self
+  }
+  pub fn map<F: Fn(&Self) -> Self>(self, f: F) -> Self {
+    f(&self)
+  }
+  pub fn map_into<U, F: Fn(&Self) -> U>(self, f: F) -> U {
+    f(&self)
   }
 }
 

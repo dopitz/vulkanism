@@ -33,6 +33,21 @@ impl<T: Copy> Vec2<T> {
       y: self.y.vec_into(),
     }
   }
+
+  pub fn map_x<F: Fn(&Self) -> T>(mut self, f: F) -> Self {
+    self.x = f(&self);
+    self
+  }
+  pub fn map_y<F: Fn(&Self) -> T>(mut self, f: F) -> Self {
+    self.y = f(&self);
+    self
+  }
+  pub fn map<F: Fn(&Self) -> Self>(self, f: F) -> Self {
+    f(&self)
+  }
+  pub fn map_into<U, F: Fn(&Self) -> U>(self, f: F) -> U {
+    f(&self)
+  }
 }
 
 // Compare
