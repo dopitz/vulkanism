@@ -79,3 +79,4 @@ impl<S: Style> Text<S> {
     self.sprites.sprites(&buffer[0..size]);
   }
 }
+

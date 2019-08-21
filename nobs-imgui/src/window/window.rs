@@ -1,12 +1,12 @@
 use super::Component;
 use super::Layout;
 use super::Screen;
+use crate::components::TextBox;
 use crate::rect::Rect;
 use crate::select::SelectId;
 use crate::style::event;
 use crate::style::Style;
 use crate::style::StyleComponent;
-use crate::textbox::TextBox;
 use crate::ImGui;
 use vk::cmd::commands::Scissor;
 
@@ -40,10 +40,18 @@ impl<L: Layout, S: Style> Layout for Window<L, S> {
     if let Some(style) = self.style.as_mut() {
       style.rect(rect);
       let mut cr = style.get_client_rect();
+
+      let h = if let Some(heading) = self.heading.as_mut() {
+        heading.rect(Rect::new(cr.position, cr.size.map_y(|_| heading.get_size_hint().y)));
+        heading.get_rect().size.y
+      } else {
+        0
+      };
+
       // offset the actual drawing plane for components of the window to the client rect of the style with a padding from top for the heading
       let head = self.heading.as_ref().unwrap().get_typeset().size;
-      cr.position.y += head as i32;
-      cr.size.y = cr.size.y.saturating_sub(head);
+      cr.position.y += h as i32;
+      cr.size.y = cr.size.y.saturating_sub(h);
       self.layout.set_rect(cr);
     } else {
       self.layout.set_rect(rect);
@@ -93,15 +101,8 @@ impl<L: Layout, S: Style> Component<S> for Window<L, S> {
     // window heading needs rect for moving
     let mut r = Component::get_rect(self);
     if let Some(heading) = self.heading.as_mut() {
-      // rect for the window heading
-      let mut cr = if let Some(style) = self.style.as_ref() {
-        style.get_client_rect()
-      } else {
-        self.layout.get_rect()
-      };
-      cr.size.y = heading.get_typeset().size;
       // draw caption and move window on drag
-      if let Some(event::Event::Drag(drag)) = heading.draw(screen, &mut super::ColumnLayout::from(cr), focus) {
+      if let Some(event::Event::Drag(drag)) = heading.draw(screen, &mut super::FloatLayout::from(r), focus) {
         r.position += drag.delta;
         self.rect(r);
       }
@@ -133,7 +134,7 @@ impl<L: Layout, S: Style> Window<L, S> {
     let style = Some(S::Component::new(gui, "Window".to_owned(), true, true));
     let mut heading = TextBox::new(gui);
     heading.text("A fancy window");
-    heading.typeset(heading.get_typeset().size(32).cursor(None));
+    heading.typeset(heading.get_typeset().size(24).cursor(None));
     heading.style("WindowHeading");
     let heading = Some(heading);
 

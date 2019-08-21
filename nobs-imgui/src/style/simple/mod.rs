@@ -188,9 +188,9 @@ pub fn get_default_styles() -> HashMap<String, UbStyle> {
     "WindowHeading".to_owned(),
     UbStyle {
       color: vec4!(0.1, 0.1, 0.3, 0.6),
-      bd_color_inner: vec4!(0.0),
-      bd_color_outer: vec4!(0.0),
-      bd_thickness: vec2!(0),
+      bd_color_inner: vec4!(0.1, 0.1, 0.3, 0.6),
+      bd_color_outer: vec4!(0.1, 0.1, 0.3, 0.6),
+      bd_thickness: vec2!(10),
     },
   );
   styles.insert(

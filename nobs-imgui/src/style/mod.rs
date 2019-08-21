@@ -5,8 +5,8 @@ macro_rules! make_style {
 
     pub type Gui = crate::ImGui<$name>;
     pub type Window<L: Layout> = crate::window::Window<L, $name>;
-    pub type TextBox<H = crate::textbox::HandlerReadonly> = crate::textbox::TextBox<$name, H>;
-    pub type TextEdit = crate::textbox::TextBox<$name, crate::textbox::HandlerEdit>;
+    pub type TextBox<H = crate::components::textbox::HandlerReadonly> = crate::components::TextBox<$name, H>;
+    pub type TextEdit = crate::components::TextBox<$name, crate::components::textbox::HandlerEdit>;
   };
 }
 

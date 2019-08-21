@@ -4,7 +4,7 @@ use crate::select::SelectId;
 use crate::style::event;
 use crate::style::Style;
 use crate::style::StyleComponent;
-use crate::text::Text;
+use crate::sprites::Text;
 use crate::window::Component;
 use crate::window::Layout;
 use crate::window::Screen;
@@ -139,4 +139,5 @@ impl TextBoxEventHandler for HandlerEdit {
   }
 }
 
-type TextEdit<S, > = TextBox<S, HandlerEdit>;
+pub type TextEdit<S, > = TextBox<S, HandlerEdit>;
+

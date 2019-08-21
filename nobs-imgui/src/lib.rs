@@ -15,13 +15,12 @@ extern crate nobs_vkmath as vkm;
 extern crate freetype;
 extern crate nobs_imgui_font as font;
 
+pub mod components;
 pub mod pipelines;
 pub mod rect;
 pub mod select;
 pub mod sprites;
 pub mod style;
-pub mod text;
-pub mod textbox;
 pub mod window;
 
 mod imgui;

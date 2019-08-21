@@ -57,6 +57,12 @@ impl Layout for FloatLayout {
   }
 }
 
+impl From<Rect> for FloatLayout {
+  fn from(rect: Rect) -> Self {
+    Self { rect }
+  }
+}
+
 /// Column layout that arranges components in a single column from top first to bottom last
 #[derive(Default)]
 pub struct ColumnLayout {
