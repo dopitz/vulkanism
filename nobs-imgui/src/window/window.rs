@@ -31,15 +31,20 @@ impl<L: Layout, S: Style> Layout for Window<L, S> {
     self.layout.restart();
   }
 
-  fn set_rect(&mut self, rect: Rect) {
+  fn set_rect(&mut self, mut rect: Rect) {
+    // always show the caption
+    let h = self.caption.get_size_hint().y;
+    if rect.size.y < h {
+      rect.size.y = h
+    }
+
     // Sets the rect of the style and uses the client rect for the layout
     self.layout_window.set_rect(rect);
     self.style.rect(rect);
     let mut cr = self.style.get_client_rect();
 
-    // keep space for the window caption
+    // make room for the window caption
     // use the remainder for the client layout
-    let h = self.caption.get_size_hint().y;
     self.layout_caption.set_rect(Rect::new(cr.position, cr.size.map_y(|_| h)));
     self.caption.rect(self.layout_caption.get_rect());
 
@@ -47,14 +52,14 @@ impl<L: Layout, S: Style> Layout for Window<L, S> {
       cr.position.map_y(|p| p.y + h as i32) + self.padding.into(),
       vec2!(
         cr.size.x.saturating_sub(self.padding.x * 2),
-        cr.size.x.saturating_sub(self.padding.x * 2)
+        cr.size.y.saturating_sub(self.padding.y * 2 + h)
       ),
     ));
     self.layout.set_rect(self.layout_client.get_rect());
   }
 
   fn get_rect(&self) -> Rect {
-    self.layout_window.get_rect()
+    self.layout_client.get_rect()
   }
 
   fn apply<S2: Style, C: Component<S2>>(&mut self, c: &mut C) -> Scissor {

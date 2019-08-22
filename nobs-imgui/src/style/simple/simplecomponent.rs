@@ -174,6 +174,7 @@ impl Component<Simple> for SimpleComponent {
 
     // apply_layout should be called by the wrapping gui element
     let scissor = layout.get_scissor(self.get_rect());
+    println!("style  : {:?}\n layout {:?}", scissor, layout.get_rect());
     screen.push_draw(self.draw_mesh, scissor);
     screen.push_select(self.select_mesh, scissor);
 
