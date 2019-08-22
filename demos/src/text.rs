@@ -202,7 +202,7 @@ impl Gui {
 
     let mut text2 = gui::TextBox::new(&gui);
     text2.text("aoeu");
-    text2.typeset(text2.get_typeset().cursor(Some(vec2!(1, 0))));
+    text2.typeset(text2.get_typeset());
     Self {
       gui,
       wnd,

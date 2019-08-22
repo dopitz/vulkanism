@@ -131,7 +131,10 @@ impl TextBoxEventHandler for HandlerEdit {
       }
     }
 
-    if let Some(event::Event::Pressed(_)) = e {
+    if let Some(event::Event::Pressed(event::EventButton {position, ..})) = e {
+      let mut ts = tb.get_typeset();
+      let cp = ts.find_pos(position - tb.get_rect().position.into(), &tb.get_text());
+      tb.typeset(ts.cursor(Some(cp)));
       Some(Event::Clicked)
     } else {
       None
