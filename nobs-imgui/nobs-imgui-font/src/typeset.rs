@@ -97,17 +97,16 @@ impl TypeSet {
     for (i, c) in s.chars().enumerate() {
       let ch = self.font.get(c);
       off += ch.advance * size;
-      cp.x += 1;
+      if off.x > pos.x && off.y > pos.y {
+        break;
+      }
 
+      cp.x += 1;
       if c == '\n' || c == '\r' {
         off.x = 0.0;
         off.y = off.y + size * self.line_spacing;
         cp.x = 0;
         cp.y += 1;
-      }
-
-      if off.x > pos.x && off.y > pos.y {
-        break;
       }
     }
 

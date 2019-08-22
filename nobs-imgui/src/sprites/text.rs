@@ -45,8 +45,8 @@ impl<S: Style> Text<S> {
     }
     self
   }
-  pub fn get_text(&self) -> String {
-    self.text.clone()
+  pub fn get_text<'a>(&'a self) -> &'a str {
+    &self.text
   }
 
   pub fn position(&mut self, pos: Vec2i) -> &mut Self {

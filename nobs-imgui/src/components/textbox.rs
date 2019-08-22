@@ -48,7 +48,7 @@ impl<S: Style, H: TextBoxEventHandler> TextBox<S, H> {
     self.text.text(text);
     self
   }
-  pub fn get_text(&self) -> String {
+  pub fn get_text<'a>(&'a self) -> &'a str {
     self.text.get_text()
   }
 
@@ -132,8 +132,9 @@ impl TextBoxEventHandler for HandlerEdit {
     }
 
     if let Some(event::Event::Pressed(event::EventButton {position, ..})) = e {
+      let mut click = vec2!(position.x.saturating_sub(tb.text.get_position().x as u32), position.y.saturating_sub(tb.text.get_position().y as u32));
       let mut ts = tb.get_typeset();
-      let cp = ts.find_pos(position - tb.get_rect().position.into(), &tb.get_text());
+      let cp = ts.find_pos(click, tb.get_text());
       tb.typeset(ts.cursor(Some(cp)));
       Some(Event::Clicked)
     } else {
