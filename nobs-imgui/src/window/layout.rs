@@ -8,7 +8,7 @@ use vk::cmd::commands::Scissor;
 /// Layouting gui components has to be incremental.
 /// This means that the layout for a single components needs to be decided without knolwledge about other components.
 /// The layouts internal state must be used instead.
-pub trait Layout: Default {
+pub trait Layout {
   /// Restarts the layout
   fn restart(&mut self);
 

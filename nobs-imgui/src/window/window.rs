@@ -1,4 +1,5 @@
 use super::Component;
+use super::FloatLayout;
 use super::Layout;
 use super::Screen;
 use crate::components::TextBox;
@@ -15,19 +16,13 @@ use vk::cmd::commands::Scissor;
 /// The Window defines a region on the screen on which components are draw
 /// It is basically a builder pattern around a [Layout](struct.Layout.html) and [Screen](struct.Streen.html)
 pub struct Window<L: Layout, S: Style> {
+  layout_window: FloatLayout,
+  layout_caption: FloatLayout,
+  layout_client: FloatLayout,
   layout: L,
-  style: Option<S::Component>,
-  heading: Option<TextBox<S>>,
-}
 
-impl<L: Layout, S: Style> Default for Window<L, S> {
-  fn default() -> Self {
-    Self {
-      layout: Default::default(),
-      style: None,
-      heading: None,
-    }
-  }
+  style: S::Component,
+  caption: TextBox<S>,
 }
 
 impl<L: Layout, S: Style> Layout for Window<L, S> {
@@ -37,86 +32,66 @@ impl<L: Layout, S: Style> Layout for Window<L, S> {
 
   fn set_rect(&mut self, rect: Rect) {
     // Sets the rect of the style and uses the client rect for the layout
-    if let Some(style) = self.style.as_mut() {
-      style.rect(rect);
-      let mut cr = style.get_client_rect();
+    self.layout_window.set_rect(rect);
+    self.style.rect(rect);
+    let mut cr = self.style.get_client_rect();
 
-      let h = if let Some(heading) = self.heading.as_mut() {
-        heading.rect(Rect::new(cr.position, cr.size.map_y(|_| heading.get_size_hint().y)));
-        heading.get_rect().size.y
-      } else {
-        0
-      };
+    // keep space for the window caption
+    // use the remainder for the client layout
+    let h = self.caption.get_size_hint().y;
+    self.layout_caption.set_rect(Rect::new(cr.position, cr.size.map_y(|_| h)));
+    self.caption.rect(self.layout_caption.get_rect());
 
-      // offset the actual drawing plane for components of the window to the client rect of the style with a padding from top for the heading
-      let head = self.heading.as_ref().unwrap().get_typeset().size;
-      cr.position.y += h as i32;
-      cr.size.y = cr.size.y.saturating_sub(h);
-      self.layout.set_rect(cr);
-    } else {
-      self.layout.set_rect(rect);
-    }
+    self.layout_client.set_rect(Rect::new(
+      cr.position.map_y(|p| p.y + h as i32),
+      cr.size.map_y(|s| s.y.saturating_sub(h)),
+    ));
+    self.layout.set_rect(self.layout_client.get_rect());
   }
 
   fn get_rect(&self) -> Rect {
-    // Always return the layout's rect here!
-    // This is important in case we want to do things with the layout's draw area (e.g. Layout::get_scissor)
-    self.layout.get_rect()
+    self.layout_window.get_rect()
   }
 
   fn apply<S2: Style, C: Component<S2>>(&mut self, c: &mut C) -> Scissor {
-    self.layout.apply(c)
+    self.layout.apply(c);
+    self.layout_client.get_scissor(c.get_rect())
   }
 }
 
 impl<L: Layout, S: Style> Component<S> for Window<L, S> {
   fn rect(&mut self, rect: Rect) -> &mut Self {
     // We delegate to Layout::set_rect, because both function should do the same
+    // Layout::set_rect will make room for the caption of the window
     self.set_rect(rect);
     self
   }
   fn get_rect(&self) -> Rect {
-    // Return the the style's rect here, because we are accassing the window as a component
-    if let Some(style) = self.style.as_ref() {
-      style.get_rect()
-    } else {
-      self.layout.get_rect()
-    }
+    self.layout_client.get_rect()
   }
 
   fn get_size_hint(&self) -> vkm::Vec2u {
-    if let Some(style) = self.style.as_ref() {
-      style.get_size_hint()
-    } else {
-      self.layout.get_rect().size
-    }
+    self.layout_window.get_rect().size
   }
 
   type Event = ();
   fn draw<LSuper: Layout>(&mut self, screen: &mut Screen<S>, layout: &mut LSuper, focus: &mut SelectId) -> Option<Self::Event> {
     // restart the layout for components that are using this window as layouting scheme
     self.restart();
-    let scissor = layout.apply(self);
 
-    // window heading needs rect for moving
-    let mut r = Component::get_rect(self);
-    if let Some(heading) = self.heading.as_mut() {
-      // draw caption and move window on drag
-      if let Some(event::Event::Drag(drag)) = heading.draw(screen, &mut super::FloatLayout::from(r), focus) {
-        r.position += drag.delta;
-        self.rect(r);
-      }
+    // resizes all layouts, caption and style components
+    layout.apply(self);
+
+    // draw caption and move window on drag
+    if let Some(event::Event::Drag(drag)) = self.caption.draw(screen, &mut self.layout_caption, focus) {
+      let mut r = self.layout_window.get_rect();
+      r.position += drag.delta;
+      self.rect(r);
     }
 
     // draw the window style
-    let e = if let Some(style) = self.style.as_mut() {
-      style.draw(screen, layout, focus)
-    } else {
-      None
-    };
-
     // resize and move when style body/border is clicked
-    if let Some(e) = e {
+    if let Some(e) = self.style.draw(screen, &mut self.layout_window, focus) {
       match e {
         event::Event::Resize(rect) => {
           self.rect(rect);
@@ -130,30 +105,32 @@ impl<L: Layout, S: Style> Component<S> for Window<L, S> {
 }
 
 impl<L: Layout, S: Style> Window<L, S> {
-  pub fn new(gui: &ImGui<S>) -> Self {
-    let style = Some(S::Component::new(gui, "Window".to_owned(), true, true));
-    let mut heading = TextBox::new(gui);
-    heading.text("A fancy window");
-    heading.typeset(gui.style.get_typeset().cursor(None));
-    heading.style("WindowHeading");
-    let heading = Some(heading);
+  pub fn new(gui: &ImGui<S>, layout: L) -> Self {
+    let style = S::Component::new(gui, "Window".to_owned(), true, true);
+    let mut caption = TextBox::new(gui);
+    caption.text("A fancy window");
+    caption.typeset(gui.style.get_typeset().cursor(None));
+    caption.style("WindowHeading");
 
     Self {
-      layout: Default::default(),
+      layout_window: Default::default(),
+      layout_caption: Default::default(),
+      layout_client: Default::default(),
+      layout,
       style,
-      heading,
+      caption,
     }
   }
 
   /// Sets size and position of the Window in pixel coordinates
   pub fn size(mut self, w: u32, h: u32) -> Self {
-    let pos = self.layout.get_rect().position;
+    let pos = self.layout_window.get_rect().position;
     self.set_rect(Rect::new(pos, vkm::Vec2::new(w, h)));
     self
   }
   /// Sets the position of the Window in pixel coordinates
   pub fn position(mut self, x: i32, y: i32) -> Self {
-    let size = self.layout.get_rect().size;
+    let size = self.layout_window.get_rect().size;
     self.set_rect(Rect::new(vkm::Vec2::new(x, y), size));
     self
   }
