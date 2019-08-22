@@ -86,7 +86,6 @@ impl<S: Style, H: TextBoxEventHandler> Component<S> for TextBox<S, H> {
   fn draw<L: Layout>(&mut self, screen: &mut Screen<S>, layout: &mut L, focus: &mut SelectId) -> Option<H::Output> {
     // style is resized along with the textbox
     let scissor = layout.apply(self);
-    println!("textbox: {:?}\n layout {:?}", scissor, layout.get_rect());
 
     // draw and select
     let e = self.style.draw(screen, layout, focus);

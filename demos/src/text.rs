@@ -194,7 +194,7 @@ impl Gui {
 
     let mut wnd = gui::Window::new(&gui, imgui::window::ColumnLayout::default())
       .position(200, 200)
-      .size(500, 120);
+      .size(500, 320);
 
     let mut text = gui::TextBox::new(&gui);
     text.text("aoeu");
@@ -229,6 +229,8 @@ impl StreamPushMut for Gui {
     if let Some(e) = self.text.draw(&mut scr, &mut self.wnd, &mut self.focus) {
       println!("{:?}", e);
     };
+
+    gui::Spacer::new(vec2!(20)).draw(&mut scr, &mut self.wnd, &mut self.focus);
 
     if let Some(e) = self.text2.draw(&mut scr, &mut self.wnd, &mut self.focus) {
       println!("{:?}", e);
