@@ -16,6 +16,7 @@ use vk::cmd::commands::Scissor;
 /// The Window defines a region on the screen on which components are draw
 /// It is basically a builder pattern around a [Layout](struct.Layout.html) and [Screen](struct.Streen.html)
 pub struct Window<L: Layout, S: Style> {
+  padding: vkm::Vec2u,
   layout_window: FloatLayout,
   layout_caption: FloatLayout,
   layout_client: FloatLayout,
@@ -43,8 +44,11 @@ impl<L: Layout, S: Style> Layout for Window<L, S> {
     self.caption.rect(self.layout_caption.get_rect());
 
     self.layout_client.set_rect(Rect::new(
-      cr.position.map_y(|p| p.y + h as i32),
-      cr.size.map_y(|s| s.y.saturating_sub(h)),
+      cr.position.map_y(|p| p.y + h as i32) + self.padding.into(),
+      vec2!(
+        cr.size.x.saturating_sub(self.padding.x * 2),
+        cr.size.x.saturating_sub(self.padding.x * 2)
+      ),
     ));
     self.layout.set_rect(self.layout_client.get_rect());
   }
@@ -113,6 +117,7 @@ impl<L: Layout, S: Style> Window<L, S> {
     caption.style("WindowHeading");
 
     Self {
+      padding: vec2!(4),
       layout_window: Default::default(),
       layout_caption: Default::default(),
       layout_client: Default::default(),
@@ -132,6 +137,11 @@ impl<L: Layout, S: Style> Window<L, S> {
   pub fn position(mut self, x: i32, y: i32) -> Self {
     let size = self.layout_window.get_rect().size;
     self.set_rect(Rect::new(vkm::Vec2::new(x, y), size));
+    self
+  }
+
+  pub fn padding(mut self, padding: vkm::Vec2u) -> Self {
+    self.padding = padding;
     self
   }
 }
