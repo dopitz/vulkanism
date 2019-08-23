@@ -226,7 +226,7 @@ pub fn get_default_styles() -> HashMap<String, UbStyle> {
     },
   );
   styles.insert(
-    "WindowHeading".to_owned(),
+    "WindowCaption".to_owned(),
     UbStyle {
       color: vec4!(0.1, 0.1, 0.3, 0.6),
       bd_color_inner: vec4!(0.1, 0.1, 0.3, 0.6),

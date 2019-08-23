@@ -1,10 +1,10 @@
 use crate::font::*;
 use crate::rect::Rect;
 use crate::select::SelectId;
+use crate::sprites::Text;
 use crate::style::event;
 use crate::style::Style;
 use crate::style::StyleComponent;
-use crate::sprites::Text;
 use crate::window::Component;
 use crate::window::Layout;
 use crate::window::Screen;
@@ -14,12 +14,71 @@ use crate::ImGui;
 pub enum Event {
   Clicked,
   Changed,
+  Enter,
 }
 
 pub trait TextBoxEventHandler: Default {
   type Output: std::fmt::Debug;
-  fn handle<S: Style>(tb: &mut TextBox<S, Self>, e: Option<event::Event>, screen: &Screen<S>) -> Option<Self::Output> {
+  fn handle<S: Style>(_tb: &mut TextBox<S, Self>, _e: Option<event::Event>, _screen: &Screen<S>) -> Option<Self::Output> {
     None
+  }
+
+  fn receive_character<S: Style>(tb: &mut TextBox<S, Self>, e: &vk::winit::Event, multiline: bool) -> Option<Event> {
+    match e {
+      vk::winit::Event::WindowEvent {
+        event: vk::winit::WindowEvent::ReceivedCharacter(mut c),
+        ..
+      } => {
+        if !multiline && (c == '\n' || c == '\r') {
+          return Some(Event::Enter);
+        }
+
+        if c == '\r' {
+          c = '\n';
+        }
+
+        let ts = tb.get_typeset();
+        if let Some(mut cp) = tb.get_cursor() {
+          let i = ts.index_of(cp, tb.get_text());
+          let mut text = tb.get_text().to_owned();
+          text.insert(i, c);
+          tb.text(&text);
+
+          cp.x += 1;
+          tb.cursor(Some(cp));
+        }
+
+        Some(Event::Changed)
+      }
+      _ => None,
+    }
+  }
+
+  fn move_cursor<S: Style>(tb: &mut TextBox<S, Self>, e: &vk::winit::Event) {
+    match e {
+      vk::winit::Event::DeviceEvent {
+        event:
+          vk::winit::DeviceEvent::Key(vk::winit::KeyboardInput {
+            state: vk::winit::ElementState::Pressed,
+            virtual_keycode: Some(k),
+            ..
+          }),
+        ..
+      } => {
+        use vk::winit::VirtualKeyCode;
+        if let Some(mut c) = tb.get_cursor() {
+          match k {
+            VirtualKeyCode::Up => c.y = c.y.saturating_sub(1),
+            VirtualKeyCode::Down => c.y += 1,
+            VirtualKeyCode::Left => c.x = c.x.saturating_sub(1),
+            VirtualKeyCode::Right => c.x += 1,
+            _ => {}
+          }
+          tb.cursor(Some(c));
+        }
+      }
+      _ => {}
+    }
   }
 }
 
@@ -64,6 +123,14 @@ impl<S: Style, H: TextBoxEventHandler> TextBox<S, H> {
   pub fn get_typeset(&self) -> TypeSet {
     self.text.get_typeset()
   }
+
+  pub fn cursor(&mut self, cp: Option<vkm::Vec2u>) -> &mut Self {
+    self.text.cursor(cp);
+    self
+  }
+  pub fn get_cursor(&self) -> Option<vkm::Vec2u> {
+    self.text.get_cursor()
+  }
 }
 
 impl<S: Style, H: TextBoxEventHandler> Component<S> for TextBox<S, H> {
@@ -89,8 +156,8 @@ impl<S: Style, H: TextBoxEventHandler> Component<S> for TextBox<S, H> {
 
     // draw and select
     let e = self.style.draw(screen, layout, focus);
-    if let Some(e) = e.as_ref() {
-      println!("{:?}", e);
+    if !self.style.has_focus() {
+      self.text.cursor(None);
     }
     screen.push_draw(self.text.get_mesh(), scissor);
 
@@ -102,7 +169,7 @@ impl<S: Style, H: TextBoxEventHandler> Component<S> for TextBox<S, H> {
 pub struct HandlerReadonly {}
 impl TextBoxEventHandler for HandlerReadonly {
   type Output = event::Event;
-  fn handle<S: Style>(tb: &mut TextBox<S, Self>, e: Option<event::Event>, screen: &Screen<S>) -> Option<event::Event> {
+  fn handle<S: Style>(_tb: &mut TextBox<S, Self>, e: Option<event::Event>, _screen: &Screen<S>) -> Option<event::Event> {
     e
   }
 }
@@ -110,6 +177,35 @@ impl TextBoxEventHandler for HandlerReadonly {
 #[derive(Default)]
 pub struct HandlerEdit {}
 impl TextBoxEventHandler for HandlerEdit {
+  type Output = Event;
+  fn handle<S: Style>(tb: &mut TextBox<S, Self>, e: Option<event::Event>, screen: &Screen<S>) -> Option<Event> {
+    if tb.style.has_focus() {
+      for e in screen.get_events() {
+        if let Some(e) = Self::receive_character(tb, e, false) {
+          return Some(e);
+        }
+        Self::move_cursor(tb, e);
+      }
+    }
+
+    if let Some(event::Event::Pressed(event::EventButton { position, .. })) = e {
+      let mut click = vec2!(
+        position.x.saturating_sub(tb.text.get_position().x as u32),
+        position.y.saturating_sub(tb.text.get_position().y as u32)
+      );
+      let ts = tb.get_typeset();
+      let cp = ts.find_pos(click, tb.get_text());
+      tb.cursor(Some(cp));
+      Some(Event::Clicked)
+    } else {
+      None
+    }
+  }
+}
+
+#[derive(Default)]
+pub struct HandlerMultilineEdit {}
+impl TextBoxEventHandler for HandlerMultilineEdit {
   type Output = Event;
   fn handle<S: Style>(tb: &mut TextBox<S, Self>, e: Option<event::Event>, screen: &Screen<S>) -> Option<Event> {
     if tb.style.has_focus() {
@@ -131,11 +227,14 @@ impl TextBoxEventHandler for HandlerEdit {
       }
     }
 
-    if let Some(event::Event::Pressed(event::EventButton {position, ..})) = e {
-      let mut click = vec2!(position.x.saturating_sub(tb.text.get_position().x as u32), position.y.saturating_sub(tb.text.get_position().y as u32));
-      let mut ts = tb.get_typeset();
+    if let Some(event::Event::Pressed(event::EventButton { position, .. })) = e {
+      let mut click = vec2!(
+        position.x.saturating_sub(tb.text.get_position().x as u32),
+        position.y.saturating_sub(tb.text.get_position().y as u32)
+      );
+      let ts = tb.get_typeset();
       let cp = ts.find_pos(click, tb.get_text());
-      tb.typeset(ts.cursor(Some(cp)));
+      tb.cursor(Some(cp));
       Some(Event::Clicked)
     } else {
       None
@@ -143,5 +242,5 @@ impl TextBoxEventHandler for HandlerEdit {
   }
 }
 
-pub type TextEdit<S, > = TextBox<S, HandlerEdit>;
-
+pub type TextEdit<S> = TextBox<S, HandlerEdit>;
+pub type TextEditMultiline<S> = TextBox<S, HandlerMultilineEdit>;

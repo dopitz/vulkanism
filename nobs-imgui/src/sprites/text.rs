@@ -5,23 +5,26 @@ use crate::ImGui;
 
 use vk::pass::MeshId;
 use vkm::Vec2i;
+use vkm::Vec2u;
 
 pub struct Text<S: Style> {
   sprites: sprites::Sprites<S>,
 
   text: String,
   typeset: TypeSet,
+  cursor: Option<Vec2u>,
 }
 
 impl<S: Style> Text<S> {
   pub fn new(gui: &ImGui<S>) -> Self {
-    let typeset = gui.style.get_typeset();//TypeSet::new(gui.style.get_font());
+    let typeset = gui.style.get_typeset(); //TypeSet::new(gui.style.get_font());
     let mut sprites = sprites::Sprites::new(gui);
     sprites.texture(typeset.font.texview, typeset.font.sampler);
     Self {
       sprites,
       text: "".to_string(),
       typeset,
+      cursor: None,
     }
   }
 
@@ -31,11 +34,6 @@ impl<S: Style> Text<S> {
 
   pub fn get_mesh(&self) -> MeshId {
     self.sprites.get_mesh()
-  }
-
-  pub fn typesetter(&mut self, ts: TypeSet) -> &mut Self {
-    self.typeset = ts;
-    self
   }
 
   pub fn text(&mut self, text: &str) -> &mut Self {
@@ -69,6 +67,17 @@ impl<S: Style> Text<S> {
     self.typeset.clone()
   }
 
+  pub fn cursor(&mut self, cp: Option<Vec2u>) -> &mut Self {
+    if self.cursor != cp {
+      self.cursor = cp;
+      self.update_sprites();
+    }
+    self
+  }
+  pub fn get_cursor(&self) -> Option<Vec2u> {
+    self.cursor
+  }
+
   fn update_sprites(&mut self) {
     if self.text.is_empty() {
       return;
@@ -76,9 +85,8 @@ impl<S: Style> Text<S> {
 
     let mut buffer: Vec<sprites::Vertex> = Vec::with_capacity(self.text.len() + 1);
     unsafe { buffer.set_len(self.text.len() + 1) };
-    let size = self.typeset.compute(&self.text, &mut buffer);
+    let size = self.typeset.compute(&self.text, self.cursor, &mut buffer);
 
     self.sprites.sprites(&buffer[0..size]);
   }
 }
-

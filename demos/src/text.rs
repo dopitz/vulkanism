@@ -197,8 +197,8 @@ impl Gui {
       .size(500, 320);
 
     let mut text = gui::TextBox::new(&gui);
-    text.text("aoeu");
-    text.typeset(text.get_typeset().cursor(Some(vec2!(1, 0))));
+    text.text("aoeu\naoeu\naoeu");
+    text.cursor(Some(vec2!(1, 0)));
 
     let mut text2 = gui::TextBox::new(&gui);
     text2.text("aoeu");

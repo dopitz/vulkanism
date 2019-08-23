@@ -7,7 +7,8 @@ macro_rules! make_style {
     pub type Window<L: Layout> = crate::window::Window<L, $name>;
     pub type Spacer = crate::components::Spacer;
     pub type TextBox<H = crate::components::textbox::HandlerReadonly> = crate::components::TextBox<$name, H>;
-    pub type TextEdit = crate::components::TextBox<$name, crate::components::textbox::HandlerEdit>;
+    pub type TextEdit = crate::components::TextEdit<$name>;
+    pub type TextEditMultiline = crate::components::TextEditMultiline<$name>;
   };
 }
 

@@ -4,3 +4,4 @@ pub mod textbox;
 pub use spacer::Spacer;
 pub use textbox::TextBox;
 pub use textbox::TextEdit;
+pub use textbox::TextEditMultiline;

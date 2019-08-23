@@ -118,8 +118,7 @@ impl<L: Layout, S: Style> Window<L, S> {
     let style = S::Component::new(gui, "Window".to_owned(), true, true);
     let mut caption = TextBox::new(gui);
     caption.text("A fancy window");
-    caption.typeset(gui.style.get_typeset().cursor(None));
-    caption.style("WindowHeading");
+    caption.style("WindowCaption");
 
     Self {
       padding: vec2!(4),
