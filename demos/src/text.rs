@@ -179,7 +179,7 @@ struct Gui {
   gui: gui::Gui,
 
   wnd: gui::Window<gui::ColumnLayout>,
-  text: gui::TextEdit,
+  text: gui::TextEditMultiline,
   text2: gui::TextBox,
 
   focus: imgui::select::SelectId,

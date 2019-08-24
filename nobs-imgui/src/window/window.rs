@@ -143,7 +143,7 @@ impl<L: Layout, S: Style> Window<L, S> {
     self.set_rect(Rect::new(vkm::Vec2::new(x, y), size));
     self
   }
-
+  /// Sets padding of components from the (inner) window border
   pub fn padding(mut self, padding: vkm::Vec2u) -> Self {
     self.padding = padding;
     self

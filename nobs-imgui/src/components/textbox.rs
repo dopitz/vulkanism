@@ -44,7 +44,12 @@ pub trait TextBoxEventHandler: Default {
           text.insert(i, c);
           tb.text(&text);
 
-          cp.x += 1;
+          if c == '\n' {
+            cp.x = 0;
+            cp.y += 1;
+          } else {
+            cp.x += 1;
+          }
           tb.cursor(Some(cp));
         }
 
@@ -74,10 +79,25 @@ pub trait TextBoxEventHandler: Default {
             VirtualKeyCode::Right => c.x += 1,
             _ => {}
           }
-          tb.cursor(Some(c));
+          tb.cursor(Some(tb.get_typeset().clamp_cursor(c, tb.get_text())));
         }
       }
       _ => {}
+    }
+  }
+
+  fn set_cursor<S: Style>(tb: &mut TextBox<S, Self>, e: &Option<event::Event>) -> Option<Event> {
+    if let Some(event::Event::Pressed(event::EventButton { position, .. })) = e {
+      let mut click = vec2!(
+        position.x.saturating_sub(tb.text.get_position().x as u32),
+        position.y.saturating_sub(tb.text.get_position().y as u32)
+      );
+      let ts = tb.get_typeset();
+      let cp = ts.find_pos(click, tb.get_text());
+      tb.cursor(Some(cp));
+      Some(Event::Clicked)
+    } else {
+      None
     }
   }
 }
@@ -187,19 +207,7 @@ impl TextBoxEventHandler for HandlerEdit {
         Self::move_cursor(tb, e);
       }
     }
-
-    if let Some(event::Event::Pressed(event::EventButton { position, .. })) = e {
-      let mut click = vec2!(
-        position.x.saturating_sub(tb.text.get_position().x as u32),
-        position.y.saturating_sub(tb.text.get_position().y as u32)
-      );
-      let ts = tb.get_typeset();
-      let cp = ts.find_pos(click, tb.get_text());
-      tb.cursor(Some(cp));
-      Some(Event::Clicked)
-    } else {
-      None
-    }
+    Self::set_cursor(tb, &e)
   }
 }
 
@@ -210,35 +218,13 @@ impl TextBoxEventHandler for HandlerMultilineEdit {
   fn handle<S: Style>(tb: &mut TextBox<S, Self>, e: Option<event::Event>, screen: &Screen<S>) -> Option<Event> {
     if tb.style.has_focus() {
       for e in screen.get_events() {
-        match e {
-          vk::winit::Event::WindowEvent {
-            event: vk::winit::WindowEvent::ReceivedCharacter(c),
-            ..
-          } => {
-            // TODO: multiline flag?
-            let mut c = *c;
-            if c == '\r' {
-              c = '\n';
-            }
-            tb.text(&format!("{}{}", tb.get_text(), c));
-          }
-          _ => {}
+        if let Some(e) = Self::receive_character(tb, e, true) {
+          return Some(e);
         }
+        Self::move_cursor(tb, e);
       }
     }
-
-    if let Some(event::Event::Pressed(event::EventButton { position, .. })) = e {
-      let mut click = vec2!(
-        position.x.saturating_sub(tb.text.get_position().x as u32),
-        position.y.saturating_sub(tb.text.get_position().y as u32)
-      );
-      let ts = tb.get_typeset();
-      let cp = ts.find_pos(click, tb.get_text());
-      tb.cursor(Some(cp));
-      Some(Event::Clicked)
-    } else {
-      None
-    }
+    Self::set_cursor(tb, &e)
   }
 }
 

@@ -122,6 +122,25 @@ impl TypeSet {
     }
     s.len()
   }
+
+  pub fn clamp_cursor(&self, cursor: vkm::Vec2u, s: &str) -> vkm::Vec2u {
+    let mut cp = vec2!(0);
+    for c in s.chars() {
+      if cp.y != cursor.y {
+        if c == '\n' || c == '\r' {
+          cp.y += 1;
+        }
+      } else if cp.x != cursor.x {
+        if c == '\n' || c == '\r' {
+          break;
+        }
+        cp.x += 1;
+      } else {
+        break;
+      }
+    }
+    cp
+  }
 }
 
 impl PartialEq for TypeSet {
