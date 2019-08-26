@@ -192,9 +192,8 @@ impl Gui {
     gui.style.load_styles(gui::get_default_styles());
     gui.style.set_dpi(1.6);
 
-    let wnd = gui::Window::new(&gui, imgui::window::ColumnLayout::default())
-      .position(200, 200)
-      .size(500, 320);
+    let mut wnd = gui::Window::new(&gui, imgui::window::ColumnLayout::default());
+    wnd.caption("awwwww yeees").position(200, 200).size(500, 320);
 
     let mut text = gui::TextBox::new(&gui);
     text.text("aoeu\naoeu\naoeu");

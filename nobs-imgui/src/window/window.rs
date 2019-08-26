@@ -187,20 +187,25 @@ impl<L: Layout, S: Style> Window<L, S> {
     self.style.has_focus()
   }
 
+  /// Sets the caption of the Window
+  pub fn caption(&mut self, caption: &str) -> &mut Self {
+    self.caption.text(caption);
+    self
+  }
   /// Sets size and position of the Window in pixel coordinates
-  pub fn size(mut self, w: u32, h: u32) -> Self {
+  pub fn size(&mut self, w: u32, h: u32) -> &mut Self {
     let pos = self.layout_window.get_rect().position;
     self.rect(Rect::new(pos, vkm::Vec2::new(w, h)));
     self
   }
   /// Sets the position of the Window in pixel coordinates
-  pub fn position(mut self, x: i32, y: i32) -> Self {
+  pub fn position(&mut self, x: i32, y: i32) -> &mut Self {
     let size = self.layout_window.get_rect().size;
     self.rect(Rect::new(vkm::Vec2::new(x, y), size));
     self
   }
   /// Sets padding of components from the (inner) window border
-  pub fn padding(mut self, padding: vkm::Vec2u) -> Self {
+  pub fn padding(&mut self, padding: vkm::Vec2u) -> &mut Self {
     self.padding = padding;
     self
   }
