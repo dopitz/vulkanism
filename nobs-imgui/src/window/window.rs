@@ -21,6 +21,8 @@ pub struct Window<L: Layout, S: Style> {
   layout_caption: FloatLayout,
   layout_client: FloatLayout,
   layout: L,
+  layout_size: vkm::Vec2u,
+  layout_scroll: vkm::Vec2u,
 
   style: S::Component,
   caption: TextBox<S>,
@@ -28,7 +30,9 @@ pub struct Window<L: Layout, S: Style> {
 
 impl<L: Layout, S: Style> Layout for Window<L, S> {
   fn restart(&mut self) {
+    self.layout_size = self.layout.get_size_hint();
     self.layout.restart();
+    println!("{:?}", self.layout_size);
   }
 
   fn set_rect(&mut self, mut rect: Rect) {
@@ -48,14 +52,33 @@ impl<L: Layout, S: Style> Layout for Window<L, S> {
     self.layout_caption.set_rect(Rect::new(cr.position, cr.size.map_y(|_| h)));
     self.caption.rect(self.layout_caption.get_rect());
 
-    self.layout_client.set_rect(Rect::new(
+    let client_rect = Rect::new(
       cr.position.map_y(|p| p.y + h as i32) + self.padding.into(),
       vec2!(
         cr.size.x.saturating_sub(self.padding.x * 2),
         cr.size.y.saturating_sub(self.padding.y * 2 + h)
       ),
-    ));
-    self.layout.set_rect(self.layout_client.get_rect());
+    );
+    self.layout_client.set_rect(client_rect);
+
+    // Set client layout with scrolling
+    let p0 = client_rect.position;
+    let p1 = p0
+      - vec2!(
+        self.layout_size.x.saturating_sub(client_rect.size.x),
+        self.layout_size.y.saturating_sub(client_rect.size.y)
+      )
+      .into();
+    let p = vkm::Vec2::clamp(p0 - self.layout_scroll.into(), p1, p0);
+
+    if self.layout_size.x == 0 {
+      self.layout_size.x = client_rect.size.x
+    }
+    if self.layout_size.y == 0 {
+      self.layout_size.y = client_rect.size.y
+    }
+
+    self.layout.set_rect(Rect::new(p, self.layout_size));
   }
 
   fn get_rect(&self) -> Rect {
@@ -81,7 +104,7 @@ impl<L: Layout, S: Style> Component<S> for Window<L, S> {
     self
   }
   fn get_rect(&self) -> Rect {
-    self.layout_client.get_rect()
+    self.layout_window.get_rect()
   }
 
   fn get_size_hint(&self) -> vkm::Vec2u {
@@ -114,6 +137,21 @@ impl<L: Layout, S: Style> Component<S> for Window<L, S> {
       }
     }
 
+    if self.style.has_focus() {
+      for e in screen.get_events() {
+        match e {
+          vk::winit::Event::DeviceEvent {
+            event: vk::winit::DeviceEvent::Motion { axis: 3, value },
+            ..
+          } => {
+            self.layout_scroll.y = (self.layout_scroll.y as i32 + *value as i32) as u32;
+            println!("{}", self.layout_scroll.y);
+          }
+          _ => (),
+        }
+      }
+    }
+
     None
   }
 }
@@ -131,6 +169,8 @@ impl<L: Layout, S: Style> Window<L, S> {
       layout_caption: Default::default(),
       layout_client: Default::default(),
       layout,
+      layout_size: Default::default(),
+      layout_scroll: Default::default(),
       style,
       caption,
     }
