@@ -165,7 +165,14 @@ impl<S: Style, H: TextBoxEventHandler> Component<S> for TextBox<S, H> {
   }
 
   fn get_size_hint(&self) -> vkm::Vec2u {
-    let h = self.get_text().lines().count() as f32 * self.get_typeset().line_spacing * self.get_typeset().size as f32;
+    // lines() does not count the last empty line, so we check for a trailing linebreak
+    let h = (self.get_text().lines().count()
+      + match self.get_text().chars().last() {
+        Some('\n') => 1,
+        _ => 0,
+      }) as f32
+      * self.get_typeset().line_spacing
+      * self.get_typeset().size as f32;
     vec2!(0, self.style.get_padded_size(vec2!(0, h as u32)).y)
   }
 

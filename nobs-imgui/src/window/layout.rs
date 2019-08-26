@@ -50,8 +50,8 @@ pub struct FloatLayout {
 
 impl Layout for FloatLayout {
   fn restart(&mut self) {
-    self.lo = vec2!(i32::min_value());
-    self.hi = vec2!(i32::max_value());
+    self.lo = vec2!(i32::max_value());
+    self.hi = vec2!(i32::min_value());
   }
 
   fn set_rect(&mut self, rect: Rect) {
@@ -64,8 +64,9 @@ impl Layout for FloatLayout {
 
   fn apply<S: Style, C: Component<S>>(&mut self, c: &mut C) -> Scissor {
     let r = c.get_rect();
-    self.lo = vkm::Vec2::max(self.lo, r.position);
-    self.hi = vkm::Vec2::min(self.hi, r.position + r.size.into());
+    self.lo = vkm::Vec2::min(self.lo, r.position);
+    self.hi = vkm::Vec2::max(self.hi, r.position + r.size.into());
+    c.rect(r);
     self.get_scissor(r)
   }
 
@@ -78,8 +79,8 @@ impl From<Rect> for FloatLayout {
   fn from(rect: Rect) -> Self {
     Self {
       rect,
-      lo: vec2!(i32::min_value()),
-      hi: vec2!(i32::max_value()),
+      lo: vec2!(i32::max_value()),
+      hi: vec2!(i32::min_value()),
     }
   }
 }
@@ -97,8 +98,8 @@ pub struct ColumnLayout {
 impl Layout for ColumnLayout {
   fn restart(&mut self) {
     self.top = 0;
-    self.lo = vec2!(i32::min_value());
-    self.hi = vec2!(i32::max_value());
+    self.lo = vec2!(i32::max_value());
+    self.hi = vec2!(i32::min_value());
   }
 
   fn set_rect(&mut self, rect: Rect) {
@@ -119,8 +120,8 @@ impl Layout for ColumnLayout {
     }
     c.rect(rect);
     self.top += rect.size.y;
-    self.lo = vkm::Vec2::max(self.lo, rect.position);
-    self.hi = vkm::Vec2::min(self.hi, rect.position + rect.size.into());
+    self.lo = vkm::Vec2::min(self.lo, rect.position);
+    self.hi = vkm::Vec2::max(self.hi, rect.position + rect.size.into());
 
     self.get_scissor(rect)
   }
@@ -135,8 +136,8 @@ impl From<Rect> for ColumnLayout {
     Self {
       rect,
       top: 0,
-      lo: vec2!(i32::min_value()),
-      hi: vec2!(i32::max_value()),
+      lo: vec2!(i32::max_value()),
+      hi: vec2!(i32::min_value()),
     }
   }
 }
