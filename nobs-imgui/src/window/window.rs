@@ -32,7 +32,6 @@ impl<L: Layout, S: Style> Layout for Window<L, S> {
   fn restart(&mut self) {
     self.layout_size = self.layout.get_size_hint();
     self.layout.restart();
-    println!("{:?}", self.layout_size);
   }
 
   fn set_rect(&mut self, mut rect: Rect) {
@@ -144,8 +143,12 @@ impl<L: Layout, S: Style> Component<S> for Window<L, S> {
             event: vk::winit::DeviceEvent::Motion { axis: 3, value },
             ..
           } => {
-            self.layout_scroll.y = (self.layout_scroll.y as i32 + *value as i32) as u32;
-            println!("{}", self.layout_scroll.y);
+            let max = vec2!(
+              self.layout_size.x.saturating_sub(self.layout_client.get_rect().size.x),
+              self.layout_size.y.saturating_sub(self.layout_client.get_rect().size.y)
+            )
+            .into();
+            self.layout_scroll = vkm::Vec2::clamp((self.layout_scroll.into().map_y(|v| v.y + *value as i32)), vec2!(0), max).into();
           }
           _ => (),
         }
@@ -174,6 +177,10 @@ impl<L: Layout, S: Style> Window<L, S> {
       style,
       caption,
     }
+  }
+
+  pub fn focus(&mut self, focus: bool) {
+    self.style.focus(focus);
   }
 
   /// Sets size and position of the Window in pixel coordinates

@@ -115,5 +115,6 @@ pub trait StyleComponent<S: Style>: Component<S, Event = event::Event> {
   fn get_client_rect(&self) -> Rect;
   fn get_padded_size(&self, size: vkm::Vec2u) -> vkm::Vec2u;
 
+  fn focus(&mut self, focus: bool);
   fn has_focus(&self) -> bool;
 }

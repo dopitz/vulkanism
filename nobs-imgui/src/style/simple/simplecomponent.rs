@@ -140,6 +140,9 @@ impl StyleComponent<Simple> for SimpleComponent {
     size + self.bd_thickness.into() * 2
   }
 
+  fn focus(&mut self, focus: bool) {
+    self.has_focus = focus;
+  }
   fn has_focus(&self) -> bool {
     self.has_focus
   }
