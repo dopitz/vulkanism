@@ -41,7 +41,7 @@ impl<L: Layout, S: Style> Layout for Window<L, S> {
     // Sets the rect of the style and uses the client rect for the layout
     self.layout_window.set_rect(rect);
     self.style.rect(rect);
-    let mut cr = self.style.get_client_rect();
+    let cr = self.style.get_client_rect();
 
     // make room for the window caption
     // use the remainder for the client layout
@@ -65,6 +65,11 @@ impl<L: Layout, S: Style> Layout for Window<L, S> {
   fn apply<S2: Style, C: Component<S2>>(&mut self, c: &mut C) -> Scissor {
     self.layout.apply(c);
     self.layout_client.get_scissor(c.get_rect())
+  }
+
+  fn get_size_hint(&self) -> vkm::Vec2u {
+    // TODO: compute actual size from caption and client
+    Component::get_rect(self).size
   }
 }
 

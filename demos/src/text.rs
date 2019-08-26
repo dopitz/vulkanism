@@ -192,7 +192,7 @@ impl Gui {
     gui.style.load_styles(gui::get_default_styles());
     gui.style.set_dpi(1.6);
 
-    let mut wnd = gui::Window::new(&gui, imgui::window::ColumnLayout::default())
+    let wnd = gui::Window::new(&gui, imgui::window::ColumnLayout::default())
       .position(200, 200)
       .size(500, 320);
 

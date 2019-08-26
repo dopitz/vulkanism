@@ -2,7 +2,6 @@ use crate::pipelines::Pipelines;
 use crate::select::Select;
 use crate::style::Style;
 use crate::window::Screen;
-use font::*;
 use std::sync::Arc;
 use std::sync::Mutex;
 use vk::builder::Buildable;

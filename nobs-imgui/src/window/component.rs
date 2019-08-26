@@ -3,7 +3,6 @@ use super::Layout;
 use crate::rect::Rect;
 use crate::select::SelectId;
 use crate::style::Style;
-use crate::style::event::Event;
 
 /// Basic trait for renderable and selectable gui components
 ///
