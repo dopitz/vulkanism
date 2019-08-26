@@ -222,8 +222,7 @@ impl StreamPushMut for Gui {
     use gui::*;
 
     let mut scr = self.gui.begin();
-    let mut layout = gui::FloatLayout::default();
-    layout.set_rect(scr.get_rect());
+    let mut layout = gui::FloatLayout::from(scr.get_rect());
 
     self.wnd.draw(&mut scr, &mut layout, &mut self.focus);
     if let Some(e) = self.text.draw(&mut scr, &mut self.wnd, &mut self.focus) {

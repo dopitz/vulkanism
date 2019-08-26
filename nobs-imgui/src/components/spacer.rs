@@ -4,6 +4,7 @@ use crate::style::Style;
 use crate::window::Component;
 use crate::window::Layout;
 use crate::window::Screen;
+use crate::window::Size;
 
 pub struct Spacer {
   rect: Rect,
@@ -17,7 +18,7 @@ impl Spacer {
   }
 }
 
-impl<S: Style> Component<S> for Spacer {
+impl Size for Spacer {
   fn rect(&mut self, rect: Rect) -> &mut Self {
     self.rect = rect;
     self
@@ -29,7 +30,9 @@ impl<S: Style> Component<S> for Spacer {
   fn get_size_hint(&self) -> vkm::Vec2u {
     self.rect.size
   }
+}
 
+impl<S: Style> Component<S> for Spacer {
   type Event = ();
   fn draw<L: Layout>(&mut self, _screen: &mut Screen<S>, layout: &mut L, _focus: &mut SelectId) -> Option<()> {
     // just apply the layout, so that it can advance the spacing for following components

@@ -1,4 +1,5 @@
 use super::Component;
+use super::Size;
 use crate::rect::Rect;
 use crate::style::Style;
 use vk::cmd::commands::Scissor;
@@ -8,14 +9,9 @@ use vk::cmd::commands::Scissor;
 /// Layouting gui components has to be incremental.
 /// This means that the layout for a single components needs to be decided without knolwledge about other components.
 /// The layouts internal state must be used instead.
-pub trait Layout {
+pub trait Layout: Size {
   /// Restarts the layout
   fn restart(&mut self);
-
-  /// Sets the draw area
-  fn set_rect(&mut self, rect: Rect);
-  /// Gets the draw area
-  fn get_rect(&self) -> Rect;
 
   /// Applys layout to componet
   ///
@@ -33,11 +29,6 @@ pub trait Layout {
     rect.size = (vkm::Vec2::clamp(rect.position + rect.size.into(), lo, hi) - rect.position).into();
     Scissor::with_rect(rect.into())
   }
-
-  /// Get the ideal layout size
-  ///
-  /// The result of this function may only be defined AFTER all components of this have been draw.
-  fn get_size_hint(&self) -> vkm::Vec2u;
 }
 
 /// Float layout that does not modify componets
@@ -48,18 +39,25 @@ pub struct FloatLayout {
   hi: vkm::Vec2i,
 }
 
-impl Layout for FloatLayout {
-  fn restart(&mut self) {
-    self.lo = vec2!(i32::max_value());
-    self.hi = vec2!(i32::min_value());
-  }
-
-  fn set_rect(&mut self, rect: Rect) {
+impl Size for FloatLayout {
+  fn rect(&mut self, rect: Rect) -> &mut Self {
     self.rect = rect;
+    self
   }
 
   fn get_rect(&self) -> Rect {
     self.rect
+  }
+
+  fn get_size_hint(&self) -> vkm::Vec2u {
+    (self.hi - self.lo).into()
+  }
+}
+
+impl Layout for FloatLayout {
+  fn restart(&mut self) {
+    self.lo = vec2!(i32::max_value());
+    self.hi = vec2!(i32::min_value());
   }
 
   fn apply<S: Style, C: Component<S>>(&mut self, c: &mut C) -> Scissor {
@@ -68,10 +66,6 @@ impl Layout for FloatLayout {
     self.hi = vkm::Vec2::max(self.hi, r.position + r.size.into());
     c.rect(r);
     self.get_scissor(r)
-  }
-
-  fn get_size_hint(&self) -> vkm::Vec2u {
-    (self.hi - self.lo).into()
   }
 }
 
@@ -95,19 +89,26 @@ pub struct ColumnLayout {
   hi: vkm::Vec2i,
 }
 
+impl Size for ColumnLayout {
+  fn rect(&mut self, rect: Rect) -> &mut Self {
+    self.rect = rect;
+    self
+  }
+
+  fn get_rect(&self) -> Rect {
+    self.rect
+  }
+
+  fn get_size_hint(&self) -> vkm::Vec2u {
+    (self.hi - self.lo).into()
+  }
+}
+
 impl Layout for ColumnLayout {
   fn restart(&mut self) {
     self.top = 0;
     self.lo = vec2!(i32::max_value());
     self.hi = vec2!(i32::min_value());
-  }
-
-  fn set_rect(&mut self, rect: Rect) {
-    self.rect = rect;
-  }
-
-  fn get_rect(&self) -> Rect {
-    self.rect
   }
 
   fn apply<S: Style, C: Component<S>>(&mut self, c: &mut C) -> Scissor {
@@ -124,10 +125,6 @@ impl Layout for ColumnLayout {
     self.hi = vkm::Vec2::max(self.hi, rect.position + rect.size.into());
 
     self.get_scissor(rect)
-  }
-
-  fn get_size_hint(&self) -> vkm::Vec2u {
-    (self.hi - self.lo).into()
   }
 }
 

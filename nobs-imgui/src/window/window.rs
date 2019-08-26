@@ -2,6 +2,7 @@ use super::Component;
 use super::FloatLayout;
 use super::Layout;
 use super::Screen;
+use super::Size;
 use crate::components::TextBox;
 use crate::rect::Rect;
 use crate::select::SelectId;
@@ -28,13 +29,8 @@ pub struct Window<L: Layout, S: Style> {
   caption: TextBox<S>,
 }
 
-impl<L: Layout, S: Style> Layout for Window<L, S> {
-  fn restart(&mut self) {
-    self.layout_size = self.layout.get_size_hint();
-    self.layout.restart();
-  }
-
-  fn set_rect(&mut self, mut rect: Rect) {
+impl<L: Layout, S: Style> Size for Window<L, S> {
+  fn rect(&mut self, mut rect: Rect) -> &mut Self {
     // always show the caption
     let h = self.caption.get_size_hint().y;
     if rect.size.y < h {
@@ -42,13 +38,13 @@ impl<L: Layout, S: Style> Layout for Window<L, S> {
     }
 
     // Sets the rect of the style and uses the client rect for the layout
-    self.layout_window.set_rect(rect);
+    self.layout_window.rect(rect);
     self.style.rect(rect);
     let cr = self.style.get_client_rect();
 
     // make room for the window caption
     // use the remainder for the client layout
-    self.layout_caption.set_rect(Rect::new(cr.position, cr.size.map_y(|_| h)));
+    self.layout_caption.rect(Rect::new(cr.position, cr.size.map_y(|_| h)));
     self.caption.rect(self.layout_caption.get_rect());
 
     let client_rect = Rect::new(
@@ -58,7 +54,7 @@ impl<L: Layout, S: Style> Layout for Window<L, S> {
         cr.size.y.saturating_sub(self.padding.y * 2 + h)
       ),
     );
-    self.layout_client.set_rect(client_rect);
+    self.layout_client.rect(client_rect);
 
     // Set client layout with scrolling
     let p0 = client_rect.position;
@@ -77,29 +73,7 @@ impl<L: Layout, S: Style> Layout for Window<L, S> {
       self.layout_size.y = client_rect.size.y
     }
 
-    self.layout.set_rect(Rect::new(p, self.layout_size));
-  }
-
-  fn get_rect(&self) -> Rect {
-    self.layout_client.get_rect()
-  }
-
-  fn apply<S2: Style, C: Component<S2>>(&mut self, c: &mut C) -> Scissor {
-    self.layout.apply(c);
-    self.layout_client.get_scissor(c.get_rect())
-  }
-
-  fn get_size_hint(&self) -> vkm::Vec2u {
-    // TODO: compute actual size from caption and client
-    Component::get_rect(self).size
-  }
-}
-
-impl<L: Layout, S: Style> Component<S> for Window<L, S> {
-  fn rect(&mut self, rect: Rect) -> &mut Self {
-    // We delegate to Layout::set_rect, because both function should do the same
-    // Layout::set_rect will make room for the caption of the window
-    self.set_rect(rect);
+    self.layout.rect(Rect::new(p, self.layout_size));
     self
   }
   fn get_rect(&self) -> Rect {
@@ -107,9 +81,28 @@ impl<L: Layout, S: Style> Component<S> for Window<L, S> {
   }
 
   fn get_size_hint(&self) -> vkm::Vec2u {
+    // TODO: compute actual size from caption and client
     self.layout_window.get_rect().size
   }
+}
 
+impl<L: Layout, S: Style> Layout for Window<L, S> {
+  fn restart(&mut self) {
+    self.layout_size = self.layout.get_size_hint();
+    self.layout.restart();
+  }
+
+  fn apply<S2: Style, C: Component<S2>>(&mut self, c: &mut C) -> Scissor {
+    self.layout.apply(c);
+    self.layout_client.get_scissor(c.get_rect())
+  }
+
+  fn get_scissor(&self, rect: Rect) -> Scissor {
+    self.layout_client.get_scissor(rect)
+  }
+}
+
+impl<L: Layout, S: Style> Component<S> for Window<L, S> {
   type Event = ();
   fn draw<LSuper: Layout>(&mut self, screen: &mut Screen<S>, layout: &mut LSuper, focus: &mut SelectId) -> Option<Self::Event> {
     // restart the layout for components that are using this window as layouting scheme
@@ -136,6 +129,7 @@ impl<L: Layout, S: Style> Component<S> for Window<L, S> {
       }
     }
 
+    // Scrolling with mouse wheel
     if self.style.has_focus() {
       for e in screen.get_events() {
         match e {
@@ -143,12 +137,19 @@ impl<L: Layout, S: Style> Component<S> for Window<L, S> {
             event: vk::winit::DeviceEvent::Motion { axis: 3, value },
             ..
           } => {
+            let value = if *value > 0.0 {
+              -15
+            } else if *value < 0.0 {
+              15
+            } else {
+              0
+            };
             let max = vec2!(
               self.layout_size.x.saturating_sub(self.layout_client.get_rect().size.x),
               self.layout_size.y.saturating_sub(self.layout_client.get_rect().size.y)
             )
             .into();
-            self.layout_scroll = vkm::Vec2::clamp((self.layout_scroll.into().map_y(|v| v.y + *value as i32)), vec2!(0), max).into();
+            self.layout_scroll = vkm::Vec2::clamp((self.layout_scroll.into().map_y(|v| v.y + value)), vec2!(0), max).into();
           }
           _ => (),
         }
@@ -182,17 +183,20 @@ impl<L: Layout, S: Style> Window<L, S> {
   pub fn focus(&mut self, focus: bool) {
     self.style.focus(focus);
   }
+  pub fn has_focus(&self) -> bool {
+    self.style.has_focus()
+  }
 
   /// Sets size and position of the Window in pixel coordinates
   pub fn size(mut self, w: u32, h: u32) -> Self {
     let pos = self.layout_window.get_rect().position;
-    self.set_rect(Rect::new(pos, vkm::Vec2::new(w, h)));
+    self.rect(Rect::new(pos, vkm::Vec2::new(w, h)));
     self
   }
   /// Sets the position of the Window in pixel coordinates
   pub fn position(mut self, x: i32, y: i32) -> Self {
     let size = self.layout_window.get_rect().size;
-    self.set_rect(Rect::new(vkm::Vec2::new(x, y), size));
+    self.rect(Rect::new(vkm::Vec2::new(x, y), size));
     self
   }
   /// Sets padding of components from the (inner) window border

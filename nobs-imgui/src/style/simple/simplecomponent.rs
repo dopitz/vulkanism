@@ -4,6 +4,7 @@ use crate::rect::Rect;
 use crate::select::SelectId;
 use crate::style::event::*;
 use crate::window::Screen;
+use crate::window::Size;
 use crate::ImGui;
 use vk::cmd::commands::DrawManaged;
 use vk::cmd::commands::DrawVertices;
@@ -148,7 +149,7 @@ impl StyleComponent<Simple> for SimpleComponent {
   }
 }
 
-impl Component<Simple> for SimpleComponent {
+impl Size for SimpleComponent {
   fn rect(&mut self, rect: Rect) -> &mut Self {
     if self.get_rect() != rect {
       self.ub_data.position = rect.position;
@@ -164,7 +165,9 @@ impl Component<Simple> for SimpleComponent {
   fn get_size_hint(&self) -> vkm::Vec2u {
     self.ub_data.size.into()
   }
+}
 
+impl Component<Simple> for SimpleComponent {
   type Event = Event;
   fn draw<L: Layout>(&mut self, screen: &mut Screen<Simple>, layout: &mut L, _focus: &mut SelectId) -> Option<Event> {
     // update the uniform buffer if size changed

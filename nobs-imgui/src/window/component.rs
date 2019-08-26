@@ -1,5 +1,6 @@
-use super::Screen;
 use super::Layout;
+use super::Screen;
+use super::Size;
 use crate::rect::Rect;
 use crate::select::SelectId;
 use crate::style::Style;
@@ -7,19 +8,9 @@ use crate::style::Style;
 /// Basic trait for renderable and selectable gui components
 ///
 /// Enforces functions for resizing and drawing components.
-pub trait Component<S: Style> {
-  /// Sets the size and position of the component
-  fn rect(&mut self, rect: Rect) -> &mut Self;
-  /// Gets the current size and position of the component
-  fn get_rect(&self) -> Rect;
-
-  /// Gets the ideal size of the component
-  ///
-  /// A [Layout](struct.Layout.html) may use this size as a guide and will (implementation dependent try) to adhere by the component's ideal size.
-  fn get_size_hint(&self) -> vkm::Vec2u;
-
+pub trait Component<S: Style> : Size {
   /// Event type that can be used to handle user interaction when the component is [drawn](trait.Component.html#method.draw)
-  type Event : std::fmt::Debug;
+  type Event: std::fmt::Debug;
   /// Draws the component and returns an Event for handling user interaction
   ///
   /// This function may sereve a double purpose

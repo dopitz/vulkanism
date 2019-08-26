@@ -8,6 +8,7 @@ use crate::style::StyleComponent;
 use crate::window::Component;
 use crate::window::Layout;
 use crate::window::Screen;
+use crate::window::Size;
 use crate::ImGui;
 
 #[derive(Debug)]
@@ -151,7 +152,7 @@ impl<S: Style, H: TextBoxEventHandler> TextBox<S, H> {
   }
 }
 
-impl<S: Style, H: TextBoxEventHandler> Component<S> for TextBox<S, H> {
+impl<S: Style, H: TextBoxEventHandler> Size for TextBox<S, H> {
   fn rect(&mut self, rect: Rect) -> &mut Self {
     // set the rect of the style first, we get the client area for the textbox from the style
     self.style.rect(rect);
@@ -173,7 +174,9 @@ impl<S: Style, H: TextBoxEventHandler> Component<S> for TextBox<S, H> {
       * self.get_typeset().size as f32;
     vec2!(0, self.style.get_padded_size(vec2!(0, h as u32)).y)
   }
+}
 
+impl<S: Style, H: TextBoxEventHandler> Component<S> for TextBox<S, H> {
   type Event = H::Output;
   fn draw<L: Layout>(&mut self, screen: &mut Screen<S>, layout: &mut L, focus: &mut SelectId) -> Option<H::Output> {
     // style is resized along with the textbox
