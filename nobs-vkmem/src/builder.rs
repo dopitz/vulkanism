@@ -432,6 +432,21 @@ impl<'a> Image<'a> {
   ///
   /// Basically sets the defaults with:
   ///  - width: `w`
+  ///  - format: `format`.
+  ///  - usage: `vk::IMAGE_USAGE_TRANSFER_SRC_BIT | vk::IMAGE_USAGE_TRANSFER_DST_BIT | vk::IMAGE_USAGE_SAMPLED_BIT`
+  pub fn texture1d(self, w: u32, format: vk::Format) -> Self {
+    self
+      .defaults()
+      .image_type(vk::IMAGE_TYPE_1D)
+      .format(format)
+      .width(w)
+      .usage(vk::IMAGE_USAGE_TRANSFER_SRC_BIT | vk::IMAGE_USAGE_TRANSFER_DST_BIT | vk::IMAGE_USAGE_SAMPLED_BIT)
+  }
+
+  /// Sets the configuration to be used as a sampled 2D texture
+  ///
+  /// Basically sets the defaults with:
+  ///  - width: `w`
   ///  - height: `h`
   ///  - format: `format`.
   ///  - usage: `vk::IMAGE_USAGE_TRANSFER_SRC_BIT | vk::IMAGE_USAGE_TRANSFER_DST_BIT | vk::IMAGE_USAGE_SAMPLED_BIT`
@@ -597,4 +612,3 @@ impl<'a> Image<'a> {
     self.submit().bind(allocator, bindtype)
   }
 }
-
