@@ -116,14 +116,14 @@ impl Layout for ColumnLayout {
     if rect.size.x == 0 {
       rect.size.x = self.rect.size.x;
     }
-    if rect.size.x >= self.rect.size.x {
-      rect.size.x = self.rect.size.x;
-    }
-    c.rect(rect);
     self.top += rect.size.y;
     self.lo = vkm::Vec2::min(self.lo, rect.position);
     self.hi = vkm::Vec2::max(self.hi, rect.position + rect.size.into());
 
+    if rect.size.x >= self.rect.size.x {
+      rect.size.x = self.rect.size.x;
+    }
+    c.rect(rect);
     self.get_scissor(rect)
   }
 }
