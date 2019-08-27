@@ -193,7 +193,7 @@ impl Gui {
     gui.style.set_dpi(1.6);
 
     let mut wnd = gui::Window::new(&gui, imgui::window::ColumnLayout::default());
-    wnd.caption("awwwww yeees").position(200, 200).size(500, 320);
+    wnd.caption("awwwww yeees").position(200, 200).size(500, 320).focus(true).draw_caption(false);
 
     let mut text = gui::TextBox::new(&gui);
     text.text("aoeu\naoeu\naoeu");
@@ -226,14 +226,12 @@ impl StreamPushMut for Gui {
     self.wnd.draw(&mut scr, &mut layout, &mut self.focus);
     if let Some(e) = self.text.draw(&mut scr, &mut self.wnd, &mut self.focus) {
       self.wnd.focus(true);
-      println!("1 {:?}", e);
     };
 
     gui::Spacer::new(vec2!(10)).draw(&mut scr, &mut self.wnd, &mut self.focus);
 
     if let Some(e) = self.text2.draw(&mut scr, &mut self.wnd, &mut self.focus) {
       self.wnd.focus(true);
-      println!("2 {:?}", e);
     };
 
     cs.push_mut(&mut scr)

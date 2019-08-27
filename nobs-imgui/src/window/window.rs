@@ -27,17 +27,22 @@ pub struct Window<L: Layout, S: Style> {
 
   style: S::Component,
   caption: TextBox<S>,
+  draw_caption: bool,
 }
 
 impl<L: Layout, S: Style> Size for Window<L, S> {
   fn rect(&mut self, mut rect: Rect) -> &mut Self {
-    // always show the caption
-    let h = self.caption.get_size_hint().y;
+    // reserve space for the caption (if enabled)
+    let h = match self.draw_caption {
+      true => self.caption.get_size_hint().y,
+      false => 0,
+    };
     if rect.size.y < h {
       rect.size.y = h
     }
 
-    // Sets the rect of the style and uses the client rect for the layout
+    // the whole window and stile have the same dimensions
+    // client and caption use the client area of the style
     self.layout_window.rect(rect);
     self.style.rect(rect);
     let cr = self.style.get_client_rect();
@@ -112,10 +117,12 @@ impl<L: Layout, S: Style> Component<S> for Window<L, S> {
     layout.apply(self);
 
     // draw caption and move window on drag
-    if let Some(event::Event::Drag(drag)) = self.caption.draw(screen, &mut self.layout_caption, focus) {
-      let mut r = self.layout_window.get_rect();
-      r.position += drag.delta;
-      self.rect(r);
+    if self.draw_caption {
+      if let Some(event::Event::Drag(drag)) = self.caption.draw(screen, &mut self.layout_caption, focus) {
+        let mut r = self.layout_window.get_rect();
+        r.position += drag.delta;
+        self.rect(r);
+      }
     }
 
     // draw the window style
@@ -177,11 +184,13 @@ impl<L: Layout, S: Style> Window<L, S> {
       layout_scroll: Default::default(),
       style,
       caption,
+      draw_caption: true,
     }
   }
 
-  pub fn focus(&mut self, focus: bool) {
+  pub fn focus(&mut self, focus: bool) -> &mut Self {
     self.style.focus(focus);
+    self
   }
   pub fn has_focus(&self) -> bool {
     self.style.has_focus()
@@ -190,6 +199,11 @@ impl<L: Layout, S: Style> Window<L, S> {
   /// Sets the caption of the Window
   pub fn caption(&mut self, caption: &str) -> &mut Self {
     self.caption.text(caption);
+    self
+  }
+  /// Sets a flag to enable/disable the caption of the window
+  pub fn draw_caption(&mut self, draw_caption: bool) -> &mut Self {
+    self.draw_caption = draw_caption;
     self
   }
   /// Sets size and position of the Window in pixel coordinates
