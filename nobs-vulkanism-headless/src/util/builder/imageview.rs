@@ -35,6 +35,10 @@ impl Default for ImageViewBuilder {
 }
 
 impl ImageViewBuilder {
+  pub fn texture1d(self, image: vk::Image, format: vk::Format) -> Self {
+    self.view_type(vk::IMAGE_VIEW_TYPE_1D).image(image).format(format).aspect(vk::IMAGE_ASPECT_COLOR_BIT)
+  }
+
   pub fn texture2d(self, image: vk::Image, format: vk::Format) -> Self {
     self.image(image).format(format).aspect(vk::IMAGE_ASPECT_COLOR_BIT)
   }

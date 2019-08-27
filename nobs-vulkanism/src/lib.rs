@@ -37,6 +37,7 @@
 //! }
 //! ```
 #[macro_use]
+#[macro_export]
 extern crate nobs_vulkanism_headless as vk;
 pub extern crate winit;
 

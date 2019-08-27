@@ -86,3 +86,13 @@ impl Mem {
     }
   }
 }
+
+#[macro_export]
+macro_rules! device_size {
+  ($t:ty) => (
+    (std::mem::size_of::<$t>()) as crate::vk::DeviceSize
+  );
+  ($N:expr, $t:ty) => (
+    ($N * std::mem::size_of::<$t>()) as crate::vk::DeviceSize
+  );
+}
