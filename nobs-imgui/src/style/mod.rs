@@ -9,6 +9,7 @@ macro_rules! make_style {
     pub type TextBox<H = crate::components::textbox::HandlerReadonly> = crate::components::TextBox<$name, H>;
     pub type TextEdit = crate::components::TextEdit<$name>;
     pub type TextEditMultiline = crate::components::TextEditMultiline<$name>;
+    pub type Terminal = crate::terminal::Terminal<$name>;
   };
 }
 

@@ -148,6 +148,8 @@ pub fn main() {
 
     if resizeevent {
       batch.sync().unwrap();
+      vk::DeviceWaitIdle(device.handle);
+
       let (nsc, nrp, nfb) = resize(&pdevice, &device, &window, &mut alloc, Some(sc), Some(rp), Some(fb));
       sc = nsc;
       rp = nrp;
@@ -178,6 +180,8 @@ use imgui::style::simple as gui;
 struct Gui {
   gui: gui::Gui,
 
+  term: gui::Terminal,
+
   wnd: gui::Window<gui::ColumnLayout>,
   text: gui::TextEditMultiline,
   text2: gui::TextBox,
@@ -192,8 +196,10 @@ impl Gui {
     gui.style.load_styles(gui::get_default_styles());
     gui.style.set_dpi(1.6);
 
+    let mut term = gui::Terminal::new(&gui);
+
     let mut wnd = gui::Window::new(&gui, imgui::window::ColumnLayout::default());
-    wnd.caption("awwwww yeees").position(200, 200).size(500, 320).focus(true).draw_caption(false);
+    wnd.caption("awwwww yeees").position(200, 20).size(500, 720).focus(true).draw_caption(false);
 
     let mut text = gui::TextBox::new(&gui);
     text.text("aoeu\naoeu\naoeu");
@@ -204,6 +210,7 @@ impl Gui {
     text2.typeset(text2.get_typeset());
     Self {
       gui,
+      term,
       wnd,
       text,
       text2,
@@ -223,16 +230,18 @@ impl StreamPushMut for Gui {
     let mut scr = self.gui.begin();
     let mut layout = gui::FloatLayout::from(scr.get_rect());
 
-    self.wnd.draw(&mut scr, &mut layout, &mut self.focus);
-    if let Some(e) = self.text.draw(&mut scr, &mut self.wnd, &mut self.focus) {
-      self.wnd.focus(true);
-    };
+    //self.wnd.draw(&mut scr, &mut layout, &mut self.focus);
+    //if let Some(e) = self.text.draw(&mut scr, &mut self.wnd, &mut self.focus) {
+    //  self.wnd.focus(true);
+    //};
 
-    gui::Spacer::new(vec2!(10)).draw(&mut scr, &mut self.wnd, &mut self.focus);
+    //gui::Spacer::new(vec2!(10)).draw(&mut scr, &mut self.wnd, &mut self.focus);
 
-    if let Some(e) = self.text2.draw(&mut scr, &mut self.wnd, &mut self.focus) {
-      self.wnd.focus(true);
-    };
+    //if let Some(e) = self.text2.draw(&mut scr, &mut self.wnd, &mut self.focus) {
+    //  self.wnd.focus(true);
+    //};
+
+    self.term.draw(&mut scr, &mut layout, &mut self.focus);
 
     cs.push_mut(&mut scr)
   }
