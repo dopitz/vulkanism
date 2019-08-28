@@ -18,6 +18,7 @@ impl StreamPush for BufferCopy {
   }
 }
 
+#[derive(Clone, Copy, Debug)]
 pub struct BufferCopyBuilder {
   info: vk::BufferCopy,
 }
@@ -107,6 +108,7 @@ impl StreamPush for ImageBufferCopy {
   }
 }
 
+#[derive(Clone, Copy, Debug)]
 pub struct BufferImageCopyBuilder {
   info: vk::BufferImageCopy,
 }
@@ -202,6 +204,7 @@ impl StreamPush for ImageCopy {
   }
 }
 
+#[derive(Clone, Copy, Debug)]
 pub struct ImageCopyBuilder {
   pub info: vk::ImageCopy,
 }
