@@ -93,6 +93,6 @@ macro_rules! device_size {
     (std::mem::size_of::<$t>()) as crate::vk::DeviceSize
   );
   ($N:expr, $t:ty) => (
-    ($N * std::mem::size_of::<$t>()) as crate::vk::DeviceSize
+    (($N) as usize * std::mem::size_of::<$t>()) as crate::vk::DeviceSize
   );
 }

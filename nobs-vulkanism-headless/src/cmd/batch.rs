@@ -396,4 +396,8 @@ impl RRBatch {
     }
     Ok(())
   }
+
+  pub fn get_current_batch_id(&self) -> usize {
+    self.index
+  }
 }
