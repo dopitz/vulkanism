@@ -50,7 +50,11 @@ impl Size for FloatLayout {
   }
 
   fn get_size_hint(&self) -> vkm::Vec2u {
-    (self.hi - self.lo).into()
+    if self.hi.x < self.lo.x || self.hi.y < self.lo.y {
+      vec2!(0)
+    } else {
+      (self.hi - self.lo).into()
+    }
   }
 }
 
@@ -100,7 +104,11 @@ impl Size for ColumnLayout {
   }
 
   fn get_size_hint(&self) -> vkm::Vec2u {
-    (self.hi - self.lo).into()
+    if self.hi.x < self.lo.x || self.hi.y < self.lo.y {
+      vec2!(0)
+    } else {
+      (self.hi - self.lo).into()
+    }
   }
 }
 
