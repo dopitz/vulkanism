@@ -37,9 +37,19 @@ impl<S: Style> Terminal<S> {
     wnd
       .caption("terminal")
       .position(20, 20)
-      .size(500, 420)
+      .size(500, 500)
       .focus(true)
       .draw_caption(false);
     Self { wnd }
+  }
+
+  pub fn position(&mut self, x: i32, y: i32) -> &mut Self {
+    self.wnd.position(x, y);
+    self
+  }
+
+  pub fn size(&mut self, x: u32, y: u32) -> &mut Self {
+    self.wnd.size(x, y);
+    self
   }
 }

@@ -155,7 +155,7 @@ pub fn main() {
       rp = nrp;
       fb = nfb;
 
-      gui.gui.resize(sc.extent, fb.images[0]);
+      gui.resize(sc.extent, fb.images[0]);
       resizeevent = false;
     }
 
@@ -199,7 +199,8 @@ impl Gui {
     let mut term = gui::Terminal::new(&gui);
 
     let mut wnd = gui::Window::new(&gui, imgui::window::ColumnLayout::default());
-    wnd.caption("awwwww yeees").position(200, 20).size(500, 720).focus(true).draw_caption(false);
+    //wnd.caption("awwwww yeees").position(200, 20).size(500, 720).focus(true).draw_caption(false);
+    wnd.caption("awwwww yeees").position(200, 20).size(500, 720).focus(true).padding(vec2!(10));
 
     let mut text = gui::TextBox::new(&gui);
     text.text("aoeu\naoeu\naoeu");
@@ -221,6 +222,11 @@ impl Gui {
   pub fn handle_events(&mut self, e: &vk::winit::Event) {
     self.gui.handle_events(e);
   }
+
+  pub fn resize(&mut self, extent: vk::Extent2D, image: vk::Image) {
+    self.gui.resize(extent, image);
+    self.term.size(extent.width / 7 * 3, extent.height / 4 * 3);
+  }
 }
 
 impl StreamPushMut for Gui {
@@ -241,7 +247,7 @@ impl StreamPushMut for Gui {
       self.wnd.focus(true);
     };
 
-    self.term.draw(&mut scr, &mut layout, &mut self.focus);
+    //self.term.draw(&mut scr, &mut layout, &mut self.focus);
 
     cs.push_mut(&mut scr)
   }

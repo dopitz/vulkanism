@@ -228,19 +228,28 @@ pub fn get_default_styles() -> HashMap<String, UbStyle> {
   styles.insert(
     "WindowCaption".to_owned(),
     UbStyle {
-      color: vec4!(0.1, 0.1, 0.3, 0.6),
-      bd_color_inner: vec4!(0.1, 0.1, 0.3, 0.6),
-      bd_color_outer: vec4!(0.1, 0.1, 0.3, 0.6),
-      bd_thickness: vec2!(10),
+      color: vec4!(0.1, 0.1, 0.5, 0.6),
+      bd_color_inner: vec4!(0.1, 0.1, 0.3, 1.0),
+      bd_color_outer: vec4!(0.1, 0.1, 0.3, 1.0),
+      bd_thickness: vec2!(3),
+    },
+  );
+  styles.insert(
+    "Label".to_owned(),
+    UbStyle {
+      color: vec4!(0.0),
+      bd_color_inner: vec4!(0.0),
+      bd_color_outer: vec4!(0.0),
+      bd_thickness: vec2!(3),
     },
   );
   styles.insert(
     "TextBox".to_owned(),
     UbStyle {
-      color: vec4!(1.0, 0.3, 1.0, 0.9),
-      bd_color_inner: vec4!(0.1, 0.0, 0.8, 0.8),
-      bd_color_outer: vec4!(0.3, 0.1, 1.0, 1.0),
-      bd_thickness: vec2!(10),
+      color: vec4!(0.1, 0.1, 0.5, 0.6),
+      bd_color_inner: vec4!(0.1, 0.1, 0.3, 1.0),
+      bd_color_outer: vec4!(0.1, 0.1, 0.3, 1.0),
+      bd_thickness: vec2!(3),
     },
   );
   styles.insert(

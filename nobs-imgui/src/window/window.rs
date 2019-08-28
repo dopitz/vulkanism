@@ -175,7 +175,7 @@ impl<L: Layout, S: Style> Window<L, S> {
     caption.style("WindowCaption");
 
     Self {
-      padding: vec2!(4),
+      padding: vec2!(0),
       layout_window: Default::default(),
       layout_caption: Default::default(),
       layout_client: Default::default(),
