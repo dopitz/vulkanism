@@ -247,7 +247,7 @@ impl StreamPushMut for Gui {
       self.wnd.focus(true);
     };
 
-    //self.term.draw(&mut scr, &mut layout, &mut self.focus);
+    self.term.draw(&mut scr, &mut layout, &mut self.focus);
 
     cs.push_mut(&mut scr)
   }

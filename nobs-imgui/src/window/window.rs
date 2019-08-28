@@ -188,6 +188,15 @@ impl<L: Layout, S: Style> Window<L, S> {
     }
   }
 
+  pub fn get_client_rect(&self) -> Rect {
+    self.layout_client.get_rect()
+  }
+
+  pub fn style(&mut self, style: &str, moveable: bool, resizeable: bool) -> &mut Self {
+    self.style.change_style(style, moveable, resizeable);
+    self
+  }
+
   pub fn focus(&mut self, focus: bool) -> &mut Self {
     self.style.focus(focus);
     self

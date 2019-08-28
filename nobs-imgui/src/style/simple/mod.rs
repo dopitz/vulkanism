@@ -208,6 +208,15 @@ make_style!(Simple);
 pub fn get_default_styles() -> HashMap<String, UbStyle> {
   let mut styles = HashMap::new();
   styles.insert(
+    "NoStyle".to_owned(),
+    UbStyle {
+      color: vec4!(0.0),
+      bd_color_inner: vec4!(0.0),
+      bd_color_outer: vec4!(0.0),
+      bd_thickness: vec2!(0),
+    },
+  );
+  styles.insert(
     "Window".to_owned(),
     UbStyle {
       color: vec4!(0.1, 0.05, 0.3, 0.6),

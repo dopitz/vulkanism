@@ -17,7 +17,7 @@ pub struct Text<S: Style> {
 
 impl<S: Style> Text<S> {
   pub fn new(gui: &ImGui<S>) -> Self {
-    let typeset = gui.style.get_typeset(); //TypeSet::new(gui.style.get_font());
+    let typeset = gui.style.get_typeset_small();
     let mut sprites = sprites::Sprites::new(gui);
     sprites.texture(typeset.font.texview, typeset.font.sampler);
     Self {
