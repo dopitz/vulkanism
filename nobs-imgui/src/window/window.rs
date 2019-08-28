@@ -156,7 +156,7 @@ impl<L: Layout, S: Style> Component<S> for Window<L, S> {
               self.layout_size.y.saturating_sub(self.layout_client.get_rect().size.y)
             )
             .into();
-            self.layout_scroll = vkm::Vec2::clamp((self.layout_scroll.into().map_y(|v| v.y + value)), vec2!(0), max).into();
+            self.layout_scroll = vkm::Vec2::clamp(self.layout_scroll.into().map_y(|v| v.y + value), vec2!(0), max).into();
           }
           _ => (),
         }

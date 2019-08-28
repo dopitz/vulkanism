@@ -89,12 +89,9 @@ pub trait TextBoxEventHandler: Default {
 
   fn set_cursor<S: Style>(tb: &mut TextBox<S, Self>, e: Option<event::Event>) -> Option<Event> {
     if let Some(event::Event::Pressed(event::EventButton { position, .. })) = e {
-      let click = vec2!(
-        position.x.saturating_sub(tb.text.get_position().x as u32),
-        position.y.saturating_sub(tb.text.get_position().y as u32)
-      );
+      let click = vec2!(position.x, position.y).into() - tb.text.get_position();
       let ts = tb.get_typeset();
-      let cp = ts.find_pos(click, tb.get_text());
+      let cp = ts.find_pos(click.into(), tb.get_text());
       tb.cursor(Some(cp));
     }
     e.map(|e| Event::Unhandled(e))
