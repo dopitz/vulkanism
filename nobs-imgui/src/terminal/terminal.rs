@@ -20,9 +20,6 @@ impl<S: Style> Size for Terminal<S> {
     let mut r = self.wnd.get_client_rect();
     r.size.y = r.size.y.saturating_sub(self.input.get_size_hint().y + 10); 
     self.output_wnd.rect(r);
-    //let mut r = self.output_wnd.get_client_rect();
-    //r.size.y = u32::max(r.size.y, self.output_wnd.get_client_rect().size.y);
-    //self.output.rect(r);
     self
   }
 
@@ -67,13 +64,13 @@ impl<S: Style> Terminal<S> {
       .position(20, 20)
       .size(500, 500)
       .focus(true)
-      .draw_caption(true);
+      .draw_caption(false);
 
     let mut output_wnd = Window::new(gui, ColumnLayout::default());
     output_wnd.draw_caption(false);
     output_wnd.style("NoStyle", false, false);
     let mut output = TextBox::new(gui);
-    output.text("Welcome!\nWelcome!\nWelcome!\nWelcome!\nWelcome!\nWelcome!\nWelcome!\nAOEUAOEUAOEUAOEU!\nWelcome!\nWelcome!\nWelcome!\nWelcome!\nWelcome!\nWelcome!\nWelcome!\nWelcome!\nWelcome!\nAOEUAOEUAOEUAOEU!\nWelcome!\nWelcome!\nWelcome!\nWelcome!\nWelcome!\nWelcome!");
+    output.style("NoStyle").text("Welcome!\nWelcome!\nWelcome!\nWelcome!\nWelcome!\nWelcome!\nWelcome!\nAOEUAOEUAOEUAOEU!\nWelcome!\nWelcome!\nWelcome!\nWelcome!\nWelcome!\nWelcome!\nWelcome!\nWelcome!\nWelcome!\nAOEUAOEUAOEUAOEU!\nWelcome!\nWelcome!\nWelcome!\nWelcome!\nWelcome!\nWelcome!");
 
     let mut input = TextBox::new(gui);
     input.text("~$:");
