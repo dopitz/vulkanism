@@ -236,16 +236,16 @@ impl StreamPushMut for Gui {
     let mut scr = self.gui.begin();
     let mut layout = gui::FloatLayout::from(scr.get_rect());
 
-    self.wnd.draw(&mut scr, &mut layout, &mut self.focus);
-    if let Some(e) = self.text.draw(&mut scr, &mut self.wnd, &mut self.focus) {
-      self.wnd.focus(true);
-    };
+    //self.wnd.draw(&mut scr, &mut layout, &mut self.focus);
+    //if let Some(e) = self.text.draw(&mut scr, &mut self.wnd, &mut self.focus) {
+    //  self.wnd.focus(true);
+    //};
 
-    gui::Spacer::new(vec2!(10)).draw(&mut scr, &mut self.wnd, &mut self.focus);
+    //gui::Spacer::new(vec2!(10)).draw(&mut scr, &mut self.wnd, &mut self.focus);
 
-    if let Some(e) = self.text2.draw(&mut scr, &mut self.wnd, &mut self.focus) {
-      self.wnd.focus(true);
-    };
+    //if let Some(e) = self.text2.draw(&mut scr, &mut self.wnd, &mut self.focus) {
+    //  self.wnd.focus(true);
+    //};
 
     self.term.draw(&mut scr, &mut layout, &mut self.focus);
 

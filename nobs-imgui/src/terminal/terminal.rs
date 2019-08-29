@@ -36,20 +36,29 @@ impl<S: Style> Component<S> for Terminal<S> {
   type Event = ();
   fn draw<L: Layout>(&mut self, screen: &mut Screen<S>, layout: &mut L, focus: &mut SelectId) -> Option<Self::Event> {
     layout.apply(self);
+
+    let mut set_focused = false;
     if let Some(_) = self.wnd.draw(screen, layout, focus) {
-      self.output_wnd.focus(true);
+      set_focused = true;
     }
 
     self.output_wnd.draw(screen, &mut self.wnd, focus);
     if let Some(_) = self.output.draw(screen, &mut self.output_wnd, focus) {
-      self.output_wnd.focus(true);
+      set_focused = true;
     }
 
     Spacer::new(vec2!(10)).draw(screen, &mut self.wnd, focus);
 
-    if let Some(e) = self.input.draw(screen, &mut self.wnd, focus) {
+    match self.input.draw(screen, &mut self.wnd, focus) {
+      Some(textbox::Event::Enter) => println!("Enter"),
+      Some(textbox::Event::Changed) => println!("Changed"),
+      Some(_) | None => set_focused = true,
+    }
+
+    if set_focused {
+      let cp = Some(vec2!(self.input.get_text().len() as u32, 0));
+      self.input.focus(true).cursor(cp);
       self.output_wnd.focus(true);
-      println!("{:?}", e);
     }
 
     None
@@ -70,7 +79,7 @@ impl<S: Style> Terminal<S> {
     output_wnd.draw_caption(false);
     output_wnd.style("NoStyle", false, false);
     let mut output = TextBox::new(gui);
-    output.style("NoStyle").text("Welcome!\nWelcome!\nWelcome!\nWelcome!\nWelcome!\nWelcome!\nWelcome!\nAOEUAOEUAOEUAOEU!\nWelcome!\nWelcome!\nWelcome!\nWelcome!\nWelcome!\nWelcome!\nWelcome!\nWelcome!\nWelcome!\nAOEUAOEUAOEUAOEU!\nWelcome!\nWelcome!\nWelcome!\nWelcome!\nWelcome!\nWelcome!");
+    output.style("NoStyle").text("Welcome!");
 
     let mut input = TextBox::new(gui);
     input.text("~$:");

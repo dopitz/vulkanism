@@ -119,6 +119,14 @@ impl<S: Style, H: TextBoxEventHandler> TextBox<S, H> {
     self.text.get_gui()
   }
 
+  pub fn focus(&mut self, focus: bool) -> &mut Self {
+    self.style.focus(focus);
+    self
+  }
+  pub fn has_focus(&self) -> bool {
+    self.style.has_focus()
+  }
+
   pub fn text(&mut self, text: &str) -> &mut Self {
     self.text.text(text);
     self
