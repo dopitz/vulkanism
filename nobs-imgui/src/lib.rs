@@ -14,6 +14,7 @@ extern crate nobs_vulkanism as vk;
 extern crate nobs_vkmath as vkm;
 extern crate freetype;
 extern crate nobs_imgui_font as font;
+extern crate regex;
 
 pub mod components;
 pub mod pipelines;

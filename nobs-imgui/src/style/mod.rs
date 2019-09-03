@@ -10,6 +10,7 @@ macro_rules! make_style {
     pub type TextEdit = crate::components::TextEdit<$name>;
     pub type TextEditMultiline = crate::components::TextEditMultiline<$name>;
     pub type Terminal = crate::terminal::Terminal<$name>;
+    pub type Shell = crate::terminal::Shell<$name>;
   };
 }
 

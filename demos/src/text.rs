@@ -181,6 +181,7 @@ struct Gui {
   gui: gui::Gui,
 
   term: gui::Terminal,
+  shell: gui::Shell,
 
   wnd: gui::Window<gui::ColumnLayout>,
   text: gui::TextEditMultiline,
@@ -197,6 +198,8 @@ impl Gui {
     gui.style.set_dpi(1.6);
 
     let mut term = gui::Terminal::new(&gui);
+    let mut shell = gui::Shell::new(term.clone());
+    shell.add_command(Box::new(imgui::terminal::ABCCommand::new()));
 
     let mut wnd = gui::Window::new(&gui, imgui::window::ColumnLayout::default());
     //wnd.caption("awwwww yeees").position(200, 20).size(500, 720).focus(true).draw_caption(false);
@@ -212,6 +215,7 @@ impl Gui {
     Self {
       gui,
       term,
+      shell,
       wnd,
       text,
       text2,
@@ -247,7 +251,7 @@ impl StreamPushMut for Gui {
     //  self.wnd.focus(true);
     //};
 
-    self.term.draw(&mut scr, &mut layout, &mut self.focus);
+    self.shell.update(&mut scr, &mut layout, &mut self.focus);
 
     cs.push_mut(&mut scr)
   }

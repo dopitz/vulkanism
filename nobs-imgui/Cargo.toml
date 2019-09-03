@@ -15,6 +15,7 @@ nobs-vulkanism = {version = "0.1.0", path = "../nobs-vulkanism"}
 nobs-vkmath = {version = "0.1.0", path = "../nobs-vkmath"}
 nobs-imgui-font = {version = "0.1.0", path = "nobs-imgui-font"}
 freetype-rs = {version = "0.19.1"}
+regex = {version = "1.2.1"}
 
 [build-dependencies]
 nobs-vulkanism-headless = {version = "0.1.0", path = "../nobs-vulkanism-headless"}

@@ -9,6 +9,12 @@ use std::sync::Arc;
 use std::sync::Condvar;
 use std::sync::Mutex;
 
+#[derive(Debug, Clone)]
+pub enum Event {
+  InputChanged,
+  InputSubmit(String),
+}
+
 struct TerminalImpl<S: Style> {
   wnd: Window<ColumnLayout, S>,
 
@@ -39,7 +45,7 @@ impl<S: Style> Size for TerminalImpl<S> {
 }
 
 impl<S: Style> Component<S> for TerminalImpl<S> {
-  type Event = ();
+  type Event = Event;
   fn draw<L: Layout>(&mut self, screen: &mut Screen<S>, layout: &mut L, focus: &mut SelectId) -> Option<Self::Event> {
     layout.apply(self);
 
@@ -55,22 +61,25 @@ impl<S: Style> Component<S> for TerminalImpl<S> {
 
     Spacer::new(vec2!(10)).draw(screen, &mut self.wnd, focus);
 
-    match self.input.draw(screen, &mut self.wnd, focus) {
+    let e = match self.input.draw(screen, &mut self.wnd, focus) {
       Some(textbox::Event::Enter) => {
         let input = self.input.get_text()[3..].to_owned();
         let s = format!("{}{}\n", self.output.get_text(), input);
         self.output.text(&s);
         self.input.text("~$ ");
 
-        println!("Enter");
         let &(ref s, ref cv) = &*self.readline;
         let mut s = s.lock().unwrap();
-        *s = Some(input);
+        *s = Some(input.clone());
         cv.notify_one();
+        Some(Event::InputSubmit(input))
       }
-      Some(textbox::Event::Changed) => println!("Changed"),
-      Some(_) | None => set_focused = true,
-    }
+      Some(textbox::Event::Changed) => Some(Event::InputChanged),
+      Some(_) | None => {
+        set_focused = true;
+        None
+      }
+    };
 
     if set_focused {
       let cp = Some(vec2!(self.input.get_text().len() as u32, 0));
@@ -78,10 +87,11 @@ impl<S: Style> Component<S> for TerminalImpl<S> {
       self.output_wnd.focus(true);
     }
 
-    None
+    e
   }
 }
 
+#[derive(Clone)]
 pub struct Terminal<S: Style> {
   term: Arc<Mutex<TerminalImpl<S>>>,
 }
@@ -102,7 +112,7 @@ impl<S: Style> Size for Terminal<S> {
 }
 
 impl<S: Style> Component<S> for Terminal<S> {
-  type Event = ();
+  type Event = Event;
   fn draw<L: Layout>(&mut self, screen: &mut Screen<S>, layout: &mut L, focus: &mut SelectId) -> Option<Self::Event> {
     self.term.lock().unwrap().draw(screen, layout, focus)
   }
@@ -138,6 +148,10 @@ impl<S: Style> Terminal<S> {
     }
   }
 
+  //fn draw(&mut self, screen: &mut Screen<S>, focus: &mut SelectId) -> Option<Event> {
+  //  self.term.lock().unwrap().draw(screen, screen.get_layout(), focus)
+  //}
+
   pub fn position(&mut self, x: i32, y: i32) -> &mut Self {
     self.term.lock().unwrap().wnd.position(x, y);
     self
@@ -167,6 +181,6 @@ impl<S: Style> Terminal<S> {
     s.take().unwrap().to_owned()
   }
   pub fn get_input(&self) -> String {
-    self.term.lock().unwrap().input.get_text().to_owned()
+    self.term.lock().unwrap().input.get_text()[3..].to_owned()
   }
 }
