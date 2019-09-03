@@ -24,37 +24,42 @@ pub trait TextBoxEventHandler: Default {
     None
   }
 
-  fn receive_character<S: Style>(tb: &mut TextBox<S, Self>, e: &vk::winit::Event, multiline: bool) -> Option<Event> {
+  fn receive_character<S: Style>(tb: &mut TextBox<S, Self>, e: &vk::winit::Event, multiline: bool, blacklist: &[char]) -> Option<Event> {
     match e {
       vk::winit::Event::WindowEvent {
-        event: vk::winit::WindowEvent::ReceivedCharacter(mut c),
+        event: vk::winit::WindowEvent::ReceivedCharacter(c),
         ..
       } => {
-        if !multiline && (c == '\n' || c == '\r') {
-          return Some(Event::Enter);
-        }
-
-        if c == '\r' {
-          c = '\n';
-        }
-
-        let ts = tb.get_typeset();
-        if let Some(mut cp) = tb.get_cursor() {
-          let i = ts.index_of(cp, tb.get_text());
-          let mut text = tb.get_text().to_owned();
-          text.insert(i, c);
-          tb.text(&text);
-
-          if c == '\n' {
-            cp.x = 0;
-            cp.y += 1;
-          } else {
-            cp.x += 1;
+        if blacklist.iter().find(|b| c == *b).is_none() {
+          let mut c = *c;
+          if !multiline && (c == '\n' || c == '\r') {
+            return Some(Event::Enter);
           }
-          tb.cursor(Some(cp));
-        }
 
-        Some(Event::Changed)
+          if c == '\r' {
+            c = '\n';
+          }
+
+          let ts = tb.get_typeset();
+          if let Some(mut cp) = tb.get_cursor() {
+            let i = ts.index_of(cp, tb.get_text());
+            let mut text = tb.get_text().to_owned();
+            text.insert(i, c);
+            tb.text(&text);
+
+            if c == '\n' {
+              cp.x = 0;
+              cp.y += 1;
+            } else {
+              cp.x += 1;
+            }
+            tb.cursor(Some(cp));
+          }
+
+          Some(Event::Changed)
+        } else {
+          None
+        }
       }
       _ => None,
     }
@@ -102,6 +107,47 @@ pub struct TextBox<S: Style, H: TextBoxEventHandler = HandlerReadonly> {
   text: Text<S>,
   style: S::Component,
   handler: std::marker::PhantomData<H>,
+}
+
+impl<S: Style, H: TextBoxEventHandler> Size for TextBox<S, H> {
+  fn rect(&mut self, rect: Rect) -> &mut Self {
+    // set the rect of the style first, we get the client area for the textbox from the style
+    self.style.rect(rect);
+    self.text.position(self.style.get_client_rect().position);
+    self
+  }
+  fn get_rect(&self) -> Rect {
+    self.style.get_rect()
+  }
+
+  fn get_size_hint(&self) -> vkm::Vec2u {
+    // lines() does not count the last empty line, so we check for a trailing linebreak
+    let h = (self.get_text().lines().count()
+      + match self.get_text().chars().last() {
+        Some('\n') => 1,
+        _ => 0,
+      }) as f32
+      * self.get_typeset().line_spacing
+      * self.get_typeset().size as f32;
+    vec2!(0, self.style.get_padded_size(vec2!(0, h as u32)).y)
+  }
+}
+
+impl<S: Style, H: TextBoxEventHandler> Component<S> for TextBox<S, H> {
+  type Event = H::Output;
+  fn draw<L: Layout>(&mut self, screen: &mut Screen<S>, layout: &mut L, focus: &mut SelectId) -> Option<H::Output> {
+    // style is resized along with the textbox
+    let scissor = layout.apply(self);
+
+    // draw and select
+    let e = self.style.draw(screen, layout, focus);
+    if !self.style.has_focus() {
+      self.text.cursor(None);
+    }
+    screen.push_draw(self.text.get_mesh(), scissor);
+
+    H::handle(self, e, screen)
+  }
 }
 
 impl<S: Style, H: TextBoxEventHandler> TextBox<S, H> {
@@ -157,47 +203,6 @@ impl<S: Style, H: TextBoxEventHandler> TextBox<S, H> {
   }
 }
 
-impl<S: Style, H: TextBoxEventHandler> Size for TextBox<S, H> {
-  fn rect(&mut self, rect: Rect) -> &mut Self {
-    // set the rect of the style first, we get the client area for the textbox from the style
-    self.style.rect(rect);
-    self.text.position(self.style.get_client_rect().position);
-    self
-  }
-  fn get_rect(&self) -> Rect {
-    self.style.get_rect()
-  }
-
-  fn get_size_hint(&self) -> vkm::Vec2u {
-    // lines() does not count the last empty line, so we check for a trailing linebreak
-    let h = (self.get_text().lines().count()
-      + match self.get_text().chars().last() {
-        Some('\n') => 1,
-        _ => 0,
-      }) as f32
-      * self.get_typeset().line_spacing
-      * self.get_typeset().size as f32;
-    vec2!(0, self.style.get_padded_size(vec2!(0, h as u32)).y)
-  }
-}
-
-impl<S: Style, H: TextBoxEventHandler> Component<S> for TextBox<S, H> {
-  type Event = H::Output;
-  fn draw<L: Layout>(&mut self, screen: &mut Screen<S>, layout: &mut L, focus: &mut SelectId) -> Option<H::Output> {
-    // style is resized along with the textbox
-    let scissor = layout.apply(self);
-
-    // draw and select
-    let e = self.style.draw(screen, layout, focus);
-    if !self.style.has_focus() {
-      self.text.cursor(None);
-    }
-    screen.push_draw(self.text.get_mesh(), scissor);
-
-    H::handle(self, e, screen)
-  }
-}
-
 #[derive(Default)]
 pub struct HandlerReadonly {}
 impl TextBoxEventHandler for HandlerReadonly {
@@ -214,7 +219,7 @@ impl TextBoxEventHandler for HandlerEdit {
   fn handle<S: Style>(tb: &mut TextBox<S, Self>, e: Option<event::Event>, screen: &Screen<S>) -> Option<Event> {
     if tb.style.has_focus() {
       for e in screen.get_events() {
-        if let Some(e) = Self::receive_character(tb, e, false) {
+        if let Some(e) = Self::receive_character(tb, e, false, &[]) {
           return Some(e);
         }
         Self::move_cursor(tb, e);
@@ -231,7 +236,7 @@ impl TextBoxEventHandler for HandlerMultilineEdit {
   fn handle<S: Style>(tb: &mut TextBox<S, Self>, e: Option<event::Event>, screen: &Screen<S>) -> Option<Event> {
     if tb.style.has_focus() {
       for e in screen.get_events() {
-        if let Some(e) = Self::receive_character(tb, e, true) {
+        if let Some(e) = Self::receive_character(tb, e, true, &[]) {
           return Some(e);
         }
         Self::move_cursor(tb, e);

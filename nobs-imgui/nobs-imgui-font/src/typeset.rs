@@ -83,6 +83,35 @@ impl TypeSet {
     }
   }
 
+  pub fn char_offset(&self, s: &str, p: vkm::Vec2u) -> vkm::Vec2f {
+    let size = self.size as f32;
+    let mut off = vec2!(0.0, size);
+    let mut cp = vec2!(0);
+    let mut co = vec2!(0.0);
+    for c in s.chars() {
+      if cp.y <= p.y && cp.x <= p.x {
+        co = off;
+      }
+      cp.x += 1;
+
+      let ch = self.font.get(c);
+      off += ch.advance * size;
+
+      if c == '\n' || c == '\r' {
+        off.x = 0.0;
+        off.y = off.y + size * self.line_spacing;
+        cp.x = 0;
+        cp.y += 1;
+      }
+    }
+
+    if cp.y <= p.y && cp.x <= p.x {
+      co = off;
+    }
+
+    co
+  }
+
   pub fn find_pos(&self, pos: vkm::Vec2u, s: &str) -> vkm::Vec2u {
     let pos = pos.into();
     let size = self.size as f32;

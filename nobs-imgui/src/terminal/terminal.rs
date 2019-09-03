@@ -11,6 +11,7 @@ use std::sync::Mutex;
 
 #[derive(Debug, Clone)]
 pub enum Event {
+  TabComplete(bool),
   InputChanged,
   InputSubmit(String),
 }
@@ -21,9 +22,12 @@ struct TerminalImpl<S: Style> {
   output_wnd: Window<ColumnLayout, S>,
   output: TextBox<S>,
 
-  input: TextEdit<S>,
+  input: TextBox<S, HandlerTerminalEdit>,
 
   readline: Arc<(Mutex<Option<String>>, Condvar)>,
+
+  quickfix_wnd: Window<ColumnLayout, S>,
+  quickfix: TextEdit<S>,
 }
 
 impl<S: Style> Size for TerminalImpl<S> {
@@ -49,20 +53,15 @@ impl<S: Style> Component<S> for TerminalImpl<S> {
   fn draw<L: Layout>(&mut self, screen: &mut Screen<S>, layout: &mut L, focus: &mut SelectId) -> Option<Self::Event> {
     layout.apply(self);
 
-    let mut set_focused = false;
-    if let Some(_) = self.wnd.draw(screen, layout, focus) {
-      set_focused = true;
-    }
+    self.wnd.draw(screen, layout, focus);
 
     self.output_wnd.draw(screen, &mut self.wnd, focus);
-    if let Some(_) = self.output.draw(screen, &mut self.output_wnd, focus) {
-      set_focused = true;
-    }
+    self.output.draw(screen, &mut self.output_wnd, focus);
 
     Spacer::new(vec2!(10)).draw(screen, &mut self.wnd, focus);
 
     let e = match self.input.draw(screen, &mut self.wnd, focus) {
-      Some(textbox::Event::Enter) => {
+      Some(TerminalInputEvent::TextBox(textbox::Event::Enter)) => {
         let input = self.input.get_text()[3..].to_owned();
         let s = format!("{}{}\n", self.output.get_text(), input);
         self.output.text(&s);
@@ -74,20 +73,52 @@ impl<S: Style> Component<S> for TerminalImpl<S> {
         cv.notify_one();
         Some(Event::InputSubmit(input))
       }
-      Some(textbox::Event::Changed) => Some(Event::InputChanged),
-      Some(_) | None => {
-        set_focused = true;
-        None
-      }
+      Some(TerminalInputEvent::TextBox(textbox::Event::Changed)) => Some(Event::InputChanged),
+      Some(TerminalInputEvent::TabComplete(s)) => Some(Event::TabComplete(s)),
+      _ => None,
     };
 
-    if set_focused {
-      let cp = Some(vec2!(self.input.get_text().len() as u32, 0));
-      self.input.focus(true).cursor(cp);
-      self.output_wnd.focus(true);
+    if !self.quickfix.get_text().is_empty() {
+      let r = self.wnd.get_rect();
+
+      let p = match self.input.get_cursor() {
+        Some(cp) => cp,
+        None => vec2!(0),
+      };
+
+      let x = self.input.get_rect().position.x + self.input.get_typeset().char_offset(self.input.get_text(), p).x as i32;
+
+      self
+        .quickfix_wnd
+        .rect(Rect::new(vec2!(x, r.position.y + r.size.y as i32), vec2!(200, 200)));
+      self.quickfix_wnd.draw(screen, layout, focus);
+      if let Some(_) = self.quickfix.draw(screen, &mut self.quickfix_wnd, focus) {
+        self.println("quickfix click not implemented");
+      }
+    }
+
+    if !self.input.has_focus() && (self.wnd.has_focus() || self.output_wnd.has_focus() || self.output.has_focus()) {
+      self.focus(true);
     }
 
     e
+  }
+}
+
+impl<S: Style> TerminalImpl<S> {
+  pub fn focus(&mut self, focus: bool) {
+    let cp = Some(vec2!(self.input.get_text().len() as u32, 0));
+    self.input.focus(true).cursor(cp);
+    self.output_wnd.focus(true);
+  }
+
+  pub fn print(&mut self, s: &str) {
+    let s = format!("{}{}", self.output.get_text(), s);
+    self.output.text(&s);
+  }
+  pub fn println(&mut self, s: &str) {
+    let s = format!("{}{}\n", self.output.get_text(), s);
+    self.output.text(&s);
   }
 }
 
@@ -132,10 +163,16 @@ impl<S: Style> Terminal<S> {
     output_wnd.draw_caption(false);
     output_wnd.style("NoStyle", false, false);
     let mut output = TextBox::new(gui);
-    output.style("NoStyle").text("Welcome!\n");
+    output.style("NoStyle").text("\n");
 
     let mut input = TextBox::new(gui);
     input.text("~$ ");
+
+    let mut quickfix_wnd = Window::new(gui, ColumnLayout::default());
+    quickfix_wnd.draw_caption(false);
+    quickfix_wnd.style("NoStyle", false, false);
+    let mut quickfix = TextBox::new(gui);
+    quickfix.style("TextBoxBorderless").text("");
 
     Self {
       term: Arc::new(Mutex::new(TerminalImpl {
@@ -144,32 +181,31 @@ impl<S: Style> Terminal<S> {
         output,
         input,
         readline: Arc::new((Mutex::new(None), Condvar::new())),
+        quickfix_wnd,
+        quickfix,
       })),
     }
   }
 
-  //fn draw(&mut self, screen: &mut Screen<S>, focus: &mut SelectId) -> Option<Event> {
-  //  self.term.lock().unwrap().draw(screen, screen.get_layout(), focus)
-  //}
-
-  pub fn position(&mut self, x: i32, y: i32) -> &mut Self {
+  pub fn position(&self, x: i32, y: i32) -> &Self {
     self.term.lock().unwrap().wnd.position(x, y);
     self
   }
-  pub fn size(&mut self, x: u32, y: u32) -> &mut Self {
+  pub fn size(&self, x: u32, y: u32) -> &Self {
     self.term.lock().unwrap().wnd.size(x, y);
     self
   }
 
+  pub fn focus(&self, focus: bool) -> &Self {
+    self.term.lock().unwrap().focus(true);
+    self
+  }
+
   pub fn print(&self, s: &str) {
-    let mut term = self.term.lock().unwrap();
-    let s = format!("{}{}", term.output.get_text(), s);
-    term.output.text(&s);
+    self.term.lock().unwrap().print(s);
   }
   pub fn println(&self, s: &str) {
-    let mut term = self.term.lock().unwrap();
-    let s = format!("{}{}\n", term.output.get_text(), s);
-    term.output.text(&s);
+    self.term.lock().unwrap().println(s);
   }
   pub fn readln(&self) -> String {
     let &(ref s, ref cv) = &*self.term.lock().unwrap().readline;
@@ -182,5 +218,56 @@ impl<S: Style> Terminal<S> {
   }
   pub fn get_input(&self) -> String {
     self.term.lock().unwrap().input.get_text()[3..].to_owned()
+  }
+
+  pub fn input_text(&self, s: &str) {
+    self
+      .term
+      .lock()
+      .unwrap()
+      .input
+      .text(&format!("~$ {}", s))
+      .cursor(Some(vec2!(s.len() as u32 + 3, 0)));;
+  }
+  pub fn quickfix_text(&self, s: &str) {
+    self.term.lock().unwrap().quickfix.text(s);
+  }
+}
+
+use crate::style::event;
+
+#[derive(Debug)]
+enum TerminalInputEvent {
+  TextBox(textbox::Event),
+  TabComplete(bool),
+}
+
+#[derive(Default)]
+struct HandlerTerminalEdit {}
+impl textbox::TextBoxEventHandler for HandlerTerminalEdit {
+  type Output = TerminalInputEvent;
+  fn handle<S: Style>(tb: &mut TextBox<S, Self>, e: Option<event::Event>, screen: &Screen<S>) -> Option<Self::Output> {
+    if tb.has_focus() {
+      for e in screen.get_events() {
+        if let vk::winit::Event::DeviceEvent {
+          event:
+            vk::winit::DeviceEvent::Key(vk::winit::KeyboardInput {
+              state: vk::winit::ElementState::Pressed,
+              virtual_keycode: Some(vk::winit::VirtualKeyCode::Tab),
+              modifiers: vk::winit::ModifiersState { shift: s, .. },
+              ..
+            }),
+          ..
+        } = e
+        {
+          return Some(TerminalInputEvent::TabComplete(*s));
+        }
+        if let Some(e) = Self::receive_character(tb, e, false, &['\t']) {
+          return Some(TerminalInputEvent::TextBox(e));
+        }
+        Self::move_cursor(tb, e);
+      }
+    }
+    Self::set_cursor(tb, e).map(|e| TerminalInputEvent::TextBox(e))
   }
 }

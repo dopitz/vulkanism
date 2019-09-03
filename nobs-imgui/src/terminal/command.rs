@@ -11,6 +11,9 @@ pub struct Shell<S: Style> {
   term: Terminal<S>,
 
   cmds: BTreeMap<String, Box<dyn Command>>,
+
+  prefix_len: usize,
+  complete_index: Option<usize>,
 }
 
 impl<S: Style> Shell<S> {
@@ -18,6 +21,9 @@ impl<S: Style> Shell<S> {
     Shell {
       term,
       cmds: Default::default(),
+
+      prefix_len: 0,
+      complete_index: None,
     }
   }
 
@@ -27,24 +33,62 @@ impl<S: Style> Shell<S> {
 
   pub fn update<L: Layout>(&mut self, screen: &mut Screen<S>, layout: &mut L, focus: &mut SelectId) {
     match self.term.draw(screen, layout, focus) {
+      Some(Event::TabComplete(shift)) => {
+        let input = self.term.get_input();
+        let prefix = input[..self.prefix_len].to_string();
+        if let Some(completions) = self.cmds.iter().find_map(|(_, cmd)| cmd.complete(&prefix)) {
+          println!("{:?}", self.complete_index);
+          self.complete_index = match self.complete_index {
+            None => match shift {
+              false => Some(0),
+              true => Some(completions.len() - 1),
+            },
+            Some(ci) => {
+              let ci = ci as i32
+                + match shift {
+                  false => 1,
+                  true => -1,
+                };
+              if ci < 0 || ci >= completions.len() as i32 {
+                None
+              } else {
+                Some(ci as usize)
+              }
+            }
+          };
+          println!("{:?}", self.complete_index);
+
+          println!("{:?}", &completions);
+          if let Some(&ci) = self.complete_index.as_ref() {
+            println!("complete: {} {}", ci, &completions[ci].complete());
+            self.term.input_text(&completions[ci].complete());
+          } else {
+            self.term.input_text(&prefix);
+          }
+        }
+      }
       Some(Event::InputChanged) => {
-        for (_, cmd) in self.cmds.iter() {
-          let complete = cmd.complete(&self.term.get_input());
-          //println!("{:?}", complete);
-          //if complete.len() > 1 {
-          //  for cp in complete {
-          //    self.term.println(&cp);
-          //  }
-          //  break;
-          //}
+        let input = self.term.get_input();
+        self.prefix_len = input.len();
+        self.complete_index = None;
+
+        if let Some(completions) = self.cmds.iter().find_map(|(_, cmd)| cmd.complete(&input)) {
+          let mut s = completions.iter().fold(String::new(), |acc, c| format!("{}{}\n", acc, c.variant));
+          s = format!("{}{}", s, "-------------");
+          self.term.quickfix_text(&s);
+        } else {
+          self.term.quickfix_text("");
         }
       }
       Some(Event::InputSubmit(input)) => {
+        println!("input: {:?}", input);
         for (_, cmd) in self.cmds.iter() {
           println!("{:?}", cmd.parse(&input));
         }
-
-      },
+        self.prefix_len = 0;
+        self.complete_index = None;
+        self.term.quickfix_text("");
+      }
       _ => (),
     }
   }
@@ -58,13 +102,19 @@ pub trait Command {
 impl Parsable for Command {
   fn parse(&self, s: &str) -> Option<Vec<String>> {
     if s.starts_with(self.get_name()) {
-      let args = Self::split_arguments(&s[self.get_name().len()..]);
+      let args = self.match_args(s);
 
       let parsed = self
         .get_args()
         .iter()
         .zip(args.iter())
-        .filter_map(|(a, sa)| if a.parse(sa).is_some() { Some(sa.to_string()) } else { None })
+        .filter_map(|(a, sa)| {
+          if a.parse(&s[sa.0..sa.1]).is_some() {
+            Some(s[sa.0..sa.1].to_string())
+          } else {
+            None
+          }
+        })
         .fold(vec![self.get_name().to_string()], |mut acc, arg| {
           acc.push(arg);
           acc
@@ -79,14 +129,27 @@ impl Parsable for Command {
       None
     }
   }
-  fn complete(&self, s: &str) -> Option<Vec<String>> {
+  fn complete<'a>(&self, s: &'a str) -> Option<Vec<Completion<'a>>> {
     if self.get_name().starts_with(s) {
-      Some(vec![self.get_name().into()])
-    } else if s.starts_with(self.get_name()) {
-      let args = Self::split_arguments(&s[self.get_name().len()..]);
-      if !args.is_empty() && args.len() <= self.get_args().len() {
-        let i = args.len() - 1;
-        self.get_args()[i].complete(&args[i])
+      Some(vec![Completion::new(&s[0..0], self.get_name().into())])
+    } else if s.starts_with(self.get_name()) && !self.get_args().is_empty() {
+      let args = self.match_args(s);
+      println!("ccc: {:?} {}", args, s.len());
+      if args.is_empty() {
+        self.get_args()[0]
+          .complete("")
+          .map(|cs| cs.into_iter().map(|c| Completion::new(&s, c.variant)).collect())
+      } else if args.len() < self.get_args().len() {
+        let mut i = args.len() - 1;
+        if args[i].1 < s.len() {
+          self.get_args()[i + 1]
+            .complete("")
+            .map(|cs| cs.into_iter().map(|c| Completion::new(&s, c.variant)).collect())
+        } else {
+          self.get_args()[i]
+            .complete(&s[args[i].0..args[i].1])
+            .map(|cs| cs.into_iter().map(|c| Completion::new(&s[0..args[i].0], c.variant)).collect())
+        }
       } else {
         None
       }
@@ -97,53 +160,72 @@ impl Parsable for Command {
 }
 
 impl Command {
-  fn split_arguments(s: &str) -> Vec<String> {
+  fn match_args(&self, s: &str) -> Vec<(usize, usize)> {
     let mut matches = Vec::new();
-    let mut begin = match s.starts_with(" ") {
-      true => None,
-      false => Some(0),
-    };
-    let mut quote = false;
-    let mut escape = false;
-    for (i, c) in s.chars().enumerate() {
-      if !escape {
-        if !quote && begin.is_none() && c == '\"' {
-          quote = true;
-          begin = Some(i);
-        } else if quote && begin.is_some() && c == '\"' {
-          quote = false;
-          matches.push(s[begin.take().unwrap() + 1..i].into());
+
+    if s.len() > self.get_name().len() {
+      let mut begin = match s[self.get_name().len()..].starts_with(" ") {
+        true => None,
+        false => Some(self.get_name().len()),
+      };
+      let mut quote = false;
+      let mut escape = false;
+      for (i, c) in s.chars().enumerate().skip(self.get_name().len()) {
+        if !escape {
+          if !quote && begin.is_none() && c == '\"' {
+            quote = true;
+            begin = Some(i);
+          } else if quote && begin.is_some() && c == '\"' {
+            quote = false;
+            matches.push((begin.take().unwrap() + 1, i));
+            escape = true;
+          }
+        }
+
+        if !escape && !quote {
+          if begin.is_none() && c != ' ' {
+            begin = Some(i);
+          } else if begin.is_some() && c == ' ' {
+            matches.push((begin.take().unwrap(), i));
+          }
+        }
+
+        escape = false;
+        if c == '\\' {
           escape = true;
         }
       }
-
-      if !escape && !quote {
-        if begin.is_none() && c != ' ' {
-          begin = Some(i);
-        } else if begin.is_some() && c == ' ' {
-          matches.push(s[begin.take().unwrap()..i].into());
+      if let Some(mut b) = begin {
+        if let Some('\"') = s.chars().nth(b) {
+          b += 1;
         }
+        matches.push((b, s.len()));
       }
-
-      escape = false;
-      if c == '\\' {
-        escape = true;
-      }
-    }
-    if let Some(mut b) = begin {
-      if let Some('\"') = s.chars().nth(b) {
-        b += 1;
-      }
-      matches.push(s[b..].into());
     }
 
     matches
   }
 }
 
+#[derive(Debug)]
+pub struct Completion<'a> {
+  pub prefix: &'a str,
+  pub variant: String,
+}
+
+impl<'a> Completion<'a> {
+  pub fn new(prefix: &'a str, variant: String) -> Self {
+    Self { prefix, variant }
+  }
+
+  pub fn complete(&self) -> String {
+    format!("{}{}", self.prefix, self.variant)
+  }
+}
+
 pub trait Parsable {
   fn parse(&self, s: &str) -> Option<Vec<String>>;
-  fn complete(&self, s: &str) -> Option<Vec<String>>;
+  fn complete<'a>(&self, s: &'a str) -> Option<Vec<Completion<'a>>>;
 }
 
 const ABCIDENTS: &[&str] = &["aaa", "abc", "bbb", "bcd", "ccc"];
@@ -154,11 +236,11 @@ impl Parsable for ABCEnumArg {
   fn parse(&self, s: &str) -> Option<Vec<String>> {
     ABCIDENTS.iter().find(|i| &s == *i).map(|_| vec![s.into()])
   }
-  fn complete(&self, s: &str) -> Option<Vec<String>> {
+  fn complete<'a>(&self, s: &'a str) -> Option<Vec<Completion<'a>>> {
     let res = ABCIDENTS
       .iter()
       .filter(|i| i.starts_with(s))
-      .map(|i| i.to_owned().to_owned())
+      .map(|i| Completion::new(&s[0..0], i.to_owned().to_owned()))
       .collect::<Vec<_>>();
     match res.is_empty() {
       true => None,

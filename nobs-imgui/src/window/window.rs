@@ -163,6 +163,7 @@ impl<L: Layout, S: Style> Component<S> for Window<L, S> {
       }
     }
 
+    // TODO: return an event when clicked
     None
   }
 }
