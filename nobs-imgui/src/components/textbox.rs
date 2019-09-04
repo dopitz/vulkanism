@@ -32,30 +32,67 @@ pub trait TextBoxEventHandler: Default {
       } => {
         if blacklist.iter().find(|b| c == *b).is_none() {
           let mut c = *c;
-          if !multiline && (c == '\n' || c == '\r') {
-            return Some(Event::Enter);
-          }
+          // TODO backspace/delete for multiline text
+          // backspace
+          if c == '\u{8}' {
+            let ts = tb.get_typeset();
+            if let Some(mut cp) = tb.get_cursor() {
+              let i = ts.index_of(cp, tb.get_text());
+              let mut text = tb.get_text().to_owned();
+              if i == text.len() {
+                text.pop();
+              } else {
+                text.remove(i);
+              }
+              tb.text(&text);
 
-          if c == '\r' {
-            c = '\n';
-          }
-
-          let ts = tb.get_typeset();
-          if let Some(mut cp) = tb.get_cursor() {
-            let i = ts.index_of(cp, tb.get_text());
-            let mut text = tb.get_text().to_owned();
-            text.insert(i, c);
-            tb.text(&text);
-
-            if c == '\n' {
-              cp.x = 0;
-              cp.y += 1;
-            } else {
-              cp.x += 1;
+              if c == '\n' {
+                cp.x = u32::max_value();
+                cp.y -= 1;
+              } else {
+                cp.x -= 1;
+              }
+              tb.cursor(Some(cp));
             }
-            tb.cursor(Some(cp));
           }
+          // delete
+          else if c == '\u{7f}' {
+            let ts = tb.get_typeset();
+            if let Some(mut cp) = tb.get_cursor() {
+              let i = ts.index_of(cp, tb.get_text());
+              let mut text = tb.get_text().to_owned();
+              if i < text.len() {
+                text.remove(i);
+              }
+              tb.text(&text);
+            }
+          }
+          // input
+          else {
+            if !multiline && (c == '\n' || c == '\r') {
+              return Some(Event::Enter);
+            }
 
+            if c == '\r' {
+              c = '\n';
+            }
+
+            let ts = tb.get_typeset();
+            if let Some(mut cp) = tb.get_cursor() {
+              let i = ts.index_of(cp, tb.get_text());
+              let mut text = tb.get_text().to_owned();
+              text.insert(i, c);
+              tb.text(&text);
+
+              if c == '\n' {
+                cp.x = 0;
+                cp.y += 1;
+              } else {
+                cp.x += 1;
+              }
+              tb.cursor(Some(cp));
+            }
+          }
           Some(Event::Changed)
         } else {
           None

@@ -69,6 +69,7 @@ impl<S: Style> Shell<S> {
       }
       Some(Event::InputChanged) => {
         let input = self.term.get_input();
+        println!("{:?}", input);
         self.prefix_len = input.len();
         self.complete_index = None;
 
