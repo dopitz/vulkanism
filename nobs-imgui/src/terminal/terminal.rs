@@ -73,7 +73,18 @@ impl<S: Style> Component<S> for TerminalImpl<S> {
         cv.notify_one();
         Some(Event::InputSubmit(input))
       }
-      Some(TerminalInputEvent::TextBox(textbox::Event::Changed)) => Some(Event::InputChanged),
+      Some(TerminalInputEvent::TextBox(textbox::Event::Changed)) => {
+        if self.input.get_text().len() < 3 {
+          self.input.text("~$ ");
+        }
+        match self.input.get_cursor() {
+          Some(cp) if cp.x < 3 => {
+            self.input.cursor(Some(vec2!(3, 0)));
+          }
+          _ => (),
+        }
+        Some(Event::InputChanged)
+      }
       Some(TerminalInputEvent::TabComplete(s)) => Some(Event::TabComplete(s)),
       _ => None,
     };
@@ -108,8 +119,9 @@ impl<S: Style> Component<S> for TerminalImpl<S> {
 impl<S: Style> TerminalImpl<S> {
   pub fn focus(&mut self, focus: bool) {
     let cp = Some(vec2!(self.input.get_text().len() as u32, 0));
-    self.input.focus(true).cursor(cp);
-    self.output_wnd.focus(true);
+    self.input.focus(focus).cursor(cp);
+    self.output_wnd.focus(focus);
+    self.wnd.focus(focus);
   }
 
   pub fn print(&mut self, s: &str) {
@@ -197,7 +209,7 @@ impl<S: Style> Terminal<S> {
   }
 
   pub fn focus(&self, focus: bool) -> &Self {
-    self.term.lock().unwrap().focus(true);
+    self.term.lock().unwrap().focus(focus);
     self
   }
 

@@ -48,9 +48,9 @@ pub trait TextBoxEventHandler: Default {
 
               if c == '\n' {
                 cp.x = u32::max_value();
-                cp.y -= 1;
+                cp.y = cp.y.saturating_sub(1);
               } else {
-                cp.x -= 1;
+                cp.x = cp.x.saturating_sub(0);
               }
               tb.cursor(Some(cp));
             }

@@ -2,6 +2,7 @@ macro_rules! make_style {
   ($name:ty) => {
     pub use crate::rect::Rect;
     pub use crate::window::*;
+    pub use crate::terminal::*;
 
     pub type Gui = crate::ImGui<$name>;
     pub type Window<L: Layout> = crate::window::Window<L, $name>;

@@ -8,6 +8,8 @@ use vk::cmd::stream::*;
 use vk::mem::Handle;
 use vk::winit;
 
+static mut quit: bool = false;
+
 pub fn setup_vulkan_window() -> (
   vk::instance::Instance,
   vk::device::PhysicalDevice,
@@ -111,7 +113,6 @@ pub fn main() {
   let mut gui = Gui::new(&device, &window, fb.images[0], mem.clone());
 
   let mut resizeevent = false;
-  let mut close = false;
 
   use vk::cmd::commands::*;
   let mut batch = vk::cmd::RRBatch::new(device.handle, 1).unwrap();
@@ -122,7 +123,7 @@ pub fn main() {
         winit::Event::WindowEvent {
           event: winit::WindowEvent::CloseRequested,
           ..
-        } => close = true,
+        } => unsafe { quit = true },
         winit::Event::WindowEvent {
           event: winit::WindowEvent::Resized(size),
           ..
@@ -167,8 +168,10 @@ pub fn main() {
       .push_mut(&mut gui)
       .present(device.queues[0].handle, fb.images[0]);
 
-    if close {
-      break;
+    unsafe {
+      if quit {
+        break;
+      }
     }
   }
 
@@ -177,10 +180,72 @@ pub fn main() {
 
 use imgui::style::simple as gui;
 
+mod testcmd {
+  use imgui::terminal::*;
+
+  pub struct QuitCommand {
+    name: String,
+    args: Vec<Box<dyn Parsable>>,
+  }
+
+  impl Command for QuitCommand {
+    fn get_name(&self) -> &str {
+      &self.name
+    }
+    fn get_args(&self) -> &Vec<Box<dyn Parsable>> {
+      &self.args
+    }
+
+    fn run(&self, args: Vec<String>) {
+      unsafe {
+        super::quit = true;
+      }
+      println!("AOEUAOEUAOEUAOEUAOEU   {:?}", args);
+    }
+  }
+
+  impl QuitCommand {
+    pub fn new() -> Self {
+      Self {
+        name: "quit".to_owned(),
+        args: vec![],
+      }
+    }
+  }
+
+  const ABCIDENTS: &[&str] = &["aaa", "abc", "bbb", "bcd", "ccc"];
+
+  pub struct ABCCommand {
+    name: String,
+    args: Vec<Box<dyn Parsable>>,
+  }
+
+  impl Command for ABCCommand {
+    fn get_name(&self) -> &str {
+      &self.name
+    }
+    fn get_args(&self) -> &Vec<Box<dyn Parsable>> {
+      &self.args
+    }
+
+    fn run(&self, args: Vec<String>) {
+      println!("AOEUAOEUAOEUAOEUAOEU   {:?}", args);
+    }
+  }
+
+  impl ABCCommand {
+    pub fn new() -> Self {
+      Self {
+        name: "runabc".to_owned(),
+        args: vec![Box::new(IdentArg::from_slice(ABCIDENTS)), Box::new(FileArg::new())],
+      }
+    }
+  }
+}
+
 struct Gui {
   gui: gui::Gui,
 
-  term: gui::Terminal,
   shell: gui::Shell,
 
   wnd: gui::Window<gui::ColumnLayout>,
@@ -197,13 +262,18 @@ impl Gui {
     gui.style.load_styles(gui::get_default_styles());
     gui.style.set_dpi(1.6);
 
-    let mut term = gui::Terminal::new(&gui);
-    let mut shell = gui::Shell::new(term.clone());
-    shell.add_command(Box::new(imgui::terminal::ABCCommand::new()));
+    let mut shell = gui::Shell::new(&gui);
+    shell.add_command(Box::new(testcmd::ABCCommand::new()));
+    shell.add_command(Box::new(testcmd::QuitCommand::new()));
 
-    let mut wnd = gui::Window::new(&gui, imgui::window::ColumnLayout::default());
+    let mut wnd = gui::Window::new(&gui, gui::ColumnLayout::default());
     //wnd.caption("awwwww yeees").position(200, 20).size(500, 720).focus(true).draw_caption(false);
-    wnd.caption("awwwww yeees").position(200, 20).size(500, 720).focus(true).padding(vec2!(10));
+    wnd
+      .caption("awwwww yeees")
+      .position(200, 20)
+      .size(500, 720)
+      .focus(true)
+      .padding(vec2!(10));
 
     let mut text = gui::TextBox::new(&gui);
     text.text("aoeu\naoeu\naoeu");
@@ -214,7 +284,6 @@ impl Gui {
     text2.typeset(text2.get_typeset());
     Self {
       gui,
-      term,
       shell,
       wnd,
       text,
@@ -229,7 +298,7 @@ impl Gui {
 
   pub fn resize(&mut self, extent: vk::Extent2D, image: vk::Image) {
     self.gui.resize(extent, image);
-    self.term.size(extent.width / 7 * 3, extent.height / 4 * 3);
+    self.shell.term.size(extent.width / 7 * 3, extent.height / 4 * 3);
   }
 }
 
