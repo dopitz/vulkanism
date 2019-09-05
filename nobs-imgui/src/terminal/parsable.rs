@@ -5,27 +5,76 @@ pub struct Completion<'a> {
   score: i32,
   completed: String,
   preview: Range<usize>,
-  prefix: &'a str,
-  suffix: &'a str,
+  prefix: Option<&'a str>,
+  suffix: Option<&'a str>,
 }
 
 impl<'a> Completion<'a> {
-  pub fn new(score: i32, prefix: &'a str, completed: String, suffix: &'a str, preview: Range<usize>) -> Self {
+  pub fn new(score: i32, completed: String) -> Self {
     Self {
       score,
+      preview: 0..completed.len(),
       completed,
-      preview,
-      prefix,
-      suffix,
+      prefix: None,
+      suffix: None,
     }
   }
 
-  pub fn completed(&self) -> String {
-    format!("{}{}{}", self.prefix, self.completed, self.suffix)
+  pub fn preview(mut self, pv: Range<usize>) -> Self {
+    self.preview = pv;
+    self
+  }
+  pub fn prefix(mut self, pf: &'a str) -> Self {
+    self.prefix = Some(pf);
+    self
+  }
+  pub fn suffix(mut self, sf: &'a str) -> Self {
+    self.suffix = Some(sf);
+    self
   }
 
-  pub fn preview(&self) -> &str {
+  pub fn get_completed(&self) -> String {
+    // TODO replace spaces with "\ "
+    // only when required (nested call of get_complete in command...)
+    format!(
+      "{}{}{}",
+      match self.prefix {
+        Some(pf) => pf,
+        None => "",
+      },
+      self.completed,
+      match self.suffix {
+        Some(sf) => sf,
+        None => "",
+      },
+    )
+  }
+
+  pub fn get_preview(&self) -> &str {
     &self.completed[self.preview.clone()]
+  }
+}
+
+impl<'a> PartialEq for Completion<'a> {
+  fn eq(&self, other: &Self) -> bool {
+    self.score == other.score && self.completed == other.completed
+  }
+}
+
+impl<'a> Eq for Completion<'a> {}
+
+impl<'a> PartialOrd for Completion<'a> {
+  fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+    Some(self.cmp(other))
+  }
+}
+
+impl<'a> Ord for Completion<'a> {
+  fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+    match self.score.cmp(&other.score) {
+      std::cmp::Ordering::Equal => self.completed.cmp(&other.completed),
+      x => x,
+    }
   }
 }
 
@@ -48,7 +97,7 @@ impl Parsable for IdentArg {
       .variants
       .iter()
       .filter(|i| i.starts_with(s))
-      .map(|i| Completion::new(0, &s[0..0], i.to_string(), &s[0..0], Range { start: 0, end: i.len() }))
+      .map(|i| Completion::new(0, i.to_string()))
       .collect::<Vec<_>>();
     match res.is_empty() {
       true => None,
@@ -92,10 +141,10 @@ impl Parsable for FileArg {
 
         match p.parent() {
           Some(p) => match p.to_str() {
-            Some("") => (Path::new("./"), n),
+            Some("") => (Path::new("."), n),
             _ => (p, n),
           },
-          None => (Path::new("./"), n),
+          None => (Path::new("."), n),
         }
       }
     };
@@ -105,18 +154,17 @@ impl Parsable for FileArg {
         .filter_map(|d| d.ok().and_then(|d| d.file_name().into_string().ok()))
         .filter(|fname| fname.starts_with(&n))
         .map(|fname| {
-          Completion::new(
-            0,
-            &s[0..0],
-            format!("{}", fname),
-            &s[0..0],
-            Range {
-              start: 0,
-              end: fname.len(),
-            },
-          )
+          let p = match p.to_str() {
+            Some(p) => p,
+            None => "",
+          };
+          let s = format!("{}/{}", p, fname);
+          let r = p.len() + 1..s.len();
+          Completion::new(0, s).preview(r)
         })
         .collect::<Vec<_>>();
+
+      dirs.sort();
 
       match dirs.is_empty() {
         true => None,

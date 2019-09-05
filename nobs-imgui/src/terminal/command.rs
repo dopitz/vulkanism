@@ -23,8 +23,8 @@ impl Parsable for Command {
         .iter()
         .zip(args.iter())
         .filter_map(|(a, sa)| {
-          if a.parse(&s[sa.0..sa.1]).is_some() {
-            Some(s[sa.0..sa.1].to_string())
+          if a.parse(&s[sa.clone()]).is_some() {
+            Some(s[sa.clone()].to_string())
           } else {
             None
           }
@@ -43,74 +43,27 @@ impl Parsable for Command {
       None
     }
   }
+  // TODO cursor hint for completion when cursor not and end of input line
   fn complete<'a>(&self, s: &'a str) -> Option<Vec<Completion<'a>>> {
     if self.get_name().starts_with(s) {
-      Some(vec![Completion::new(
-        0,
-        &s[0..0],
-        self.get_name().into(),
-        &s[0..0],
-        Range {
-          start: 0,
-          end: self.get_name().len(),
-        },
-      )])
+      Some(vec![Completion::new(0, self.get_name().into())])
     } else if s.starts_with(self.get_name()) && !self.get_args().is_empty() {
       let args = self.match_args(s);
       println!("ccc: {:?} {}", args, s.len());
       if args.is_empty() {
-        self.get_args()[0].complete("").map(|cs| {
-          cs.into_iter()
-            .map(|c| {
-              Completion::new(
-                0,
-                &s,
-                c.completed(),
-                &s[0..0],
-                Range {
-                  start: 0,
-                  end: c.completed().len(),
-                },
-              )
-            })
-            .collect()
-        })
+        self.get_args()[0]
+          .complete("")
+          .map(|cs| cs.into_iter().map(|c| c.prefix(&s)).collect())
       } else if args.len() <= self.get_args().len() {
         let mut i = args.len() - 1;
-        if args[i].1 < s.len() {
-          self.get_args()[i + 1].complete("").map(|cs| {
-            cs.into_iter()
-              .map(|c| {
-                Completion::new(
-                  0,
-                  &s,
-                  c.completed(),
-                  &s[0..0],
-                  Range {
-                    start: 0,
-                    end: c.completed().len(),
-                  },
-                )
-              })
-              .collect()
-          })
+        if args[i].end < s.len() {
+          self.get_args()[i + 1]
+            .complete("")
+            .map(|cs| cs.into_iter().map(|c| c.prefix(&s)).collect())
         } else {
-          let cc = self.get_args()[i].complete(&s[args[i].0..args[i].1]).map(|cs| {
-            cs.into_iter()
-              .map(|c| {
-                Completion::new(
-                  0,
-                  &s[0..args[i].0],
-                  c.completed(),
-                  &s[0..0],
-                  Range {
-                    start: 0,
-                    end: c.completed().len(),
-                  },
-                )
-              })
-              .collect()
-          });
+          let cc = self.get_args()[i]
+            .complete(&s[args[i].clone()])
+            .map(|cs| cs.into_iter().map(|c| c.prefix(&s[0..args[i].start])).collect());
           println!("{:?}", cc);
           cc
         }
@@ -124,7 +77,7 @@ impl Parsable for Command {
 }
 
 impl Command {
-  fn match_args(&self, s: &str) -> Vec<(usize, usize)> {
+  fn match_args(&self, s: &str) -> Vec<Range<usize>> {
     let mut matches = Vec::new();
 
     if s.len() > self.get_name().len() {
@@ -141,7 +94,7 @@ impl Command {
             begin = Some(i);
           } else if quote && begin.is_some() && c == '\"' {
             quote = false;
-            matches.push((begin.take().unwrap() + 1, i));
+            matches.push(begin.take().unwrap() + 1..i);
             escape = true;
           }
         }
@@ -150,7 +103,7 @@ impl Command {
           if begin.is_none() && c != ' ' {
             begin = Some(i);
           } else if begin.is_some() && c == ' ' {
-            matches.push((begin.take().unwrap(), i));
+            matches.push(begin.take().unwrap()..i);
           }
         }
 
@@ -163,7 +116,7 @@ impl Command {
         if let Some('\"') = s.chars().nth(b) {
           b += 1;
         }
-        matches.push((b, s.len()));
+        matches.push(b..s.len());
       }
     }
 

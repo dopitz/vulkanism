@@ -90,7 +90,7 @@ impl<S: Style> Shell<S> {
             };
 
             if let Some(&ci) = self.complete_index.as_ref() {
-              self.term.input_text(&completions[ci].completed());
+              self.term.input_text(&completions[ci].get_completed());
             } else {
               self.term.input_text(&prefix);
             }
@@ -102,7 +102,9 @@ impl<S: Style> Shell<S> {
           self.complete_index = None;
 
           if let Some(completions) = self.cmds.iter().find_map(|(_, cmd)| cmd.complete(&input)) {
-            let mut s = completions.iter().fold(String::new(), |acc, c| format!("{}{}\n", acc, c.preview()));
+            let mut s = completions
+              .iter()
+              .fold(String::new(), |acc, c| format!("{}{}\n", acc, c.get_preview()));
             s = format!("{}{}", s, "-------------");
             self.term.quickfix_text(&s);
           } else {
