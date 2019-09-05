@@ -4,6 +4,8 @@ use crate::select::SelectId;
 use crate::style::Style;
 use crate::window::*;
 
+use std::ops::Range;
+
 pub trait Command {
   fn get_name(&self) -> &str;
   fn get_args(&self) -> &Vec<Box<dyn Parsable>>;
@@ -43,24 +45,74 @@ impl Parsable for Command {
   }
   fn complete<'a>(&self, s: &'a str) -> Option<Vec<Completion<'a>>> {
     if self.get_name().starts_with(s) {
-      Some(vec![Completion::new(&s[0..0], self.get_name().into())])
+      Some(vec![Completion::new(
+        0,
+        &s[0..0],
+        self.get_name().into(),
+        &s[0..0],
+        Range {
+          start: 0,
+          end: self.get_name().len(),
+        },
+      )])
     } else if s.starts_with(self.get_name()) && !self.get_args().is_empty() {
       let args = self.match_args(s);
       println!("ccc: {:?} {}", args, s.len());
       if args.is_empty() {
-        self.get_args()[0]
-          .complete("")
-          .map(|cs| cs.into_iter().map(|c| Completion::new(&s, c.variant)).collect())
+        self.get_args()[0].complete("").map(|cs| {
+          cs.into_iter()
+            .map(|c| {
+              Completion::new(
+                0,
+                &s,
+                c.completed(),
+                &s[0..0],
+                Range {
+                  start: 0,
+                  end: c.completed().len(),
+                },
+              )
+            })
+            .collect()
+        })
       } else if args.len() <= self.get_args().len() {
         let mut i = args.len() - 1;
         if args[i].1 < s.len() {
-          self.get_args()[i + 1]
-            .complete("")
-            .map(|cs| cs.into_iter().map(|c| Completion::new(&s, c.variant)).collect())
+          self.get_args()[i + 1].complete("").map(|cs| {
+            cs.into_iter()
+              .map(|c| {
+                Completion::new(
+                  0,
+                  &s,
+                  c.completed(),
+                  &s[0..0],
+                  Range {
+                    start: 0,
+                    end: c.completed().len(),
+                  },
+                )
+              })
+              .collect()
+          })
         } else {
-          self.get_args()[i]
-            .complete(&s[args[i].0..args[i].1])
-            .map(|cs| cs.into_iter().map(|c| Completion::new(&s[0..args[i].0], c.variant)).collect())
+          let cc = self.get_args()[i].complete(&s[args[i].0..args[i].1]).map(|cs| {
+            cs.into_iter()
+              .map(|c| {
+                Completion::new(
+                  0,
+                  &s[0..args[i].0],
+                  c.completed(),
+                  &s[0..0],
+                  Range {
+                    start: 0,
+                    end: c.completed().len(),
+                  },
+                )
+              })
+              .collect()
+          });
+          println!("{:?}", cc);
+          cc
         }
       } else {
         None
@@ -118,4 +170,3 @@ impl Command {
     matches
   }
 }
-

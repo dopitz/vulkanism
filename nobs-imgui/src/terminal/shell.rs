@@ -102,7 +102,7 @@ impl<S: Style> Shell<S> {
           self.complete_index = None;
 
           if let Some(completions) = self.cmds.iter().find_map(|(_, cmd)| cmd.complete(&input)) {
-            let mut s = completions.iter().fold(String::new(), |acc, c| format!("{}{}\n", acc, c.variant));
+            let mut s = completions.iter().fold(String::new(), |acc, c| format!("{}{}\n", acc, c.preview()));
             s = format!("{}{}", s, "-------------");
             self.term.quickfix_text(&s);
           } else {

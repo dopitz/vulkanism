@@ -1,16 +1,31 @@
+use std::ops::Range;
+
 #[derive(Debug)]
 pub struct Completion<'a> {
-  pub prefix: &'a str,
-  pub variant: String,
+  score: i32,
+  completed: String,
+  preview: Range<usize>,
+  prefix: &'a str,
+  suffix: &'a str,
 }
 
 impl<'a> Completion<'a> {
-  pub fn new(prefix: &'a str, variant: String) -> Self {
-    Self { prefix, variant }
+  pub fn new(score: i32, prefix: &'a str, completed: String, suffix: &'a str, preview: Range<usize>) -> Self {
+    Self {
+      score,
+      completed,
+      preview,
+      prefix,
+      suffix,
+    }
   }
 
   pub fn completed(&self) -> String {
-    format!("{}{}", self.prefix, self.variant)
+    format!("{}{}{}", self.prefix, self.completed, self.suffix)
+  }
+
+  pub fn preview(&self) -> &str {
+    &self.completed[self.preview.clone()]
   }
 }
 
@@ -33,7 +48,7 @@ impl Parsable for IdentArg {
       .variants
       .iter()
       .filter(|i| i.starts_with(s))
-      .map(|i| Completion::new(&s[0..0], i.to_owned().to_owned()))
+      .map(|i| Completion::new(0, &s[0..0], i.to_string(), &s[0..0], Range { start: 0, end: i.len() }))
       .collect::<Vec<_>>();
     match res.is_empty() {
       true => None,
@@ -63,12 +78,50 @@ impl Parsable for FileArg {
   }
 
   fn complete<'a>(&self, s: &'a str) -> Option<Vec<Completion<'a>>> {
-    if let Ok(dirs) = std::fs::read_dir(s) {
-      let mut c = Vec::new();
-      for fname in dirs.filter_map(|d| d.ok().and_then(|d| d.file_name().into_string().ok())) {
-        c.push(Completion::new(&s[0..0], format!("/{}", fname)));
+    use std::path::Path;
+
+    let n = "".to_string();
+    let (mut p, n) = match s.chars().last() {
+      Some('/') | Some('\\') => (Path::new(s), n),
+      _ => {
+        let mut p = Path::new(s);
+        let n = match p.file_name().and_then(|p| p.to_os_string().into_string().ok()) {
+          Some(n) => n,
+          None => n,
+        };
+
+        match p.parent() {
+          Some(p) => match p.to_str() {
+            Some("") => (Path::new("./"), n),
+            _ => (p, n),
+          },
+          None => (Path::new("./"), n),
+        }
       }
-      Some(c)
+    };
+
+    if let Ok(dirs) = p.read_dir() {
+      let mut dirs = dirs
+        .filter_map(|d| d.ok().and_then(|d| d.file_name().into_string().ok()))
+        .filter(|fname| fname.starts_with(&n))
+        .map(|fname| {
+          Completion::new(
+            0,
+            &s[0..0],
+            format!("{}", fname),
+            &s[0..0],
+            Range {
+              start: 0,
+              end: fname.len(),
+            },
+          )
+        })
+        .collect::<Vec<_>>();
+
+      match dirs.is_empty() {
+        true => None,
+        false => Some(dirs),
+      }
     } else {
       None
     }
