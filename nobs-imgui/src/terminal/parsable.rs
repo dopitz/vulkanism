@@ -3,8 +3,8 @@ use std::ops::Range;
 #[derive(Debug)]
 pub struct Completion<'a> {
   score: i32,
+  preview: String,
   completed: String,
-  preview: Range<usize>,
   prefix: Option<&'a str>,
   suffix: Option<&'a str>,
 }
@@ -13,14 +13,14 @@ impl<'a> Completion<'a> {
   pub fn new(score: i32, completed: String) -> Self {
     Self {
       score,
-      preview: 0..completed.len(),
+      preview: completed.clone(),
       completed,
       prefix: None,
       suffix: None,
     }
   }
 
-  pub fn preview(mut self, pv: Range<usize>) -> Self {
+  pub fn preview(mut self, pv: String) -> Self {
     self.preview = pv;
     self
   }
@@ -51,7 +51,7 @@ impl<'a> Completion<'a> {
   }
 
   pub fn get_preview(&self) -> &str {
-    &self.completed[self.preview.clone()]
+    &self.preview
   }
 }
 
@@ -159,8 +159,8 @@ impl Parsable for FileArg {
             None => "",
           };
           let s = format!("{}/{}", p, fname);
-          let r = p.len() + 1..s.len();
-          Completion::new(0, s).preview(r)
+          let prev = s[p.len() + 1..s.len()].to_string();
+          Completion::new(0, s).preview(prev)
         })
         .collect::<Vec<_>>();
 
