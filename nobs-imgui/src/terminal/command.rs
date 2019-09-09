@@ -44,7 +44,7 @@ impl Parsable for Command {
     }
   }
   // TODO cursor hint for completion when cursor not and end of input line
-  fn complete<'a>(&self, s: &'a str) -> Option<Vec<Completion<'a>>> {
+  fn complete(&self, s: &str) -> Option<Vec<Completion>> {
     // if the input is shorter than the command's name try to complete that
     if self.get_name().starts_with(s) {
       Some(vec![Completion::new(0, self.get_name().into())])
@@ -56,23 +56,20 @@ impl Parsable for Command {
       if args.is_empty() && !self.get_args().is_empty() {
         self.get_args()[0]
           .complete("")
-          .map(|cs| cs.into_iter().map(|c| c.prefix(&s)).collect())
+          .map(|cs| cs.into_iter().map(|c| c.prefix(s.to_string())).collect())
       }
       //
       else if args.len() <= self.get_args().len() {
         let mut i = args.len() - 1;
-        if args[i].1.len() < s.len() {
-          if i < self.get_args().len() {
-            self.get_args()[i + 1]
-              .complete("")
-              .map(|cs| cs.into_iter().map(|c| c.prefix(&s)).collect())
-          } else {
-            None
-          }
+        println!("{:?}", args);
+        if args[i].1.len() < s.len() && i + 1 < self.get_args().len() {
+          self.get_args()[i + 1]
+            .complete("")
+            .map(|cs| cs.into_iter().map(|c| c.prefix(s.to_string())).collect())
         } else {
           let cc = self.get_args()[i]
             .complete(&args[i].1)
-            .map(|cs| cs.into_iter().map(|c| c.prefix(args[i].0)).collect());
+            .map(|cs| cs.into_iter().map(|c| c.prefix(args[i].0.to_string())).collect());
           cc
         }
       } else {

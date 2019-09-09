@@ -1,15 +1,15 @@
 use std::ops::Range;
 
 #[derive(Debug)]
-pub struct Completion<'a> {
+pub struct Completion {
   score: i32,
   preview: String,
   completed: String,
-  prefix: Option<&'a str>,
-  suffix: Option<&'a str>,
+  prefix: Option<String>,
+  suffix: Option<String>,
 }
 
-impl<'a> Completion<'a> {
+impl Completion {
   pub fn new(score: i32, completed: String) -> Self {
     Self {
       score,
@@ -24,12 +24,24 @@ impl<'a> Completion<'a> {
     self.preview = pv;
     self
   }
-  pub fn prefix(mut self, pf: &'a str) -> Self {
-    self.prefix = Some(pf);
+  pub fn prefix(mut self, pf: String) -> Self {
+    self.prefix = self
+      .prefix
+      .map(|mut s| {
+        s.push_str(&pf);
+        s
+      })
+      .or(Some(pf));
     self
   }
-  pub fn suffix(mut self, sf: &'a str) -> Self {
-    self.suffix = Some(sf);
+  pub fn suffix(mut self, mut sf: String) -> Self {
+    self.suffix = self
+      .suffix
+      .map(|mut s| {
+        s.insert_str(0, &sf);
+        s
+      })
+      .or(Some(sf));
     self
   }
 
@@ -38,13 +50,13 @@ impl<'a> Completion<'a> {
     // only when required (nested call of get_complete in command...)
     format!(
       "{}{}{}",
-      match self.prefix {
-        Some(pf) => pf,
+      match self.prefix.as_ref() {
+        Some(pf) => &pf,
         None => "",
       },
       self.completed,
-      match self.suffix {
-        Some(sf) => sf,
+      match self.suffix.as_ref() {
+        Some(sf) => &sf,
         None => "",
       },
     )
@@ -55,21 +67,21 @@ impl<'a> Completion<'a> {
   }
 }
 
-impl<'a> PartialEq for Completion<'a> {
+impl PartialEq for Completion {
   fn eq(&self, other: &Self) -> bool {
     self.score == other.score && self.completed == other.completed
   }
 }
 
-impl<'a> Eq for Completion<'a> {}
+impl Eq for Completion {}
 
-impl<'a> PartialOrd for Completion<'a> {
+impl PartialOrd for Completion {
   fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
     Some(self.cmp(other))
   }
 }
 
-impl<'a> Ord for Completion<'a> {
+impl Ord for Completion {
   fn cmp(&self, other: &Self) -> std::cmp::Ordering {
     match self.score.cmp(&other.score) {
       std::cmp::Ordering::Equal => self.completed.cmp(&other.completed),
@@ -80,7 +92,7 @@ impl<'a> Ord for Completion<'a> {
 
 pub trait Parsable {
   fn parse(&self, s: &str) -> Option<Vec<String>>;
-  fn complete<'a>(&self, s: &'a str) -> Option<Vec<Completion<'a>>>;
+  fn complete(&self, s: &str) -> Option<Vec<Completion>>;
 }
 
 pub struct IdentArg {
@@ -92,7 +104,7 @@ impl Parsable for IdentArg {
     self.variants.iter().find(|i| &s == *i).map(|_| vec![s.into()])
   }
 
-  fn complete<'a>(&self, s: &'a str) -> Option<Vec<Completion<'a>>> {
+  fn complete(&self, s: &str) -> Option<Vec<Completion>> {
     let res = self
       .variants
       .iter()
@@ -126,14 +138,14 @@ impl Parsable for FileArg {
     Some(vec![s.to_string()])
   }
 
-  fn complete<'a>(&self, s: &'a str) -> Option<Vec<Completion<'a>>> {
+  fn complete(&self, s: &str) -> Option<Vec<Completion>> {
     use std::path::Path;
 
     let n = "".to_string();
-    let (mut p, n) = match s.chars().last() {
+    let (p, n) = match s.chars().last() {
       Some('/') | Some('\\') => (Path::new(s), n),
       _ => {
-        let mut p = Path::new(s);
+        let p = Path::new(s);
         let n = match p.file_name().and_then(|p| p.to_os_string().into_string().ok()) {
           Some(n) => n,
           None => n,
