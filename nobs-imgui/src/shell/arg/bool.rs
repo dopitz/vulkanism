@@ -21,7 +21,7 @@ impl Bool {
     }
   }
 
-  fn convert(&self, s: &str) -> Option<bool> {
+  pub fn convert(&self, s: &str) -> Option<bool> {
     self.ident.convert(s).map(|b| b == "On")
   }
 }

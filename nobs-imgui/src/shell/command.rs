@@ -9,18 +9,19 @@ use std::ops::Range;
 
 pub trait Command<S: Style, C> {
   fn get_name(&self) -> &str;
-  fn get_args(&self) -> &Vec<Box<dyn Parsable>>;
+  fn get_args<'a>(&'a self) -> Vec<&'a Parsable>;
 
   fn run(&self, args: Vec<String>, term: &Terminal<S>, context: &mut C);
 }
 
 impl<S: Style, C> Parsable for Command<S, C> {
   fn parse(&self, s: &str) -> Option<Vec<String>> {
+    let cmd_args = self.get_args();
+
     if s.starts_with(self.get_name()) {
       let args = self.split_args(s);
 
-      let parsed = self
-        .get_args()
+      let parsed = cmd_args
         .iter()
         .zip(args.iter())
         .filter_map(|(a, sa)| if a.parse(&sa.1).is_some() { Some(sa.1.clone()) } else { None })
@@ -29,7 +30,7 @@ impl<S: Style, C> Parsable for Command<S, C> {
           acc
         });
 
-      if parsed.len() == self.get_args().len() + 1 {
+      if parsed.len() == cmd_args.len() + 1 {
         Some(parsed)
       } else {
         None
@@ -40,35 +41,37 @@ impl<S: Style, C> Parsable for Command<S, C> {
   }
   // TODO cursor hint for completion when cursor not and end of input line
   fn complete(&self, s: &str) -> Option<Vec<Completion>> {
+    let cmd_args = self.get_args();
+
     // if the input is shorter than the command's name try to complete that
     if self.get_name().starts_with(s) {
       Some(vec![Completion::new(0, self.get_name().into())])
     }
     // complete the arguments
-    else if s.starts_with(self.get_name()) && !self.get_args().is_empty() {
+    else if s.starts_with(self.get_name()) && !cmd_args.is_empty() {
       let args = self.split_args(s);
 
       println!("{:?}", args);
 
       // special case: input ends on whitespace
-      if args.is_empty() && !self.get_args().is_empty() {
-        self.get_args()[0].complete("").map(|cs| {
+      if args.is_empty() && !cmd_args.is_empty() {
+        cmd_args[0].complete("").map(|cs| {
           cs.into_iter()
             .map(|c| c.map_completed(|s| s.replace(" ", "\\ ")).prefix(s.to_string()))
             .collect()
         })
       }
       //
-      else if args.len() <= self.get_args().len() {
+      else if args.len() <= cmd_args.len() {
         let mut i = args.len() - 1;
-        if args[i].1.len() < s.len() && i + 1 < self.get_args().len() {
-          self.get_args()[i + 1].complete("").map(|cs| {
+        if args[i].1.len() < s.len() && i + 1 < cmd_args.len() {
+          cmd_args[i + 1].complete("").map(|cs| {
             cs.into_iter()
               .map(|c| c.map_completed(|s| s.replace(" ", "\\ ")).prefix(s.to_string()))
               .collect()
           })
         } else {
-          let cc = self.get_args()[i].complete(&args[i].1).map(|cs| {
+          let cc = cmd_args[i].complete(&args[i].1).map(|cs| {
             cs.into_iter()
               .map(|c| c.map_completed(|s| s.replace(" ", "\\ ")).prefix(args[i].0.to_string()))
               .collect()

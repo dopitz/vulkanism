@@ -192,29 +192,24 @@ mod commands {
 
     pub struct Cmd {
       name: String,
-      args: Vec<Box<dyn arg::Parsable>>,
     }
 
     impl Command<ThisStyle, super::Context> for Cmd {
       fn get_name(&self) -> &str {
         &self.name
       }
-      fn get_args(&self) -> &Vec<Box<dyn arg::Parsable>> {
-        &self.args
+      fn get_args<'a>(&'a self) -> Vec<&'a arg::Parsable> {
+        vec![]
       }
 
       fn run(&self, args: Vec<String>, term: &Terminal, context: &mut super::Context) {
         context.quit = true;
-        println!("AOEUAOEUAOEUAOEUAOEU   {:?}", args);
       }
     }
 
     impl Cmd {
       pub fn new() -> Self {
-        Self {
-          name: "quit".to_owned(),
-          args: vec![],
-        }
+        Self { name: "quit".to_owned() }
       }
     }
   }
@@ -224,19 +219,20 @@ mod commands {
 
     pub struct Cmd {
       name: String,
-      args: Vec<Box<dyn arg::Parsable>>,
+      toggle: arg::Bool,
     }
 
     impl Command<ThisStyle, super::Context> for Cmd {
       fn get_name(&self) -> &str {
         &self.name
       }
-      fn get_args(&self) -> &Vec<Box<dyn arg::Parsable>> {
-        &self.args
+      fn get_args<'a>(&'a self) -> Vec<&'a arg::Parsable> {
+        vec![&self.toggle]
       }
 
       fn run(&self, args: Vec<String>, term: &Terminal, context: &mut super::Context) {
-        println!("{:?}", args);
+        let on = self.toggle.convert(&args[1]);
+        term.println(&format!("{:?}", on));
       }
     }
 
@@ -244,12 +240,11 @@ mod commands {
       pub fn new() -> Self {
         Self {
           name: "toggle".to_owned(),
-          args: vec![Box::new(arg::Bool::new())],
+          toggle: arg::Bool::new(),
         }
       }
     }
   }
-
 }
 
 struct Gui {
