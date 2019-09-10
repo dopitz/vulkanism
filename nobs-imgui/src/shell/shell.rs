@@ -7,17 +7,17 @@ use crate::ImGui;
 
 use std::collections::BTreeMap;
 
-pub struct Shell<S: Style> {
+pub struct Shell<S: Style, C> {
   pub term: Terminal<S>,
 
-  cmds: BTreeMap<String, Box<dyn Command>>,
+  cmds: BTreeMap<String, Box<dyn Command<S, C>>>,
 
   show_term: bool,
   prefix_len: usize,
   complete_index: Option<usize>,
 }
 
-impl<S: Style> Shell<S> {
+impl<S: Style, C> Shell<S, C> {
   pub fn new(gui: &ImGui<S>) -> Self {
     Shell {
       term: Terminal::new(gui),
@@ -29,11 +29,11 @@ impl<S: Style> Shell<S> {
     }
   }
 
-  pub fn add_command(&mut self, cmd: Box<dyn Command>) {
+  pub fn add_command(&mut self, cmd: Box<dyn Command<S, C>>) {
     self.cmds.insert(cmd.get_name().to_owned(), cmd);
   }
 
-  pub fn update<L: Layout>(&mut self, screen: &mut Screen<S>, layout: &mut L, focus: &mut SelectId) {
+  pub fn update<L: Layout>(&mut self, screen: &mut Screen<S>, layout: &mut L, focus: &mut SelectId, context: &mut C) {
     let mut set_focus = None;
     for e in screen.get_events() {
       match e {
@@ -113,7 +113,7 @@ impl<S: Style> Shell<S> {
         }
         Some(Event::InputSubmit(input)) => {
           if let Some((cmd, args)) = self.cmds.iter().find_map(|(_, cmd)| cmd.parse(&input).map(|args| (cmd, args))) {
-            cmd.run(args);
+            cmd.run(args, &self.term, context);
           }
           self.prefix_len = 0;
           self.complete_index = None;

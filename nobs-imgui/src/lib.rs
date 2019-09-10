@@ -22,7 +22,7 @@ pub mod rect;
 pub mod select;
 pub mod sprites;
 pub mod style;
-pub mod terminal;
+pub mod shell;
 pub mod window;
 
 mod imgui;

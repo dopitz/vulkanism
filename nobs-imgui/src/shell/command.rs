@@ -1,19 +1,20 @@
+use super::arg::*;
 use super::terminal::Event;
-use super::*;
+use super::terminal::Terminal;
 use crate::select::SelectId;
 use crate::style::Style;
 use crate::window::*;
 
 use std::ops::Range;
 
-pub trait Command {
+pub trait Command<S: Style, C> {
   fn get_name(&self) -> &str;
   fn get_args(&self) -> &Vec<Box<dyn Parsable>>;
 
-  fn run(&self, args: Vec<String>);
+  fn run(&self, args: Vec<String>, term: &Terminal<S>, context: &mut C);
 }
 
-impl Parsable for Command {
+impl<S: Style, C> Parsable for Command<S, C> {
   fn parse(&self, s: &str) -> Option<Vec<String>> {
     if s.starts_with(self.get_name()) {
       let args = self.split_args(s);
@@ -83,7 +84,7 @@ impl Parsable for Command {
   }
 }
 
-impl Command {
+impl<S: Style, C> Command<S, C> {
   fn split_args<'a>(&self, s: &'a str) -> Vec<(&'a str, String)> {
     let mut matches = Vec::new();
 

@@ -1,17 +1,30 @@
 macro_rules! make_style {
   ($name:ty) => {
-    pub use crate::rect::Rect;
-    pub use crate::window::*;
-    pub use crate::terminal::*;
+    pub type ThisStyle = $name;
+
+    pub use crate::select;
 
     pub type Gui = crate::ImGui<$name>;
-    pub type Window<L: Layout> = crate::window::Window<L, $name>;
-    pub type Spacer = crate::components::Spacer;
-    pub type TextBox<H = crate::components::textbox::HandlerReadonly> = crate::components::TextBox<$name, H>;
-    pub type TextEdit = crate::components::TextEdit<$name>;
-    pub type TextEditMultiline = crate::components::TextEditMultiline<$name>;
-    pub type Terminal = crate::terminal::Terminal<$name>;
-    pub type Shell = crate::terminal::Shell<$name>;
+    pub use crate::rect::Rect;
+
+    pub mod window {
+      pub use crate::window::*;
+      pub type Window<L: Layout> = crate::window::Window<L, super::ThisStyle>;
+    }
+
+    pub mod components {
+      pub use crate::components::*;
+      pub type TextBox<H = crate::components::textbox::HandlerReadonly> = crate::components::TextBox<super::ThisStyle, H>;
+      pub type TextEdit = crate::components::TextEdit<super::ThisStyle>;
+      pub type TextEditMultiline = crate::components::TextEditMultiline<super::ThisStyle>;
+    }
+
+    pub mod shell {
+      pub use crate::shell::arg;
+      pub use crate::shell::Command;
+      pub type Shell<C> = crate::shell::Shell<super::ThisStyle, C>;
+      pub type Terminal = crate::shell::Terminal<super::ThisStyle>;
+    }
   };
 }
 
