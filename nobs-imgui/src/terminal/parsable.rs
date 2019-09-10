@@ -62,6 +62,11 @@ impl Completion {
     )
   }
 
+  pub fn map_completed<F: Fn(String) -> String>(mut self, f: F) -> Self {
+    self.completed = f(self.completed);
+    self
+  }
+
   pub fn get_preview(&self) -> &str {
     &self.preview
   }
@@ -142,7 +147,7 @@ impl Parsable for FileArg {
     use std::path::Path;
 
     let n = "".to_string();
-    let (p, n) = match s.chars().last() {
+    let (dir, name) = match s.chars().last() {
       Some('/') | Some('\\') => (Path::new(s), n),
       _ => {
         let p = Path::new(s);
@@ -153,25 +158,33 @@ impl Parsable for FileArg {
 
         match p.parent() {
           Some(p) => match p.to_str() {
-            Some("") => (Path::new("."), n),
+            Some("") => (Path::new("./"), n),
             _ => (p, n),
           },
-          None => (Path::new("."), n),
+          None => (Path::new("./"), n),
         }
       }
     };
 
-    if let Ok(dirs) = p.read_dir() {
+    if let Ok(dirs) = dir.read_dir() {
       let mut dirs = dirs
         .filter_map(|d| d.ok().and_then(|d| d.file_name().into_string().ok()))
-        .filter(|fname| fname.starts_with(&n))
+        .filter(|fname| fname.starts_with(&name))
         .map(|fname| {
-          let p = match p.to_str() {
+          let p = match dir.to_str() {
             Some(p) => p,
             None => "",
           };
-          let s = format!("{}/{}", p, fname);
-          let prev = s[p.len() + 1..s.len()].to_string();
+          let s = format!(
+            "{}{}{}",
+            p,
+            match p.chars().last() {
+              Some('/') | Some('\\') => "",
+              _ => "/",
+            },
+            fname
+          );
+          let prev = s[p.len()..s.len()].to_string();
           Completion::new(0, s).preview(prev)
         })
         .collect::<Vec<_>>();
