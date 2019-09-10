@@ -8,7 +8,9 @@ use vk::cmd::stream::*;
 use vk::mem::Handle;
 use vk::winit;
 
-static mut quit: bool = false;
+struct Context {
+  quit: bool,
+}
 
 pub fn setup_vulkan_window() -> (
   vk::instance::Instance,
@@ -112,6 +114,8 @@ pub fn main() {
 
   let mut gui = Gui::new(&device, &window, fb.images[0], mem.clone());
 
+  let mut context = Context { quit: false };
+
   let mut resizeevent = false;
 
   use vk::cmd::commands::*;
@@ -123,7 +127,7 @@ pub fn main() {
         winit::Event::WindowEvent {
           event: winit::WindowEvent::CloseRequested,
           ..
-        } => unsafe { quit = true },
+        } => context.quit = true,
         winit::Event::WindowEvent {
           event: winit::WindowEvent::Resized(size),
           ..
@@ -165,13 +169,11 @@ pub fn main() {
       .push(&ImageBarrier::to_color_attachment(fb.images[0]))
       .push(&fb.begin())
       .push(&fb.end())
-      .push_mut(&mut gui)
+      .push_mut(&mut gui.render(&mut context))
       .present(device.queues[0].handle, fb.images[0]);
 
-    unsafe {
-      if quit {
-        break;
-      }
+    if context.quit {
+      break;
     }
   }
 
@@ -180,79 +182,86 @@ pub fn main() {
 
 use imgui::style::simple as gui;
 
-mod testcmd {
-  use imgui::terminal::*;
+mod commands {
+  use crate::gui::shell::*;
+  use crate::gui::*;
+  use crate::Context;
 
-  pub struct QuitCommand {
-    name: String,
-    args: Vec<Box<dyn Parsable>>,
-  }
+  pub mod quit {
+    use super::*;
 
-  impl Command for QuitCommand {
-    fn get_name(&self) -> &str {
-      &self.name
-    }
-    fn get_args(&self) -> &Vec<Box<dyn Parsable>> {
-      &self.args
+    pub struct Cmd {
+      name: String,
+      args: Vec<Box<dyn arg::Parsable>>,
     }
 
-    fn run(&self, args: Vec<String>) {
-      unsafe {
-        super::quit = true;
+    impl Command<ThisStyle, super::Context> for Cmd {
+      fn get_name(&self) -> &str {
+        &self.name
       }
-      println!("AOEUAOEUAOEUAOEUAOEU   {:?}", args);
-    }
-  }
+      fn get_args(&self) -> &Vec<Box<dyn arg::Parsable>> {
+        &self.args
+      }
 
-  impl QuitCommand {
-    pub fn new() -> Self {
-      Self {
-        name: "quit".to_owned(),
-        args: vec![],
+      fn run(&self, args: Vec<String>, term: &Terminal, context: &mut super::Context) {
+        context.quit = true;
+        println!("AOEUAOEUAOEUAOEUAOEU   {:?}", args);
       }
     }
-  }
 
-  const ABCIDENTS: &[&str] = &["aaa", "abc", "bbb", "bcd", "ccc"];
-
-  pub struct ABCCommand {
-    name: String,
-    args: Vec<Box<dyn Parsable>>,
-  }
-
-  impl Command for ABCCommand {
-    fn get_name(&self) -> &str {
-      &self.name
-    }
-    fn get_args(&self) -> &Vec<Box<dyn Parsable>> {
-      &self.args
-    }
-
-    fn run(&self, args: Vec<String>) {
-      println!("AOEUAOEUAOEUAOEUAOEU   {:?}", args);
-    }
-  }
-
-  impl ABCCommand {
-    pub fn new() -> Self {
-      Self {
-        name: "runabc".to_owned(),
-        args: vec![Box::new(IdentArg::from_slice(ABCIDENTS)), Box::new(FileArg::new())],
+    impl Cmd {
+      pub fn new() -> Self {
+        Self {
+          name: "quit".to_owned(),
+          args: vec![],
+        }
       }
     }
   }
+
+  pub mod toggle {
+    use super::*;
+
+    pub struct Cmd {
+      name: String,
+      args: Vec<Box<dyn arg::Parsable>>,
+    }
+
+    impl Command<ThisStyle, super::Context> for Cmd {
+      fn get_name(&self) -> &str {
+        &self.name
+      }
+      fn get_args(&self) -> &Vec<Box<dyn arg::Parsable>> {
+        &self.args
+      }
+
+      fn run(&self, args: Vec<String>, term: &Terminal, context: &mut super::Context) {
+        println!("{:?}", args);
+      }
+    }
+
+    impl Cmd {
+      pub fn new() -> Self {
+        Self {
+          name: "toggle".to_owned(),
+          args: vec![Box::new(arg::Bool::new())],
+        }
+      }
+    }
+  }
+
 }
 
 struct Gui {
   gui: gui::Gui,
 
-  shell: gui::Shell,
+  shell: gui::shell::Shell<Context>,
 
-  wnd: gui::Window<gui::ColumnLayout>,
-  text: gui::TextEditMultiline,
-  text2: gui::TextBox,
+  wnd: gui::window::Window<gui::window::ColumnLayout>,
+  text: gui::components::TextEditMultiline,
+  text2: gui::components::TextBox,
 
-  focus: imgui::select::SelectId,
+  focus: gui::select::SelectId,
 }
 
 impl Gui {
@@ -262,11 +271,11 @@ impl Gui {
     gui.style.load_styles(gui::get_default_styles());
     gui.style.set_dpi(1.6);
 
-    let mut shell = gui::Shell::new(&gui);
-    shell.add_command(Box::new(testcmd::ABCCommand::new()));
-    shell.add_command(Box::new(testcmd::QuitCommand::new()));
+    let mut shell = gui::shell::Shell::new(&gui);
+    shell.add_command(Box::new(commands::toggle::Cmd::new()));
+    shell.add_command(Box::new(commands::quit::Cmd::new()));
 
-    let mut wnd = gui::Window::new(&gui, gui::ColumnLayout::default());
+    let mut wnd = gui::window::Window::new(&gui, gui::window::ColumnLayout::default());
     //wnd.caption("awwwww yeees").position(200, 20).size(500, 720).focus(true).draw_caption(false);
     wnd
       .caption("awwwww yeees")
@@ -275,11 +284,11 @@ impl Gui {
       .focus(true)
       .padding(vec2!(10));
 
-    let mut text = gui::TextBox::new(&gui);
+    let mut text = gui::components::TextBox::new(&gui);
     text.text("aoeu\naoeu\naoeu");
     text.cursor(Some(vec2!(1, 0)));
 
-    let mut text2 = gui::TextBox::new(&gui);
+    let mut text2 = gui::components::TextBox::new(&gui);
     text2.text("aoeu\naoeu\naoeu\naoeu");
     text2.typeset(text2.get_typeset());
     Self {
@@ -300,14 +309,24 @@ impl Gui {
     self.gui.resize(extent, image);
     self.shell.term.size(extent.width / 7 * 3, extent.height / 4 * 3);
   }
+
+  pub fn render<'a>(&'a mut self, context: &'a mut Context) -> RenderGui<'a> {
+    RenderGui { context, gui: self }
+  }
 }
 
-impl StreamPushMut for Gui {
+struct RenderGui<'a> {
+  context: &'a mut Context,
+  gui: &'a mut Gui,
+}
+
+impl<'a> StreamPushMut for RenderGui<'a> {
   fn enqueue_mut(&mut self, cs: CmdBuffer) -> CmdBuffer {
     use gui::*;
+    let gui = &mut self.gui;
 
-    let mut scr = self.gui.begin();
-    let mut layout = gui::FloatLayout::from(scr.get_rect());
+    let mut scr = gui.gui.begin();
+    let mut layout = gui::window::FloatLayout::from(scr.get_rect());
 
     //self.wnd.draw(&mut scr, &mut layout, &mut self.focus);
     //if let Some(e) = self.text.draw(&mut scr, &mut self.wnd, &mut self.focus) {
@@ -320,7 +339,7 @@ impl StreamPushMut for Gui {
     //  self.wnd.focus(true);
     //};
 
-    self.shell.update(&mut scr, &mut layout, &mut self.focus);
+    gui.shell.update(&mut scr, &mut layout, &mut gui.focus, self.context);
 
     cs.push_mut(&mut scr)
   }
