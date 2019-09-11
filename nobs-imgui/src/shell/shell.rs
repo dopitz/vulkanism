@@ -8,7 +8,6 @@ use crate::ImGui;
 pub struct Shell<S: Style, C> {
   pub term: Terminal<S>,
 
-  //cmds: BTreeMap<String, Box<dyn Command<S, C>>>,
   cmds: Vec<Box<dyn Command<S, C>>>,
 
   show_term: bool,

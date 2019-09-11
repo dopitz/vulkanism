@@ -46,6 +46,8 @@ impl<S: Style, C> Parsable for Command<S, C> {
     else if s.starts_with(self.get_name()) && !cmd_args.is_empty() {
       let args = self.split_args(s);
 
+      println!("{:?}", args);
+
       // special case: input ends on whitespace
       if args.is_empty() && !cmd_args.is_empty() {
         cmd_args[0].complete("").map(|cs| {
@@ -57,19 +59,18 @@ impl<S: Style, C> Parsable for Command<S, C> {
       //
       else if args.len() <= cmd_args.len() {
         let i = args.len() - 1;
-        if args[i].1.len() < s.len() && i + 1 < cmd_args.len() {
+        if args[i].0.len() + args[i].1.len() < s.len() && i + 1 < cmd_args.len() {
           cmd_args[i + 1].complete("").map(|cs| {
             cs.into_iter()
               .map(|c| c.map_completed(|s| s.replace(" ", "\\ ")).prefix(s.to_string()))
               .collect()
           })
         } else {
-          let cc = cmd_args[i].complete(&args[i].1).map(|cs| {
+          cmd_args[i].complete(&args[i].1).map(|cs| {
             cs.into_iter()
               .map(|c| c.map_completed(|s| s.replace(" ", "\\ ")).prefix(args[i].0.to_string()))
               .collect()
-          });
-          cc
+          })
         }
       } else {
         None
