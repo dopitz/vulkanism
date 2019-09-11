@@ -1,6 +1,7 @@
 mod bool;
 mod file;
 mod ident;
+mod num;
 
 #[derive(Debug)]
 pub struct Completion {
@@ -105,3 +106,4 @@ pub trait Parsable {
 pub use self::bool::Bool;
 pub use file::File;
 pub use ident::Ident;
+pub use num::*;
