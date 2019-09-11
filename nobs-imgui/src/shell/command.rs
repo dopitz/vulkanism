@@ -1,11 +1,6 @@
 use super::arg::*;
-use super::terminal::Event;
 use super::terminal::Terminal;
-use crate::select::SelectId;
 use crate::style::Style;
-use crate::window::*;
-
-use std::ops::Range;
 
 pub trait Command<S: Style, C> {
   fn get_name(&self) -> &str;
@@ -63,7 +58,7 @@ impl<S: Style, C> Parsable for Command<S, C> {
       }
       //
       else if args.len() <= cmd_args.len() {
-        let mut i = args.len() - 1;
+        let i = args.len() - 1;
         if args[i].1.len() < s.len() && i + 1 < cmd_args.len() {
           cmd_args[i + 1].complete("").map(|cs| {
             cs.into_iter()

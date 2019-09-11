@@ -2,8 +2,6 @@ mod bool;
 mod file;
 mod ident;
 
-use std::ops::Range;
-
 #[derive(Debug)]
 pub struct Completion {
   score: i32,
@@ -38,7 +36,7 @@ impl Completion {
       .or(Some(pf));
     self
   }
-  pub fn suffix(mut self, mut sf: String) -> Self {
+  pub fn suffix(mut self, sf: String) -> Self {
     self.suffix = self
       .suffix
       .map(|mut s| {

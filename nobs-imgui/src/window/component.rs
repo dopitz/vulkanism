@@ -1,7 +1,6 @@
 use super::Layout;
 use super::Screen;
 use super::Size;
-use crate::rect::Rect;
 use crate::select::SelectId;
 use crate::style::Style;
 

@@ -128,4 +128,8 @@ impl<S: Style, C> Shell<S, C> {
       self.term.focus(f);
     }
   }
+
+  pub fn get_show_term(&self) -> bool {
+    self.show_term
+  }
 }

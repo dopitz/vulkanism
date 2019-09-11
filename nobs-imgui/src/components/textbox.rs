@@ -58,7 +58,7 @@ pub trait TextBoxEventHandler: Default {
           // delete
           else if c == '\u{7f}' {
             let ts = tb.get_typeset();
-            if let Some(mut cp) = tb.get_cursor() {
+            if let Some(cp) = tb.get_cursor() {
               let i = ts.index_of(cp, tb.get_text());
               let mut text = tb.get_text().to_owned();
               if i < text.len() {
