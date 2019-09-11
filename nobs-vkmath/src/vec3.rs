@@ -43,7 +43,7 @@ impl<T: Copy> Vec3<T> {
     vec2!(self.x, self.y)
   }
 
-  pub fn from_xy(v: Vec2<T>, z: T, w: T) -> Self {
+  pub fn from_xy(v: Vec2<T>, z: T) -> Self {
     Self::new(v.x, v.y, z)
   }
 

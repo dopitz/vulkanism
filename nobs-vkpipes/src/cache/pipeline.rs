@@ -1,4 +1,3 @@
-use super::Cache;
 use crate::DescriptorPool;
 use crate::Pipeline;
 use std::collections::HashMap;

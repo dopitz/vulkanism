@@ -5,8 +5,6 @@ use crate::style::Style;
 use crate::window::*;
 use crate::ImGui;
 
-use std::collections::BTreeMap;
-
 pub struct Shell<S: Style, C> {
   pub term: Terminal<S>,
 
