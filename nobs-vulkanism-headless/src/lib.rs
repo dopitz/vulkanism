@@ -41,7 +41,6 @@
 //! ```
 #[macro_use]
 extern crate nobs_vk as vk;
-#[macro_use]
 extern crate nobs_vkmem;
 extern crate nobs_vkpipes;
 

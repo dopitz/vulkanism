@@ -14,22 +14,20 @@ pub struct DrawIndirect {
   pub index_type: vk::IndexType,
 }
 
-impl Default for DrawIndirect {
-  fn default() -> Self {
+impl DrawIndirect {
+  pub fn new(buffer: vk::Buffer) -> Self {
     Self {
       count: 0,
       offset: 0,
       stride: std::mem::size_of::<vk::DrawIndirectCommand>() as u32,
-      buffer: vk::NULL_HANDLE,
+      buffer,
 
       index_buffer: None,
       index_offset: 0,
       index_type: vk::INDEX_TYPE_UINT16,
     }
   }
-}
 
-impl DrawIndirect {
   /// Set the builder for indexed indirect drawing
   ///
   /// Also sets the `stride` to teh required `sizeof(vk::DrawIndexedIndirectCommand)`

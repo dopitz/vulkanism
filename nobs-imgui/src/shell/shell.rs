@@ -10,7 +10,8 @@ use std::collections::BTreeMap;
 pub struct Shell<S: Style, C> {
   pub term: Terminal<S>,
 
-  cmds: BTreeMap<String, Box<dyn Command<S, C>>>,
+  //cmds: BTreeMap<String, Box<dyn Command<S, C>>>,
+  cmds: Vec<Box<dyn Command<S, C>>>,
 
   show_term: bool,
   prefix_len: usize,
@@ -30,7 +31,16 @@ impl<S: Style, C> Shell<S, C> {
   }
 
   pub fn add_command(&mut self, cmd: Box<dyn Command<S, C>>) {
-    self.cmds.insert(cmd.get_name().to_owned(), cmd);
+    let name = cmd.get_name();
+    if let Some(c) = self
+      .cmds
+      .iter()
+      .find(|c| c.get_name().starts_with(name) || name.starts_with(c.get_name()))
+    {
+      println!("Command can not be added. Name conflict:\n{}\n{}", name, c.get_name());
+    } else {
+      self.cmds.push(cmd);
+    }
   }
 
   pub fn update<L: Layout>(&mut self, screen: &mut Screen<S>, layout: &mut L, focus: &mut SelectId, context: &mut C) {
@@ -69,7 +79,7 @@ impl<S: Style, C> Shell<S, C> {
         Some(Event::TabComplete(shift)) => {
           let input = self.term.get_input();
           let prefix = input[..self.prefix_len].to_string();
-          if let Some(completions) = self.cmds.iter().find_map(|(_, cmd)| cmd.complete(&prefix)) {
+          if let Some(completions) = self.get_completions(&prefix) {
             self.complete_index = match self.complete_index {
               None => match shift {
                 false => Some(0),
@@ -101,7 +111,7 @@ impl<S: Style, C> Shell<S, C> {
           self.prefix_len = input.len();
           self.complete_index = None;
 
-          if let Some(completions) = self.cmds.iter().find_map(|(_, cmd)| cmd.complete(&input)) {
+          if let Some(completions) = self.get_completions(&input) {
             let mut s = completions
               .iter()
               .fold(String::new(), |acc, c| format!("{}{}\n", acc, c.get_preview()));
@@ -112,7 +122,7 @@ impl<S: Style, C> Shell<S, C> {
           }
         }
         Some(Event::InputSubmit(input)) => {
-          if let Some((cmd, args)) = self.cmds.iter().find_map(|(_, cmd)| cmd.parse(&input).map(|args| (cmd, args))) {
+          if let Some((cmd, args)) = self.cmds.iter().find_map(|cmd| cmd.parse(&input).map(|args| (cmd, args))) {
             cmd.run(args, &self.term, context);
           }
           self.prefix_len = 0;
@@ -131,5 +141,13 @@ impl<S: Style, C> Shell<S, C> {
 
   pub fn get_show_term(&self) -> bool {
     self.show_term
+  }
+
+  fn get_completions(&self, input: &str) -> Option<Vec<arg::Completion>> {
+    if self.cmds.iter().filter(|c| c.get_name().starts_with(&input)).count() > 1 {
+      Some(self.cmds.iter().filter_map(|c| c.complete(&input)).flatten().collect::<Vec<_>>())
+    } else {
+      self.cmds.iter().find_map(|c| c.complete(&input))
+    }
   }
 }

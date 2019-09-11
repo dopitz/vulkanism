@@ -289,6 +289,19 @@ impl<'a> Buffer<'a> {
   ///
   /// Sets
   ///  - devicelocal: 'true'
+  ///  - usage: `vk::BUFFER_USAGE_INDIRECT_BUFFER_BIT | vk::BUFFER_USAGE_TRANSFER_DST_BIT`
+  ///  - size: as specified
+  pub fn indirect_buffer(self, size: vk::DeviceSize) -> Self {
+    self
+      .devicelocal(true)
+      .usage(vk::BUFFER_USAGE_INDIRECT_BUFFER_BIT | vk::BUFFER_USAGE_TRANSFER_DST_BIT)
+      .size(size)
+  }
+
+  /// Makro configuration for setting up vertex buffers
+  ///
+  /// Sets
+  ///  - devicelocal: 'true'
   ///  - usage: `vk::BUFFER_USAGE_VERTEX_BUFFER_BIT | vk::BUFFER_USAGE_TRANSFER_DST_BIT`
   ///  - size: as specified
   pub fn vertex_buffer(self, size: vk::DeviceSize) -> Self {

@@ -139,6 +139,8 @@ pub struct Terminal<S: Style> {
   term: Arc<Mutex<TerminalImpl<S>>>,
 }
 
+unsafe impl<S: Style> Send for Terminal<S> {}
+
 impl<S: Style> Size for Terminal<S> {
   fn rect(&mut self, rect: Rect) -> &mut Self {
     self.term.lock().unwrap().rect(rect);

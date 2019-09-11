@@ -32,9 +32,10 @@ impl<T: Asset> AssetPool<T> for HashMap<T::Id, T> {
   }
 }
 
-pub type Assets<T: Asset> = HashMap<<T as Asset>::Id, T>;
+//TODO: pub type Assets<T: Asset> = HashMap<<T as Asset>::Id, T>;
+pub type Assets<T> = HashMap<<T as Asset>::Id, T>;
 
-pub trait Asset : Sized {
+pub trait Asset: Sized {
   type Id: Clone + PartialEq + Eq + std::hash::Hash;
 
   fn load(id: &Self::Id, up: &mut Update) -> Self;
