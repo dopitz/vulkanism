@@ -1,6 +1,5 @@
 extern crate nobs_imgui as imgui;
 extern crate nobs_vulkanism as vk;
-#[macro_use]
 extern crate nobs_vkmath as vkm;
 
 use vk::builder::Buildable;
@@ -202,7 +201,7 @@ mod commands {
         vec![]
       }
 
-      fn run(&self, args: Vec<String>, term: &Terminal, context: &mut super::Context) {
+      fn run(&self, _args: Vec<String>, _term: &Terminal, context: &mut super::Context) {
         context.quit = true;
       }
     }
@@ -230,7 +229,7 @@ mod commands {
         vec![&self.toggle]
       }
 
-      fn run(&self, args: Vec<String>, term: &Terminal, context: &mut super::Context) {
+      fn run(&self, args: Vec<String>, term: &Terminal, _context: &mut super::Context) {
         let on = self.toggle.convert(&args[1]);
         term.println(&format!("{:?}", on));
       }
@@ -252,9 +251,9 @@ struct Gui {
 
   shell: gui::shell::Shell<Context>,
 
-  wnd: gui::window::Window<gui::window::ColumnLayout>,
-  text: gui::components::TextEditMultiline,
-  text2: gui::components::TextBox,
+  //wnd: gui::window::Window<gui::window::ColumnLayout>,
+  //text: gui::components::TextEditMultiline,
+  //text2: gui::components::TextBox,
 
   focus: gui::select::SelectId,
 }
@@ -270,28 +269,28 @@ impl Gui {
     shell.add_command(Box::new(commands::toggle::Cmd::new()));
     shell.add_command(Box::new(commands::quit::Cmd::new()));
 
-    let mut wnd = gui::window::Window::new(&gui, gui::window::ColumnLayout::default());
+    //let mut wnd = gui::window::Window::new(&gui, gui::window::ColumnLayout::default());
     //wnd.caption("awwwww yeees").position(200, 20).size(500, 720).focus(true).draw_caption(false);
-    wnd
-      .caption("awwwww yeees")
-      .position(200, 20)
-      .size(500, 720)
-      .focus(true)
-      .padding(vec2!(10));
+    //wnd
+    //  .caption("awwwww yeees")
+    //  .position(200, 20)
+    //  .size(500, 720)
+    //  .focus(true)
+    //  .padding(vec2!(10));
 
-    let mut text = gui::components::TextBox::new(&gui);
-    text.text("aoeu\naoeu\naoeu");
-    text.cursor(Some(vec2!(1, 0)));
+    //let mut text = gui::components::TextBox::new(&gui);
+    //text.text("aoeu\naoeu\naoeu");
+    //text.cursor(Some(vec2!(1, 0)));
 
-    let mut text2 = gui::components::TextBox::new(&gui);
-    text2.text("aoeu\naoeu\naoeu\naoeu");
-    text2.typeset(text2.get_typeset());
+    //let mut text2 = gui::components::TextBox::new(&gui);
+    //text2.text("aoeu\naoeu\naoeu\naoeu");
+    //text2.typeset(text2.get_typeset());
     Self {
       gui,
       shell,
-      wnd,
-      text,
-      text2,
+      //wnd,
+      //text,
+      //text2,
       focus: imgui::select::SelectId::invalid(),
     }
   }
@@ -317,7 +316,6 @@ struct RenderGui<'a> {
 
 impl<'a> StreamPushMut for RenderGui<'a> {
   fn enqueue_mut(&mut self, cs: CmdBuffer) -> CmdBuffer {
-    use gui::*;
     let gui = &mut self.gui;
 
     let mut scr = gui.gui.begin();
