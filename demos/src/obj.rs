@@ -217,7 +217,7 @@ pub fn main() {
 
   use assets::*;
   let mut assets: Assets<model::wavefront::Asset> = Assets::new();
-  let mut up = assets::Update::new(mem.clone());
+  let mut up = assets::Update::new(device.handle, device.queues[0], mem.clone());
   let shapes = &assets.load(&"assets/bunny.obj".to_string(), &mut up).shapes;
 
   let draw = DrawManaged::new(

@@ -272,16 +272,10 @@ impl Gui {
     let mut wnd = gui::window::Window::new(&gui, gui::window::ColumnLayout::default());
     wnd
       .caption("awwwww yeees")
-      .position(200, 20)
+      .position(700, 20)
       .size(500, 720)
       .focus(true)
       .draw_caption(false);
-    wnd
-      .caption("awwwww yeees")
-      .position(200, 20)
-      .size(500, 720)
-      .focus(true)
-      .padding(vec2!(10));
 
     let mut text = gui::components::TextBox::new(&gui);
     text.text("aoeu\naoeu\naoeu");
@@ -306,7 +300,7 @@ impl Gui {
 
   pub fn resize(&mut self, extent: vk::Extent2D, image: vk::Image) {
     self.gui.resize(extent, image);
-    self.shell.term.size(extent.width / 7 * 3, extent.height / 4 * 3);
+    self.shell.get_term().size(extent.width / 7 * 3, extent.height / 4 * 3);
   }
 
   pub fn render<'a>(&'a mut self, context: &'a mut Context) -> RenderGui<'a> {

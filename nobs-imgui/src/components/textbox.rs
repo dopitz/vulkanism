@@ -46,7 +46,16 @@ pub trait TextBoxEventHandler: Default {
 
                 match c {
                   Some('\n') => {
-                    cp.x = u32::max_value();
+                    cp.x = 0;
+                    for (j, c) in text.chars().enumerate() {
+                      if c == '\n' {
+                        cp.x = 0;
+                      }
+                      if j == i {
+                        break;
+                      }
+                      cp.x += 1;
+                    }
                     cp.y = cp.y.saturating_sub(1);
                   }
                   Some(_) => cp.x = cp.x.saturating_sub(1),
