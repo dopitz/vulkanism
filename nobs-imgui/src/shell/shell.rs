@@ -43,12 +43,17 @@ impl<S: Style, C> ShellImpl<S, C> {
     }
   }
 
+  fn drop_command(&mut self, name: &str) {
+    if let Some(p) = self.cmds.iter().position(|c| c.get_name() == name) {
+      self.cmds.remove(p);
+    }
+  }
+
   fn update<L: Layout>(
     &mut self,
     screen: &mut Screen<S>,
     layout: &mut L,
     focus: &mut SelectId,
-    context: &mut C,
   ) -> Option<(Arc<dyn Command<S, C>>, Vec<String>)> {
     let mut set_focus = None;
     for e in screen.get_events() {
@@ -176,21 +181,38 @@ impl<S: Style, C> Shell<S, C> {
   }
 
   pub fn add_command(&self, cmd: Box<dyn Command<S, C>>) {
-    self.shell.lock().unwrap().add_command(cmd)
+    self.shell.lock().unwrap().add_command(cmd);
+    self.update_help();
+  }
+
+  pub fn drop_command(&self, name: &str) {
+    self.shell.lock().unwrap().drop_command(name);
+    self.update_help();
+  }
+
+  fn update_help(&self) {
+    let mut shell = self.shell.lock().unwrap();
+    shell.drop_command(command::help::Cmd::get_name());
+    let help = command::help::Cmd::new::<S, C>(&shell.cmds);
+    shell.add_command(Box::new(help));
   }
 
   pub fn update<L: Layout>(&self, screen: &mut Screen<S>, layout: &mut L, focus: &mut SelectId, context: &mut C) {
-    let exe = { self.shell.lock().unwrap().update(screen, layout, focus, context) };
+    let exe = { self.shell.lock().unwrap().update(screen, layout, focus) };
     if let Some((cmd, args)) = exe {
-      cmd.run(args, &self.get_term(), context);
+      cmd.run(args, Self { shell: self.shell.clone() }, context);
     }
   }
 
   pub fn exec(&self, c: &str, context: &mut C) {
     let exe = { self.shell.lock().unwrap().exec(c) };
     if let Some((cmd, args)) = exe {
-      cmd.run(args, &self.get_term(), context);
+      cmd.run(args, Self { shell: self.shell.clone() }, context);
     }
+  }
+
+  pub fn get_commands(&self) -> Vec<Arc<dyn Command<S, C>>> {
+    self.shell.lock().unwrap().cmds.clone()
   }
 
   pub fn get_term(&self) -> Terminal<S> {

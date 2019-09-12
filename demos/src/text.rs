@@ -190,26 +190,24 @@ mod commands {
   pub mod quit {
     use super::*;
 
-    pub struct Cmd {
-      name: String,
-    }
+    pub struct Cmd {}
 
     impl Command<ThisStyle, super::Context> for Cmd {
-      fn get_name(&self) -> &str {
-        &self.name
+      fn get_name(&self) -> &'static str {
+        "quit"
       }
       fn get_args<'a>(&'a self) -> Vec<&'a arg::Parsable> {
         vec![]
       }
 
-      fn run(&self, _args: Vec<String>, _term: &Terminal, context: &mut super::Context) {
+      fn run(&self, _args: Vec<String>, _shell: Shell<Context>, context: &mut Context) {
         context.quit = true;
       }
     }
 
     impl Cmd {
       pub fn new() -> Self {
-        Self { name: "quit".to_owned() }
+        Self {}
       }
     }
   }
@@ -218,30 +216,26 @@ mod commands {
     use super::*;
 
     pub struct Cmd {
-      name: String,
       toggle: arg::Bool,
     }
 
     impl Command<ThisStyle, super::Context> for Cmd {
-      fn get_name(&self) -> &str {
-        &self.name
+      fn get_name(&self) -> &'static str {
+        "toggle"
       }
       fn get_args<'a>(&'a self) -> Vec<&'a arg::Parsable> {
         vec![&self.toggle]
       }
 
-      fn run(&self, args: Vec<String>, term: &Terminal, _context: &mut super::Context) {
+      fn run(&self, args: Vec<String>, shell: Shell<Context>, _context: &mut Context) {
         let on = self.toggle.convert(&args[1]);
-        term.println(&format!("{:?}", on));
+        shell.get_term().println(&format!("{:?}", on));
       }
     }
 
     impl Cmd {
       pub fn new() -> Self {
-        Self {
-          name: "toggle".to_owned(),
-          toggle: arg::Bool::new(),
-        }
+        Self { toggle: arg::Bool::new() }
       }
     }
   }
@@ -265,9 +259,10 @@ impl Gui {
     gui.style.load_styles(gui::get_default_styles());
     gui.style.set_dpi(1.6);
 
-    let mut shell = gui::shell::Shell::new(&gui);
+    let shell = gui::shell::Shell::new(&gui);
     shell.add_command(Box::new(commands::toggle::Cmd::new()));
     shell.add_command(Box::new(commands::quit::Cmd::new()));
+    shell.add_command(Box::new(shell::command::source::Cmd::new()));
 
     let mut wnd = gui::window::Window::new(&gui, gui::window::ColumnLayout::default());
     wnd

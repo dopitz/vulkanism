@@ -1,15 +1,22 @@
-use super::arg::*;
-use super::terminal::Terminal;
+pub mod help;
+pub mod source;
+
+use super::arg;
+use super::Shell;
 use crate::style::Style;
 
 pub trait Command<S: Style, C> {
-  fn get_name(&self) -> &str;
-  fn get_args<'a>(&'a self) -> Vec<&'a Parsable>;
+  fn get_name(&self) -> &'static str;
+  fn get_args<'a>(&'a self) -> Vec<&'a arg::Parsable>;
 
-  fn run(&self, args: Vec<String>, term: &Terminal<S>, context: &mut C);
+  fn get_info(&self) -> (&'static str, &'static str) {
+    ("--", "--")
+  }
+
+  fn run(&self, args: Vec<String>, shell: Shell<S, C>, context: &mut C);
 }
 
-impl<S: Style, C> Parsable for Command<S, C> {
+impl<S: Style, C> arg::Parsable for Command<S, C> {
   fn parse(&self, s: &str) -> Option<Vec<String>> {
     let cmd_args = self.get_args();
 
@@ -35,12 +42,12 @@ impl<S: Style, C> Parsable for Command<S, C> {
     }
   }
   // TODO cursor hint for completion when cursor not and end of input line
-  fn complete(&self, s: &str) -> Option<Vec<Completion>> {
+  fn complete(&self, s: &str) -> Option<Vec<arg::Completion>> {
     let cmd_args = self.get_args();
 
     // if the input is shorter than the command's name try to complete that
     if self.get_name().starts_with(s) {
-      Some(vec![Completion::new(0, self.get_name().into())])
+      Some(vec![arg::Completion::new(0, self.get_name().into())])
     }
     // complete the arguments
     else if s.starts_with(self.get_name()) && !cmd_args.is_empty() {
@@ -135,3 +142,4 @@ impl<S: Style, C> Command<S, C> {
     matches
   }
 }
+

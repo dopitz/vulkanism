@@ -21,8 +21,7 @@ macro_rules! make_style {
     }
 
     pub mod shell {
-      pub use crate::shell::arg;
-      pub use crate::shell::Command;
+      pub use crate::shell::*;
       pub type Shell<C> = crate::shell::Shell<super::ThisStyle, C>;
       pub type Terminal = crate::shell::Terminal<super::ThisStyle>;
     }
