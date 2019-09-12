@@ -113,6 +113,25 @@ impl Batch {
     self.signals
   }
 
+  pub fn submit_nosig(&mut self, queue: vk::Queue) {
+    let info = vk::SubmitInfo {
+      sType: vk::STRUCTURE_TYPE_SUBMIT_INFO,
+      pNext: std::ptr::null(),
+      commandBufferCount: self.buffers.len() as u32,
+      pCommandBuffers: self.buffers.as_ptr(),
+
+      waitSemaphoreCount: self.wait_signals.len() as u32,
+      pWaitSemaphores: self.wait_signals.as_ptr(),
+      pWaitDstStageMask: self.wait_stages.as_ptr(),
+
+      signalSemaphoreCount: 0,
+      pSignalSemaphores: std::ptr::null(),
+    };
+
+    vk::ResetFences(self.device, 1, &self.fence);
+    vk::QueueSubmit(queue, 1, &info, self.fence);
+  }
+
   pub fn sync(&mut self) -> Result<(), Error> {
     vk_check!(vk::WaitForFences(self.device, 1, &self.fence, vk::TRUE, u64::max_value()))
       .map_err(|e| Error::SyncFailed(e))
@@ -181,9 +200,21 @@ impl BatchSubmit {
     (BatchWait { batch: self.batch }, sig)
   }
 
+  /// Submit all streams to the queue.
+  ///
+  /// Opposed to [submit](struct.BatchWait.html#method.submit) no semaphore is returned.
+  ///
+  /// ## Returns
+  /// A tuple with
+  ///  - the [BatchWait](struct.BatchWait.html) used for syncronisation
+  pub fn submit_nosig(mut self, queue: vk::Queue) -> BatchWait {
+    self.batch.submit_nosig(queue);
+    BatchWait { batch: self.batch }
+  }
+
   /// Submits all streams to the queue and [syncs](struct.BatchWait.html#method.sync) with the CPU
   pub fn submit_immediate(self, queue: vk::Queue) -> Result<BatchSubmit, Error> {
-    self.submit(queue).0.sync()
+    self.submit_nosig(queue).sync()
   }
 
   /// Returns all stream to the pool with [waive](struct.CmdBuffer.html#method.waive) and clears all wait signals
@@ -293,12 +324,23 @@ impl AutoBatch {
     }
   }
 
+  /// Submit all streams to the queue.
+  ///
+  /// See (BatchSubmit::submit_nosig)[struct.BatchSubmit.html#method.submit_nosig].
+  ///
+  /// If this batch is in waiting state this function will become a NOP.
+  pub fn submit_nosig(&mut self, queue: vk::Queue) -> &mut Self {
+    if let Some(b) = self.submit.take() {
+      self.wait = Some(b.submit_nosig(queue));
+    }
+    self
+  }
+
   /// Submits all streams to the queue and [syncs](struct.BatchWait.html#method.sync) with the CPU
   ///
   /// If this batch is in waiting state this function will become a NOP.
   pub fn submit_immediate(&mut self, queue: vk::Queue) -> Result<&mut Self, Error> {
-    self.submit(queue);
-    self.sync()
+    self.submit_nosig(queue).sync()
   }
 
   /// Returns all stream to the pool with [waive](struct.CmdBuffer.html#method.waive) and clears all wait signals
@@ -307,9 +349,8 @@ impl AutoBatch {
   ///
   /// If this batch is in submitting state this function will become a NOP.
   pub fn sync(&mut self) -> Result<&mut Self, Error> {
-    match self.wait.take() {
-      Some(b) => self.submit = Some(b.sync()?),
-      None => (),
+    if let Some(b) = self.wait.take() {
+      self.submit = Some(b.sync()?);
     }
     Ok(self)
   }
@@ -385,6 +426,16 @@ impl RRBatch {
   pub fn submit(&mut self, queue: vk::Queue) -> (&mut Self, Option<vk::Semaphore>) {
     let (_, sig) = self.batches[self.index].submit(queue);
     (self, sig)
+  }
+
+  /// Submit all streams to the queue.
+  ///
+  /// See (BatchSubmit::submit_nosig)[struct.BatchSubmit.html#method.submit_nosig].
+  ///
+  /// If this batch is in waiting state this function will become a NOP.
+  pub fn submit_nosig(&mut self, queue: vk::Queue) -> &mut Self {
+    self.batches[self.index].submit_nosig(queue);
+    self
   }
 
   pub fn sync(&mut self) -> Result<(), Error> {
