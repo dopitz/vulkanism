@@ -4,9 +4,11 @@ use crate::select::SelectId;
 use crate::style::Style;
 use crate::window::*;
 use crate::ImGui;
+use std::sync::Arc;
+use std::sync::Mutex;
 
-pub struct Shell<S: Style, C> {
-  pub term: Terminal<S>,
+struct ShellImpl<S: Style, C> {
+  term: Terminal<S>,
 
   cmds: Vec<Box<dyn Command<S, C>>>,
 
@@ -15,10 +17,11 @@ pub struct Shell<S: Style, C> {
   complete_index: Option<usize>,
 }
 
-impl<S: Style, C> Shell<S, C> {
-  pub fn new(gui: &ImGui<S>) -> Self {
-    Shell {
+impl<S: Style, C> ShellImpl<S, C> {
+  fn new(gui: &ImGui<S>) -> Self {
+    Self {
       term: Terminal::new(gui),
+
       cmds: Default::default(),
 
       show_term: false,
@@ -27,7 +30,7 @@ impl<S: Style, C> Shell<S, C> {
     }
   }
 
-  pub fn add_command(&mut self, cmd: Box<dyn Command<S, C>>) {
+  fn add_command(&mut self, cmd: Box<dyn Command<S, C>>) {
     let name = cmd.get_name();
     if let Some(c) = self
       .cmds
@@ -40,7 +43,7 @@ impl<S: Style, C> Shell<S, C> {
     }
   }
 
-  pub fn update<L: Layout>(&mut self, screen: &mut Screen<S>, layout: &mut L, focus: &mut SelectId, context: &mut C) {
+  fn update<L: Layout>(&mut self, screen: &mut Screen<S>, layout: &mut L, focus: &mut SelectId, context: &mut C) {
     let mut set_focus = None;
     for e in screen.get_events() {
       match e {
@@ -136,7 +139,7 @@ impl<S: Style, C> Shell<S, C> {
     }
   }
 
-  pub fn get_show_term(&self) -> bool {
+  fn get_show_term(&self) -> bool {
     self.show_term
   }
 
@@ -146,5 +149,34 @@ impl<S: Style, C> Shell<S, C> {
     } else {
       self.cmds.iter().find_map(|c| c.complete(&input))
     }
+  }
+}
+
+#[derive(Clone)]
+pub struct Shell<S: Style, C> {
+  shell: Arc<Mutex<ShellImpl<S, C>>>,
+}
+
+impl<S: Style, C> Shell<S, C> {
+  pub fn new(gui: &ImGui<S>) -> Self {
+    Self {
+      shell: Arc::new(Mutex::new(ShellImpl::new(gui))),
+    }
+  }
+
+  pub fn add_command(&mut self, cmd: Box<dyn Command<S, C>>) {
+    self.shell.lock().unwrap().add_command(cmd)
+  }
+
+  pub fn update<L: Layout>(&mut self, screen: &mut Screen<S>, layout: &mut L, focus: &mut SelectId, context: &mut C) {
+    self.shell.lock().unwrap().update(screen, layout, focus, context);
+  }
+
+  pub fn get_term(&self) -> Terminal<S> {
+    self.shell.lock().unwrap().term.clone()
+  }
+
+  pub fn get_show_term(&self) -> bool {
+    self.shell.lock().unwrap().get_show_term()
   }
 }
