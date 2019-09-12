@@ -95,7 +95,7 @@ impl crate::Asset for Asset {
         s.count = o.indices.len() as u32;
       }
     }
-    builder.bind(&mut up.mem.alloc, vk::mem::BindType::Block).unwrap();
+    builder.bind(&mut up.get_mem().alloc, vk::mem::BindType::Block).unwrap();
 
     for (s, o) in shapes.iter_mut().zip(obj.iter()) {
       {
@@ -143,18 +143,19 @@ impl crate::Asset for Asset {
   }
 
   fn free(self, up: &mut Update) {
+    let mem = up.get_mem();
     for s in self.shapes {
       if s.vertices != vk::NULL_HANDLE {
-        up.mem.trash.push_buffer(s.vertices);
+        mem.trash.push_buffer(s.vertices);
       }
       if s.normals != vk::NULL_HANDLE {
-        up.mem.trash.push_buffer(s.normals);
+        mem.trash.push_buffer(s.normals);
       }
       if s.uvs != vk::NULL_HANDLE {
-        up.mem.trash.push_buffer(s.uvs);
+        mem.trash.push_buffer(s.uvs);
       }
       if s.indices != vk::NULL_HANDLE {
-        up.mem.trash.push_buffer(s.indices);
+        mem.trash.push_buffer(s.indices);
       }
     }
   }

@@ -30,7 +30,7 @@ impl crate::Asset for Asset {
           _ => panic!("invalid texture format"),
         },
       )
-      .bind(&mut up.mem.alloc, vk::mem::BindType::Block)
+      .bind(&mut up.get_mem().alloc, vk::mem::BindType::Block)
       .unwrap();
 
     let mut stage = up.get_staging(tga.img.data().len() as vk::DeviceSize);
@@ -50,6 +50,6 @@ impl crate::Asset for Asset {
   }
 
   fn free(self, up: &mut Update) {
-    up.mem.trash.push_image(self.handle);
+    up.get_mem().trash.push_image(self.handle);
   }
 }

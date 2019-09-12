@@ -100,8 +100,8 @@ impl StagingRange {
   }
   pub fn copy_into_buffer(&self, dst: vk::Buffer, dstoffset: vk::DeviceSize) -> commands::BufferCopy {
     vk::BufferCopy::build()
-      .src_offset(dstoffset)
-      .dst_offset(self.offset)
+      .src_offset(self.offset)
+      .dst_offset(dstoffset)
       .size(self.size)
       .copy(self.buffer, dst)
   }
@@ -112,18 +112,27 @@ impl StagingRange {
   pub fn copy_into_image(&self, dst: vk::Image, cp: commands::BufferImageCopyBuilder) -> commands::BufferImageCopy {
     cp.buffer_offset(self.offset).copy_buffer_to_image(self.buffer, dst)
   }
+
+  pub fn size(&self) -> vk::DeviceSize {
+    self.size
+  }
 }
 
 pub struct StagingFrame {
   stage: Staging,
   range: StagingRange,
+  state: Vec<StagingRange>,
 }
 
 impl StagingFrame {
   pub fn new(mem: mem::Mem, size: vk::DeviceSize) -> Result<Self, mem::Error> {
     let stage = Staging::new(mem, size)?;
     let range = stage.range.clone();
-    Ok(Self { stage, range })
+    Ok(Self {
+      stage,
+      range,
+      state: Vec::new(),
+    })
   }
 
   pub fn next(&mut self, size: vk::DeviceSize) -> Result<StagingRange, mem::Error> {
@@ -135,11 +144,31 @@ impl StagingFrame {
     Ok(r)
   }
 
+  pub fn push_state(&mut self) {
+    self.state.push(self.range.clone());
+  }
+
+  pub fn pop_state(&mut self) {
+    match self.state.pop() {
+      Some(r) => self.range = r,
+      None => self.reset(),
+    }
+  }
+
   pub fn reset(&mut self) {
     self.range = self.stage.range.clone();
+    self.state.clear();
   }
 
   pub fn capacity(&self) -> vk::DeviceSize {
     self.stage.range.size
+  }
+
+  pub fn remaining_size(&self) -> vk::DeviceSize {
+    self.range.size
+  }
+
+  pub fn get_mem(&self) -> mem::Mem {
+    self.stage.range.mem.clone()
   }
 }
