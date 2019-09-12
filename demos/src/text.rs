@@ -1,11 +1,12 @@
 extern crate nobs_imgui as imgui;
-extern crate nobs_vulkanism as vk;
 extern crate nobs_vkmath as vkm;
+extern crate nobs_vulkanism as vk;
 
 use vk::builder::Buildable;
 use vk::cmd::stream::*;
 use vk::mem::Handle;
 use vk::winit;
+use vkm::*;
 
 struct Context {
   quit: bool,
@@ -251,10 +252,9 @@ struct Gui {
 
   shell: gui::shell::Shell<Context>,
 
-  //wnd: gui::window::Window<gui::window::ColumnLayout>,
-  //text: gui::components::TextEditMultiline,
-  //text2: gui::components::TextBox,
-
+  wnd: gui::window::Window<gui::window::ColumnLayout>,
+  text: gui::components::TextEditMultiline,
+  text2: gui::components::TextBox,
   focus: gui::select::SelectId,
 }
 
@@ -269,28 +269,33 @@ impl Gui {
     shell.add_command(Box::new(commands::toggle::Cmd::new()));
     shell.add_command(Box::new(commands::quit::Cmd::new()));
 
-    //let mut wnd = gui::window::Window::new(&gui, gui::window::ColumnLayout::default());
-    //wnd.caption("awwwww yeees").position(200, 20).size(500, 720).focus(true).draw_caption(false);
-    //wnd
-    //  .caption("awwwww yeees")
-    //  .position(200, 20)
-    //  .size(500, 720)
-    //  .focus(true)
-    //  .padding(vec2!(10));
+    let mut wnd = gui::window::Window::new(&gui, gui::window::ColumnLayout::default());
+    wnd
+      .caption("awwwww yeees")
+      .position(200, 20)
+      .size(500, 720)
+      .focus(true)
+      .draw_caption(false);
+    wnd
+      .caption("awwwww yeees")
+      .position(200, 20)
+      .size(500, 720)
+      .focus(true)
+      .padding(vec2!(10));
 
-    //let mut text = gui::components::TextBox::new(&gui);
-    //text.text("aoeu\naoeu\naoeu");
-    //text.cursor(Some(vec2!(1, 0)));
+    let mut text = gui::components::TextBox::new(&gui);
+    text.text("aoeu\naoeu\naoeu");
+    text.cursor(Some(vec2!(1, 0)));
 
-    //let mut text2 = gui::components::TextBox::new(&gui);
-    //text2.text("aoeu\naoeu\naoeu\naoeu");
-    //text2.typeset(text2.get_typeset());
+    let mut text2 = gui::components::TextBox::new(&gui);
+    text2.text("aoeu\naoeu\naoeu\naoeu");
+    text2.typeset(text2.get_typeset());
     Self {
       gui,
       shell,
-      //wnd,
-      //text,
-      //text2,
+      wnd,
+      text,
+      text2,
       focus: imgui::select::SelectId::invalid(),
     }
   }
@@ -316,21 +321,23 @@ struct RenderGui<'a> {
 
 impl<'a> StreamPushMut for RenderGui<'a> {
   fn enqueue_mut(&mut self, cs: CmdBuffer) -> CmdBuffer {
+    use gui::window::*;
+
     let gui = &mut self.gui;
 
     let mut scr = gui.gui.begin();
     let mut layout = gui::window::FloatLayout::from(scr.get_rect());
 
-    //self.wnd.draw(&mut scr, &mut layout, &mut self.focus);
-    //if let Some(e) = self.text.draw(&mut scr, &mut self.wnd, &mut self.focus) {
-    //  self.wnd.focus(true);
-    //};
+    gui.wnd.draw(&mut scr, &mut layout, &mut gui.focus);
+    if let Some(e) = gui.text.draw(&mut scr, &mut gui.wnd, &mut gui.focus) {
+      gui.wnd.focus(true);
+    };
 
-    //gui::Spacer::new(vec2!(10)).draw(&mut scr, &mut self.wnd, &mut self.focus);
+    gui::components::Spacer::new(vec2!(10)).draw(&mut scr, &mut gui.wnd, &mut gui.focus);
 
-    //if let Some(e) = self.text2.draw(&mut scr, &mut self.wnd, &mut self.focus) {
-    //  self.wnd.focus(true);
-    //};
+    if let Some(e) = gui.text2.draw(&mut scr, &mut gui.wnd, &mut gui.focus) {
+      gui.wnd.focus(true);
+    };
 
     gui.shell.update(&mut scr, &mut layout, &mut gui.focus, self.context);
 

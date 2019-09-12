@@ -38,21 +38,22 @@ pub trait TextBoxEventHandler: Default {
             let ts = tb.get_typeset();
             if let Some(mut cp) = tb.get_cursor() {
               let i = ts.index_of(cp, tb.get_text());
-              let mut text = tb.get_text().to_owned();
-              if i == text.len() {
-                text.pop();
-              } else {
-                text.remove(i);
-              }
-              tb.text(&text);
+              if i > 0 {
+                let i = i.saturating_sub(1);
+                let mut text = tb.get_text().to_owned();
+                let c = if i == text.len() { text.pop() } else { Some(text.remove(i)) };
+                tb.text(&text);
 
-              if c == '\n' {
-                cp.x = u32::max_value();
-                cp.y = cp.y.saturating_sub(1);
-              } else {
-                cp.x = cp.x.saturating_sub(0);
+                match c {
+                  Some('\n') => {
+                    cp.x = u32::max_value();
+                    cp.y = cp.y.saturating_sub(1);
+                  }
+                  Some(_) => cp.x = cp.x.saturating_sub(1),
+                  None => (),
+                }
+                tb.cursor(Some(cp));
               }
-              tb.cursor(Some(cp));
             }
           }
           // delete
