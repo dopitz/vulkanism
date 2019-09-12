@@ -10,7 +10,7 @@ use std::sync::Mutex;
 struct ShellImpl<S: Style, C> {
   term: Terminal<S>,
 
-  cmds: Vec<Box<dyn Command<S, C>>>,
+  cmds: Vec<Arc<dyn Command<S, C>>>,
 
   show_term: bool,
   prefix_len: usize,
@@ -39,11 +39,17 @@ impl<S: Style, C> ShellImpl<S, C> {
     {
       println!("Command can not be added. Name conflict:\n{}\n{}", name, c.get_name());
     } else {
-      self.cmds.push(cmd);
+      self.cmds.push(cmd.into());
     }
   }
 
-  fn update<L: Layout>(&mut self, screen: &mut Screen<S>, layout: &mut L, focus: &mut SelectId, context: &mut C) {
+  fn update<L: Layout>(
+    &mut self,
+    screen: &mut Screen<S>,
+    layout: &mut L,
+    focus: &mut SelectId,
+    context: &mut C,
+  ) -> Option<(Arc<dyn Command<S, C>>, Vec<String>)> {
     let mut set_focus = None;
     for e in screen.get_events() {
       match e {
@@ -74,6 +80,7 @@ impl<S: Style, C> ShellImpl<S, C> {
       }
     }
 
+    let mut exe = None;
     if self.show_term {
       match self.term.draw(screen, layout, focus) {
         Some(Event::TabComplete(shift)) => {
@@ -122,9 +129,7 @@ impl<S: Style, C> ShellImpl<S, C> {
           }
         }
         Some(Event::InputSubmit(input)) => {
-          if let Some((cmd, args)) = self.cmds.iter().find_map(|cmd| cmd.parse(&input).map(|args| (cmd, args))) {
-            cmd.run(args, &self.term, context);
-          }
+          exe = self.exec(&input);
           self.prefix_len = 0;
           self.complete_index = None;
           self.term.quickfix_text("");
@@ -137,6 +142,12 @@ impl<S: Style, C> ShellImpl<S, C> {
     if let Some(f) = set_focus {
       self.term.focus(f);
     }
+
+    exe
+  }
+
+  fn exec(&self, c: &str) -> Option<(Arc<dyn Command<S, C>>, Vec<String>)> {
+    self.cmds.iter().find_map(|cmd| cmd.parse(c).map(|args| (cmd.clone(), args)))
   }
 
   fn get_show_term(&self) -> bool {
@@ -164,12 +175,22 @@ impl<S: Style, C> Shell<S, C> {
     }
   }
 
-  pub fn add_command(&mut self, cmd: Box<dyn Command<S, C>>) {
+  pub fn add_command(&self, cmd: Box<dyn Command<S, C>>) {
     self.shell.lock().unwrap().add_command(cmd)
   }
 
-  pub fn update<L: Layout>(&mut self, screen: &mut Screen<S>, layout: &mut L, focus: &mut SelectId, context: &mut C) {
-    self.shell.lock().unwrap().update(screen, layout, focus, context);
+  pub fn update<L: Layout>(&self, screen: &mut Screen<S>, layout: &mut L, focus: &mut SelectId, context: &mut C) {
+    let exe = { self.shell.lock().unwrap().update(screen, layout, focus, context) };
+    if let Some((cmd, args)) = exe {
+      cmd.run(args, &self.get_term(), context);
+    }
+  }
+
+  pub fn exec(&self, c: &str, context: &mut C) {
+    let exe = { self.shell.lock().unwrap().exec(c) };
+    if let Some((cmd, args)) = exe {
+      cmd.run(args, &self.get_term(), context);
+    }
   }
 
   pub fn get_term(&self) -> Terminal<S> {
