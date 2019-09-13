@@ -52,9 +52,6 @@ impl<S: Style, C> Command<S, C> {
     // complete the arguments
     else if s.starts_with(self.get_name()) && !cmd_args.is_empty() {
       let args = self.split_args(s);
-
-      println!("{:?}", args);
-
       // special case: input ends on whitespace
       if args.is_empty() && !cmd_args.is_empty() {
         cmd_args[0].complete("").map(|cs| {
