@@ -3,9 +3,15 @@ use super::*;
 pub struct File {}
 
 impl Parsable for File {
-  fn parse(&self, s: &str) -> Option<Vec<String>> {
-    // TODO: check if s is a valid path (non existing files/folders?)
-    Some(vec![s.to_string()])
+  fn can_parse(&self, s: &str) -> bool {
+    let p = std::path::Path::new(s);
+    if !p.exists() {
+      if let Some(p) = p.parent() {
+        return p.exists();
+      }
+    }
+
+    true
   }
 
   fn complete(&self, s: &str) -> Option<Vec<Completion>> {

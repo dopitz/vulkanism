@@ -11,3 +11,4 @@ pub use layout::Layout;
 pub use screen::Screen;
 pub use size::Size;
 pub use window::Window;
+pub use window::Event;

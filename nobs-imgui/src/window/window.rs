@@ -12,6 +12,12 @@ use crate::style::StyleComponent;
 use crate::ImGui;
 use vk::cmd::commands::Scissor;
 
+#[derive(Debug, Clone, Copy)]
+pub enum Event {
+  Resized(Rect),
+  Clicked,
+}
+
 /// Window used to set position and size of gui components
 ///
 /// The Window defines a region on the screen on which components are draw
@@ -93,7 +99,15 @@ impl<L: Layout, S: Style> Size for Window<L, S> {
 
 impl<L: Layout, S: Style> Layout for Window<L, S> {
   fn restart(&mut self) {
+    // make the size to draw in at least the size of the client rect
     self.layout_size = self.layout.get_size_hint();
+    let client = self.layout_client.get_rect().size;
+    if self.layout_size.x < client.x {
+      self.layout_size.x = client.x
+    }
+    if self.layout_size.y < client.y {
+      self.layout_size.y = client.y
+    }
     self.layout.restart();
   }
 
@@ -108,7 +122,7 @@ impl<L: Layout, S: Style> Layout for Window<L, S> {
 }
 
 impl<L: Layout, S: Style> Component<S> for Window<L, S> {
-  type Event = ();
+  type Event = Event;
   fn draw<LSuper: Layout>(&mut self, screen: &mut Screen<S>, layout: &mut LSuper, focus: &mut SelectId) -> Option<Self::Event> {
     // restart the layout for components that are using this window as layouting scheme
     self.restart();
@@ -116,12 +130,15 @@ impl<L: Layout, S: Style> Component<S> for Window<L, S> {
     // resizes all layouts, caption and style components
     layout.apply(self);
 
+    let mut ret = None;
+
     // draw caption and move window on drag
     if self.draw_caption {
       if let Some(event::Event::Drag(drag)) = self.caption.draw(screen, &mut self.layout_caption, focus) {
         let mut r = self.layout_window.get_rect();
         r.position += drag.delta;
         self.rect(r);
+        ret = Some(Event::Resized(r))
       }
     }
 
@@ -131,6 +148,7 @@ impl<L: Layout, S: Style> Component<S> for Window<L, S> {
       match e {
         event::Event::Resize(rect) => {
           self.rect(rect);
+          ret = Some(Event::Resized(rect));
         }
         _ => (),
       }
@@ -164,7 +182,7 @@ impl<L: Layout, S: Style> Component<S> for Window<L, S> {
     }
 
     // TODO: return an event when clicked
-    None
+    ret
   }
 }
 

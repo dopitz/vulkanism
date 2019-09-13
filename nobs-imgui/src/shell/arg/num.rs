@@ -6,8 +6,8 @@ macro_rules! make_num {
     pub struct $name {}
 
     impl Parsable for $name {
-      fn parse(&self, s: &str) -> Option<Vec<String>> {
-        s.parse::<$t>().ok().map(|_| vec![s.into()])
+      fn can_parse(&self, s: &str) -> bool {
+        s.parse::<$t>().is_ok()
       }
 
       fn complete(&self, s: &str) -> Option<Vec<Completion>> {

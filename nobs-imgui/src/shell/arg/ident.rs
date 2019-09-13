@@ -7,8 +7,8 @@ pub struct Ident {
 }
 
 impl Parsable for Ident {
-  fn parse(&self, s: &str) -> Option<Vec<String>> {
-    self.variants.iter().find(|i| i.iter().any(|i| s == *i)).map(|_| vec![s.into()])
+  fn can_parse(&self, s: &str) -> bool {
+    self.variants.iter().any(|i| i.iter().any(|i| s == *i))
   }
 
   fn complete(&self, s: &str) -> Option<Vec<Completion>> {

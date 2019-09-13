@@ -16,8 +16,8 @@ pub trait Command<S: Style, C> {
   fn run(&self, args: Vec<String>, shell: Shell<S, C>, context: &mut C);
 }
 
-impl<S: Style, C> arg::Parsable for Command<S, C> {
-  fn parse(&self, s: &str) -> Option<Vec<String>> {
+impl<S: Style, C> Command<S, C> {
+  pub fn parse(&self, s: &str) -> Option<Vec<String>> {
     let cmd_args = self.get_args();
 
     if s.starts_with(self.get_name()) {
@@ -26,7 +26,7 @@ impl<S: Style, C> arg::Parsable for Command<S, C> {
       let parsed = cmd_args
         .iter()
         .zip(args.iter())
-        .filter_map(|(a, sa)| if a.parse(&sa.1).is_some() { Some(sa.1.clone()) } else { None })
+        .filter_map(|(a, sa)| if a.can_parse(&sa.1) { Some(sa.1.clone()) } else { None })
         .fold(vec![self.get_name().to_string()], |mut acc, arg| {
           acc.push(arg);
           acc
@@ -42,7 +42,7 @@ impl<S: Style, C> arg::Parsable for Command<S, C> {
     }
   }
   // TODO cursor hint for completion when cursor not and end of input line
-  fn complete(&self, s: &str) -> Option<Vec<arg::Completion>> {
+  pub fn complete(&self, s: &str) -> Option<Vec<arg::Completion>> {
     let cmd_args = self.get_args();
 
     // if the input is shorter than the command's name try to complete that
@@ -86,9 +86,7 @@ impl<S: Style, C> arg::Parsable for Command<S, C> {
       None
     }
   }
-}
 
-impl<S: Style, C> Command<S, C> {
   fn split_args<'a>(&self, s: &'a str) -> Vec<(&'a str, String)> {
     let mut matches = Vec::new();
 
@@ -142,4 +140,3 @@ impl<S: Style, C> Command<S, C> {
     matches
   }
 }
-

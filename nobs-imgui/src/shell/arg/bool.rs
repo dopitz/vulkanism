@@ -5,8 +5,8 @@ pub struct Bool {
 }
 
 impl Parsable for Bool {
-  fn parse(&self, s: &str) -> Option<Vec<String>> {
-    self.ident.parse(s)
+  fn can_parse(&self, s: &str) -> bool {
+    self.ident.can_parse(s)
   }
 
   fn complete(&self, s: &str) -> Option<Vec<Completion>> {

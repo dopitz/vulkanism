@@ -268,7 +268,7 @@ impl Gui {
     wnd
       .caption("awwwww yeees")
       .position(700, 20)
-      .size(500, 720)
+      .size(50, 720)
       .focus(true)
       .draw_caption(false);
 
@@ -318,13 +318,13 @@ impl<'a> StreamPushMut for RenderGui<'a> {
     let mut layout = gui::window::FloatLayout::from(scr.get_rect());
 
     gui.wnd.draw(&mut scr, &mut layout, &mut gui.focus);
-    if let Some(e) = gui.text.draw(&mut scr, &mut gui.wnd, &mut gui.focus) {
+    if let Some(_e) = gui.text.draw(&mut scr, &mut gui.wnd, &mut gui.focus) {
       gui.wnd.focus(true);
     };
 
     gui::components::Spacer::new(vec2!(10)).draw(&mut scr, &mut gui.wnd, &mut gui.focus);
 
-    if let Some(e) = gui.text2.draw(&mut scr, &mut gui.wnd, &mut gui.focus) {
+    if let Some(_e) = gui.text2.draw(&mut scr, &mut gui.wnd, &mut gui.focus) {
       gui.wnd.focus(true);
     };
 

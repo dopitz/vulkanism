@@ -1,7 +1,6 @@
 use super::*;
 
 pub struct Cmd {
-  name: String,
   cmd: arg::Ident,
 }
 
@@ -29,7 +28,6 @@ impl Cmd {
     let cmds = vars.iter().map(|v| v.as_str()).collect::<Vec<_>>();
 
     Self {
-      name: "help".to_owned(),
       cmd: arg::Ident::no_alternatives(&cmds),
     }
   }

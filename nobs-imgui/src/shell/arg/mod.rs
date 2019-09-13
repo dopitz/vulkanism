@@ -99,7 +99,7 @@ impl Ord for Completion {
 }
 
 pub trait Parsable {
-  fn parse(&self, s: &str) -> Option<Vec<String>>;
+  fn can_parse(&self, s: &str) -> bool;
   fn complete(&self, s: &str) -> Option<Vec<Completion>>;
 }
 

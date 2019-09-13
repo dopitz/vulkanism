@@ -83,6 +83,28 @@ impl TypeSet {
     }
   }
 
+  pub fn wrap_text(&self, s: &str, width: u32) -> String {
+    let mut out = String::with_capacity(s.len());
+    let size = self.size as f32;
+    let width = width as f32;
+    let mut w = 0.0;
+    for c in s.chars() {
+      let chw = (self.font.get(c).advance * size).x;
+      w += chw;
+
+      if w > width && c != ' ' {
+        w = chw;
+        out.push_str("\n   ");
+      }
+      out.push(c);
+
+      if c == '\n' {
+        w = 0.0;
+      }
+    }
+    out
+  }
+
   pub fn char_offset(&self, s: &str, p: vkm::Vec2u) -> vkm::Vec2f {
     let size = self.size as f32;
     let mut off = vec2!(0.0, size);

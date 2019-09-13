@@ -130,6 +130,10 @@ impl<S: Style> TerminalImpl<S> {
   }
   pub fn println(&mut self, s: &str) {
     let s = format!("{}{}\n", self.output.get_text(), s);
+    println!("{:?}", s);
+    println!("{:?}", self.get_rect().size.x);
+    let s = self.output.get_typeset().wrap_text(&s, self.output.get_rect().size.x);
+    println!("{:?}", s);
     self.output.text(&s);
   }
 }
