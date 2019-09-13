@@ -130,6 +130,8 @@ pub trait TextBoxEventHandler: Default {
             VirtualKeyCode::Down => c.y += 1,
             VirtualKeyCode::Left => c.x = c.x.saturating_sub(1),
             VirtualKeyCode::Right => c.x += 1,
+            VirtualKeyCode::End => c.x = u32::max_value(),
+            VirtualKeyCode::Home => c.x = 0,
             _ => {}
           }
           tb.cursor(Some(tb.get_typeset().clamp_cursor(c, tb.get_text())));

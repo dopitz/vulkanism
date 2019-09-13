@@ -281,6 +281,12 @@ impl textbox::TextBoxEventHandler for HandlerTerminalEdit {
           return Some(TerminalInputEvent::TextBox(e));
         }
         Self::move_cursor(tb, e);
+        if let Some(mut c) = tb.get_cursor() {
+          if c.x < 3 {
+            c.x = 3;
+            tb.cursor(Some(c));
+          }
+        }
       }
     }
     Self::set_cursor(tb, e).map(|e| TerminalInputEvent::TextBox(e))
