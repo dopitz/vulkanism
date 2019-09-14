@@ -1,5 +1,5 @@
 use crate::pipelines::Pipelines;
-use crate::select::Select;
+use crate::select::SelectPass;
 use crate::style::Style;
 use crate::window::Screen;
 use std::sync::Arc;
@@ -44,7 +44,7 @@ impl<S: Style> Drop for ImGuiImpl<S> {
 #[derive(Clone)]
 pub struct ImGui<S: Style> {
   pub style: S,
-  pub select: Select,
+  pub select: SelectPass,
   gui: Arc<ImGuiImpl<S>>,
 }
 
@@ -120,7 +120,7 @@ impl<S: Style> ImGui<S> {
     let pipes = Mutex::new(Pipelines::new(device.handle, draw.rp.pass, 0, ub_viewport));
 
     // selection components
-    let select = Select::new(device.handle, extent, dpi, mem.clone(), pipes.lock().unwrap().ds_viewport);
+    let select = SelectPass::new(device.handle, extent, dpi, mem.clone());
 
     // creates style resources
     let style = S::new(

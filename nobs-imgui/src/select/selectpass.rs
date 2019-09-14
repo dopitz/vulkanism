@@ -9,9 +9,9 @@ use vk::cmd::commands::DrawManaged;
 use vk::cmd::commands::Scissor;
 use vk::cmd::stream::*;
 use vk::mem::Handle;
-use vk::pass::MeshId;
 use vk::pass::DrawPass;
 use vk::pass::Framebuffer;
+use vk::pass::MeshId;
 use vk::pass::Renderpass;
 
 /// Id type to uniquely identify a selectable object
@@ -344,7 +344,6 @@ impl SelectPass {
   pub fn get_device(&self) -> vk::Device {
     self.pass.lock().unwrap().rp.device
   }
-
 
   /// Converts `pos` into winit logical coordinates
   ///

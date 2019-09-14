@@ -27,4 +27,4 @@ pub mod window;
 
 mod imgui;
 pub use imgui::ImGui;
-pub use select::Select;
+pub use select::SelectPass;

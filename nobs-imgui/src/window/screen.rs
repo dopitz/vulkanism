@@ -154,7 +154,6 @@ impl<S: Style> Screen<S> {
 impl<S: Style> StreamPushMut for Screen<S> {
   fn enqueue_mut(&mut self, cs: CmdBuffer) -> CmdBuffer {
     let gui = self.gui.as_ref().unwrap();
-    gui.select.rects().update();
 
     if let Some(mut components) = self.components.take() {
       // Draw actual ui elements
