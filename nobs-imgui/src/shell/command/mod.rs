@@ -23,21 +23,21 @@ pub trait Command<S: Style, C> {
 
 impl<S: Style, C> Command<S, C> {
   pub fn parse(&self, s: &str) -> Option<Vec<String>> {
-    let cmd_args = self.get_args();
+    let args = self.get_args();
+    let opt_args = self.get_opt_args();
 
     if s.starts_with(self.get_name()) {
-      let args = self.split_args(s);
-
-      let parsed = cmd_args
+      let parsed = args
         .iter()
-        .zip(args.iter())
+        .chain(opt_args.iter())
+        .zip(self.split_args(s).iter())
         .filter_map(|(a, sa)| if a.can_parse(&sa.1) { Some(sa.1.clone()) } else { None })
         .fold(vec![self.get_name().to_string()], |mut acc, arg| {
           acc.push(arg);
           acc
         });
 
-      if parsed.len() == cmd_args.len() + 1 {
+      if parsed.len() > args.len() {
         Some(parsed)
       } else {
         None
@@ -48,42 +48,37 @@ impl<S: Style, C> Command<S, C> {
   }
   // TODO cursor hint for completion when cursor not and end of input line
   pub fn complete(&self, s: &str) -> Option<Vec<arg::Completion>> {
-    let cmd_args = self.get_args();
+    let mut args = self.get_args();
+    args.append(&mut self.get_opt_args());
 
     // if the input is shorter than the command's name try to complete that
     if self.get_name().starts_with(s) {
       Some(vec![arg::Completion::new(0, self.get_name().into())])
     }
     // complete the arguments
-    else if s.starts_with(self.get_name()) && !cmd_args.is_empty() {
-      let args = self.split_args(s);
-      // special case: input ends on whitespace
-      if args.is_empty() && !cmd_args.is_empty() {
-        cmd_args[0].complete("").map(|cs| {
+    else if s.starts_with(self.get_name()) && !args.is_empty() {
+      let split = self.split_args(s);
+      match split.len() {
+        // no argument typed in inupt, complete the first one
+        0 => Some((args[0], "", s)),
+        // complete the last argument provided by the input
+        l if l <= args.len() => {
+          let i = split.len() - 1;
+          if split[i].0.len() + split[i].1.len() < s.len() && i + 1 < args.len() {
+            Some((args[i + 1], "", s))
+          } else {
+            Some((args[i], split[i].1.as_str(), split[i].0))
+          }
+        }
+        _ => None,
+      }
+      .and_then(|(arg, s, prefix)| {
+        arg.complete(s).map(|cs| {
           cs.into_iter()
-            .map(|c| c.map_completed(|s| s.replace(" ", "\\ ")).prefix(s.to_string()))
+            .map(|c| c.map_completed(|s| s.replace(" ", "\\ ")).prefix(prefix.to_string()))
             .collect()
         })
-      }
-      //
-      else if args.len() <= cmd_args.len() {
-        let i = args.len() - 1;
-        if args[i].0.len() + args[i].1.len() < s.len() && i + 1 < cmd_args.len() {
-          cmd_args[i + 1].complete("").map(|cs| {
-            cs.into_iter()
-              .map(|c| c.map_completed(|s| s.replace(" ", "\\ ")).prefix(s.to_string()))
-              .collect()
-          })
-        } else {
-          cmd_args[i].complete(&args[i].1).map(|cs| {
-            cs.into_iter()
-              .map(|c| c.map_completed(|s| s.replace(" ", "\\ ")).prefix(args[i].0.to_string()))
-              .collect()
-          })
-        }
-      } else {
-        None
-      }
+      })
     } else {
       None
     }
