@@ -141,13 +141,16 @@ impl Update {
 
     let mut start = 0;
     let mut offset = 0;
+    let slen = src.len();
     while start < src.len() {
       let src = &src[start..usize::min(start + n, src.len())];
       start += n;
 
       let map = stage.map().unwrap();
       map.host_to_device_slice(src);
-      let cpy = stage.copy_into_buffer(dst, offset);
+      let cpy = stage
+        .range(0, vk::DeviceSize::min(size, vk::mem::device_size!(slen, T) - offset))
+        .copy_into_buffer(dst, offset);
       offset += size;
 
       self

@@ -1,17 +1,22 @@
 use super::*;
 
-pub struct File {}
+pub struct File {
+  ext: Option<String>,
+}
 
 impl Parsable for File {
   fn can_parse(&self, s: &str) -> bool {
     let p = std::path::Path::new(s);
     if !p.exists() {
-      if let Some(p) = p.parent() {
-        return p.exists();
+      match p.parent() {
+        Some(p) => p.exists(),
+        _ => false,
       }
+    } else if let Some(ext) = self.ext.as_ref() {
+      s.ends_with(ext)
+    } else {
+      true
     }
-
-    true
   }
 
   fn complete(&self, s: &str) -> Option<Vec<Completion>> {
@@ -37,8 +42,8 @@ impl Parsable for File {
       }
     };
 
-    if let Ok(dirs) = dir.read_dir() {
-      let mut dirs = dirs
+    if let Ok(ls) = dir.read_dir() {
+      let mut ls = ls
         .filter_map(|d| d.ok().and_then(|d| d.file_name().into_string().ok()))
         .filter(|fname| fname.starts_with(&name))
         .map(|fname| {
@@ -58,13 +63,21 @@ impl Parsable for File {
           let prev = s[p.len()..s.len()].to_string();
           Completion::new(0, s).preview(prev)
         })
+        .filter(|p| {
+          let p = &p.get_completed();
+          let is_file = Path::new(&p).is_file();
+          match self.ext.as_ref() {
+            Some(ext) if is_file => p.ends_with(ext),
+            _ => true,
+          }
+        })
         .collect::<Vec<_>>();
 
-      dirs.sort();
+      ls.sort();
 
-      match dirs.is_empty() {
+      match ls.is_empty() {
         true => None,
-        false => Some(dirs),
+        false => Some(ls),
       }
     } else {
       None
@@ -74,6 +87,11 @@ impl Parsable for File {
 
 impl File {
   pub fn new() -> Self {
-    Self {}
+    Self { ext: None }
+  }
+
+  pub fn ext(mut self, ext: Option<&str>) -> Self {
+    self.ext = ext.map(|s| s.to_string());
+    self
   }
 }
