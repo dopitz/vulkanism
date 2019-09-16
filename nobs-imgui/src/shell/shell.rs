@@ -7,6 +7,13 @@ use crate::ImGui;
 use std::sync::Arc;
 use std::sync::Mutex;
 
+#[derive(Clone, Copy)]
+enum CompleteIndex {
+  Input,
+  Lcp,
+  Complete(usize),
+}
+
 struct ShellImpl<S: Style, C> {
   term: Terminal<S>,
 
@@ -14,7 +21,8 @@ struct ShellImpl<S: Style, C> {
 
   show_term: bool,
   prefix_len: usize,
-  complete_index: Option<usize>,
+  //complete_index: Option<usize>,
+  complete_index: CompleteIndex,
 }
 
 impl<S: Style, C> ShellImpl<S, C> {
@@ -26,7 +34,7 @@ impl<S: Style, C> ShellImpl<S, C> {
 
       show_term: false,
       prefix_len: 0,
-      complete_index: None,
+      complete_index: CompleteIndex::Input,
     }
   }
 
@@ -78,8 +86,13 @@ impl<S: Style, C> ShellImpl<S, C> {
             },
           ..
         } if self.show_term => {
-          self.show_term = false;
-          set_focus = Some(false);
+          if self.term.get_input().is_empty() {
+            self.show_term = false;
+            set_focus = Some(false);
+          } else {
+            self.term.input_text("");
+            self.term.quickfix_text("");
+          }
         }
         _ => (),
       }
@@ -90,38 +103,56 @@ impl<S: Style, C> ShellImpl<S, C> {
       match self.term.draw(screen, layout, focus) {
         Some(Event::TabComplete(shift)) => {
           let input = self.term.get_input();
-          let prefix = input[..self.prefix_len].to_string();
-          if let Some(completions) = self.get_completions(&prefix) {
-            self.complete_index = match self.complete_index {
-              None => match shift {
-                false => Some(0),
-                true => Some(completions.len() - 1),
-              },
-              Some(ci) => {
-                let ci = ci as i32
-                  + match shift {
-                    false => 1,
-                    true => -1,
+          let mut prefix = input[..self.prefix_len].to_string();
+          match self.get_completions(&prefix) {
+            Some(ref completions) if !completions.is_empty() => {
+              match self.complete_index {
+                CompleteIndex::Input => {
+                  let lcp = completions.iter().skip(1).fold(completions[0].get_completed(), |lcp, c| {
+                    lcp
+                      .chars()
+                      .zip(c.get_completed().chars())
+                      .take_while(|(a, b)| a == b)
+                      .map(|(a, _)| a)
+                      .collect()
+                  });
+                  self.prefix_len = lcp.len();
+                  self.complete_index = CompleteIndex::Lcp;
+                  prefix = lcp;
+                }
+                CompleteIndex::Lcp => {
+                  self.complete_index = match shift {
+                    false => CompleteIndex::Complete(0),
+                    true => CompleteIndex::Complete(completions.len() - 1),
+                  }
+                }
+                CompleteIndex::Complete(i) => {
+                  let ci = i as i32
+                    + match shift {
+                      false => 1,
+                      true => -1,
+                    };
+                  self.complete_index = if ci < 0 || ci >= completions.len() as i32 {
+                    CompleteIndex::Lcp
+                  } else {
+                    CompleteIndex::Complete(ci as usize)
                   };
-                if ci < 0 || ci >= completions.len() as i32 {
-                  None
-                } else {
-                  Some(ci as usize)
                 }
               }
-            };
 
-            if let Some(&ci) = self.complete_index.as_ref() {
-              self.term.input_text(&completions[ci].get_completed());
-            } else {
-              self.term.input_text(&prefix);
+              if let CompleteIndex::Complete(ci) = self.complete_index {
+                self.term.input_text(&completions[ci].get_completed());
+              } else {
+                self.term.input_text(&prefix);
+              }
             }
+            _ => (),
           }
         }
         Some(Event::InputChanged) => {
           let input = self.term.get_input();
           self.prefix_len = input.len();
-          self.complete_index = None;
+          self.complete_index = CompleteIndex::Input;
 
           if let Some(completions) = self.get_completions(&input) {
             let mut s = completions
@@ -136,7 +167,7 @@ impl<S: Style, C> ShellImpl<S, C> {
         Some(Event::InputSubmit(input)) => {
           exe = self.exec(&input);
           self.prefix_len = 0;
-          self.complete_index = None;
+          self.complete_index = CompleteIndex::Input;
           self.term.quickfix_text("");
         }
         _ => (),

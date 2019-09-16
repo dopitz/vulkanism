@@ -277,7 +277,7 @@ impl textbox::TextBoxEventHandler for HandlerTerminalEdit {
         {
           return Some(TerminalInputEvent::TabComplete(*s));
         }
-        if let Some(e) = Self::receive_character(tb, e, false, &['\t']) {
+        if let Some(e) = Self::receive_character(tb, e, false, &['\t', '\u{1b}']) {
           return Some(TerminalInputEvent::TextBox(e));
         }
         Self::move_cursor(tb, e);
