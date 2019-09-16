@@ -108,17 +108,17 @@ impl<S: Style, C> ShellImpl<S, C> {
             Some(ref completions) if !completions.is_empty() => {
               match self.complete_index {
                 CompleteIndex::Input => {
-                  let lcp = completions.iter().skip(1).fold(completions[0].get_completed(), |lcp, c| {
-                    lcp
+                  let s = completions[0].get_completed();
+                  let lcp = completions.iter().skip(1).fold(s.len(), |_, c| {
+                    s
                       .chars()
                       .zip(c.get_completed().chars())
                       .take_while(|(a, b)| a == b)
-                      .map(|(a, _)| a)
-                      .collect()
+                      .count()
                   });
-                  self.prefix_len = lcp.len();
+                  self.prefix_len = lcp;
                   self.complete_index = CompleteIndex::Lcp;
-                  prefix = lcp;
+                  prefix = s[..lcp].to_string();
                 }
                 CompleteIndex::Lcp => {
                   self.complete_index = match shift {
