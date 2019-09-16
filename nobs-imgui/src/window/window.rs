@@ -67,6 +67,13 @@ impl<L: Layout, S: Style> Size for Window<L, S> {
     );
     self.layout_client.rect(client_rect);
 
+    // the client size is used to clamp the srolling
+    let max = vec2!(
+      self.layout_size.x.saturating_sub(self.layout_client.get_rect().size.x),
+      self.layout_size.y.saturating_sub(self.layout_client.get_rect().size.y)
+    );
+    self.layout_scroll = vkm::Vec2::clamp(self.layout_scroll, vec2!(0), max);
+
     // Set client layout with scrolling
     let p0 = client_rect.position;
     let p1 = p0
@@ -249,6 +256,11 @@ impl<L: Layout, S: Style> Window<L, S> {
   /// Sets padding of components from the (inner) window border
   pub fn padding(&mut self, padding: vkm::Vec2u) -> &mut Self {
     self.padding = padding;
+    self
+  }
+
+  pub fn scroll(&mut self, scroll: vkm::Vec2u) -> &mut Self {
+    self.layout_scroll = scroll;
     self
   }
 }
