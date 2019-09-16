@@ -110,11 +110,7 @@ impl<S: Style, C> ShellImpl<S, C> {
                 CompleteIndex::Input => {
                   let s = completions[0].get_completed();
                   let lcp = completions.iter().skip(1).fold(s.len(), |_, c| {
-                    s
-                      .chars()
-                      .zip(c.get_completed().chars())
-                      .take_while(|(a, b)| a == b)
-                      .count()
+                    s.chars().zip(c.get_completed().chars()).take_while(|(a, b)| a == b).count()
                   });
                   self.prefix_len = lcp;
                   self.complete_index = CompleteIndex::Lcp;
