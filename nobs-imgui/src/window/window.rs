@@ -67,13 +67,6 @@ impl<L: Layout, S: Style> Size for Window<L, S> {
     );
     self.layout_client.rect(client_rect);
 
-    // the client size is used to clamp the srolling
-    let max = vec2!(
-      self.layout_size.x.saturating_sub(self.layout_client.get_rect().size.x),
-      self.layout_size.y.saturating_sub(self.layout_client.get_rect().size.y)
-    );
-    self.layout_scroll = vkm::Vec2::clamp(self.layout_scroll, vec2!(0), max);
-
     // Set client layout with scrolling
     let p0 = client_rect.position;
     let p1 = p0
@@ -90,6 +83,13 @@ impl<L: Layout, S: Style> Size for Window<L, S> {
     if self.layout_size.y == 0 {
       self.layout_size.y = client_rect.size.y
     }
+
+    // the client size is used to clamp the srolling
+    let max = vec2!(
+      self.layout_size.x.saturating_sub(self.layout_client.get_rect().size.x),
+      self.layout_size.y.saturating_sub(self.layout_client.get_rect().size.y)
+    );
+    self.layout_scroll = vkm::Vec2::clamp(self.layout_scroll, vec2!(0), max);
 
     self.layout.rect(Rect::new(p, self.layout_size));
     self
@@ -176,12 +176,7 @@ impl<L: Layout, S: Style> Component<S> for Window<L, S> {
             } else {
               0
             };
-            let max = vec2!(
-              self.layout_size.x.saturating_sub(self.layout_client.get_rect().size.x),
-              self.layout_size.y.saturating_sub(self.layout_client.get_rect().size.y)
-            )
-            .into();
-            self.layout_scroll = vkm::Vec2::clamp(self.layout_scroll.into().map_y(|v| v.y + value), vec2!(0), max).into();
+            self.layout_scroll = self.layout_scroll.into::<i32>().map_y(|v| v.y + value).into();
           }
           _ => (),
         }
@@ -262,5 +257,8 @@ impl<L: Layout, S: Style> Window<L, S> {
   pub fn scroll(&mut self, scroll: vkm::Vec2u) -> &mut Self {
     self.layout_scroll = scroll;
     self
+  }
+  pub fn get_scroll(&self) -> vkm::Vec2u {
+    self.layout_scroll
   }
 }

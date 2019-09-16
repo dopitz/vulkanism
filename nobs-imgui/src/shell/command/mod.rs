@@ -15,7 +15,7 @@ pub trait Command<S: Style, C> {
   }
 
   fn get_info(&self) -> (&'static str, &'static str) {
-    ("--", "--")
+    ("", "")
   }
 
   fn run(&self, args: Vec<String>, shell: Shell<S, C>, context: &mut C);

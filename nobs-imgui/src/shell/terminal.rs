@@ -63,9 +63,7 @@ impl<S: Style> Component<S> for TerminalImpl<S> {
     let e = match self.input.draw(screen, &mut self.wnd, focus) {
       Some(TerminalInputEvent::TextBox(textbox::Event::Enter)) => {
         let input = self.input.get_text()[3..].to_owned();
-        let s = format!("{}{}\n", self.output.get_text(), input);
-        self.output.text(&s);
-        self.output_wnd.scroll(vec2!(0, u32::max_value()));
+        self.println(&input);
         self.input.text("~$ ");
 
         let &(ref s, ref cv) = &*self.readline;
@@ -129,14 +127,12 @@ impl<S: Style> TerminalImpl<S> {
     let s = format!("{}{}", self.output.get_text(), s);
     self.output.text(&s);
     self.output_wnd.scroll(vec2!(0, u32::max_value()));
-    println!("AOEUAOEU");
   }
   pub fn println(&mut self, s: &str) {
     let s = format!("{}{}\n", self.output.get_text(), s);
     let s = self.output.get_typeset().wrap_text(&s, self.output.get_rect().size.x);
     self.output.text(&s);
     self.output_wnd.scroll(vec2!(0, u32::max_value()));
-    println!("AOEUAOEU");
   }
 }
 
