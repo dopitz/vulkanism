@@ -27,7 +27,7 @@ struct ShellImpl<S: Style, C> {
 
 impl<S: Style, C> ShellImpl<S, C> {
   fn new(gui: &ImGui<S>) -> Self {
-    Self {
+    let mut shell = Self {
       term: Terminal::new(gui),
 
       cmds: Default::default(),
@@ -35,7 +35,9 @@ impl<S: Style, C> ShellImpl<S, C> {
       show_term: false,
       prefix_len: 0,
       complete_index: CompleteIndex::Input,
-    }
+    };
+    shell.add_command(Box::new(command::source::Cmd::new()));
+    shell
   }
 
   fn add_command(&mut self, cmd: Box<dyn Command<S, C>>) {
@@ -49,6 +51,7 @@ impl<S: Style, C> ShellImpl<S, C> {
     } else {
       self.cmds.push(cmd.into());
     }
+    self.cmds.sort_by(|a, b| a.get_name().cmp(b.get_name()));
   }
 
   fn drop_command(&mut self, name: &str) {

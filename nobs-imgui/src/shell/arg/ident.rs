@@ -1,6 +1,7 @@
 use super::*;
 use regex;
 
+#[derive(Clone)]
 pub struct Ident {
   variants: Vec<Vec<String>>,
   case: bool,

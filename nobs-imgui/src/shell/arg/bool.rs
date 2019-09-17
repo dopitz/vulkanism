@@ -1,5 +1,6 @@
 use super::*;
 
+#[derive(Clone)]
 pub struct Bool {
   ident: Ident,
 }

@@ -15,6 +15,10 @@ impl<S: Style, C> Command<S, C> for Cmd {
     vec![&self.cmd]
   }
 
+  fn get_info(&self) -> (&'static str, &'static str) {
+    ("prints help", "help <cmd name>\nlist commands or description of a single command\nArguments:\n <cmd name> - [Optional] name of the command")
+  }
+
   fn run(&self, args: Vec<String>, shell: Shell<S, C>, _context: &mut C) {
     let term = shell.get_term();
     if args.len() == 1 {
