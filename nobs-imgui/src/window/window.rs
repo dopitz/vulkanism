@@ -108,8 +108,6 @@ impl<L: Layout, S: Style> Size for Window<L, S> {
 
 impl<L: Layout, S: Style> Layout for Window<L, S> {
   fn restart(&mut self) {
-    // make the size to draw in at least the size of the client rect
-    let client = self.layout_client.get_rect().size;
     self.layout.restart();
   }
 

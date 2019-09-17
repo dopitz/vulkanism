@@ -1,5 +1,5 @@
-use super::terminal::Event;
 use super::*;
+use crate::components::textbox::Event;
 use crate::select::SelectId;
 use crate::style::Style;
 use crate::window::*;
@@ -11,7 +11,13 @@ use std::sync::Mutex;
 enum CompleteIndex {
   Input,
   Lcp,
-  Complete(usize),
+  Index(usize),
+}
+
+#[derive(Clone, Copy)]
+enum HistoryIndex {
+  Input,
+  Index(usize),
 }
 
 struct ShellImpl<S: Style, C> {
@@ -19,10 +25,13 @@ struct ShellImpl<S: Style, C> {
 
   cmds: Vec<Arc<dyn Command<S, C>>>,
 
+  history: Vec<String>,
+
   show_term: bool,
   prefix_len: usize,
-  //complete_index: Option<usize>,
   complete_index: CompleteIndex,
+  history_index: HistoryIndex,
+  shift: bool,
 }
 
 impl<S: Style, C> ShellImpl<S, C> {
@@ -32,9 +41,13 @@ impl<S: Style, C> ShellImpl<S, C> {
 
       cmds: Default::default(),
 
+      history: Default::default(),
+
       show_term: false,
       prefix_len: 0,
       complete_index: CompleteIndex::Input,
+      history_index: HistoryIndex::Input,
+      shift: false,
     };
     shell.add_command(Box::new(command::source::Cmd::new()));
     shell
@@ -82,21 +95,44 @@ impl<S: Style, C> ShellImpl<S, C> {
               input:
                 vk::winit::KeyboardInput {
                   state: vk::winit::ElementState::Pressed,
-                  virtual_keycode: Some(vk::winit::VirtualKeyCode::Escape),
+                  virtual_keycode: Some(k),
                   ..
                 },
               ..
             },
           ..
-        } if self.show_term => {
-          if self.term.get_input().is_empty() {
-            self.show_term = false;
-            set_focus = Some(false);
-          } else {
-            self.term.input_text("");
-            self.term.quickfix_text("");
+        } if self.show_term => match *k {
+          vk::winit::VirtualKeyCode::Escape => {
+            if self.term.get_input().is_empty() {
+              self.show_term = false;
+              set_focus = Some(false);
+            } else {
+              self.term.input_text("");
+              self.term.quickfix_text("");
+            }
           }
-        }
+          vk::winit::VirtualKeyCode::LShift | vk::winit::VirtualKeyCode::RShift => self.shift = true,
+          vk::winit::VirtualKeyCode::Tab => self.complete(self.shift),
+          vk::winit::VirtualKeyCode::Up => self.history(false),
+          vk::winit::VirtualKeyCode::Down => self.history(true),
+          _ => (),
+        },
+        vk::winit::Event::WindowEvent {
+          event:
+            vk::winit::WindowEvent::KeyboardInput {
+              input:
+                vk::winit::KeyboardInput {
+                  state: vk::winit::ElementState::Released,
+                  virtual_keycode: Some(k),
+                  ..
+                },
+              ..
+            },
+          ..
+        } if self.show_term => match *k {
+          vk::winit::VirtualKeyCode::LShift | vk::winit::VirtualKeyCode::RShift => self.shift = false,
+          _ => (),
+        },
         _ => (),
       }
     }
@@ -104,51 +140,7 @@ impl<S: Style, C> ShellImpl<S, C> {
     let mut exe = None;
     if self.show_term {
       match self.term.draw(screen, layout, focus) {
-        Some(Event::TabComplete(shift)) => {
-          let input = self.term.get_input();
-          let mut prefix = input[..self.prefix_len].to_string();
-          match self.get_completions(&prefix) {
-            Some(ref completions) if !completions.is_empty() => {
-              match self.complete_index {
-                CompleteIndex::Input => {
-                  let s = completions[0].get_completed();
-                  let lcp = completions.iter().skip(1).fold(s.len(), |_, c| {
-                    s.chars().zip(c.get_completed().chars()).take_while(|(a, b)| a == b).count()
-                  });
-                  self.prefix_len = lcp;
-                  self.complete_index = CompleteIndex::Lcp;
-                  prefix = s[..lcp].to_string();
-                }
-                CompleteIndex::Lcp => {
-                  self.complete_index = match shift {
-                    false => CompleteIndex::Complete(0),
-                    true => CompleteIndex::Complete(completions.len() - 1),
-                  }
-                }
-                CompleteIndex::Complete(i) => {
-                  let ci = i as i32
-                    + match shift {
-                      false => 1,
-                      true => -1,
-                    };
-                  self.complete_index = if ci < 0 || ci >= completions.len() as i32 {
-                    CompleteIndex::Lcp
-                  } else {
-                    CompleteIndex::Complete(ci as usize)
-                  };
-                }
-              }
-
-              if let CompleteIndex::Complete(ci) = self.complete_index {
-                self.term.input_text(&completions[ci].get_completed());
-              } else {
-                self.term.input_text(&prefix);
-              }
-            }
-            _ => (),
-          }
-        }
-        Some(Event::InputChanged) => {
+        Some(Event::Changed) => {
           let input = self.term.get_input();
           self.prefix_len = input.len();
           self.complete_index = CompleteIndex::Input;
@@ -163,7 +155,7 @@ impl<S: Style, C> ShellImpl<S, C> {
             self.term.quickfix_text("");
           }
         }
-        Some(Event::InputSubmit(input)) => {
+        Some(Event::Enter(input)) => {
           exe = self.exec(&input);
           self.prefix_len = 0;
           self.complete_index = CompleteIndex::Input;
@@ -181,7 +173,8 @@ impl<S: Style, C> ShellImpl<S, C> {
     exe
   }
 
-  fn exec(&self, c: &str) -> Option<(Arc<dyn Command<S, C>>, Vec<String>)> {
+  fn exec(&mut self, c: &str) -> Option<(Arc<dyn Command<S, C>>, Vec<String>)> {
+    self.history.push(c.to_string());
     self.cmds.iter().find_map(|cmd| cmd.parse(c).map(|args| (cmd.clone(), args)))
   }
 
@@ -194,6 +187,88 @@ impl<S: Style, C> ShellImpl<S, C> {
       Some(self.cmds.iter().filter_map(|c| c.complete(&input)).flatten().collect::<Vec<_>>())
     } else {
       self.cmds.iter().find_map(|c| c.complete(&input))
+    }
+  }
+
+  fn complete(&mut self, reverse: bool) {
+    let input = self.term.get_input();
+    let mut prefix = input[..self.prefix_len].to_string();
+    match self.get_completions(&prefix) {
+      Some(ref completions) if !completions.is_empty() => {
+        match self.complete_index {
+          CompleteIndex::Input => {
+            let s = completions[0].get_completed();
+            let lcp = completions.iter().skip(1).fold(s.len(), |_, c| {
+              s.chars().zip(c.get_completed().chars()).take_while(|(a, b)| a == b).count()
+            });
+            if self.prefix_len == lcp {
+              self.complete_index = match reverse {
+                false => CompleteIndex::Index(0),
+                true => CompleteIndex::Index(completions.len() - 1),
+              };
+              prefix = s[..lcp].to_string();
+            } else {
+              self.prefix_len = lcp;
+              self.complete_index = CompleteIndex::Lcp;
+              prefix = s[..lcp].to_string();
+            }
+          }
+          CompleteIndex::Lcp => {
+            self.complete_index = match reverse {
+              false => CompleteIndex::Index(0),
+              true => CompleteIndex::Index(completions.len() - 1),
+            }
+          }
+          CompleteIndex::Index(i) => {
+            let ci = i as i32
+              + match reverse {
+                false => 1,
+                true => -1,
+              };
+            self.complete_index = if ci < 0 || ci >= completions.len() as i32 {
+              CompleteIndex::Lcp
+            } else {
+              CompleteIndex::Index(ci as usize)
+            };
+          }
+        }
+
+        if let CompleteIndex::Index(ci) = self.complete_index {
+          self.term.input_text(&completions[ci].get_completed());
+        } else {
+          self.term.input_text(&prefix);
+        }
+      }
+      _ => (),
+    }
+  }
+
+  fn history(&mut self, reverse: bool) {
+    if !self.history.is_empty() {
+      self.history_index = match self.history_index {
+        HistoryIndex::Input => match reverse {
+          false => HistoryIndex::Index(0),
+          true => HistoryIndex::Index(self.history.len() - 1),
+        },
+        HistoryIndex::Index(i) => {
+          let i = i as i32
+            + match reverse {
+              false => 1,
+              true => -1,
+            };
+          if i < 0 || i >= self.history.len() as i32 {
+            HistoryIndex::Input
+          } else {
+            HistoryIndex::Index(i as usize)
+          }
+        }
+      };
+
+      if let HistoryIndex::Index(i) = self.history_index {
+        self.term.input_text(&self.history[self.history.len() - 1 - i]);
+      } else {
+        self.term.input_text("");
+      }
     }
   }
 }

@@ -15,7 +15,7 @@ use crate::ImGui;
 pub enum Event {
   Unhandled(event::Event),
   Changed,
-  Enter,
+  Enter(String),
 }
 
 pub trait TextBoxEventHandler: Default {
@@ -80,7 +80,7 @@ pub trait TextBoxEventHandler: Default {
           // input
           else {
             if !multiline && (c == '\n' || c == '\r') {
-              return Some(Event::Enter);
+              return Some(Event::Enter(tb.get_text().to_string()));
             }
 
             if c == '\r' {
@@ -155,7 +155,7 @@ pub trait TextBoxEventHandler: Default {
 pub struct TextBox<S: Style, H: TextBoxEventHandler = HandlerReadonly> {
   text: Text<S>,
   style: S::Component,
-  handler: std::marker::PhantomData<H>,
+  pub handler: H,
 }
 
 impl<S: Style, H: TextBoxEventHandler> Size for TextBox<S, H> {
@@ -206,7 +206,7 @@ impl<S: Style, H: TextBoxEventHandler> TextBox<S, H> {
     Self {
       text,
       style,
-      handler: std::marker::PhantomData,
+      handler: H::default(),
     }
   }
 
@@ -268,7 +268,7 @@ impl TextBoxEventHandler for HandlerEdit {
   fn handle<S: Style>(tb: &mut TextBox<S, Self>, e: Option<event::Event>, screen: &Screen<S>) -> Option<Event> {
     if tb.style.has_focus() {
       for e in screen.get_events() {
-        if let Some(e) = Self::receive_character(tb, e, false, &[]) {
+        if let Some(e) = Self::receive_character(tb, e, false, &['\t', '\u{1b}']) {
           return Some(e);
         }
         Self::move_cursor(tb, e);
@@ -285,7 +285,7 @@ impl TextBoxEventHandler for HandlerMultilineEdit {
   fn handle<S: Style>(tb: &mut TextBox<S, Self>, e: Option<event::Event>, screen: &Screen<S>) -> Option<Event> {
     if tb.style.has_focus() {
       for e in screen.get_events() {
-        if let Some(e) = Self::receive_character(tb, e, true, &[]) {
+        if let Some(e) = Self::receive_character(tb, e, true, &['\t', '\u{1b}']) {
           return Some(e);
         }
         Self::move_cursor(tb, e);

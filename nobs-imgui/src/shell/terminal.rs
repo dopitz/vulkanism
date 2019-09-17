@@ -1,3 +1,4 @@
+use crate::components::textbox::Event;
 use crate::components::*;
 use crate::rect::Rect;
 use crate::select::SelectId;
@@ -6,15 +7,7 @@ use crate::window::*;
 use crate::ImGui;
 
 use std::sync::Arc;
-use std::sync::Condvar;
 use std::sync::Mutex;
-
-#[derive(Debug, Clone)]
-pub enum Event {
-  TabComplete(bool),
-  InputChanged,
-  InputSubmit(String),
-}
 
 struct TerminalImpl<S: Style> {
   wnd: Window<ColumnLayout, S>,
@@ -23,9 +16,7 @@ struct TerminalImpl<S: Style> {
   output: TextBox<S>,
   pin_scroll: bool,
 
-  input: TextBox<S, HandlerTerminalEdit>,
-
-  readline: Arc<(Mutex<Option<String>>, Condvar)>,
+  input: TextEdit<S>,
 
   quickfix_wnd: Window<ColumnLayout, S>,
   quickfix: TextEdit<S>,
@@ -64,18 +55,13 @@ impl<S: Style> Component<S> for TerminalImpl<S> {
     Spacer::new(vec2!(10)).draw(screen, &mut self.wnd, focus);
 
     let e = match self.input.draw(screen, &mut self.wnd, focus) {
-      Some(TerminalInputEvent::TextBox(textbox::Event::Enter)) => {
-        let input = self.input.get_text()[3..].to_owned();
+      Some(Event::Enter(input)) => {
+        let input = input[3..].to_string();
         self.println(&input);
         self.input.text("~$ ");
-
-        let &(ref s, ref cv) = &*self.readline;
-        let mut s = s.lock().unwrap();
-        *s = Some(input.clone());
-        cv.notify_one();
-        Some(Event::InputSubmit(input))
+        Some(Event::Enter(input))
       }
-      Some(TerminalInputEvent::TextBox(textbox::Event::Changed)) => {
+      Some(Event::Changed) => {
         if self.input.get_text().len() < 3 {
           self.input.text("~$ ");
         }
@@ -85,9 +71,8 @@ impl<S: Style> Component<S> for TerminalImpl<S> {
           }
           _ => (),
         }
-        Some(Event::InputChanged)
+        Some(Event::Changed)
       }
-      Some(TerminalInputEvent::TabComplete(s)) => Some(Event::TabComplete(s)),
       _ => None,
     };
 
@@ -204,7 +189,6 @@ impl<S: Style> Terminal<S> {
         output,
         pin_scroll: true,
         input,
-        readline: Arc::new((Mutex::new(None), Condvar::new())),
         quickfix_wnd,
         quickfix,
       })),
@@ -231,15 +215,6 @@ impl<S: Style> Terminal<S> {
   pub fn println(&self, s: &str) {
     self.term.lock().unwrap().println(s);
   }
-  pub fn readln(&self) -> String {
-    let &(ref s, ref cv) = &*self.term.lock().unwrap().readline;
-    let mut s = s.lock().unwrap();
-    while s.is_none() {
-      s = cv.wait(s).unwrap();
-    }
-    // TODO cond var thats getting signaled when input returns Enter event
-    s.take().unwrap().to_owned()
-  }
   pub fn get_input(&self) -> String {
     self.term.lock().unwrap().input.get_text()[3..].to_owned()
   }
@@ -255,49 +230,5 @@ impl<S: Style> Terminal<S> {
   }
   pub fn quickfix_text(&self, s: &str) {
     self.term.lock().unwrap().quickfix.text(s);
-  }
-}
-
-use crate::style::event;
-
-#[derive(Debug)]
-enum TerminalInputEvent {
-  TextBox(textbox::Event),
-  TabComplete(bool),
-}
-
-#[derive(Default)]
-struct HandlerTerminalEdit {}
-impl textbox::TextBoxEventHandler for HandlerTerminalEdit {
-  type Output = TerminalInputEvent;
-  fn handle<S: Style>(tb: &mut TextBox<S, Self>, e: Option<event::Event>, screen: &Screen<S>) -> Option<Self::Output> {
-    if tb.has_focus() {
-      for e in screen.get_events() {
-        if let vk::winit::Event::DeviceEvent {
-          event:
-            vk::winit::DeviceEvent::Key(vk::winit::KeyboardInput {
-              state: vk::winit::ElementState::Pressed,
-              virtual_keycode: Some(vk::winit::VirtualKeyCode::Tab),
-              modifiers: vk::winit::ModifiersState { shift: s, .. },
-              ..
-            }),
-          ..
-        } = e
-        {
-          return Some(TerminalInputEvent::TabComplete(*s));
-        }
-        if let Some(e) = Self::receive_character(tb, e, false, &['\t', '\u{1b}']) {
-          return Some(TerminalInputEvent::TextBox(e));
-        }
-        Self::move_cursor(tb, e);
-        if let Some(mut c) = tb.get_cursor() {
-          if c.x < 3 {
-            c.x = 3;
-            tb.cursor(Some(c));
-          }
-        }
-      }
-    }
-    Self::set_cursor(tb, e).map(|e| TerminalInputEvent::TextBox(e))
   }
 }
