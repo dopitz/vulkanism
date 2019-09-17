@@ -113,8 +113,8 @@ impl<S: Style, C> ShellImpl<S, C> {
           }
           vk::winit::VirtualKeyCode::LShift | vk::winit::VirtualKeyCode::RShift => self.shift = true,
           vk::winit::VirtualKeyCode::Tab => self.complete(self.shift),
-          vk::winit::VirtualKeyCode::Up => self.history(false),
-          vk::winit::VirtualKeyCode::Down => self.history(true),
+          vk::winit::VirtualKeyCode::Up => self.history(false, None),
+          vk::winit::VirtualKeyCode::Down => self.history(true, None),
           _ => (),
         },
         vk::winit::Event::WindowEvent {
@@ -243,12 +243,17 @@ impl<S: Style, C> ShellImpl<S, C> {
     }
   }
 
-  fn history(&mut self, reverse: bool) {
+  fn history(&mut self, reverse: bool, find: Option<&str>) {
+    let len = match find {
+      Some(find) => self.history.iter().rev().filter(|s| s.find(find).is_some()).count(),
+      _ => self.history.len(),
+    };
+
     if !self.history.is_empty() {
       self.history_index = match self.history_index {
         HistoryIndex::Input => match reverse {
           false => HistoryIndex::Index(0),
-          true => HistoryIndex::Index(self.history.len() - 1),
+          true => HistoryIndex::Index(len - 1),
         },
         HistoryIndex::Index(i) => {
           let i = i as i32
@@ -256,7 +261,7 @@ impl<S: Style, C> ShellImpl<S, C> {
               false => 1,
               true => -1,
             };
-          if i < 0 || i >= self.history.len() as i32 {
+          if i < 0 || i >= len as i32 {
             HistoryIndex::Input
           } else {
             HistoryIndex::Index(i as usize)
@@ -265,7 +270,14 @@ impl<S: Style, C> ShellImpl<S, C> {
       };
 
       if let HistoryIndex::Index(i) = self.history_index {
-        self.term.input_text(&self.history[self.history.len() - 1 - i]);
+        match find {
+          Some(find) => {
+            if let Some(s) = self.history.iter().rev().filter(|s| s.find(find).is_some()).nth(i) {
+              self.term.input_text(&s);
+            }
+          }
+          _ => self.term.input_text(&self.history[self.history.len() - 1 - i]),
+        };
       } else {
         self.term.input_text("");
       }
