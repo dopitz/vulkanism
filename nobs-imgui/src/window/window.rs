@@ -16,6 +16,7 @@ use vk::cmd::commands::Scissor;
 pub enum Event {
   Resized(Rect),
   Clicked,
+  Scroll,
 }
 
 /// Window used to set position and size of gui components
@@ -28,7 +29,7 @@ pub struct Window<L: Layout, S: Style> {
   layout_caption: FloatLayout,
   layout_client: FloatLayout,
   layout: L,
-  layout_size: vkm::Vec2u,
+  //layout_size: vkm::Vec2u,
   layout_scroll: vkm::Vec2u,
 
   style: S::Component,
@@ -47,7 +48,7 @@ impl<L: Layout, S: Style> Size for Window<L, S> {
       rect.size.y = h
     }
 
-    // the whole window and stile have the same dimensions
+    // the whole window and style have the same dimensions
     // client and caption use the client area of the style
     self.layout_window.rect(rect);
     self.style.rect(rect);
@@ -68,30 +69,31 @@ impl<L: Layout, S: Style> Size for Window<L, S> {
     self.layout_client.rect(client_rect);
 
     // Set client layout with scrolling
+    let mut size = self.layout.get_size_hint();
     let p0 = client_rect.position;
     let p1 = p0
       - vec2!(
-        self.layout_size.x.saturating_sub(client_rect.size.x),
-        self.layout_size.y.saturating_sub(client_rect.size.y)
+        size.x.saturating_sub(client_rect.size.x),
+        size.y.saturating_sub(client_rect.size.y)
       )
       .into();
     let p = vkm::Vec2::clamp(p0 - self.layout_scroll.into(), p1, p0);
 
-    if self.layout_size.x == 0 {
-      self.layout_size.x = client_rect.size.x
+    if size.x == 0 {
+      size.x = client_rect.size.x
     }
-    if self.layout_size.y == 0 {
-      self.layout_size.y = client_rect.size.y
+    if size.y == 0 {
+      size.y = client_rect.size.y
     }
 
     // the client size is used to clamp the srolling
     let max = vec2!(
-      self.layout_size.x.saturating_sub(self.layout_client.get_rect().size.x),
-      self.layout_size.y.saturating_sub(self.layout_client.get_rect().size.y)
+      size.x.saturating_sub(self.layout_client.get_rect().size.x),
+      size.y.saturating_sub(self.layout_client.get_rect().size.y)
     );
     self.layout_scroll = vkm::Vec2::clamp(self.layout_scroll, vec2!(0), max);
 
-    self.layout.rect(Rect::new(p, self.layout_size));
+    self.layout.rect(Rect::new(p, size));
     self
   }
   fn get_rect(&self) -> Rect {
@@ -107,14 +109,7 @@ impl<L: Layout, S: Style> Size for Window<L, S> {
 impl<L: Layout, S: Style> Layout for Window<L, S> {
   fn restart(&mut self) {
     // make the size to draw in at least the size of the client rect
-    self.layout_size = self.layout.get_size_hint();
     let client = self.layout_client.get_rect().size;
-    if self.layout_size.x < client.x {
-      self.layout_size.x = client.x
-    }
-    if self.layout_size.y < client.y {
-      self.layout_size.y = client.y
-    }
     self.layout.restart();
   }
 
@@ -131,9 +126,6 @@ impl<L: Layout, S: Style> Layout for Window<L, S> {
 impl<L: Layout, S: Style> Component<S> for Window<L, S> {
   type Event = Event;
   fn draw<LSuper: Layout>(&mut self, screen: &mut Screen<S>, layout: &mut LSuper, focus: &mut SelectId) -> Option<Self::Event> {
-    // restart the layout for components that are using this window as layouting scheme
-    self.restart();
-
     // resizes all layouts, caption and style components
     layout.apply(self);
 
@@ -177,11 +169,15 @@ impl<L: Layout, S: Style> Component<S> for Window<L, S> {
               0
             };
             self.layout_scroll = self.layout_scroll.into::<i32>().map_y(|v| v.y + value).into();
+            ret = Some(Event::Scroll);
           }
           _ => (),
         }
       }
     }
+
+    // restart the layout for components that are using this window as layouting scheme
+    self.restart();
 
     // TODO: return an event when clicked
     ret
@@ -201,7 +197,6 @@ impl<L: Layout, S: Style> Window<L, S> {
       layout_caption: Default::default(),
       layout_client: Default::default(),
       layout,
-      layout_size: Default::default(),
       layout_scroll: Default::default(),
       style,
       caption,

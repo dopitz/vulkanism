@@ -21,6 +21,7 @@ struct TerminalImpl<S: Style> {
 
   output_wnd: Window<ColumnLayout, S>,
   output: TextBox<S>,
+  pin_scroll: bool,
 
   input: TextBox<S, HandlerTerminalEdit>,
 
@@ -55,7 +56,9 @@ impl<S: Style> Component<S> for TerminalImpl<S> {
 
     self.wnd.draw(screen, layout, focus);
 
-    self.output_wnd.draw(screen, &mut self.wnd, focus);
+    if let Some(crate::window::Event::Scroll) = self.output_wnd.draw(screen, &mut self.wnd, focus) {
+      self.pin_scroll = false;
+    }
     self.output.draw(screen, &mut self.output_wnd, focus);
 
     Spacer::new(vec2!(10)).draw(screen, &mut self.wnd, focus);
@@ -87,6 +90,10 @@ impl<S: Style> Component<S> for TerminalImpl<S> {
       Some(TerminalInputEvent::TabComplete(s)) => Some(Event::TabComplete(s)),
       _ => None,
     };
+
+    if self.pin_scroll {
+      self.output_wnd.scroll(vec2!(0, u32::max_value()));
+    }
 
     if !self.quickfix.get_text().is_empty() {
       let r = self.wnd.get_rect();
@@ -126,13 +133,13 @@ impl<S: Style> TerminalImpl<S> {
   pub fn print(&mut self, s: &str) {
     let s = format!("{}{}", self.output.get_text(), s);
     self.output.text(&s);
-    self.output_wnd.scroll(vec2!(0, u32::max_value()));
+    self.pin_scroll = true;
   }
   pub fn println(&mut self, s: &str) {
     let s = format!("{}{}\n", self.output.get_text(), s);
     let s = self.output.get_typeset().wrap_text(&s, self.output.get_rect().size.x);
     self.output.text(&s);
-    self.output_wnd.scroll(vec2!(0, u32::max_value()));
+    self.pin_scroll = true;
   }
 }
 
@@ -195,6 +202,7 @@ impl<S: Style> Terminal<S> {
         wnd,
         output_wnd,
         output,
+        pin_scroll: true,
         input,
         readline: Arc::new((Mutex::new(None), Condvar::new())),
         quickfix_wnd,
