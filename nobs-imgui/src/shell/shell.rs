@@ -285,9 +285,14 @@ impl<S: Style, C> ShellImpl<S, C> {
   }
 }
 
-#[derive(Clone)]
 pub struct Shell<S: Style, C> {
   shell: Arc<Mutex<ShellImpl<S, C>>>,
+}
+
+impl<S: Style, C> Clone for Shell<S, C> {
+  fn clone(&self) -> Self {
+    Self { shell: self.shell.clone() }
+  }
 }
 
 impl<S: Style, C> Shell<S, C> {

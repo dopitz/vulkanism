@@ -7,6 +7,7 @@ use crate::window::*;
 use crate::ImGui;
 
 use std::sync::Arc;
+use std::sync::Condvar;
 use std::sync::Mutex;
 
 struct TerminalImpl<S: Style> {
@@ -17,6 +18,7 @@ struct TerminalImpl<S: Style> {
   pin_scroll: bool,
 
   input: TextEdit<S>,
+  readl: Option<Arc<(Mutex<Option<String>>, Condvar)>>,
 
   quickfix_wnd: Window<ColumnLayout, S>,
   quickfix: TextEdit<S>,
@@ -57,9 +59,19 @@ impl<S: Style> Component<S> for TerminalImpl<S> {
     let e = match self.input.draw(screen, &mut self.wnd, focus) {
       Some(Event::Enter(input)) => {
         let input = input[3..].to_string();
-        self.println(&input);
-        self.input.text("~$ ");
-        Some(Event::Enter(input))
+
+        if let Some(readl) = self.readl.take() {
+          let &(ref lock, ref cvar) = &*readl;
+          let mut inp = lock.lock().unwrap();
+          *inp = Some(input);
+          cvar.notify_one();
+          self.input.text("~$ ");
+          None
+        } else {
+          self.println(&input);
+          self.input.text("~$ ");
+          Some(Event::Enter(input))
+        }
       }
       Some(Event::Changed) => {
         if self.input.get_text().len() < 3 {
@@ -126,6 +138,12 @@ impl<S: Style> TerminalImpl<S> {
     self.output.text(&s);
     self.pin_scroll = true;
   }
+
+  pub fn readln(&mut self) -> Arc<(Mutex<Option<String>>, Condvar)> {
+    let readl = Arc::new((Mutex::new(None), Condvar::new()));
+    self.readl = Some(readl.clone());
+    readl
+  }
 }
 
 #[derive(Clone)]
@@ -189,6 +207,7 @@ impl<S: Style> Terminal<S> {
         output,
         pin_scroll: true,
         input,
+        readl: None,
         quickfix_wnd,
         quickfix,
       })),
@@ -217,6 +236,16 @@ impl<S: Style> Terminal<S> {
   }
   pub fn get_input(&self) -> String {
     self.term.lock().unwrap().input.get_text()[3..].to_owned()
+  }
+  pub fn readln(&self) -> String {
+    // Wait for the thread to start up.
+    let readl = { self.term.lock().unwrap().readln() };
+    let &(ref lock, ref cvar) = &*readl;
+    let mut input = lock.lock().unwrap();
+    while input.is_none() {
+      input = cvar.wait(input).unwrap();
+    }
+    input.take().unwrap()
   }
 
   pub fn input_text(&self, s: &str) {

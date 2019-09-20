@@ -239,6 +239,38 @@ mod commands {
       }
     }
   }
+
+  pub mod sleep {
+    use super::*;
+
+    pub struct Cmd {}
+
+    impl Command<ThisStyle, super::Context> for Cmd {
+      fn get_name(&self) -> &'static str {
+        "sleep"
+      }
+
+      fn run(&self, args: Vec<String>, shell: Shell<Context>, _context: &mut Context) {
+        let term = shell.get_term();
+        std::thread::spawn(move || {
+          term.println("a");
+          std::thread::sleep_ms(1000);
+          let l = term.readln();
+          term.println(&l);
+          std::thread::sleep_ms(1000);
+          term.println("a");
+          std::thread::sleep_ms(1000);
+          term.println("a");
+        });
+      }
+    }
+
+    impl Cmd {
+      pub fn new() -> Self {
+        Self {}
+      }
+    }
+  }
 }
 
 struct Gui {
@@ -262,7 +294,10 @@ impl Gui {
     let shell = gui::shell::Shell::new(&gui);
     shell.add_command(Box::new(commands::toggle::Cmd::new()));
     shell.add_command(Box::new(commands::quit::Cmd::new()));
+    shell.add_command(Box::new(commands::sleep::Cmd::new()));
     shell.add_command(Box::new(shell::command::source::Cmd::new()));
+
+    let sh = shell.clone();
 
     let mut wnd = gui::window::Window::new(&gui, gui::window::ColumnLayout::default());
     wnd
