@@ -2,6 +2,8 @@ extern crate nobs_imgui as imgui;
 extern crate nobs_vkmath as vkm;
 extern crate nobs_vulkanism as vk;
 
+use std::sync::Arc;
+use std::sync::Mutex;
 use vk::builder::Buildable;
 use vk::cmd::stream::*;
 use vk::mem::Handle;
@@ -114,12 +116,16 @@ pub fn main() {
 
   let mut gui = Gui::new(&device, &window, fb.images[0], mem.clone());
 
-  let mut context = Context { quit: false };
+  let mut context = Arc::new(Mutex::new(Context { quit: false }));
 
   let mut resizeevent = false;
 
   use vk::cmd::commands::*;
   let mut batch = vk::cmd::RRBatch::new(device.handle, 1).unwrap();
+
+
+
+  //gui.shell.exec("spawn toggle On", &mut context);
 
   loop {
     events_loop.poll_events(|event| {
@@ -127,7 +133,7 @@ pub fn main() {
         winit::Event::WindowEvent {
           event: winit::WindowEvent::CloseRequested,
           ..
-        } => context.quit = true,
+        } => context.lock().unwrap().quit = true,
         winit::Event::WindowEvent {
           event: winit::WindowEvent::Resized(size),
           ..
@@ -169,10 +175,10 @@ pub fn main() {
       .push(&ImageBarrier::to_color_attachment(fb.images[0]))
       .push(&fb.begin())
       .push(&fb.end())
-      .push_mut(&mut gui.render(&mut context))
+      .push_mut(&mut gui.render(context.clone()))
       .present(device.queues[0].handle, fb.images[0]);
 
-    if context.quit {
+    if context.lock().unwrap().quit {
       break;
     }
   }
@@ -185,7 +191,9 @@ use imgui::style::simple as gui;
 mod commands {
   use crate::gui::shell::*;
   use crate::gui::*;
-  use crate::Context;
+  use std::sync::Arc;
+  use std::sync::Mutex;
+  type Context = Arc<Mutex<crate::Context>>;
 
   pub mod quit {
     use super::*;
@@ -201,7 +209,7 @@ mod commands {
       }
 
       fn run(&self, _args: Vec<String>, _shell: Shell<Context>, context: &mut Context) {
-        context.quit = true;
+        context.lock().unwrap().quit = true;
       }
     }
 
@@ -271,7 +279,7 @@ mod commands {
 struct Gui {
   gui: gui::Gui,
 
-  shell: gui::shell::Shell<Context>,
+  shell: gui::shell::Shell<std::sync::Arc<std::sync::Mutex<Context>>>,
 
   wnd: gui::window::Window<gui::window::ColumnLayout>,
   text: gui::components::TextEditMultiline,
@@ -290,7 +298,7 @@ impl Gui {
     shell.add_command(Box::new(commands::toggle::Cmd::new()));
     shell.add_command(Box::new(commands::quit::Cmd::new()));
     shell.add_command(Box::new(commands::interactive::Cmd::new()));
-    shell.add_command(Box::new(shell::command::source::Cmd::new()));
+    shell.add_command(Box::new(shell::command::spawn::Cmd::new(shell.clone())));
 
     let sh = shell.clone();
 
@@ -328,13 +336,13 @@ impl Gui {
     self.shell.get_term().size(extent.width / 7 * 3, extent.height / 4 * 3);
   }
 
-  pub fn render<'a>(&'a mut self, context: &'a mut Context) -> RenderGui<'a> {
+  pub fn render<'a>(&'a mut self, context: Arc<Mutex<Context>>) -> RenderGui<'a> {
     RenderGui { context, gui: self }
   }
 }
 
 struct RenderGui<'a> {
-  context: &'a mut Context,
+  context: Arc<Mutex<Context>>,
   gui: &'a mut Gui,
 }
 
@@ -358,7 +366,7 @@ impl<'a> StreamPushMut for RenderGui<'a> {
       gui.wnd.focus(true);
     };
 
-    gui.shell.update(&mut scr, &mut layout, &mut gui.focus, self.context);
+    gui.shell.update(&mut scr, &mut layout, &mut gui.focus, &mut self.context);
 
     cs.push_mut(&mut scr)
   }

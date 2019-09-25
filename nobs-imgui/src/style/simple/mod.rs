@@ -219,7 +219,7 @@ pub fn get_default_styles() -> HashMap<String, UbStyle> {
   styles.insert(
     "Window".to_owned(),
     UbStyle {
-      color: vec4!(0.1, 0.05, 0.3, 0.6),
+      color: vec4!(0.1, 0.05, 0.3, 0.9),
       bd_color_inner: vec4!(0.1, 0.1, 0.3, 1.0),
       bd_color_outer: vec4!(0.1, 0.05, 0.3, 1.0),
       bd_thickness: vec2!(3),
@@ -228,7 +228,7 @@ pub fn get_default_styles() -> HashMap<String, UbStyle> {
   styles.insert(
     "WindowBorderless".to_owned(),
     UbStyle {
-      color: vec4!(0.1, 0.05, 0.3, 0.6),
+      color: vec4!(0.1, 0.05, 0.3, 0.9),
       bd_color_inner: vec4!(0.0),
       bd_color_outer: vec4!(0.0),
       bd_thickness: vec2!(0),
@@ -237,7 +237,7 @@ pub fn get_default_styles() -> HashMap<String, UbStyle> {
   styles.insert(
     "WindowCaption".to_owned(),
     UbStyle {
-      color: vec4!(0.1, 0.1, 0.5, 0.6),
+      color: vec4!(0.1, 0.1, 0.5, 0.9),
       bd_color_inner: vec4!(0.1, 0.1, 0.3, 1.0),
       bd_color_outer: vec4!(0.1, 0.1, 0.3, 1.0),
       bd_thickness: vec2!(3),
@@ -255,7 +255,7 @@ pub fn get_default_styles() -> HashMap<String, UbStyle> {
   styles.insert(
     "TextBox".to_owned(),
     UbStyle {
-      color: vec4!(0.1, 0.1, 0.5, 0.6),
+      color: vec4!(0.1, 0.1, 0.5, 0.9),
       bd_color_inner: vec4!(0.1, 0.1, 0.3, 1.0),
       bd_color_outer: vec4!(0.1, 0.1, 0.3, 1.0),
       bd_thickness: vec2!(3),
@@ -264,7 +264,7 @@ pub fn get_default_styles() -> HashMap<String, UbStyle> {
   styles.insert(
     "TextBoxBorderless".to_owned(),
     UbStyle {
-      color: vec4!(0.1, 0.1, 0.5, 0.6),
+      color: vec4!(0.1, 0.1, 0.5, 0.9),
       bd_color_inner: vec4!(0.0),
       bd_color_outer: vec4!(0.0),
       bd_thickness: vec2!(0),

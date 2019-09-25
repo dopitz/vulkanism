@@ -295,6 +295,8 @@ impl<S: Style, C> Clone for Shell<S, C> {
   }
 }
 
+unsafe impl<S: Style, C> Send for Shell<S, C> {}
+
 impl<S: Style, C> Shell<S, C> {
   pub fn new(gui: &ImGui<S>) -> Self {
     Self {

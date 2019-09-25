@@ -31,7 +31,7 @@ impl Completion {
     self.prefix = self
       .prefix
       .map(|mut s| {
-        s.push_str(&pf);
+        s.insert_str(0, &pf);
         s
       })
       .or(Some(pf));
@@ -41,7 +41,7 @@ impl Completion {
     self.suffix = self
       .suffix
       .map(|mut s| {
-        s.insert_str(0, &sf);
+        s.push_str(&sf);
         s
       })
       .or(Some(sf));

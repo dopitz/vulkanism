@@ -1,5 +1,6 @@
 pub mod help;
 pub mod source;
+pub mod spawn;
 
 use super::arg;
 use super::Shell;
@@ -19,10 +20,8 @@ pub trait Command<S: Style, C> {
   }
 
   fn run(&self, args: Vec<String>, shell: Shell<S, C>, context: &mut C);
-}
 
-impl<S: Style, C> Command<S, C> {
-  pub fn parse(&self, s: &str) -> Option<Vec<String>> {
+  fn parse(&self, s: &str) -> Option<Vec<String>> {
     let args = self.get_args();
     let opt_args = self.get_opt_args();
 
@@ -30,7 +29,7 @@ impl<S: Style, C> Command<S, C> {
       let parsed = args
         .iter()
         .chain(opt_args.iter())
-        .zip(self.split_args(s).iter())
+        .zip(split_args(self.get_name(), s).iter())
         .filter_map(|(a, sa)| if a.can_parse(&sa.1) { Some(sa.1.clone()) } else { None })
         .fold(vec![self.get_name().to_string()], |mut acc, arg| {
           acc.push(arg);
@@ -47,7 +46,7 @@ impl<S: Style, C> Command<S, C> {
     }
   }
   // TODO cursor hint for completion when cursor not and end of input line
-  pub fn complete(&self, s: &str) -> Option<Vec<arg::Completion>> {
+  fn complete(&self, s: &str) -> Option<Vec<arg::Completion>> {
     let mut args = self.get_args();
     args.append(&mut self.get_opt_args());
 
@@ -57,7 +56,7 @@ impl<S: Style, C> Command<S, C> {
     }
     // complete the arguments
     else if s.starts_with(self.get_name()) && !args.is_empty() {
-      let split = self.split_args(s);
+      let split = split_args(self.get_name(), s);
       match split.len() {
         // no argument typed in inupt, complete the first one
         0 => Some((args[0], "", s)),
@@ -83,57 +82,57 @@ impl<S: Style, C> Command<S, C> {
       None
     }
   }
+}
 
-  fn split_args<'a>(&self, s: &'a str) -> Vec<(&'a str, String)> {
-    let mut matches = Vec::new();
+fn split_args<'a>(name: &str, s: &'a str) -> Vec<(&'a str, String)> {
+  let mut matches = Vec::new();
 
-    if s.len() > self.get_name().len() {
-      // skip command name in input string
-      let mut begin = match s[self.get_name().len()..].starts_with(" ") {
-        true => None,
-        false => Some(self.get_name().len()),
-      };
-      let mut quote = false;
-      let mut escape = false;
-      for (i, c) in s.chars().enumerate().skip(self.get_name().len()) {
-        // argument between quotes
-        if !escape {
-          if !quote && begin.is_none() && c == '\"' {
-            quote = true;
-            begin = Some(i);
-          } else if quote && begin.is_some() && c == '\"' {
-            quote = false;
-            let begin = begin.take().unwrap();
-            matches.push((&s[..begin], s[begin + 1..i].to_string()));
-            escape = true;
-          }
-        }
-
-        if !escape && !quote {
-          if begin.is_none() && c != ' ' {
-            begin = Some(i);
-          } else if begin.is_some() && c == ' ' {
-            let begin = begin.take().unwrap();
-            matches.push((&s[..begin], s[begin..i].to_string()));
-          }
-        }
-
-        // escape whitespaces after backslash
-        escape = false;
-        if c == '\\' {
+  if s.len() > name.len() {
+    // skip command name in input string
+    let mut begin = match s[name.len()..].starts_with(" ") {
+      true => None,
+      false => Some(name.len()),
+    };
+    let mut quote = false;
+    let mut escape = false;
+    for (i, c) in s.chars().enumerate().skip(name.len()) {
+      // argument between quotes
+      if !escape {
+        if !quote && begin.is_none() && c == '\"' {
+          quote = true;
+          begin = Some(i);
+        } else if quote && begin.is_some() && c == '\"' {
+          quote = false;
+          let begin = begin.take().unwrap();
+          matches.push((&s[..begin], s[begin + 1..i].to_string()));
           escape = true;
         }
       }
-      if let Some(mut b) = begin {
-        if let Some('\"') = s.chars().nth(b) {
-          b += 1;
+
+      if !escape && !quote {
+        if begin.is_none() && c != ' ' {
+          begin = Some(i);
+        } else if begin.is_some() && c == ' ' {
+          let begin = begin.take().unwrap();
+          matches.push((&s[..begin], s[begin..i].to_string()));
         }
-        matches.push((&s[..b], s[b..s.len()].to_string()));
+      }
+
+      // escape whitespaces after backslash
+      escape = false;
+      if c == '\\' {
+        escape = true;
       }
     }
-
-    // remove escape backslashes
-    matches.iter_mut().for_each(|s| s.1 = s.1.replace("\\ ", " ").replace("\\\\", "\\"));
-    matches
+    if let Some(mut b) = begin {
+      if let Some('\"') = s.chars().nth(b) {
+        b += 1;
+      }
+      matches.push((&s[..b], s[b..s.len()].to_string()));
+    }
   }
+
+  // remove escape backslashes
+  matches.iter_mut().for_each(|s| s.1 = s.1.replace("\\ ", " ").replace("\\\\", "\\"));
+  matches
 }
