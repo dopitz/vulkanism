@@ -58,6 +58,34 @@ impl<S: Style, C> ShellImpl<S, C> {
     layout: &mut L,
     focus: &mut SelectId,
   ) -> Option<(Arc<dyn Command<S, C>>, Vec<String>)> {
+    let mut exe = None;
+    if self.show_term {
+      match self.term.draw(screen, layout, focus) {
+        Some(Event::Changed) => {
+          let input = self.term.get_input();
+          self.prefix_len = input.len();
+          self.complete_index = CompleteIndex::Input;
+
+          if let Some(completions) = self.get_completions(&input) {
+            let mut s = completions
+              .iter()
+              .fold(String::new(), |acc, c| format!("{}{}\n", acc, c.get_preview()));
+            s = format!("{}{}", s, "-------------");
+            self.term.quickfix_text(&s);
+          } else {
+            self.term.quickfix_text("");
+          }
+        }
+        Some(Event::Enter(input)) => {
+          exe = self.exec(&input);
+          self.prefix_len = 0;
+          self.complete_index = CompleteIndex::Input;
+          self.term.quickfix_text("");
+        }
+        _ => (),
+      }
+    }
+
     let mut set_focus = None;
     for e in screen.get_events() {
       match e {
@@ -113,34 +141,6 @@ impl<S: Style, C> ShellImpl<S, C> {
           vk::winit::VirtualKeyCode::LShift | vk::winit::VirtualKeyCode::RShift => self.shift = false,
           _ => (),
         },
-        _ => (),
-      }
-    }
-
-    let mut exe = None;
-    if self.show_term {
-      match self.term.draw(screen, layout, focus) {
-        Some(Event::Changed) => {
-          let input = self.term.get_input();
-          self.prefix_len = input.len();
-          self.complete_index = CompleteIndex::Input;
-
-          if let Some(completions) = self.get_completions(&input) {
-            let mut s = completions
-              .iter()
-              .fold(String::new(), |acc, c| format!("{}{}\n", acc, c.get_preview()));
-            s = format!("{}{}", s, "-------------");
-            self.term.quickfix_text(&s);
-          } else {
-            self.term.quickfix_text("");
-          }
-        }
-        Some(Event::Enter(input)) => {
-          exe = self.exec(&input);
-          self.prefix_len = 0;
-          self.complete_index = CompleteIndex::Input;
-          self.term.quickfix_text("");
-        }
         _ => (),
       }
     }

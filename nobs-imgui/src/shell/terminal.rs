@@ -138,11 +138,17 @@ impl<S: Style> TerminalImpl<S> {
     self.output.text(&s);
     self.pin_scroll = true;
   }
-
   pub fn readln(&mut self) -> Arc<(Mutex<Option<String>>, Condvar)> {
     let readl = Arc::new((Mutex::new(None), Condvar::new()));
     self.readl = Some(readl.clone());
     readl
+  }
+
+  pub fn input_text(&mut self, s: &str) {
+    self.input.text(&format!("~$ {}", s)).cursor(Some(vec2!(s.len() as u32 + 3, 0)));
+  }
+  pub fn quickfix_text(&mut self, s: &str) {
+    self.quickfix.text(s);
   }
 }
 
@@ -214,40 +220,60 @@ impl<S: Style> Terminal<S> {
     }
   }
 
-  pub fn position(&self, x: i32, y: i32) -> &Self {
-    self.term.lock().unwrap().wnd.position(x, y);
-    self
-  }
-  pub fn size(&self, x: u32, y: u32) -> &Self {
-    self.term.lock().unwrap().wnd.size(x, y);
-    self
-  }
-
+  /// Sets focus of the terminal window
+  ///
+  /// Sets the focus to the input text edit of the terminal and moves the cursor to the right most position.
+  /// Same as clicking anywhere in the terminal window.
   pub fn focus(&self, focus: bool) -> &Self {
     self.term.lock().unwrap().focus(focus);
     self
   }
+  /// Checks if the terminal window is focused right now
+  pub fn has_focus(&self) -> bool {
+    self.term.lock().unwrap().input.has_focus()
+  }
 
+  /// Sets the size of the terminal window in pixel coordinates
+  ///
+  /// Size referes to the terminal windows size with borders and caption (if enabled)
+  pub fn size(&self, x: u32, y: u32) -> &Self {
+    self.term.lock().unwrap().wnd.size(x, y);
+    self
+  }
+  /// Sets the position of the terminal window in pixel coordinates
+  ///
+  /// The position refercs to the upper left corner of the terminal window
+  pub fn position(&self, x: i32, y: i32) -> &Self {
+    self.term.lock().unwrap().wnd.position(x, y);
+    self
+  }
+
+  /// Print text to the terminal
   pub fn print(&self, s: &str) {
     self.term.lock().unwrap().print(s);
   }
+  /// Print text to the terminal and adds a newline character at the end
   pub fn println(&self, s: &str) {
     self.term.lock().unwrap().println(s);
   }
-  pub fn get_input(&self) -> String {
-    self.term.lock().unwrap().input.get_text()[3..].to_owned()
-  }
+  /// Wait until an input is entered into the terminal and return its text.
+  ///
+  /// **Attention** This will block the current thread and wait for the input.
+  /// To not result in a deadlock this function must never be called in the rendering thread that also calls
+  /// [draw](struct.Terminal.html#method.draw)
   pub fn readln(&self) -> String {
-    // Wait for the thread to start up.
+    // Create new condition variable
     let readl = { self.term.lock().unwrap().readln() };
     let &(ref lock, ref cvar) = &*readl;
     let mut input = lock.lock().unwrap();
+    // Wait for condition variable to be signalled when next input is submitted
     while input.is_none() {
       input = cvar.wait(input).unwrap();
     }
     input.take().unwrap()
   }
 
+  /// Set the text of the input edit
   pub fn input_text(&self, s: &str) {
     self
       .term
@@ -257,7 +283,29 @@ impl<S: Style> Terminal<S> {
       .text(&format!("~$ {}", s))
       .cursor(Some(vec2!(s.len() as u32 + 3, 0)));;
   }
+  /// Get the text of the input edit
+  pub fn get_input(&self) -> String {
+    self.term.lock().unwrap().input.get_text()[3..].to_owned()
+  }
+
+  /// Set the text of the quickfix window
   pub fn quickfix_text(&self, s: &str) {
     self.term.lock().unwrap().quickfix.text(s);
+  }
+}
+
+
+pub struct TerminalInput {
+  history: Vec<String>,
+
+  //show_term: bool,
+  //prefix_len: usize,
+  //complete_index: CompleteIndex,
+  //history_index: HistoryIndex,
+  //shift: bool,
+}
+
+impl TerminalInput {
+  pub fn handle() {
   }
 }
