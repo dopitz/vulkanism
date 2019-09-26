@@ -123,9 +123,14 @@ pub fn main() {
   use vk::cmd::commands::*;
   let mut batch = vk::cmd::RRBatch::new(device.handle, 1).unwrap();
 
+  //vk::wnd::PresentFrame::new(cmds.clone(), &mut sc, &mut batch)
+  //  .push(&ImageBarrier::to_color_attachment(fb.images[0]))
+  //  .push(&fb.begin())
+  //  .push(&fb.end())
+  //  .push_mut(&mut gui.render(context.clone()))
+  //  .present(device.queues[0].handle, fb.images[0]);
 
-
-  //gui.shell.exec("spawn toggle On", &mut context);
+  //gui.shell.exec("toggle On", &mut context);
 
   loop {
     events_loop.poll_events(|event| {
@@ -138,11 +143,12 @@ pub fn main() {
           event: winit::WindowEvent::Resized(size),
           ..
         } => {
-          println!("RESIZE       {:?}", size);
-          println!("EVENT        {:?}", event);
-          println!("DPI          {:?}", window.window.get_hidpi_factor());
+          let size: Vec2u = (vec2!(size.width, size.height) * window.window.get_hidpi_factor()).into();
+          if vec2!(fb.extent.width, fb.extent.height) != size {
+            println!("RESIZE       {:?} -> {:?}", fb.extent, size);
+            println!("EVENT        {:?}", event);
+            println!("DPI          {:?}", window.window.get_hidpi_factor());
 
-          if fb.extent.width != size.width as u32 || fb.extent.height != size.height as u32 {
             resizeevent = true;
           }
         }
@@ -158,6 +164,8 @@ pub fn main() {
     });
 
     if resizeevent {
+      println!("RESIZE       {:?}", fb.extent);
+
       batch.sync().unwrap();
       vk::DeviceWaitIdle(device.handle);
 
@@ -165,6 +173,8 @@ pub fn main() {
       sc = nsc;
       rp = nrp;
       fb = nfb;
+
+      println!("RESIZE       {:?}", fb.extent);
 
       gui.resize(sc.extent, fb.images[0]);
       resizeevent = false;
@@ -289,16 +299,19 @@ struct Gui {
 
 impl Gui {
   pub fn new(device: &vk::device::Device, wnd: &vk::wnd::Window, target: vk::Image, mem: vk::mem::Mem) -> Self {
+    let extent = wnd.window.get_inner_size().unwrap();
+    let extent = (vec2!(extent.width, extent.height) * wnd.window.get_hidpi_factor()).into::<u32>();
     use gui::*;
     let mut gui = gui::Gui::new(device, wnd, target, mem);
     gui.style.load_styles(gui::get_default_styles());
-    gui.style.set_dpi(1.6);
+    gui.style.set_dpi(wnd.window.get_hidpi_factor());
 
     let shell = gui::shell::Shell::new(&gui);
     shell.add_command(Box::new(commands::toggle::Cmd::new()));
     shell.add_command(Box::new(commands::quit::Cmd::new()));
     shell.add_command(Box::new(commands::interactive::Cmd::new()));
     shell.add_command(Box::new(shell::command::spawn::Cmd::new(shell.clone())));
+    shell.get_term().size(extent.x / 7 * 3, extent.y / 4 * 3);
 
     let sh = shell.clone();
 

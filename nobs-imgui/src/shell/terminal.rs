@@ -77,16 +77,16 @@ impl<S: Style> Component<S> for TerminalImpl<S> {
         if self.input.get_text().len() < 3 {
           self.input.text("~$ ");
         }
-        match self.input.get_cursor() {
-          Some(cp) if cp.x < 3 => {
-            self.input.cursor(Some(vec2!(3, 0)));
-          }
-          _ => (),
-        }
         Some(Event::Changed)
       }
       _ => None,
     };
+    match self.input.get_cursor() {
+      Some(cp) if cp.x < 3 => {
+        self.input.cursor(Some(vec2!(3, 0)));
+      }
+      _ => (),
+    }
 
     if self.pin_scroll {
       self.output_wnd.scroll(vec2!(0, u32::max_value()));

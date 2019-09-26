@@ -31,7 +31,7 @@ impl<S: 'static + Style, C: 'static + Clone + Send> Command<S, C> for Cmd<S, C> 
     let mut c = context.clone();
     std::thread::spawn(move || {
       let term = shell.get_term();
-      for a in args {
+      for a in args.iter().skip(1) {
         term.println(&a);
         shell.exec(&a, &mut c);
       }
@@ -45,7 +45,10 @@ impl<S: 'static + Style, C: 'static + Clone + Send> Command<S, C> for Cmd<S, C> 
         .split("---")
         .map(|s| s.trim().to_string())
         .filter(|s| self.cmds.iter().find(|c| c.parse(&s).is_some()).is_some())
-        .collect::<Vec<_>>();
+        .fold(vec![self.get_name().to_string()], |mut acc, arg| {
+          acc.push(arg);
+          acc
+        });
       if s.is_empty() {
         None
       } else {

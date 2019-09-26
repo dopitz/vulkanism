@@ -15,8 +15,20 @@ impl<S: Style, C> Command<S, C> for Cmd {
   fn get_info(&self) -> (&'static str, &'static str) {
     (
       "run commands from file",
-      "Reads file linewise, where each line will be interpreted as a command input.
-Note that commands used in the file must be defined for the shell, otherwise they are ignored and skipped",
+      concat!(
+        "source <file>\n",
+        "Runs commands from input file\n",
+        "Commands in the file are interpreted line wise. Use '\\' at the end of a line to escape the newline\n",
+        "Example file:\n",
+        "  cmd1\n",
+        "  cmd2 a b\n",
+        "  cmd3 multi\\\n",
+        "  line command\n",
+        "  cmd1\n",
+        "Note that commands used in the file must be defined for the shell, otherwise they are ignored and skipped\n\n",
+        "Arguments\n",
+        "<file>  - Path to the file with the commands\n",
+      ),
     )
   }
 
@@ -27,11 +39,37 @@ Note that commands used in the file must be defined for the shell, otherwise the
     use std::io::prelude::*;
     use std::io::BufReader;
 
+    println!("{:?}", args);
+
     if let Ok(f) = File::open(&args[1]) {
+      let mut cmds: Vec<String> = Vec::new();
+      let mut escape = false;
       let reader = BufReader::new(f);
+
+      let mut push = |s: String, escape: bool| {
+        if escape {
+          if let Some(c) = cmds.last_mut().as_mut() {
+            c.push_str(&s);
+          }
+        } else {
+          cmds.push(s);
+        }
+      };
+
       for l in reader.lines().filter_map(|l| l.ok()) {
-        term.println(&l);
-        shell.exec(&l, context);
+        let l = l.trim();
+        if let Some('\\') = l.chars().rev().next() {
+          push(l.replace("\\", " "), escape);
+          escape = true;
+        } else {
+          push(l.to_string(), escape);
+          escape = false;
+        }
+      }
+
+      for c in cmds.iter() {
+        term.println(&c);
+        shell.exec(&c, context);
       }
     } else {
       term.println(&format!("Could not open file: {:?}", args[1]));

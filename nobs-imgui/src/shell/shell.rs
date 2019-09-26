@@ -49,28 +49,7 @@ impl<S: Style, C> ShellImpl<S, C> {
       history_index: HistoryIndex::Input,
       shift: false,
     };
-    shell.add_command(Box::new(command::source::Cmd::new()));
     shell
-  }
-
-  fn add_command(&mut self, cmd: Box<dyn Command<S, C>>) {
-    let name = cmd.get_name();
-    if let Some(c) = self
-      .cmds
-      .iter()
-      .find(|c| c.get_name().starts_with(name) || name.starts_with(c.get_name()))
-    {
-      println!("Command can not be added. Name conflict:\n{}\n{}", name, c.get_name());
-    } else {
-      self.cmds.push(cmd.into());
-    }
-    self.cmds.sort_by(|a, b| a.get_name().cmp(b.get_name()));
-  }
-
-  fn drop_command(&mut self, name: &str) {
-    if let Some(p) = self.cmds.iter().position(|c| c.get_name() == name) {
-      self.cmds.remove(p);
-    }
   }
 
   fn update<L: Layout>(
@@ -87,7 +66,8 @@ impl<S: Style, C> ShellImpl<S, C> {
           ..
         } if !self.show_term => {
           self.show_term = true;
-          set_focus = Some(true);
+          self.term.focus(true);
+          //set_focus = Some(true);
         }
         vk::winit::Event::WindowEvent {
           event:
@@ -176,10 +156,6 @@ impl<S: Style, C> ShellImpl<S, C> {
   fn exec(&mut self, c: &str) -> Option<(Arc<dyn Command<S, C>>, Vec<String>)> {
     self.history.push(c.to_string());
     self.cmds.iter().find_map(|cmd| cmd.parse(c).map(|args| (cmd.clone(), args)))
-  }
-
-  fn get_show_term(&self) -> bool {
-    self.show_term
   }
 
   fn get_completions(&self, input: &str) -> Option<Vec<arg::Completion>> {
@@ -299,26 +275,44 @@ unsafe impl<S: Style, C> Send for Shell<S, C> {}
 
 impl<S: Style, C> Shell<S, C> {
   pub fn new(gui: &ImGui<S>) -> Self {
-    Self {
+    let sh = Self {
       shell: Arc::new(Mutex::new(ShellImpl::new(gui))),
+    };
+    sh.add_command(Box::new(command::source::Cmd::new()));
+    sh
+  }
+
+  fn add_command_inner(&self, cmd: Box<dyn Command<S, C>>) {
+    let cmds = &mut self.shell.lock().unwrap().cmds;
+    let name = cmd.get_name();
+    if let Some(c) = cmds
+      .iter()
+      .find(|c| c.get_name().starts_with(name) || name.starts_with(c.get_name()))
+    {
+      println!("Command can not be added. Name conflict:\n{}\n{}", name, c.get_name());
+    } else {
+      cmds.push(cmd.into());
     }
+    cmds.sort_by(|a, b| a.get_name().cmp(b.get_name()));
+  }
+  fn delete_command_inner(&self, name: &str) {
+    let cmds = &mut self.shell.lock().unwrap().cmds;
+    if let Some(p) = cmds.iter().position(|c| c.get_name() == name) {
+      cmds.remove(p);
+    }
+  }
+  fn update_help(&self) {
+    self.delete_command_inner(command::help::Cmd::get_name());
+    self.add_command_inner(Box::new(command::help::Cmd::new::<S, C>(&self.get_commands())));
   }
 
   pub fn add_command(&self, cmd: Box<dyn Command<S, C>>) {
-    self.shell.lock().unwrap().add_command(cmd);
+    self.add_command_inner(cmd);
     self.update_help();
   }
-
-  pub fn drop_command(&self, name: &str) {
-    self.shell.lock().unwrap().drop_command(name);
+  pub fn delete_command(&self, name: &str) {
+    self.delete_command_inner(name);
     self.update_help();
-  }
-
-  fn update_help(&self) {
-    let mut shell = self.shell.lock().unwrap();
-    shell.drop_command(command::help::Cmd::get_name());
-    let help = command::help::Cmd::new::<S, C>(&shell.cmds);
-    shell.add_command(Box::new(help));
   }
 
   pub fn update<L: Layout>(&self, screen: &mut Screen<S>, layout: &mut L, focus: &mut SelectId, context: &mut C) {
@@ -339,11 +333,15 @@ impl<S: Style, C> Shell<S, C> {
     self.shell.lock().unwrap().cmds.clone()
   }
 
+  pub fn get_history(&self) -> Vec<String> {
+    self.shell.lock().unwrap().history.clone()
+  }
+
   pub fn get_term(&self) -> Terminal<S> {
     self.shell.lock().unwrap().term.clone()
   }
 
   pub fn get_show_term(&self) -> bool {
-    self.shell.lock().unwrap().get_show_term()
+    self.shell.lock().unwrap().show_term
   }
 }
