@@ -218,7 +218,7 @@ mod commands {
         vec![]
       }
 
-      fn run(&self, _args: Vec<String>, _shell: Shell<Context>, context: &mut Context) {
+      fn run(&self, _args: Vec<String>, _term: Terminal<Context>, context: &mut Context) {
         context.lock().unwrap().quit = true;
       }
     }
@@ -245,9 +245,9 @@ mod commands {
         vec![&self.toggle]
       }
 
-      fn run(&self, args: Vec<String>, shell: Shell<Context>, _context: &mut Context) {
+      fn run(&self, args: Vec<String>, term: Terminal<Context>, _context: &mut Context) {
         let on = self.toggle.convert(&args[1]);
-        shell.get_term().println(&format!("{:?}", on));
+        term.println(&format!("{:?}", on));
       }
     }
 
@@ -268,8 +268,7 @@ mod commands {
         "interactive"
       }
 
-      fn run(&self, args: Vec<String>, shell: Shell<Context>, _context: &mut Context) {
-        let term = shell.get_term();
+      fn run(&self, args: Vec<String>, term: Terminal<Context>, _context: &mut Context) {
         std::thread::spawn(move || {
           term.println("write something!");
           let l = term.readln();
@@ -289,7 +288,7 @@ mod commands {
 struct Gui {
   gui: gui::Gui,
 
-  shell: gui::shell::Shell<std::sync::Arc<std::sync::Mutex<Context>>>,
+  term : gui::shell::Terminal<std::sync::Arc<std::sync::Mutex<Context>>>,
 
   wnd: gui::window::Window<gui::window::ColumnLayout>,
   text: gui::components::TextEditMultiline,
@@ -310,10 +309,10 @@ impl Gui {
     shell.add_command(Box::new(commands::toggle::Cmd::new()));
     shell.add_command(Box::new(commands::quit::Cmd::new()));
     shell.add_command(Box::new(commands::interactive::Cmd::new()));
-    shell.add_command(Box::new(shell::command::spawn::Cmd::new(shell.clone())));
-    shell.get_term().size(extent.x / 7 * 3, extent.y / 4 * 3);
+    //shell.add_command(Box::new(shell::command::spawn::Cmd::new(shell.clone())));
 
-    let sh = shell.clone();
+    let term = gui::shell::Terminal::new(gui::shell::TerminalWnd::new(&gui), shell.clone());
+    term.window.size(extent.x / 7 * 3, extent.y / 4 * 3);
 
     let mut wnd = gui::window::Window::new(&gui, gui::window::ColumnLayout::default());
     wnd
@@ -332,7 +331,7 @@ impl Gui {
     text2.typeset(text2.get_typeset());
     Self {
       gui,
-      shell,
+      term,
       wnd,
       text,
       text2,
@@ -346,7 +345,7 @@ impl Gui {
 
   pub fn resize(&mut self, extent: vk::Extent2D, image: vk::Image) {
     self.gui.resize(extent, image);
-    self.shell.get_term().size(extent.width / 7 * 3, extent.height / 4 * 3);
+    self.term.window.size(extent.width / 7 * 3, extent.height / 4 * 3);
   }
 
   pub fn render<'a>(&'a mut self, context: Arc<Mutex<Context>>) -> RenderGui<'a> {
@@ -379,7 +378,8 @@ impl<'a> StreamPushMut for RenderGui<'a> {
       gui.wnd.focus(true);
     };
 
-    gui.shell.update(&mut scr, &mut layout, &mut gui.focus, &mut self.context);
+    //gui.shell.update(&mut scr, &mut layout, &mut gui.focus, &mut self.context);
+    gui.term.draw(&mut scr, &mut layout, &mut gui.focus, &mut self.context);
 
     cs.push_mut(&mut scr)
   }

@@ -3,7 +3,7 @@ pub mod source;
 pub mod spawn;
 
 use super::arg;
-use super::Shell;
+use super::Terminal;
 use crate::style::Style;
 
 pub trait Command<S: Style, C> {
@@ -19,7 +19,7 @@ pub trait Command<S: Style, C> {
     ("", "")
   }
 
-  fn run(&self, args: Vec<String>, shell: Shell<S, C>, context: &mut C);
+  fn run(&self, args: Vec<String>, term: Terminal<S, C>, context: &mut C);
 
   fn parse(&self, s: &str) -> Option<Vec<String>> {
     let args = self.get_args();

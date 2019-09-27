@@ -1,260 +1,89 @@
+use super::*;
 use crate::components::textbox::Event;
-use crate::components::*;
-use crate::rect::Rect;
 use crate::select::SelectId;
 use crate::style::Style;
 use crate::window::*;
-use crate::ImGui;
 
-use std::sync::Arc;
-use std::sync::Condvar;
-use std::sync::Mutex;
-
-struct TerminalImpl<S: Style> {
-  wnd: Window<ColumnLayout, S>,
-
-  output_wnd: Window<ColumnLayout, S>,
-  output: TextBox<S>,
-  pin_scroll: bool,
-
-  input: TextEdit<S>,
-  readl: Option<Arc<(Mutex<Option<String>>, Condvar)>>,
-
-  quickfix_wnd: Window<ColumnLayout, S>,
-  quickfix: TextEdit<S>,
+#[derive(Clone, Copy)]
+enum CompleteIndex {
+  Input,
+  Lcp,
+  Index(usize),
 }
 
-impl<S: Style> Size for TerminalImpl<S> {
-  fn rect(&mut self, rect: Rect) -> &mut Self {
-    self.wnd.rect(rect);
-    let mut r = self.wnd.get_client_rect();
-    r.size.y = r.size.y.saturating_sub(self.input.get_size_hint().y + 10);
-    self.output_wnd.rect(r);
-    self
-  }
-
-  fn get_rect(&self) -> Rect {
-    self.wnd.get_rect()
-  }
-
-  fn get_size_hint(&self) -> vkm::Vec2u {
-    self.wnd.get_size_hint()
-  }
-}
-
-impl<S: Style> Component<S> for TerminalImpl<S> {
-  type Event = Event;
-  fn draw<L: Layout>(&mut self, screen: &mut Screen<S>, layout: &mut L, focus: &mut SelectId) -> Option<Self::Event> {
-    layout.apply(self);
-
-    self.wnd.draw(screen, layout, focus);
-
-    if let Some(crate::window::Event::Scroll) = self.output_wnd.draw(screen, &mut self.wnd, focus) {
-      self.pin_scroll = false;
-    }
-    self.output.draw(screen, &mut self.output_wnd, focus);
-
-    Spacer::new(vec2!(10)).draw(screen, &mut self.wnd, focus);
-
-    let e = match self.input.draw(screen, &mut self.wnd, focus) {
-      Some(Event::Enter(input)) => {
-        let input = input[3..].to_string();
-
-        if let Some(readl) = self.readl.take() {
-          let &(ref lock, ref cvar) = &*readl;
-          let mut inp = lock.lock().unwrap();
-          *inp = Some(input);
-          cvar.notify_one();
-          self.input.text("~$ ");
-          None
-        } else {
-          self.println(&input);
-          self.input.text("~$ ");
-          Some(Event::Enter(input))
-        }
-      }
-      Some(Event::Changed) => {
-        if self.input.get_text().len() < 3 {
-          self.input.text("~$ ");
-        }
-        Some(Event::Changed)
-      }
-      _ => None,
-    };
-    match self.input.get_cursor() {
-      Some(cp) if cp.x < 3 => {
-        self.input.cursor(Some(vec2!(3, 0)));
-      }
-      _ => (),
-    }
-
-    if self.pin_scroll {
-      self.output_wnd.scroll(vec2!(0, u32::max_value()));
-    }
-
-    if !self.quickfix.get_text().is_empty() {
-      let r = self.wnd.get_rect();
-
-      let p = match self.input.get_cursor() {
-        Some(cp) => cp,
-        None => vec2!(0),
-      };
-
-      let x = self.input.get_rect().position.x + self.input.get_typeset().char_offset(self.input.get_text(), p).x as i32;
-
-      self
-        .quickfix_wnd
-        .rect(Rect::new(vec2!(x, r.position.y + r.size.y as i32), vec2!(200, 200)));
-      self.quickfix_wnd.draw(screen, layout, focus);
-      if let Some(_) = self.quickfix.draw(screen, &mut self.quickfix_wnd, focus) {
-        self.println("quickfix click not implemented");
-      }
-    }
-
-    if !self.input.has_focus() && (self.wnd.has_focus() || self.output_wnd.has_focus() || self.output.has_focus()) {
-      self.focus(true);
-    }
-
-    e
-  }
-}
-
-impl<S: Style> TerminalImpl<S> {
-  pub fn focus(&mut self, focus: bool) {
-    let cp = Some(vec2!(self.input.get_text().len() as u32, 0));
-    self.input.focus(focus).cursor(cp);
-    self.output_wnd.focus(focus);
-    self.wnd.focus(focus);
-  }
-
-  pub fn print(&mut self, s: &str) {
-    let s = format!("{}{}", self.output.get_text(), s);
-    self.output.text(&s);
-    self.pin_scroll = true;
-  }
-  pub fn println(&mut self, s: &str) {
-    let s = format!("{}{}\n", self.output.get_text(), s);
-    let s = self.output.get_typeset().wrap_text(&s, self.output.get_rect().size.x);
-    self.output.text(&s);
-    self.pin_scroll = true;
-  }
-  pub fn readln(&mut self) -> Arc<(Mutex<Option<String>>, Condvar)> {
-    let readl = Arc::new((Mutex::new(None), Condvar::new()));
-    self.readl = Some(readl.clone());
-    readl
-  }
-
-  pub fn input_text(&mut self, s: &str) {
-    self.input.text(&format!("~$ {}", s)).cursor(Some(vec2!(s.len() as u32 + 3, 0)));
-  }
-  pub fn quickfix_text(&mut self, s: &str) {
-    self.quickfix.text(s);
-  }
+#[derive(Clone, Copy)]
+enum HistoryIndex {
+  Input,
+  Index(usize),
 }
 
 #[derive(Clone)]
-pub struct Terminal<S: Style> {
-  term: Arc<Mutex<TerminalImpl<S>>>,
+pub struct TerminalInput {
+  show_term: bool,
+
+  complete_index: CompleteIndex,
+  prefix_len: usize,
+
+  history: Vec<String>,
+  history_index: HistoryIndex,
+  shift: bool,
 }
 
-unsafe impl<S: Style> Send for Terminal<S> {}
-
-impl<S: Style> Size for Terminal<S> {
-  fn rect(&mut self, rect: Rect) -> &mut Self {
-    self.term.lock().unwrap().rect(rect);
-    self
-  }
-
-  fn get_rect(&self) -> Rect {
-    self.term.lock().unwrap().get_rect()
-  }
-
-  fn get_size_hint(&self) -> vkm::Vec2u {
-    self.term.lock().unwrap().get_size_hint()
-  }
-}
-
-impl<S: Style> Component<S> for Terminal<S> {
-  type Event = Event;
-  fn draw<L: Layout>(&mut self, screen: &mut Screen<S>, layout: &mut L, focus: &mut SelectId) -> Option<Self::Event> {
-    self.term.lock().unwrap().draw(screen, layout, focus)
-  }
-}
-
-impl<S: Style> Terminal<S> {
-  pub fn new(gui: &ImGui<S>) -> Self {
-    let mut wnd = Window::new(gui, ColumnLayout::default());
-    wnd
-      .caption("terminal")
-      .position(20, 20)
-      .size(500, 500)
-      .focus(true)
-      .draw_caption(false);
-
-    let mut output_wnd = Window::new(gui, ColumnLayout::default());
-    output_wnd.draw_caption(false);
-    output_wnd.style("NoStyle", false, false);
-    let mut output = TextBox::new(gui);
-    output.style("NoStyle").text("\n");
-
-    let mut input = TextBox::new(gui);
-    input.text("~$ ");
-
-    let mut quickfix_wnd = Window::new(gui, ColumnLayout::default());
-    quickfix_wnd.draw_caption(false);
-    quickfix_wnd.style("NoStyle", false, false);
-    let mut quickfix = TextBox::new(gui);
-    quickfix.style("TextBoxBorderless").text("");
-
+impl Default for TerminalInput {
+  fn default() -> Self {
     Self {
-      term: Arc::new(Mutex::new(TerminalImpl {
-        wnd,
-        output_wnd,
-        output,
-        pin_scroll: true,
-        input,
-        readl: None,
-        quickfix_wnd,
-        quickfix,
-      })),
+      history: Default::default(),
+      show_term: false,
+      prefix_len: 0,
+      complete_index: CompleteIndex::Input,
+      history_index: HistoryIndex::Input,
+      shift: false,
+    }
+  }
+}
+
+pub struct Terminal<S: Style, C> {
+  pub window: TerminalWnd<S>,
+  pub shell: Shell<S, C>,
+  pub input: TerminalInput,
+}
+
+impl<S: Style, C> Clone for Terminal<S, C> {
+  fn clone(&self) -> Self {
+    Self {
+      window: self.window.clone(),
+      shell: self.shell.clone(),
+      input: TerminalInput::default(),
+    }
+  }
+}
+
+unsafe impl<S: Style, C> Send for Terminal<S, C> {}
+
+impl<S: Style, C> Terminal<S, C> {
+  pub fn new(window: TerminalWnd<S>, shell: Shell<S, C>) -> Self {
+    Self {
+      window,
+      shell,
+      input: TerminalInput::default(),
     }
   }
 
-  /// Sets focus of the terminal window
-  ///
-  /// Sets the focus to the input text edit of the terminal and moves the cursor to the right most position.
-  /// Same as clicking anywhere in the terminal window.
-  pub fn focus(&self, focus: bool) -> &Self {
-    self.term.lock().unwrap().focus(focus);
-    self
-  }
-  /// Checks if the terminal window is focused right now
-  pub fn has_focus(&self) -> bool {
-    self.term.lock().unwrap().input.has_focus()
-  }
-
-  /// Sets the size of the terminal window in pixel coordinates
-  ///
-  /// Size referes to the terminal windows size with borders and caption (if enabled)
-  pub fn size(&self, x: u32, y: u32) -> &Self {
-    self.term.lock().unwrap().wnd.size(x, y);
-    self
-  }
-  /// Sets the position of the terminal window in pixel coordinates
-  ///
-  /// The position refercs to the upper left corner of the terminal window
-  pub fn position(&self, x: i32, y: i32) -> &Self {
-    self.term.lock().unwrap().wnd.position(x, y);
-    self
+  pub fn draw<L: Layout>(&mut self, screen: &mut Screen<S>, layout: &mut L, focus: &mut SelectId, context: &mut C) {
+    let e = match self.input.show_term {
+      true => self.window.draw(screen, layout, focus),
+      false => None,
+    };
+    self.handle_input(e, screen, context);
   }
 
   /// Print text to the terminal
   pub fn print(&self, s: &str) {
-    self.term.lock().unwrap().print(s);
+    self.window.print(s);
   }
   /// Print text to the terminal and adds a newline character at the end
   pub fn println(&self, s: &str) {
-    self.term.lock().unwrap().println(s);
+    self.window.println(s);
   }
   /// Wait until an input is entered into the terminal and return its text.
   ///
@@ -262,50 +91,160 @@ impl<S: Style> Terminal<S> {
   /// To not result in a deadlock this function must never be called in the rendering thread that also calls
   /// [draw](struct.Terminal.html#method.draw)
   pub fn readln(&self) -> String {
-    // Create new condition variable
-    let readl = { self.term.lock().unwrap().readln() };
-    let &(ref lock, ref cvar) = &*readl;
-    let mut input = lock.lock().unwrap();
-    // Wait for condition variable to be signalled when next input is submitted
-    while input.is_none() {
-      input = cvar.wait(input).unwrap();
+    self.window.readln()
+  }
+
+  pub fn exec(&self, c: &str, context: &mut C) {
+    self.shell.exec(c, self.clone(), context);
+  }
+
+  fn handle_input(&mut self, e: Option<crate::components::textbox::Event>, screen: &Screen<S>, context: &mut C) {
+    let e = match e {
+      Some(Event::Enter(input)) => {
+        self.input.prefix_len = 0;
+        self.input.complete_index = CompleteIndex::Input;
+        self.window.quickfix_text("");
+        Some(input.clone())
+      }
+      Some(Event::Changed) => {
+        let input = self.window.get_input();
+        self.input.prefix_len = input.len();
+        self.input.complete_index = CompleteIndex::Input;
+
+        if let Some(completions) = self.get_completions(&input) {
+          let mut s = completions
+            .iter()
+            .fold(String::new(), |acc, c| format!("{}{}\n", acc, c.get_preview()));
+          s = format!("{}{}", s, "-------------");
+          self.window.quickfix_text(&s);
+        } else {
+          self.window.quickfix_text("");
+        }
+        None
+      }
+      _ => None,
+    };
+
+    for e in screen.get_events() {
+      match e {
+        vk::winit::Event::WindowEvent {
+          event: vk::winit::WindowEvent::ReceivedCharacter(':'),
+          ..
+        } if !self.input.show_term => {
+          self.input.show_term = true;
+          self.window.focus(true);
+        }
+        vk::winit::Event::WindowEvent {
+          event:
+            vk::winit::WindowEvent::KeyboardInput {
+              input:
+                vk::winit::KeyboardInput {
+                  state: vk::winit::ElementState::Pressed,
+                  virtual_keycode: Some(k),
+                  ..
+                },
+              ..
+            },
+          ..
+        } if self.input.show_term => match *k {
+          vk::winit::VirtualKeyCode::Escape => {
+            if self.window.get_input().is_empty() {
+              self.input.show_term = false;
+              self.window.focus(false);
+            } else {
+              self.window.input_text("");
+              self.window.quickfix_text("");
+            }
+          }
+          vk::winit::VirtualKeyCode::LShift | vk::winit::VirtualKeyCode::RShift => self.input.shift = true,
+          vk::winit::VirtualKeyCode::Tab => self.next_completion(self.input.shift),
+          //vk::winit::VirtualKeyCode::Up => self.history(false, None),
+          //vk::winit::VirtualKeyCode::Down => self.history(true, None),
+          _ => (),
+        },
+        vk::winit::Event::WindowEvent {
+          event:
+            vk::winit::WindowEvent::KeyboardInput {
+              input:
+                vk::winit::KeyboardInput {
+                  state: vk::winit::ElementState::Released,
+                  virtual_keycode: Some(k),
+                  ..
+                },
+              ..
+            },
+          ..
+        } if self.input.show_term => match *k {
+          vk::winit::VirtualKeyCode::LShift | vk::winit::VirtualKeyCode::RShift => self.input.shift = false,
+          _ => (),
+        },
+        _ => (),
+      }
     }
-    input.take().unwrap()
+
+    if let Some(s) = e {
+      self.exec(&s, context);
+    }
   }
 
-  /// Set the text of the input edit
-  pub fn input_text(&self, s: &str) {
-    self
-      .term
-      .lock()
-      .unwrap()
-      .input
-      .text(&format!("~$ {}", s))
-      .cursor(Some(vec2!(s.len() as u32 + 3, 0)));;
+  fn get_completions(&self, input: &str) -> Option<Vec<arg::Completion>> {
+    let cmds = self.shell.get_commands();
+    if cmds.iter().filter(|c| c.get_name().starts_with(&input)).count() > 1 {
+      Some(cmds.iter().filter_map(|c| c.complete(&input)).flatten().collect::<Vec<_>>())
+    } else {
+      cmds.iter().find_map(|c| c.complete(&input))
+    }
   }
-  /// Get the text of the input edit
-  pub fn get_input(&self) -> String {
-    self.term.lock().unwrap().input.get_text()[3..].to_owned()
-  }
+  fn next_completion(&mut self, reverse: bool) {
+    let input = self.window.get_input();
+    let mut prefix = input[..self.input.prefix_len].to_string();
+    match self.get_completions(&prefix) {
+      Some(ref completions) if !completions.is_empty() => {
+        match self.input.complete_index {
+          CompleteIndex::Input => {
+            let s = completions[0].get_completed();
+            let lcp = completions.iter().skip(1).fold(s.len(), |_, c| {
+              s.chars().zip(c.get_completed().chars()).take_while(|(a, b)| a == b).count()
+            });
+            if self.input.prefix_len == lcp {
+              self.input.complete_index = match reverse {
+                false => CompleteIndex::Index(0),
+                true => CompleteIndex::Index(completions.len() - 1),
+              };
+              prefix = s[..lcp].to_string();
+            } else {
+              self.input.prefix_len = lcp;
+              self.input.complete_index = CompleteIndex::Lcp;
+              prefix = s[..lcp].to_string();
+            }
+          }
+          CompleteIndex::Lcp => {
+            self.input.complete_index = match reverse {
+              false => CompleteIndex::Index(0),
+              true => CompleteIndex::Index(completions.len() - 1),
+            }
+          }
+          CompleteIndex::Index(i) => {
+            let ci = i as i32
+              + match reverse {
+                false => 1,
+                true => -1,
+              };
+            self.input.complete_index = if ci < 0 || ci >= completions.len() as i32 {
+              CompleteIndex::Lcp
+            } else {
+              CompleteIndex::Index(ci as usize)
+            };
+          }
+        }
 
-  /// Set the text of the quickfix window
-  pub fn quickfix_text(&self, s: &str) {
-    self.term.lock().unwrap().quickfix.text(s);
-  }
-}
-
-
-pub struct TerminalInput {
-  history: Vec<String>,
-
-  //show_term: bool,
-  //prefix_len: usize,
-  //complete_index: CompleteIndex,
-  //history_index: HistoryIndex,
-  //shift: bool,
-}
-
-impl TerminalInput {
-  pub fn handle() {
+        if let CompleteIndex::Index(ci) = self.input.complete_index {
+          self.window.input_text(&completions[ci].get_completed());
+        } else {
+          self.window.input_text(&prefix);
+        }
+      }
+      _ => (),
+    }
   }
 }

@@ -21,7 +21,7 @@ enum HistoryIndex {
 }
 
 struct ShellImpl<S: Style, C> {
-  term: Terminal<S>,
+  term: TerminalWnd<S>,
 
   cmds: Vec<Arc<dyn Command<S, C>>>,
 
@@ -37,7 +37,7 @@ struct ShellImpl<S: Style, C> {
 impl<S: Style, C> ShellImpl<S, C> {
   fn new(gui: &ImGui<S>) -> Self {
     let mut shell = Self {
-      term: Terminal::new(gui),
+      term: TerminalWnd::new(gui),
 
       cmds: Default::default(),
 
@@ -315,17 +315,10 @@ impl<S: Style, C> Shell<S, C> {
     self.update_help();
   }
 
-  pub fn update<L: Layout>(&self, screen: &mut Screen<S>, layout: &mut L, focus: &mut SelectId, context: &mut C) {
-    let exe = { self.shell.lock().unwrap().update(screen, layout, focus) };
-    if let Some((cmd, args)) = exe {
-      cmd.run(args, Self { shell: self.shell.clone() }, context);
-    }
-  }
-
-  pub fn exec(&self, c: &str, context: &mut C) {
+  pub fn exec(&self, c: &str, term: Terminal<S, C>, context: &mut C) {
     let exe = { self.shell.lock().unwrap().exec(c) };
     if let Some((cmd, args)) = exe {
-      cmd.run(args, Self { shell: self.shell.clone() }, context);
+      cmd.run(args, term, context);
     }
   }
 
@@ -337,7 +330,7 @@ impl<S: Style, C> Shell<S, C> {
     self.shell.lock().unwrap().history.clone()
   }
 
-  pub fn get_term(&self) -> Terminal<S> {
+  pub fn get_term(&self) -> TerminalWnd<S> {
     self.shell.lock().unwrap().term.clone()
   }
 

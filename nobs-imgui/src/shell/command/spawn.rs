@@ -26,14 +26,13 @@ impl<S: 'static + Style, C: 'static + Clone + Send> Command<S, C> for Cmd<S, C> 
     )
   }
 
-  fn run(&self, args: Vec<String>, shell: Shell<S, C>, context: &mut C) {
+  fn run(&self, args: Vec<String>, term: Terminal<S, C>, context: &mut C) {
     let name = self.get_name();
     let mut c = context.clone();
     std::thread::spawn(move || {
-      let term = shell.get_term();
       for a in args.iter().skip(1) {
         term.println(&a);
-        shell.exec(&a, &mut c);
+        term.exec(&a, &mut c);
       }
       term.println("exiting")
     });
@@ -84,9 +83,9 @@ impl<S: 'static + Style, C: 'static + Clone + Send> Command<S, C> for Cmd<S, C> 
 }
 
 impl<S: Style, C> Cmd<S, C> {
-  pub fn new(shell: Shell<S, C>) -> Self {
+  pub fn new(term: Terminal<S, C>) -> Self {
     Self {
-      cmds: shell.get_commands(),
+      cmds: term.shell.get_commands(),
     }
   }
 }

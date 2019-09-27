@@ -19,20 +19,19 @@ impl<S: Style, C> Command<S, C> for Cmd {
     ("prints help", "help <cmd name>\nlist commands or description of a single command\nArguments:\n <cmd name> - [Optional] name of the command")
   }
 
-  fn run(&self, args: Vec<String>, shell: Shell<S, C>, _context: &mut C) {
-    let term = shell.get_term();
+  fn run(&self, args: Vec<String>, term: Terminal<S, C>, _context: &mut C) {
     if args.len() == 1 {
-      let w = shell.get_commands().iter().fold(0, |w, c| usize::max(w, c.get_name().len()));
+      let w = term.shell.get_commands().iter().fold(0, |w, c| usize::max(w, c.get_name().len()));
 
       term.println("list of commands:");
-      for c in shell.get_commands().iter() {
+      for c in term.shell.get_commands().iter() {
         let mut n = c.get_name().to_string();
         while n.len() < w {
           n.push(' ');
         }
         term.println(&format!("  {} -   {}", n, c.get_info().0));
       }
-    } else if let Some(cmd) = shell.get_commands().iter().find(|c| c.get_name() == args[1]) {
+    } else if let Some(cmd) = term.shell.get_commands().iter().find(|c| c.get_name() == args[1]) {
       let (short, desc) = cmd.get_info();
       term.println(&format!("{} - {}\n----------------------\n{}", cmd.get_name(), short, desc));
     }

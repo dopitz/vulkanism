@@ -32,14 +32,10 @@ impl<S: Style, C> Command<S, C> for Cmd {
     )
   }
 
-  fn run(&self, args: Vec<String>, shell: Shell<S, C>, context: &mut C) {
-    let term = shell.get_term();
-
+  fn run(&self, args: Vec<String>, term: Terminal<S, C>, context: &mut C) {
     use std::fs::File;
     use std::io::prelude::*;
     use std::io::BufReader;
-
-    println!("{:?}", args);
 
     if let Ok(f) = File::open(&args[1]) {
       let mut cmds: Vec<String> = Vec::new();
@@ -69,7 +65,7 @@ impl<S: Style, C> Command<S, C> for Cmd {
 
       for c in cmds.iter() {
         term.println(&c);
-        shell.exec(&c, context);
+        term.exec(&c, context);
       }
     } else {
       term.println(&format!("Could not open file: {:?}", args[1]));
