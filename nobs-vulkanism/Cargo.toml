@@ -12,4 +12,4 @@ edition = "2018"
 
 [dependencies]
 nobs-vulkanism-headless = {version = "0.1.0", path = "../nobs-vulkanism-headless"}
-winit = "0.18.1"
+winit = "0.19.3"
