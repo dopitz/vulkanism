@@ -13,16 +13,14 @@ pub struct Shell<S: Style, C> {
 
 impl<S: Style, C> Clone for Shell<S, C> {
   fn clone(&self) -> Self {
-    Self {
-      cmds: self.cmds.clone(),
-    }
+    Self { cmds: self.cmds.clone() }
   }
 }
 
 unsafe impl<S: Style, C> Send for Shell<S, C> {}
 
 impl<S: Style, C> Shell<S, C> {
-  pub fn new(gui: &ImGui<S>) -> Self {
+  pub fn new() -> Self {
     let mut sh = Self {
       cmds: Arc::new(Mutex::new(Vec::new())),
     };
