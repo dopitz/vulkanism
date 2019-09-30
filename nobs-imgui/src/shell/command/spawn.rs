@@ -83,9 +83,7 @@ impl<S: 'static + Style, C: 'static + Clone + Send> Command<S, C> for Cmd<S, C> 
 }
 
 impl<S: Style, C> Cmd<S, C> {
-  pub fn new(term: Terminal<S, C>) -> Self {
-    Self {
-      cmds: term.shell.get_commands(),
-    }
+  pub fn new(cmds: Vec<std::sync::Arc<dyn Command<S, C>>>) -> Self {
+    Self { cmds }
   }
 }

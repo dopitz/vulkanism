@@ -309,7 +309,7 @@ impl Gui {
     shell.add_command(Box::new(commands::toggle::Cmd::new()));
     shell.add_command(Box::new(commands::quit::Cmd::new()));
     shell.add_command(Box::new(commands::interactive::Cmd::new()));
-    //shell.add_command(Box::new(shell::command::spawn::Cmd::new(shell.clone())));
+    shell.add_command(Box::new(shell::command::spawn::Cmd::new(shell.get_commands())));
 
     let term = gui::shell::Terminal::new(gui::shell::TerminalWnd::new(&gui), shell.clone());
     term.window.size(extent.x / 7 * 3, extent.y / 4 * 3);

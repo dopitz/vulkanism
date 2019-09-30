@@ -1,5 +1,6 @@
 use super::*;
 
+#[derive(Clone)]
 pub struct Cmd {
   cmd: arg::Ident,
 }
@@ -16,7 +17,10 @@ impl<S: Style, C> Command<S, C> for Cmd {
   }
 
   fn get_info(&self) -> (&'static str, &'static str) {
-    ("prints help", "help <cmd name>\nlist commands or description of a single command\nArguments:\n <cmd name> - [Optional] name of the command")
+    (
+      "prints help",
+      "help <cmd name>\nlist commands or description of a single command\nArguments:\n <cmd name> - [Optional] name of the command",
+    )
   }
 
   fn run(&self, args: Vec<String>, term: Terminal<S, C>, _context: &mut C) {
@@ -46,6 +50,12 @@ impl Cmd {
     Self {
       cmd: arg::Ident::no_alternatives(&cmds),
     }
+  }
+
+  pub fn update<S: Style, C>(&mut self, cmds: &Vec<std::sync::Arc<dyn Command<S, C>>>) {
+    let vars = cmds.iter().map(|c| c.get_name().to_string()).collect::<Vec<_>>();
+    let cmds = vars.iter().map(|v| v.as_str()).collect::<Vec<_>>();
+    self.cmd = arg::Ident::no_alternatives(&cmds);
   }
 
   pub fn get_name() -> &'static str {
