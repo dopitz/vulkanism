@@ -83,6 +83,24 @@ impl TypeSet {
     }
   }
 
+  pub fn text_rect(&self, s: &str) -> vkm::Vec2u {
+    let size = self.size as f32;
+    let mut w = 0.0;
+    let mut off = vec2!(0.0, size);
+    for c in s.chars() {
+      let ch = self.font.get(c);
+      off += ch.advance * size;
+
+      if c == '\n' || c == '\r' {
+        w = f32::max(w, off.x);
+        off.x = 0.0;
+        off.y = off.y + size * self.line_spacing;
+      }
+    }
+
+    vec2!(w, off.y).into()
+  }
+
   pub fn wrap_text(&self, s: &str, width: u32) -> String {
     let mut out = String::with_capacity(s.len());
     let size = self.size as f32;

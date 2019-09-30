@@ -198,7 +198,8 @@ impl<S: Style, C> Terminal<S, C> {
   fn next_completion(&mut self, reverse: bool) {
     let input = self.window.get_input();
     let mut prefix = input[..self.input.prefix_len].to_string();
-    match self.get_completions(&prefix) {
+    let completions = self.get_completions(&prefix);
+    match completions.as_ref() {
       Some(ref completions) if !completions.is_empty() => {
         match self.input.complete_index {
           CompleteIndex::Input => {
