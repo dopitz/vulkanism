@@ -386,10 +386,10 @@ impl<'a> StreamPushMut for RenderGui<'a> {
     let mut scr = gui.gui.begin();
     let mut layout = gui::window::FloatLayout::from(scr.get_rect());
 
-    //gui.www.draw(&mut scr, &mut layout, &mut gui.focus);
+    gui.www.draw(&mut scr, &mut layout, &mut gui.focus);
 
-    //gui.wnd.draw(&mut scr, &mut gui.www, &mut gui.focus);
-    gui.wnd.draw(&mut scr, &mut layout, &mut gui.focus);
+    gui.wnd.draw(&mut scr, &mut gui.www, &mut gui.focus);
+    //gui.wnd.draw(&mut scr, &mut layout, &mut gui.focus);
     if let Some(_e) = gui.text.draw(&mut scr, &mut gui.wnd, &mut gui.focus) {
       gui.wnd.focus(true);
       gui.www.focus(true);
@@ -402,9 +402,9 @@ impl<'a> StreamPushMut for RenderGui<'a> {
       gui.www.focus(true);
     };
 
-    //if let Some(_e) = gui.text3.draw(&mut scr, &mut gui.www, &mut gui.focus) {
-    //  gui.www.focus(true);
-    //};
+    if let Some(_e) = gui.text3.draw(&mut scr, &mut gui.www, &mut gui.focus) {
+      gui.www.focus(true);
+    };
 
     gui.term.draw(&mut scr, &mut layout, &mut gui.focus, &mut self.context);
 

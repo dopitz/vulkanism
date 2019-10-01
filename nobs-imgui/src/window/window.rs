@@ -69,12 +69,6 @@ impl<L: Layout, S: Style> Size for Window<L, S> {
 
     // Set client layout with scrolling
     let mut size = self.layout.get_size_hint();
-
-    println!("--------");
-    println!("{:?}", client_rect);
-    println!("{:?}", size);
-
-
     let p0 = client_rect.position;
     let p1 = p0 - vec2!(size.x.saturating_sub(client_rect.size.x), size.y.saturating_sub(client_rect.size.y)).into();
     let p = vkm::Vec2::clamp(p0 - self.layout_scroll.into(), p1, p0);
@@ -108,10 +102,7 @@ impl<L: Layout, S: Style> Size for Window<L, S> {
 
 impl<L: Layout, S: Style> Layout for Window<L, S> {
   fn restart(&mut self) {
-    println!("AOEUAOEUAOEU");
-    println!("{:?}", self.layout.get_size_hint());
     self.layout.restart();
-    println!("{:?}", self.layout.get_size_hint());
   }
 
   fn apply<S2: Style, C: Component<S2>>(&mut self, c: &mut C) -> Scissor {
