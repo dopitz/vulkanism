@@ -4,6 +4,42 @@ use crate::rect::Rect;
 use crate::style::Style;
 use vk::cmd::commands::Scissor;
 
+#[derive(Debug, Copy, Clone)]
+pub struct AaBb {
+  lo: vkm::Vec2i,
+  hi: vkm::Vec2i,
+}
+
+impl Default for AaBb {
+  fn default() -> Self {
+    Self {
+      lo: vec2!(i32::max_value()),
+      hi: vec2!(i32::min_value()),
+    }
+  }
+}
+
+impl AaBb {
+  pub fn union(&mut self, other: &Self) -> &mut Self {
+    self.lo = vkm::Vec2::min(self.lo, other.lo);
+    self.hi = vkm::Vec2::max(self.hi, other.hi);
+    self
+  }
+
+  pub fn size(&self) -> vkm::Vec2u {
+    vkm::Vec2::clamp(self.hi.into() - self.lo.into(), vec2!(0), vec2!(i64::max_value())).into()
+  }
+}
+
+impl From<Rect> for AaBb {
+  fn from(r: Rect) -> Self {
+    Self {
+      lo: r.position,
+      hi: r.position + r.size.into(),
+    }
+  }
+}
+
 /// Defines rules for positioning and resizing gui components, when they are adden to a [Window](struct.Window.html).
 ///
 /// Layouting gui components has to be incremental.
@@ -35,7 +71,7 @@ pub trait Layout: Size {
 #[derive(Default)]
 pub struct FloatLayout {
   rect: Rect,
-  current: Rect,
+  current: AaBb,
 }
 
 impl Size for FloatLayout {
@@ -49,7 +85,7 @@ impl Size for FloatLayout {
   }
 
   fn get_size_hint(&self) -> vkm::Vec2u {
-    self.current.size
+    self.current.size()
   }
 }
 
@@ -61,7 +97,7 @@ impl Layout for FloatLayout {
   fn apply<S: Style, C: Component<S>>(&mut self, c: &mut C) -> Scissor {
     let r = c.get_rect();
     c.rect(r);
-    self.current = Rect::union(self.current, r);
+    self.current.union(&r.into());
     self.get_scissor(r)
   }
 }
@@ -81,7 +117,7 @@ pub struct ColumnLayout {
   rect: Rect,
   top: u32,
 
-  current: Rect,
+  current: AaBb,
 }
 
 impl Size for ColumnLayout {
@@ -95,7 +131,7 @@ impl Size for ColumnLayout {
   }
 
   fn get_size_hint(&self) -> vkm::Vec2u {
-    self.current.size
+    self.current.size()
   }
 }
 
@@ -111,7 +147,7 @@ impl Layout for ColumnLayout {
       rect.size.x = self.rect.size.x;
     }
     self.top += rect.size.y;
-    self.current = Rect::union(self.current, rect);
+    self.current.union(&rect.into());
 
     if rect.size.x >= self.rect.size.x {
       rect.size.x = self.rect.size.x;

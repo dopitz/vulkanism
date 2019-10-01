@@ -292,9 +292,11 @@ struct Gui {
 
   term: gui::shell::Terminal<std::sync::Arc<std::sync::Mutex<Context>>>,
 
+  www: gui::window::Window<gui::window::ColumnLayout>,
   wnd: gui::window::Window<gui::window::ColumnLayout>,
   text: gui::components::TextEditMultiline,
   text2: gui::components::TextBox,
+  text3: gui::components::TextBox,
   focus: gui::select::SelectId,
 }
 
@@ -316,27 +318,42 @@ impl Gui {
     let term = gui::shell::Terminal::new(gui::shell::TerminalWnd::new(&gui), shell.clone());
     term.window.size(extent.x / 7 * 3, extent.y / 4 * 3);
 
-    let mut wnd = gui::window::Window::new(&gui, gui::window::ColumnLayout::default());
-    wnd
-      .caption("awwwww yeees")
+    let mut www = gui::window::Window::new(&gui, gui::window::ColumnLayout::default());
+    www
+      .caption("wwwwwww")
       .position(700, 20)
       .size(500, 320)
       .focus(true)
       .draw_caption(true);
 
+    let mut wnd = gui::window::Window::new(&gui, gui::window::ColumnLayout::default());
+    wnd
+      .caption("awwwww yeees")
+      .position(700, 20)
+      .size(500, 220)
+      .focus(true)
+      .draw_caption(true);
+
     let mut text = gui::components::TextBox::new(&gui);
-    text.text("aoeu\naoeu\naoeu\n1\n2\n3\n4\n5\n6\n7\n8\n9\n0\naoeu\naoeu\naoeu");
+    //text.text("aoeu\naoeu\naoeu\n1\n2\n3\n4\n5\n6\n7\n8\n9\n0\naoeu\naoeu\naoeu");
+    text.text("aoeu\naoeu\naoeu");
     text.cursor(Some(vec2!(1, 0)));
 
     let mut text2 = gui::components::TextBox::new(&gui);
     text2.text("aoeu\naoeu\naoeu\naoeu");
     text2.typeset(text2.get_typeset());
+
+    let mut text3 = gui::components::TextBox::new(&gui);
+    text3.text("xxxx\nx\nx\nx\nx\nxxxxx");
+    text3.typeset(text3.get_typeset());
     Self {
       gui,
       term,
+      www,
       wnd,
       text,
       text2,
+      text3,
       focus: imgui::select::SelectId::invalid(),
     }
   }
@@ -369,18 +386,26 @@ impl<'a> StreamPushMut for RenderGui<'a> {
     let mut scr = gui.gui.begin();
     let mut layout = gui::window::FloatLayout::from(scr.get_rect());
 
+    //gui.www.draw(&mut scr, &mut layout, &mut gui.focus);
+
+    //gui.wnd.draw(&mut scr, &mut gui.www, &mut gui.focus);
     gui.wnd.draw(&mut scr, &mut layout, &mut gui.focus);
     if let Some(_e) = gui.text.draw(&mut scr, &mut gui.wnd, &mut gui.focus) {
       gui.wnd.focus(true);
+      gui.www.focus(true);
     };
 
     gui::components::Spacer::new(vec2!(10)).draw(&mut scr, &mut gui.wnd, &mut gui.focus);
 
     if let Some(_e) = gui.text2.draw(&mut scr, &mut gui.wnd, &mut gui.focus) {
       gui.wnd.focus(true);
+      gui.www.focus(true);
     };
 
-    //gui.shell.update(&mut scr, &mut layout, &mut gui.focus, &mut self.context);
+    //if let Some(_e) = gui.text3.draw(&mut scr, &mut gui.www, &mut gui.focus) {
+    //  gui.www.focus(true);
+    //};
+
     gui.term.draw(&mut scr, &mut layout, &mut gui.focus, &mut self.context);
 
     cs.push_mut(&mut scr)
