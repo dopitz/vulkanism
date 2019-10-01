@@ -28,9 +28,8 @@ pub struct SimpleComponent {
   ds: vk::DescriptorSet,
 
   has_focus: bool,
-  mouse_pressed: Option<EventButton>,
-  dragging: Option<EventDrag>,
-  movedelta: Option<vkm::Vec2i>,
+  event_button: Option<EventButton>,
+  event_drag: Option<EventDrag>,
 }
 
 impl Drop for SimpleComponent {
@@ -98,9 +97,8 @@ impl StyleComponent<Simple> for SimpleComponent {
       ds,
 
       has_focus: false,
-      mouse_pressed: None,
-      dragging: None,
-      movedelta: None,
+      event_button: None,
+      event_drag: None,
     }
   }
 
@@ -185,32 +183,18 @@ impl Component<Simple> for SimpleComponent {
     screen.push_select(self.select_mesh, scissor);
 
     // event handling
-    let clicked = screen
+    let mouse_over = screen
       .get_select_result()
       .and_then(|id| ClickLocation::from_id(self.ub_data.id_body, id.into()));
 
-    // assume a drag event if a mouse button is already pressed
-    let mut event = if self.mouse_pressed.is_some() {
-      let drag = self.dragging.take().map_or_else(
-        || EventDrag {
-          location: self.mouse_pressed.as_ref().unwrap().location,
-          begin: self.mouse_pressed.as_ref().unwrap().position,
-          end: self.mouse_pressed.as_ref().unwrap().position,
-          delta: vec2!(0),
-        },
-        |mut d| {
-          d.delta = self.gui.select.get_current_position().into() - d.end.into();
-          d.end = self.gui.select.get_current_position();
-          d
-        },
-      );
+    // ongoing drag event gets updated end position
+    let mut event = self.event_drag.map(|mut d| {
+      d.delta = self.gui.select.get_current_position().into() - d.end.into();
+      d.end = self.gui.select.get_current_position();
+      Event::Drag(d)
+    });
 
-      self.dragging = Some(drag);
-      Some(Event::Drag(drag))
-    } else {
-      None
-    };
-
+    // mouse button down/up and mouse move
     for e in screen.get_events() {
       match e {
         vk::winit::Event::DeviceEvent {
@@ -220,14 +204,15 @@ impl Component<Simple> for SimpleComponent {
           },
           ..
         } => {
-          self.mouse_pressed = None;
-          self.dragging = None;
-          self.movedelta = None;
-          if clicked.is_some() {
+          self.event_button = None;
+          self.event_drag = None;
+          if mouse_over.is_some() {
+            let pos = self.gui.select.get_current_position();
             event = Some(Event::Released(EventButton {
-              location: *clicked.as_ref().unwrap(),
+              location: *mouse_over.as_ref().unwrap(),
               button: *button,
-              position: self.gui.select.get_current_position(),
+              position: pos,
+              relative_pos: pos - self.get_rect().position.into(),
             }));
           } else {
             self.has_focus = false;
@@ -239,28 +224,28 @@ impl Component<Simple> for SimpleComponent {
             state: vk::winit::ElementState::Pressed,
           },
           ..
-        } if clicked.is_some() => {
+        } if mouse_over.is_some() => {
+          let pos = self.gui.select.get_current_position();
           let bt = EventButton {
-            location: *clicked.as_ref().unwrap(),
+            location: *mouse_over.as_ref().unwrap(),
             button: *button,
-            position: self.gui.select.get_current_position(),
+            position: pos,
+            relative_pos: pos - self.get_rect().position.into(),
           };
           self.has_focus = true;
-          self.mouse_pressed = Some(bt);
-          self.movedelta = Some(self.gui.select.get_current_position().into() - self.get_rect().position);
+          self.event_button = Some(bt);
           event = Some(Event::Pressed(bt));
         }
         vk::winit::Event::WindowEvent {
           event: vk::winit::WindowEvent::CursorMoved { position, .. },
           ..
-        } if self.mouse_pressed.is_some() => {
+        } if self.event_button.is_some() => {
           let pos = self.gui.select.logic_to_real_position(*position).into();
 
-          let drag = self.dragging.take().map_or_else(
+          let drag = self.event_drag.take().map_or_else(
             || EventDrag {
-              location: self.mouse_pressed.as_ref().unwrap().location,
-              begin: self.mouse_pressed.as_ref().unwrap().position,
-              end: self.mouse_pressed.as_ref().unwrap().position,
+              start: *self.event_button.as_ref().unwrap(),
+              end: self.event_button.as_ref().unwrap().position,
               delta: vec2!(0),
             },
             |mut d| {
@@ -270,7 +255,7 @@ impl Component<Simple> for SimpleComponent {
             },
           );
 
-          self.dragging = Some(drag);
+          self.event_drag = Some(drag);
           event = Some(Event::Drag(drag));
         }
         _ => (),
@@ -286,7 +271,7 @@ impl Component<Simple> for SimpleComponent {
 
           let mp = self.gui.select.get_current_position().into();
           if self.resizable {
-            match drag.location {
+            match drag.start.location {
               ClickLocation::TopLeft => {
                 size = pos + size - mp;
                 pos = mp;
@@ -321,8 +306,8 @@ impl Component<Simple> for SimpleComponent {
             }
           }
 
-          match drag.location {
-            ClickLocation::Body if self.movable => pos = mp - *self.movedelta.as_ref().unwrap(),
+          match drag.start.location {
+            ClickLocation::Body if self.movable => pos = mp - drag.start.relative_pos.into(),
             _ => {}
           }
 

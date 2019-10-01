@@ -102,10 +102,6 @@ impl<S: Style> Component<S> for TerminalImpl<S> {
 
       let x = self.input.get_rect().position.x + self.input.get_typeset().char_offset(self.input.get_text(), p).x as i32;
 
-      println!("{}", self.quickfix.get_text());
-      println!("{:?}", self.quickfix.get_typeset().text_rect(self.quickfix.get_text()));
-
-      //self.style.get_padded_size(self.get_typeset().text_rect(self.get_text()))
       self.quickfix_wnd.rect(Rect::new(
         vec2!(x, r.position.y + r.size.y as i32),
         self.quickfix.get_typeset().text_rect(self.quickfix.get_text()),

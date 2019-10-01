@@ -1,5 +1,4 @@
 mod pipeline;
-mod simple;
 mod simplecomponent;
 
 pub use super::Style;

@@ -106,12 +106,12 @@ pub mod event {
     pub location: ClickLocation,
     pub button: vk::winit::ButtonId,
     pub position: vkm::Vec2u,
+    pub relative_pos: vkm::Vec2u,
   }
 
   #[derive(Debug, Clone, Copy)]
   pub struct EventDrag {
-    pub location: ClickLocation,
-    pub begin: vkm::Vec2u,
+    pub start: EventButton,
     pub end: vkm::Vec2u,
     pub delta: vkm::Vec2i,
   }

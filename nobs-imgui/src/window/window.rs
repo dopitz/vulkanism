@@ -71,12 +71,7 @@ impl<L: Layout, S: Style> Size for Window<L, S> {
     // Set client layout with scrolling
     let mut size = self.layout.get_size_hint();
     let p0 = client_rect.position;
-    let p1 = p0
-      - vec2!(
-        size.x.saturating_sub(client_rect.size.x),
-        size.y.saturating_sub(client_rect.size.y)
-      )
-      .into();
+    let p1 = p0 - vec2!(size.x.saturating_sub(client_rect.size.x), size.y.saturating_sub(client_rect.size.y)).into();
     let p = vkm::Vec2::clamp(p0 - self.layout_scroll.into(), p1, p0);
 
     if size.x == 0 {
@@ -129,16 +124,6 @@ impl<L: Layout, S: Style> Component<S> for Window<L, S> {
 
     let mut ret = None;
 
-    // draw caption and move window on drag
-    if self.draw_caption {
-      if let Some(event::Event::Drag(drag)) = self.caption.draw(screen, &mut self.layout_caption, focus) {
-        let mut r = self.layout_window.get_rect();
-        r.position += drag.delta;
-        self.rect(r);
-        ret = Some(Event::Resized(r))
-      }
-    }
-
     // draw the window style
     // resize and move when style body/border is clicked
     if let Some(e) = self.style.draw(screen, &mut self.layout_window, focus) {
@@ -148,6 +133,16 @@ impl<L: Layout, S: Style> Component<S> for Window<L, S> {
           ret = Some(Event::Resized(rect));
         }
         _ => (),
+      }
+    }
+
+    // draw caption and move window on drag
+    if self.draw_caption {
+      if let Some(event::Event::Drag(drag)) = self.caption.draw(screen, &mut self.layout_caption, focus) {
+        let mut r = self.layout_window.get_rect();
+        r.position = drag.end.into() - drag.start.relative_pos.into();
+        self.rect(r);
+        ret = Some(Event::Resized(r))
       }
     }
 
@@ -166,7 +161,18 @@ impl<L: Layout, S: Style> Component<S> for Window<L, S> {
             } else {
               0
             };
-            self.layout_scroll = self.layout_scroll.into::<i32>().map_y(|v| v.y + value).into();
+            self.layout_scroll = self
+              .layout_scroll
+              .into::<i32>()
+              .map_y(|v| {
+                let y = v.y + value;
+                if y > 0 {
+                  y
+                } else {
+                  0
+                }
+              })
+              .into();
             ret = Some(Event::Scroll);
           }
           _ => (),

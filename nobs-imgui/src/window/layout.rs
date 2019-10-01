@@ -35,8 +35,7 @@ pub trait Layout: Size {
 #[derive(Default)]
 pub struct FloatLayout {
   rect: Rect,
-  lo: vkm::Vec2i,
-  hi: vkm::Vec2i,
+  current: Rect,
 }
 
 impl Size for FloatLayout {
@@ -50,25 +49,19 @@ impl Size for FloatLayout {
   }
 
   fn get_size_hint(&self) -> vkm::Vec2u {
-    if self.hi.x < self.lo.x || self.hi.y < self.lo.y {
-      vec2!(0)
-    } else {
-      (self.hi - self.lo).into()
-    }
+    self.current.size
   }
 }
 
 impl Layout for FloatLayout {
   fn restart(&mut self) {
-    self.lo = vec2!(i32::max_value());
-    self.hi = vec2!(i32::min_value());
+    self.current = Default::default();
   }
 
   fn apply<S: Style, C: Component<S>>(&mut self, c: &mut C) -> Scissor {
     let r = c.get_rect();
-    self.lo = vkm::Vec2::min(self.lo, r.position);
-    self.hi = vkm::Vec2::max(self.hi, r.position + r.size.into());
     c.rect(r);
+    self.current = Rect::union(self.current, r);
     self.get_scissor(r)
   }
 }
@@ -77,8 +70,7 @@ impl From<Rect> for FloatLayout {
   fn from(rect: Rect) -> Self {
     Self {
       rect,
-      lo: vec2!(i32::max_value()),
-      hi: vec2!(i32::min_value()),
+      current: Default::default(),
     }
   }
 }
@@ -89,8 +81,7 @@ pub struct ColumnLayout {
   rect: Rect,
   top: u32,
 
-  lo: vkm::Vec2i,
-  hi: vkm::Vec2i,
+  current: Rect,
 }
 
 impl Size for ColumnLayout {
@@ -104,19 +95,14 @@ impl Size for ColumnLayout {
   }
 
   fn get_size_hint(&self) -> vkm::Vec2u {
-    if self.hi.x < self.lo.x || self.hi.y < self.lo.y {
-      vec2!(0)
-    } else {
-      (self.hi - self.lo).into()
-    }
+    self.current.size
   }
 }
 
 impl Layout for ColumnLayout {
   fn restart(&mut self) {
     self.top = 0;
-    self.lo = vec2!(i32::max_value());
-    self.hi = vec2!(i32::min_value());
+    self.current = Default::default();
   }
 
   fn apply<S: Style, C: Component<S>>(&mut self, c: &mut C) -> Scissor {
@@ -125,8 +111,7 @@ impl Layout for ColumnLayout {
       rect.size.x = self.rect.size.x;
     }
     self.top += rect.size.y;
-    self.lo = vkm::Vec2::min(self.lo, rect.position);
-    self.hi = vkm::Vec2::max(self.hi, rect.position + rect.size.into());
+    self.current = Rect::union(self.current, rect);
 
     if rect.size.x >= self.rect.size.x {
       rect.size.x = self.rect.size.x;
@@ -141,8 +126,7 @@ impl From<Rect> for ColumnLayout {
     Self {
       rect,
       top: 0,
-      lo: vec2!(i32::max_value()),
-      hi: vec2!(i32::min_value()),
+      current: Default::default(),
     }
   }
 }

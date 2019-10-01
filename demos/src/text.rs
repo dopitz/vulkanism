@@ -14,6 +14,8 @@ struct Context {
   quit: bool,
 }
 
+unsafe impl Send for Context {}
+
 pub fn setup_vulkan_window() -> (
   vk::instance::Instance,
   vk::device::PhysicalDevice,
@@ -116,7 +118,7 @@ pub fn main() {
 
   let mut gui = Gui::new(&device, &window, fb.images[0], mem.clone());
 
-  let mut context = Arc::new(Mutex::new(Context { quit: false }));
+  let context = Arc::new(Mutex::new(Context { quit: false }));
 
   let mut resizeevent = false;
 
@@ -268,7 +270,7 @@ mod commands {
         "interactive"
       }
 
-      fn run(&self, args: Vec<String>, term: Terminal<Context>, _context: &mut Context) {
+      fn run(&self, _args: Vec<String>, term: Terminal<Context>, _context: &mut Context) {
         std::thread::spawn(move || {
           term.println("write something!");
           let l = term.readln();
@@ -288,7 +290,7 @@ mod commands {
 struct Gui {
   gui: gui::Gui,
 
-  term : gui::shell::Terminal<std::sync::Arc<std::sync::Mutex<Context>>>,
+  term: gui::shell::Terminal<std::sync::Arc<std::sync::Mutex<Context>>>,
 
   wnd: gui::window::Window<gui::window::ColumnLayout>,
   text: gui::components::TextEditMultiline,
@@ -305,7 +307,7 @@ impl Gui {
     gui.style.load_styles(gui::get_default_styles());
     gui.style.set_dpi(wnd.window.get_hidpi_factor());
 
-    let shell = gui::shell::Shell::new(&gui);
+    let shell = gui::shell::Shell::new();
     shell.add_command(Box::new(commands::toggle::Cmd::new()));
     shell.add_command(Box::new(commands::quit::Cmd::new()));
     shell.add_command(Box::new(commands::interactive::Cmd::new()));
@@ -318,12 +320,12 @@ impl Gui {
     wnd
       .caption("awwwww yeees")
       .position(700, 20)
-      .size(50, 720)
+      .size(500, 320)
       .focus(true)
-      .draw_caption(false);
+      .draw_caption(true);
 
     let mut text = gui::components::TextBox::new(&gui);
-    text.text("aoeu\naoeu\naoeu");
+    text.text("aoeu\naoeu\naoeu\n1\n2\n3\n4\n5\n6\n7\n8\n9\n0\naoeu\naoeu\naoeu");
     text.cursor(Some(vec2!(1, 0)));
 
     let mut text2 = gui::components::TextBox::new(&gui);
