@@ -119,7 +119,18 @@ impl<L: Layout, S: Style> Component<S> for Window<L, S> {
   type Event = Event;
   fn draw<LSuper: Layout>(&mut self, screen: &mut Screen<S>, layout: &mut LSuper, focus: &mut SelectId) -> Option<Self::Event> {
     // resizes all layouts, caption and style components
-    layout.apply(self);
+    let scissor = layout.apply(self);
+
+    // we have to manually apply the scissor to the layouts so that their child components will be cropped an this windows borders
+    let apply_scissor = |l: &mut FloatLayout| {
+      let cr = l.get_rect();
+      l.rect(scissor.rect.into());
+      let scissor = l.get_scissor(cr);
+      l.rect(scissor.rect.into());
+    };
+    apply_scissor(&mut self.layout_window);
+    apply_scissor(&mut self.layout_caption);
+    apply_scissor(&mut self.layout_client);
 
     let mut ret = None;
 
