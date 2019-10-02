@@ -4,6 +4,7 @@ use regex;
 #[derive(Clone)]
 pub struct Ident {
   variants: Vec<Vec<String>>,
+  def: Option<String>,
   case: bool,
 }
 
@@ -48,6 +49,7 @@ impl Ident {
   pub fn new(variants: &[&[&str]]) -> Self {
     Self {
       variants: variants.iter().map(|v| v.iter().map(|s| s.to_string()).collect()).collect(),
+      def: None,
       case: false,
     }
   }
@@ -55,16 +57,31 @@ impl Ident {
   pub fn no_alternatives(variants: &[&str]) -> Self {
     Self {
       variants: variants.iter().map(|v| vec![v.to_string()]).collect(),
+      def: None,
       case: false,
     }
   }
 
+  pub fn default(mut self, def: &str) -> Self {
+    if self.variants.iter().flatten().find(|v| *v == def).is_some() {
+      self.def = Some(def.to_string());
+    }
+    self
+  }
   pub fn case(mut self, case: bool) -> Self {
     self.case = case;
     self
   }
+}
 
-  pub fn convert<'a>(&'a self, s: &str) -> Option<&'a str> {
-    self.variants.iter().find(|i| i.iter().any(|i| s == *i)).map(|v| v[0].as_str())
+impl Convert<String> for Ident {
+  fn convert(&self, s: &str) -> Option<String> {
+    self.variants.iter().find(|i| i.iter().any(|i| s == *i)).map(|v| v[0].clone())
+  }
+}
+
+impl ConvertDefault<String> for Ident {
+  fn default(&self) -> Option<String> {
+    self.def.clone()
   }
 }

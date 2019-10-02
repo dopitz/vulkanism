@@ -2,6 +2,7 @@ use super::*;
 
 pub struct File {
   ext: Option<String>,
+  def: Option<String>,
 }
 
 impl Parsable for File {
@@ -87,11 +88,27 @@ impl Parsable for File {
 
 impl File {
   pub fn new() -> Self {
-    Self { ext: None }
+    Self { ext: None, def: None }
   }
 
-  pub fn ext(mut self, ext: Option<&str>) -> Self {
-    self.ext = ext.map(|s| s.to_string());
+  pub fn ext(mut self, ext: &str) -> Self {
+    self.ext = Some(ext.into());
     self
+  }
+  pub fn default(mut self, def: &str) -> Self {
+    self.def = Some(def.into());
+    self
+  }
+}
+
+impl Convert<String> for File {
+  fn convert(&self, s: &str) -> Option<String> {
+    Some(s.to_string())
+  }
+}
+
+impl ConvertDefault<String> for File {
+  fn default(&self) -> Option<String> {
+    self.def.clone()
   }
 }

@@ -3,11 +3,15 @@ use super::*;
 macro_rules! make_num {
   ($name:ident, $t:ty) => {
     #[derive(Clone)]
-    pub struct $name {}
+    pub struct $name {
+      mi: Option<$t>,
+      ma: Option<$t>,
+      def: Option<$t>,
+    }
 
     impl Parsable for $name {
       fn can_parse(&self, s: &str) -> bool {
-        s.parse::<$t>().is_ok()
+        self.convert(s).is_some()
       }
 
       fn complete(&self, s: &str) -> Option<Vec<Completion>> {
@@ -17,11 +21,45 @@ macro_rules! make_num {
 
     impl $name {
       pub fn new() -> Self {
-        Self {}
+        Self {
+          mi: None,
+          ma: None,
+          def: None,
+        }
       }
 
-      pub fn convert<'a>(&'a self, s: &str) -> Option<$t> {
-        s.parse::<$t>().ok()
+      pub fn min(mut self, v: $t) -> Self {
+        self.mi = Some(v);
+        self
+      }
+      pub fn max(mut self, v: $t) -> Self {
+        self.ma = Some(v);
+        self
+      }
+      pub fn default(mut self, v: $t) -> Self {
+        self.def = Some(v);
+        self
+      }
+    }
+
+    impl Convert<$t> for $name {
+      fn convert<'a>(&'a self, s: &str) -> Option<$t> {
+        s.parse::<$t>()
+          .ok()
+          .filter(|v| match self.mi {
+            Some(mi) => mi <= *v,
+            None => true,
+          })
+          .filter(|v| match self.ma {
+            Some(ma) => ma > *v,
+            None => true,
+          })
+      }
+    }
+
+    impl ConvertDefault<$t> for $name {
+      fn default(&self) -> Option<$t> {
+        self.def
       }
     }
   };

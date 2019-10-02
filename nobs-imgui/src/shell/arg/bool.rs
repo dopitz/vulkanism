@@ -22,7 +22,23 @@ impl Bool {
     }
   }
 
-  pub fn convert(&self, s: &str) -> Option<bool> {
+  pub fn default(mut self, b: bool) -> Self {
+    self.ident = self.ident.default(match b {
+      true => "true",
+      false => "false",
+    });
+    self
+  }
+}
+
+impl Convert<bool> for Bool {
+  fn convert(&self, s: &str) -> Option<bool> {
     self.ident.convert(s).map(|b| b == "On")
+  }
+}
+
+impl ConvertDefault<bool> for Bool {
+  fn default(&self) -> Option<bool> {
+    ConvertDefault::default(&self.ident).and_then(|d| self.convert(&d))
   }
 }

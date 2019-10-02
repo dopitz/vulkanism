@@ -103,6 +103,29 @@ pub trait Parsable {
   fn complete(&self, s: &str) -> Option<Vec<Completion>>;
 }
 
+pub trait Convert<T> {
+  fn convert(&self, s: &str) -> Option<T>;
+
+  fn convert_nth(&self, args: &[String], n: usize) -> Option<T> {
+    if args.len() > n {
+      self.convert(&args[n])
+    } else {
+      None
+    }
+  }
+}
+
+pub trait ConvertDefault<T> : Convert<T> {
+  fn default(&self) -> Option<T>;
+
+  fn convert_or_default(&self, s: &str) -> Option<T> {
+    self.convert(s).or_else(|| self.default())
+  }
+  fn convert_nth_or_default(&self, args: &[String], n: usize) -> Option<T> {
+    self.convert_nth(args, n).or_else(|| self.default())
+  }
+}
+
 pub use self::bool::Bool;
 pub use file::File;
 pub use ident::Ident;
