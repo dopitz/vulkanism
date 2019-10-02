@@ -100,12 +100,18 @@ impl<S: Style> Component<S> for TerminalImpl<S> {
         None => vec2!(0),
       };
 
-      let x = self.input.get_rect().position.x + self.input.get_typeset().char_offset(self.input.get_text(), p).x as i32;
-
+      // restart the layout before assigning the new size, because we want the textbox to fill the exact size window 
+      // we use the cursor position and text dimension for the window size
+      self.quickfix_wnd.restart();
       self.quickfix_wnd.rect(Rect::new(
-        vec2!(x, r.position.y + r.size.y as i32),
+        vec2!(
+          self.input.get_rect().position.x + self.input.get_typeset().char_offset(self.input.get_text(), p).x as i32,
+          r.position.y + r.size.y as i32
+        ),
         self.quickfix.get_typeset().text_rect(self.quickfix.get_text()),
       ));
+
+      // draw quickfix window and textbox
       self.quickfix_wnd.draw(screen, layout, focus);
       if let Some(_) = self.quickfix.draw(screen, &mut self.quickfix_wnd, focus) {
         self.println("quickfix click not implemented");

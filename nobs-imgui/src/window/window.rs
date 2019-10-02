@@ -69,6 +69,7 @@ impl<L: Layout, S: Style> Size for Window<L, S> {
 
     // Set client layout with scrolling
     let mut size = self.layout.get_size_hint();
+    println!("size {:?}", size);
     let p0 = client_rect.position;
     let p1 = p0 - vec2!(size.x.saturating_sub(client_rect.size.x), size.y.saturating_sub(client_rect.size.y)).into();
     let p = vkm::Vec2::clamp(p0 - self.layout_scroll.into(), p1, p0);
@@ -82,8 +83,8 @@ impl<L: Layout, S: Style> Size for Window<L, S> {
 
     // the client size is used to clamp the srolling
     let max = vec2!(
-      size.x.saturating_sub(self.layout_client.get_rect().size.x),
-      size.y.saturating_sub(self.layout_client.get_rect().size.y)
+      size.x.saturating_sub(client_rect.size.x),
+      size.y.saturating_sub(client_rect.size.y)
     );
     self.layout_scroll = vkm::Vec2::clamp(self.layout_scroll, vec2!(0), max);
 
