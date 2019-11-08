@@ -266,7 +266,9 @@ impl<T: Ord + VecTraits<T>> Vec4<T> {
       w: std::cmp::max(a.w, b.w),
     }
   }
+}
 
+impl<T: PartialOrd + VecTraits<T>> Vec4<T> {
   pub fn clamp(v: Self, lo: Self, hi: Self) -> Self {
     let mut v = v;
     if v.x < lo.x {
@@ -321,6 +323,12 @@ impl<T: SqrtAble<Output = T> + VecTraits<T>> Vec4<T> {
 impl<T: SqrtAble<Output = T> + VecTraits<T>> Vec4<T> {
   pub fn lerp(a: Self, b: Self, t: T) -> Self {
     a + (b - a) * t
+  }
+}
+
+impl<T: std::fmt::Display> std::fmt::Display for Vec4<T> {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    write!(f, "{{{}, {}, {}, {}}}", self.x, self.y, self.z, self.w)
   }
 }
 

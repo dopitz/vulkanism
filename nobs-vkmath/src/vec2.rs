@@ -229,6 +229,12 @@ impl<T: VecTraits<T>> Vec2<T> {
   }
 }
 
+impl<T: std::fmt::Display> std::fmt::Display for Vec2<T> {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    write!(f, "{{{} {}}}", self.x, self.y)
+  }
+}
+
 pub type Vec2f = Vec2<f32>;
 pub type Vec2d = Vec2<f64>;
 pub type Vec2i = Vec2<i32>;

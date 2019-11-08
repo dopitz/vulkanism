@@ -287,6 +287,11 @@ impl<T: VecTraits<T>> Vec3<T> {
   }
 }
 
+impl<T: std::fmt::Display> std::fmt::Display for Vec3<T> {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    write!(f, "{{{}, {}, {}}}", self.x, self.y, self.z)
+  }
+}
 
 pub type Vec3f = Vec3<f32>;
 pub type Vec3d = Vec3<f64>;
