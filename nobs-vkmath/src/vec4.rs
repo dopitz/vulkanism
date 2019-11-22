@@ -144,6 +144,16 @@ impl<T: Neg<Output = T>> Neg for Vec4<T> {
     }
   }
 }
+impl<T: PartialOrd + Identity<Output = T> + Neg<Output = T>> Vec4<T> {
+  fn abs(self) -> Self {
+    Self {
+      x: if self.x < T::zero() {-self.x} else {self.x},
+      y: if self.y < T::zero() {-self.y} else {self.y},
+      z: if self.z < T::zero() {-self.z} else {self.z},
+      w: if self.w < T::zero() {-self.w} else {self.w},
+    }
+  }
+}
 
 impl<T: VecTraits<T>> Add<Vec4<T>> for Vec4<T> {
   type Output = Vec4<T>;
@@ -244,6 +254,17 @@ impl<T: VecTraits<T>> DivAssign<Vec4<T>> for Vec4<T> {
     self.y /= other.y;
     self.z /= other.z;
     self.w /= other.w;
+  }
+}
+
+impl<T: VecTraits<T> + PowAble<T, Output = T>> Vec4<T> {
+  fn pow(self, other: Self) -> Self {
+    Self {
+      x: self.x.pow(other.x),
+      y: self.y.pow(other.y),
+      z: self.z.pow(other.z),
+      w: self.w.pow(other.w),
+    }
   }
 }
 

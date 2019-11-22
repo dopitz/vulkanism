@@ -11,8 +11,7 @@ pub struct Vec3<T> {
 
 // Constructors
 impl<T: Copy> Vec3<T> {
-  pub fn repeat(v: T) -> Self
-  {
+  pub fn repeat(v: T) -> Self {
     Self { x: v, y: v, z: v }
   }
 
@@ -73,6 +72,12 @@ impl<T: Copy> Vec3<T> {
   }
 }
 
+impl<T: Identity<Output = T>> Vec3<T> {
+  pub fn zero() -> Self {
+    Self { x: T::zero(), y: T::zero(), z: T::zero() }
+  }
+}
+
 // Compare
 impl<T: PartialEq> PartialEq for Vec3<T> {
   fn eq(&self, other: &Self) -> bool {
@@ -113,6 +118,15 @@ impl<T: Neg<Output = T>> Neg for Vec3<T> {
       x: -self.x,
       y: -self.y,
       z: -self.z,
+    }
+  }
+}
+impl<T: PartialOrd + Identity<Output = T> + Neg<Output = T>> Vec3<T> {
+  fn abs(self) -> Self {
+    Self {
+      x: if self.x < T::zero() {-self.x} else {self.x},
+      y: if self.y < T::zero() {-self.y} else {self.y},
+      z: if self.z < T::zero() {-self.z} else {self.z},
     }
   }
 }
@@ -209,6 +223,16 @@ impl<T: VecTraits<T>> DivAssign<Vec3<T>> for Vec3<T> {
   }
 }
 
+impl<T: VecTraits<T> + PowAble<T, Output = T>> Vec3<T> {
+  fn pow(self, other: Self) -> Self {
+    Self {
+      x: self.x.pow(other.x),
+      y: self.y.pow(other.y),
+      z: self.z.pow(other.z),
+    }
+  }
+}
+
 // Vector Ops
 impl<T: PartialOrd + VecTraits<T>> Vec3<T> {
   pub fn min(a: Self, b: Self) -> Self {
@@ -280,9 +304,19 @@ impl<T: SqrtAble<Output = T> + VecTraits<T>> Vec3<T> {
 impl<T: VecTraits<T>> Vec3<T> {
   pub fn cross(a: Self, b: Self) -> Self {
     Self {
-      x:  a.y * b.z - a.z * b.y, 
-      y:  a.z * b.x - a.x * b.z, 
-      z:  a.x * b.y - a.y * b.x,
+      x: a.y * b.z - a.z * b.y,
+      y: a.z * b.x - a.x * b.z,
+      z: a.x * b.y - a.y * b.x,
+    }
+  }
+}
+impl<T: PartialEq + VecTraits<T> + Identity<Output = T>> Vec3<T> {
+  pub fn perpendicular(a: Self) -> Self {
+    let x = Vec3::cross(a, Self::new(T::one(), T::zero(), T::zero()));
+    if x == Self::zero() {
+      Self::new(T::zero(), T::one(), T::zero())
+    } else {
+      x
     }
   }
 }

@@ -17,6 +17,44 @@ impl SqrtAble for f64 {
   }
 }
 
+pub trait PowAble<T> {
+  type Output;
+  fn pow(self, e: T) -> Self::Output;
+}
+
+//macro_rules! pow_able {
+//  ($tt:ty) => {
+//    impl PowAble for $tt {
+//      type Output = $tt;
+//      fn pow(self, e: $tt) -> $tt {
+//        $tt::pow(self, e)
+//      }
+//    }
+//  };
+//}
+impl PowAble<f32> for f32 {
+  type Output = f32;
+  fn pow(self, e: f32) -> f32 {
+    f32::powf(self, e)
+  }
+}
+impl PowAble<f64> for f64 {
+  type Output = f64;
+  fn pow(self, e: f64) -> f64 {
+    f64::powf(self, e)
+  }
+}
+//pow_able!(i8);
+//pow_able!(i16);
+//pow_able!(i32);
+//pow_able!(i64);
+//pow_able!(u8);
+//pow_able!(u16);
+//pow_able!(u32);
+//pow_able!(u64);
+//pow_able!(usize);
+//pow_able!(isize);
+
 pub trait SinAble {
   type Output;
   fn sin(self) -> Self::Output;
