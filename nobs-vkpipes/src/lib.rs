@@ -95,6 +95,7 @@ pub use pipeline::builder::graphics::vertex_input::Builder as VertexInput;
 pub use pipeline::builder::graphics::viewport::Builder as Viewport;
 pub use pipeline::builder::graphics::Graphics as GraphicsBuilder;
 pub use pipeline::Pipeline;
+pub use pipeline::builder;
 
 pub mod descriptor;
 pub use descriptor::DescriptorLayout;

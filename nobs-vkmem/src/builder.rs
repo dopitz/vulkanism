@@ -337,6 +337,19 @@ impl<'a> Buffer<'a> {
       .size(size)
   }
 
+  /// Makro configuration for setting up uniform buffers
+  ///
+  /// Sets
+  ///  - devicelokal: 'true'
+  ///  - usage: `vk::BUFFER_USAGE_STORAGE_BUFFER_BIT | vk::BUFFER_USAGE_TRANSFER_DST_BIT`
+  ///  - size: as specified
+  pub fn storage_buffer(self, size: vk::DeviceSize) -> Self {
+    self
+      .devicelocal(true)
+      .usage(vk::BUFFER_USAGE_STORAGE_BUFFER_BIT | vk::BUFFER_USAGE_TRANSFER_DST_BIT)
+      .size(size)
+  }
+
   /// Finishes configuration of this buffer
   ///
   /// ## Returns

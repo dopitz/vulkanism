@@ -7,7 +7,7 @@ use crate::pipeline::Binding;
 use std::collections::HashMap;
 use vk;
 
-fn create_descriptor_layout(device: vk::Device, bindings: &[Binding]) -> vk::DescriptorSetLayout {
+pub fn create_descriptor_layout(device: vk::Device, bindings: &[Binding]) -> vk::DescriptorSetLayout {
   let layout_bindings: Vec<vk::DescriptorSetLayoutBinding> = bindings
     .iter()
     .map(|b| vk::DescriptorSetLayoutBinding {
@@ -32,7 +32,7 @@ fn create_descriptor_layout(device: vk::Device, bindings: &[Binding]) -> vk::Des
   handle
 }
 
-fn create_pipeline_layout(device: vk::Device, dset_layouts: &[vk::DescriptorSetLayout]) -> vk::PipelineLayout {
+pub fn create_pipeline_layout(device: vk::Device, dset_layouts: &[vk::DescriptorSetLayout]) -> vk::PipelineLayout {
   // create the pipeline layout
   let create_info = vk::PipelineLayoutCreateInfo {
     sType: vk::STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
@@ -49,7 +49,7 @@ fn create_pipeline_layout(device: vk::Device, dset_layouts: &[vk::DescriptorSetL
   handle
 }
 
-fn create_pool_sizes(bindings: &[Binding]) -> Vec<vk::DescriptorPoolSize> {
+pub fn create_pool_sizes(bindings: &[Binding]) -> Vec<vk::DescriptorPoolSize> {
   let counts = bindings.iter().fold(std::collections::HashMap::new(), |mut acc, b| {
     *acc.entry(b.desctype).or_insert(0u32) += b.arrayelems;
     acc
