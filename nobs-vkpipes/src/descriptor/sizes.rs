@@ -1,5 +1,7 @@
 use vk;
 
+use crate::pipeline::Binding;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct DescriptorSizes {
   counts: [u32; 12],
@@ -50,12 +52,21 @@ impl DescriptorSizes {
     unsafe { std::mem::zeroed() }
   }
 
-  pub fn from_pool_sizes(sizes: &[vk::DescriptorPoolSize], num_sets: u32) -> Self {
+  pub fn from_bindings(bindings: &[Binding]) -> Self {
+    let counts = bindings.iter().fold(std::collections::HashMap::new(), |mut acc, b| {
+      *acc.entry(b.desctype).or_insert(0u32) += b.arrayelems;
+      acc
+    });
+
     let mut ps = Self::new();
-    for s in sizes.iter() {
-      ps[s.typ] = s.descriptorCount;
-    }
-    ps.num_sets = num_sets;
+    counts
+      .into_iter()
+      .map(|(k, v)| vk::DescriptorPoolSize {
+        typ: k,
+        descriptorCount: v,
+      })
+      .for_each(|s| ps[s.typ] = s.descriptorCount);
+    ps.num_sets = 1;
     ps
   }
 
