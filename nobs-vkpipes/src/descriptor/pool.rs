@@ -146,4 +146,8 @@ impl DescriptorPool {
       }
     }
   }
+
+  pub fn get_device(&self) -> vk::Device {
+    self.pool.lock().unwrap().device
+  }
 }
