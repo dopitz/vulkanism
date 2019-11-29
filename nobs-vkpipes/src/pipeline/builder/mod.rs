@@ -64,7 +64,7 @@ fn create_layouts(device: vk::Device, bindings: &[Binding]) -> (Vec<DescriptorLa
     .map(|(set, b)| (*set, DescriptorLayout::from_bindings(device, b)))
     .collect();
   dsets.sort_by_key(|d| d.0);
-  let dsets: Vec<DescriptorLayout> = dsets.iter().map(|ds| ds.1).collect();
+  let dsets: Vec<DescriptorLayout> = dsets.iter().map(|ds| ds.1.clone()).collect();
 
   // pipeline layout
   let layouts: Vec<vk::DescriptorSetLayout> = dsets.iter().map(|ds| ds.layout).collect();

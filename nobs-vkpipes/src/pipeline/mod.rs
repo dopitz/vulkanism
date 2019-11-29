@@ -17,6 +17,7 @@ pub struct Binding {
 /// A managed vulkan pipeline object.
 ///
 /// Tracks the lifetime of the vk pipeline with it's acompanying descriptor set layouts and pipeline layouts.
+#[derive(Debug)]
 pub struct Pipeline {
   pub device: vk::Device,
   pub handle: vk::Pipeline,
