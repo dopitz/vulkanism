@@ -114,21 +114,22 @@ impl Builder {
       b.entry = "main".to_string();
     }
 
-    // add the parent folder of the root glsl sourcse file to the include paths (if glsl is specified)
+    // add the parent folder of the root glsl source file to the include paths (if glsl is specified)
     if !b.path_glsl.is_empty() {
       if let Some(parent) = Path::new(&b.path_glsl).parent() {
         b.includes.push(parent.to_str().unwrap().to_owned());
       }
     }
-    // make include dirs absolute
-    b.includes = b.includes.iter_mut().filter_map(|i| Self::make_abs_path(i)).collect::<Vec<_>>();
-    
+
     stage_from_stirng(&b.stage)?;
 
     Ok(b)
   }
 
   pub fn new(&self) -> Result<Shader, String> {
+    // make include dirs absolute
+    let includes = self.includes.iter().filter_map(|i| Self::make_abs_path(i)).collect::<Vec<_>>();
+
     // if we have glsl source we comile it with shaderc
     // if not we use the spv from the file
     let binary = if !self.src_glsl.is_empty() {
@@ -136,7 +137,7 @@ impl Builder {
       let mut options = shaderc::CompileOptions::new().unwrap();
 
       options.set_include_callback(|includer, include_type, includee, depth| {
-        Self::find_include(includer, include_type, includee, depth, &self.includes, !self.path_glsl.is_empty())
+        Self::find_include(includer, include_type, includee, depth, &includes, !self.path_glsl.is_empty())
       });
 
       let shader_kind = match self.stage.as_ref() {
@@ -230,28 +231,14 @@ impl Builder {
           let path = Path::new(dir)
             .canonicalize()
             .unwrap_or_else(|_| panic!("`{}` is not a valid include directory.", dir));
-          let resolved = path.join(includee).canonicalize().unwrap();
 
-          if resolved.is_file() {
-            found = Some(resolved);
-            break;
+          if let Ok(resolved) = path.join(includee).canonicalize() {
+            if resolved.is_file() {
+              found = Some(resolved);
+              break;
+            }
           }
         }
-
-        //if found.is_none() {
-        //  let parent_dir = Path::new(includer).parent().unwrap();
-        //  let resolved = parent_dir.join(includee);
-
-        //  //panic!("resolved: {:?}", resolved);
-
-        //  //if !resolved.is_file() {
-        //  //  return Err(format!("Include `{}` is not a file, included from `{}`", includee, includer));
-        //  //}
-        //  resolved
-        //}
-        //else {
-        //  found.unwrap()
-        //}
 
         if found.is_none() {
           return Err(format!("Include `{}` is not a file, included from `{}`", includee, includer));
@@ -262,6 +249,7 @@ impl Builder {
     }
     .canonicalize()
     .unwrap();;
+
 
     let resolved_name = resolved.to_str().unwrap().to_string();
 
