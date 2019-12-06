@@ -212,7 +212,7 @@ impl Component<Simple> for SimpleComponent {
               location: *mouse_over.as_ref().unwrap(),
               button: *button,
               position: pos,
-              relative_pos: pos - self.get_rect().position.into(),
+              relative_pos: (pos.into() - self.get_rect().position).into(),
             }));
           } else {
             self.has_focus = false;
@@ -230,7 +230,7 @@ impl Component<Simple> for SimpleComponent {
             location: *mouse_over.as_ref().unwrap(),
             button: *button,
             position: pos,
-            relative_pos: pos - self.get_rect().position.into(),
+            relative_pos: (pos.into() - self.get_rect().position).into(),
           };
           self.has_focus = true;
           self.event_button = Some(bt);
