@@ -10,7 +10,7 @@ impl Parsable for File {
     let p = std::path::Path::new(s);
     if !p.exists() {
       match p.parent() {
-        Some(p) => p.exists(),
+        Some(p) => p.exists() || p.to_str().unwrap() == "",
         _ => false,
       }
     } else if let Some(ext) = self.ext.as_ref() {
