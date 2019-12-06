@@ -203,6 +203,7 @@ impl<S: Style> TerminalWnd<S> {
     output_wnd.style("NoStyle", false, false);
     let mut output = TextBox::new(gui);
     output.style("NoStyle").text("\n");
+    output.text("Heyyy, what are you up to?");
 
     let mut input = TextBox::new(gui);
     input.text("~$ ");

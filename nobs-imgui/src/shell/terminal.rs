@@ -77,6 +77,11 @@ impl<S: Style, C> Terminal<S, C> {
     self.handle_input(e, screen, context);
   }
 
+  pub fn show_term(&mut self, show: bool) {
+    self.input.show_term = show;
+    self.window.focus(show);
+  }
+
   /// Print text to the terminal
   pub fn print(&self, s: &str) {
     self.window.print(s);
