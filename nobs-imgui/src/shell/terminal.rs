@@ -104,6 +104,7 @@ impl<S: Style, C> Terminal<S, C> {
   }
 
   fn handle_input(&mut self, e: Option<crate::components::textbox::Event>, screen: &Screen<S>, context: &mut C) {
+    // handles the textbox event from the input box
     let e = match e {
       Some(Event::Enter(input)) => {
         self.input.prefix_len = 0;
@@ -130,8 +131,13 @@ impl<S: Style, C> Terminal<S, C> {
       _ => None,
     };
 
+    // handles events that are queued up for the screen
+    //  - show/hide terminal window
+    //  - cycle completions
+    //  - cycle comand history
     for e in screen.get_events() {
       match e {
+        // shows the input/terminal vim-style, when colon is received
         vk::winit::Event::WindowEvent {
           event: vk::winit::WindowEvent::ReceivedCharacter(':'),
           ..
@@ -139,6 +145,9 @@ impl<S: Style, C> Terminal<S, C> {
           self.input.show_term = true;
           self.window.focus(true);
         }
+        // loose focus for input/hide terminal when esc is pressed
+        // cycle through completions with tab
+        // cycle through history with up/down arrow
         vk::winit::Event::WindowEvent {
           event:
             vk::winit::WindowEvent::KeyboardInput {
@@ -163,10 +172,11 @@ impl<S: Style, C> Terminal<S, C> {
           }
           vk::winit::VirtualKeyCode::LShift | vk::winit::VirtualKeyCode::RShift => self.input.shift = true,
           vk::winit::VirtualKeyCode::Tab => self.next_completion(self.input.shift),
-          //vk::winit::VirtualKeyCode::Up => self.history(false, None),
-          //vk::winit::VirtualKeyCode::Down => self.history(true, None),
+          vk::winit::VirtualKeyCode::Up => self.next_history(true),
+          vk::winit::VirtualKeyCode::Down => self.next_history(false),
           _ => (),
         },
+        // register shift pressed/released
         vk::winit::Event::WindowEvent {
           event:
             vk::winit::WindowEvent::KeyboardInput {
@@ -187,8 +197,10 @@ impl<S: Style, C> Terminal<S, C> {
       }
     }
 
+    // execute the command
     if let Some(s) = e {
       self.exec(&s, context);
+      self.input.history.push(s);
     }
   }
 
@@ -251,6 +263,40 @@ impl<S: Style, C> Terminal<S, C> {
         }
       }
       _ => (),
+    }
+  }
+
+  fn next_history(&mut self, reverse: bool) {
+    if self.input.history.is_empty() {
+      return;
+    }
+    match self.input.history_index {
+      HistoryIndex::Input => {
+        if reverse {
+          self.input.history_index = HistoryIndex::Index(self.input.history.len() - 1);
+        } else {
+          self.input.history_index = HistoryIndex::Index(0);
+        }
+      }
+      HistoryIndex::Index(i) => {
+        let i = if reverse {
+          i as isize - 1
+        } else {
+          i as isize + 1
+        };
+        if 0 > i || i as usize >= self.input.history.len() {
+          self.input.history_index = HistoryIndex::Input;
+        } else {
+          self.input.history_index = HistoryIndex::Index(i as usize);
+        }
+      }
+    }
+
+    if let HistoryIndex::Index(i) = self.input.history_index {
+      self.window.input_text(&self.input.history[i]);
+    }
+    else {
+      self.window.input_text("");
     }
   }
 }
