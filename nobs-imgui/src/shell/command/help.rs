@@ -4,14 +4,11 @@ use crate::shell::Command;
 use crate::style::Style;
 
 #[derive(Clone)]
-pub struct Cmd<C: Context> {
+pub struct Cmd {
   cmd: arg::Ident,
-  phantom: std::marker::PhantomData<C>,
 }
 
-impl<C: Context> Command for Cmd<C> {
-  type Context = C;
-
+impl<C: Context> Command<C> for Cmd {
   fn get_name(&self) -> &'static str {
     "help"
   }
@@ -52,18 +49,17 @@ impl<C: Context> Command for Cmd<C> {
   }
 }
 
-impl<C: Context> Cmd<C> {
-  pub fn new(cmds: &Vec<std::sync::Arc<dyn Command<Context = <Self as Command>::Context>>>) -> Self {
+impl Cmd {
+  pub fn new<C: Context>(cmds: &Vec<std::sync::Arc<dyn Command<C>>>) -> Self {
     let vars = cmds.iter().map(|c| c.get_name().to_string()).collect::<Vec<_>>();
     let cmds = vars.iter().map(|v| v.as_str()).collect::<Vec<_>>();
 
     Self {
       cmd: arg::Ident::no_alternatives(&cmds),
-      phantom: std::marker::PhantomData,
     }
   }
 
-  pub fn update(&mut self, cmds: &Vec<std::sync::Arc<dyn Command<Context = <Self as Command>::Context>>>) {
+  pub fn update<C: Context>(&mut self, cmds: &Vec<std::sync::Arc<dyn Command<C>>>) {
     let vars = cmds.iter().map(|c| c.get_name().to_string()).collect::<Vec<_>>();
     let cmds = vars.iter().map(|v| v.as_str()).collect::<Vec<_>>();
     self.cmd = arg::Ident::no_alternatives(&cmds);

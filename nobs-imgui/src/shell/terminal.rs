@@ -66,13 +66,7 @@ impl<S: Style> Terminal<S> {
     }
   }
 
-  pub fn draw<L: Layout, C: Context>(
-    &mut self,
-    screen: &mut Screen<S>,
-    layout: &mut L,
-    focus: &mut SelectId,
-    context: &mut C,
-  ) {
+  pub fn draw<L: Layout, C: Context>(&mut self, screen: &mut Screen<S>, layout: &mut L, focus: &mut SelectId, context: &mut C) {
     let e = match self.input.show_term {
       true => self.window.draw(screen, layout, focus),
       false => None,
@@ -102,12 +96,7 @@ impl<S: Style> Terminal<S> {
     self.window.readln()
   }
 
-  fn handle_input<C: Context>(
-    &mut self,
-    e: Option<crate::components::textbox::Event>,
-    screen: &Screen<S>,
-    context: &mut C,
-  ) {
+  fn handle_input<C: Context>(&mut self, e: Option<crate::components::textbox::Event>, screen: &Screen<S>, context: &mut C) {
     // handles the textbox event from the input box
     let e = match e {
       Some(Event::Enter(input)) => {
@@ -203,7 +192,9 @@ impl<S: Style> Terminal<S> {
 
     // execute the command
     if let Some(s) = e {
-      context.get_shell().exec(&s, context);
+      if let Some(exe) = context.get_shell().parse(&s) {
+        exe.run(context);
+      }
       self.input.history.push(s);
     }
   }

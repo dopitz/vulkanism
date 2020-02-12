@@ -4,7 +4,7 @@ use std::sync::Arc;
 use std::sync::Mutex;
 
 pub struct Shell<C: Context> {
-  cmds: Arc<Mutex<Vec<Arc<dyn Command<Context = C>>>>>,
+  cmds: Arc<Mutex<Vec<Arc<dyn Command<C>>>>>,
 }
 
 impl<C: Context> Clone for Shell<C> {
@@ -15,16 +15,16 @@ impl<C: Context> Clone for Shell<C> {
 
 unsafe impl<C: Context> Send for Shell<C> {}
 
-impl<C: 'static + Context> Shell<C> {
+impl<C: Context> Shell<C> {
   pub fn new() -> Self {
     let sh = Self {
       cmds: Arc::new(Mutex::new(Vec::new())),
     };
-    sh.add_command(Box::new(command::source::Cmd::<C::ShellContext>::new()));
+    //TODO sh.add_command(Box::new(command::source::Cmd::new()));
     sh
   }
 
-  fn add_command_inner(&self, cmd: Box<dyn Command<Context = C>>) {
+  fn add_command_inner(&self, cmd: Box<dyn Command<C>>) {
     let mut cmds = self.cmds.lock().unwrap();
     let name = cmd.get_name();
     if let Some(c) = cmds
@@ -44,11 +44,11 @@ impl<C: 'static + Context> Shell<C> {
     }
   }
   fn update_help(&self) {
-    self.delete_command_inner(command::help::Cmd::<C>::get_name());
+    self.delete_command_inner(command::help::Cmd::get_name());
     self.add_command_inner(Box::new(command::help::Cmd::new(&self.get_commands())));
   }
 
-  pub fn add_command(&self, cmd: Box<dyn Command<Context = C>>) {
+  pub fn add_command(&self, cmd: Box<dyn Command<C>>) {
     self.add_command_inner(cmd);
     self.update_help();
   }
@@ -57,21 +57,27 @@ impl<C: 'static + Context> Shell<C> {
     self.update_help();
   }
 
-  pub fn exec(&self, c: &str, context: &mut C::ShellContext) {
-    let exe = {
-      self
-        .cmds
-        .lock()
-        .unwrap()
-        .iter()
-        .find_map(|cmd| cmd.parse(c).map(|args| (cmd.clone(), args)))
-    };
-    if let Some((cmd, args)) = exe {
-      cmd.run(args, context);
-    }
+  pub fn parse(&self, c: &str) -> Option<ShellExec<C>> {
+    self
+      .cmds
+      .lock()
+      .unwrap()
+      .iter()
+      .find_map(|cmd| cmd.parse(c).map(|args| ShellExec { cmd: cmd.clone(), args }))
   }
 
-  pub fn get_commands(&self) -> Vec<Arc<dyn Command<Context = C>>> {
+  pub fn get_commands(&self) -> Vec<Arc<dyn Command<C>>> {
     self.cmds.lock().unwrap().clone()
+  }
+}
+
+pub struct ShellExec<C: Context> {
+  cmd: Arc<dyn Command<C>>,
+  args: Vec<String>,
+}
+
+impl<C: Context> ShellExec<C> {
+  pub fn run(self, context: &mut C) {
+    self.cmd.run(self.args, context);
   }
 }

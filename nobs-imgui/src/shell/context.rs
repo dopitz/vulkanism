@@ -2,11 +2,10 @@ use super::Shell;
 use super::Terminal;
 use crate::style::Style;
 
-pub trait Context {
+pub trait Context : std::marker::Sized {
   type TerminalStyle: Style;
-  type ShellContext: Context;
 
-  fn get_shell(&self) -> &Shell<Self::ShellContext>;
+  fn get_shell(&self) -> &Shell<Self>;
   fn get_term(&self) -> &Terminal<Self::TerminalStyle>;
 
   fn print(&self, s: &str) {

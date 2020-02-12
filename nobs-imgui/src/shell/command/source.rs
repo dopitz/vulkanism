@@ -3,14 +3,11 @@ use crate::shell::context::Context;
 use crate::shell::Command;
 use crate::style::Style;
 
-pub struct Cmd<C: Context> {
+pub struct Cmd {
   file: arg::File,
-  phantom: std::marker::PhantomData<C>,
 }
 
-impl<C: Context<ShellContext = C>> Command for Cmd<C> {
-  type Context = C;
-
+impl<C: Context> Command<C> for Cmd {
   fn get_name(&self) -> &'static str {
     "source"
   }
@@ -71,7 +68,9 @@ impl<C: Context<ShellContext = C>> Command for Cmd<C> {
 
       for c in cmds.iter() {
         context.println(&c);
-        context.get_shell().exec(&c, context);
+        if let Some(exe) = context.get_shell().parse(&c) {
+          exe.run(context);
+        }
       }
     } else {
       context.println(&format!("Could not open file: {:?}", args[1]));
@@ -79,11 +78,8 @@ impl<C: Context<ShellContext = C>> Command for Cmd<C> {
   }
 }
 
-impl<C: Context> Cmd<C> {
+impl Cmd {
   pub fn new() -> Self {
-    Self {
-      file: arg::File::new(),
-      phantom: std::marker::PhantomData,
-    }
+    Self { file: arg::File::new() }
   }
 }

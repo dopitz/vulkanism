@@ -7,9 +7,7 @@ use super::Context;
 use super::Terminal;
 use crate::style::Style;
 
-pub trait Command {
-  type Context: Context;
-
+pub trait Command<C: Context> {
   fn get_name(&self) -> &'static str;
   fn get_args<'a>(&'a self) -> Vec<&'a dyn arg::Parsable> {
     vec![]
@@ -22,7 +20,7 @@ pub trait Command {
     ("", "")
   }
 
-  fn run(&self, args: Vec<String>, context: &mut Self::Context);
+  fn run(&self, args: Vec<String>, context: &mut C);
 
   fn parse(&self, s: &str) -> Option<Vec<String>> {
     let args = self.get_args();
