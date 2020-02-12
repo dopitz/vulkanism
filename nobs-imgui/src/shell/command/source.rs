@@ -1,10 +1,16 @@
-use super::*;
+use crate::shell::arg;
+use crate::shell::context::Context;
+use crate::shell::Command;
+use crate::style::Style;
 
-pub struct Cmd {
+pub struct Cmd<C: Context> {
   file: arg::File,
+  phantom: std::marker::PhantomData<C>,
 }
 
-impl<S: Style, C> Command<S, C> for Cmd {
+impl<C: Context<ShellContext = C>> Command for Cmd<C> {
+  type Context = C;
+
   fn get_name(&self) -> &'static str {
     "source"
   }
@@ -32,7 +38,7 @@ impl<S: Style, C> Command<S, C> for Cmd {
     )
   }
 
-  fn run(&self, args: Vec<String>, term: Terminal<S, C>, context: &mut C) {
+  fn run(&self, args: Vec<String>, context: &mut C) {
     use std::fs::File;
     use std::io::prelude::*;
     use std::io::BufReader;
@@ -64,17 +70,20 @@ impl<S: Style, C> Command<S, C> for Cmd {
       }
 
       for c in cmds.iter() {
-        term.println(&c);
-        term.exec(&c, context);
+        context.println(&c);
+        context.get_shell().exec(&c, context);
       }
     } else {
-      term.println(&format!("Could not open file: {:?}", args[1]));
+      context.println(&format!("Could not open file: {:?}", args[1]));
     }
   }
 }
 
-impl Cmd {
+impl<C: Context> Cmd<C> {
   pub fn new() -> Self {
-    Self { file: arg::File::new() }
+    Self {
+      file: arg::File::new(),
+      phantom: std::marker::PhantomData,
+    }
   }
 }

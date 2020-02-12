@@ -3,28 +3,28 @@ use crate::style::Style;
 use std::sync::Arc;
 use std::sync::Mutex;
 
-pub struct Shell<S: Style, C> {
-  cmds: Arc<Mutex<Vec<Arc<dyn Command<S, C>>>>>,
+pub struct Shell<C: Context> {
+  cmds: Arc<Mutex<Vec<Arc<dyn Command<Context = C>>>>>,
 }
 
-impl<S: Style, C> Clone for Shell<S, C> {
+impl<C: Context> Clone for Shell<C> {
   fn clone(&self) -> Self {
     Self { cmds: self.cmds.clone() }
   }
 }
 
-unsafe impl<S: Style, C> Send for Shell<S, C> {}
+unsafe impl<C: Context> Send for Shell<C> {}
 
-impl<S: Style, C> Shell<S, C> {
+impl<C: 'static + Context> Shell<C> {
   pub fn new() -> Self {
     let sh = Self {
       cmds: Arc::new(Mutex::new(Vec::new())),
     };
-    sh.add_command(Box::new(command::source::Cmd::new()));
+    sh.add_command(Box::new(command::source::Cmd::<C::ShellContext>::new()));
     sh
   }
 
-  fn add_command_inner(&self, cmd: Box<dyn Command<S, C>>) {
+  fn add_command_inner(&self, cmd: Box<dyn Command<Context = C>>) {
     let mut cmds = self.cmds.lock().unwrap();
     let name = cmd.get_name();
     if let Some(c) = cmds
@@ -44,11 +44,11 @@ impl<S: Style, C> Shell<S, C> {
     }
   }
   fn update_help(&self) {
-    self.delete_command_inner(command::help::Cmd::get_name());
-    self.add_command_inner(Box::new(command::help::Cmd::new::<S, C>(&self.get_commands())));
+    self.delete_command_inner(command::help::Cmd::<C>::get_name());
+    self.add_command_inner(Box::new(command::help::Cmd::new(&self.get_commands())));
   }
 
-  pub fn add_command(&self, cmd: Box<dyn Command<S, C>>) {
+  pub fn add_command(&self, cmd: Box<dyn Command<Context = C>>) {
     self.add_command_inner(cmd);
     self.update_help();
   }
@@ -57,7 +57,7 @@ impl<S: Style, C> Shell<S, C> {
     self.update_help();
   }
 
-  pub fn exec(&self, c: &str, term: Terminal<S, C>, context: &mut C) {
+  pub fn exec(&self, c: &str, context: &mut C::ShellContext) {
     let exe = {
       self
         .cmds
@@ -67,11 +67,11 @@ impl<S: Style, C> Shell<S, C> {
         .find_map(|cmd| cmd.parse(c).map(|args| (cmd.clone(), args)))
     };
     if let Some((cmd, args)) = exe {
-      cmd.run(args, term, context);
+      cmd.run(args, context);
     }
   }
 
-  pub fn get_commands(&self) -> Vec<Arc<dyn Command<S, C>>> {
+  pub fn get_commands(&self) -> Vec<Arc<dyn Command<Context = C>>> {
     self.cmds.lock().unwrap().clone()
   }
 }

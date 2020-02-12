@@ -42,34 +42,37 @@ impl Default for TerminalInput {
   }
 }
 
-pub struct Terminal<S: Style, C> {
+pub struct Terminal<S: Style> {
   pub window: TerminalWnd<S>,
-  pub shell: Shell<S, C>,
   pub input: TerminalInput,
 }
 
-impl<S: Style, C> Clone for Terminal<S, C> {
+impl<S: Style> Clone for Terminal<S> {
   fn clone(&self) -> Self {
     Self {
       window: self.window.clone(),
-      shell: self.shell.clone(),
       input: TerminalInput::default(),
     }
   }
 }
 
-unsafe impl<S: Style, C> Send for Terminal<S, C> {}
+unsafe impl<S: Style> Send for Terminal<S> {}
 
-impl<S: Style, C> Terminal<S, C> {
-  pub fn new(window: TerminalWnd<S>, shell: Shell<S, C>) -> Self {
+impl<S: Style> Terminal<S> {
+  pub fn new(window: TerminalWnd<S>) -> Self {
     Self {
       window,
-      shell,
       input: TerminalInput::default(),
     }
   }
 
-  pub fn draw<L: Layout>(&mut self, screen: &mut Screen<S>, layout: &mut L, focus: &mut SelectId, context: &mut C) {
+  pub fn draw<L: Layout, C: Context>(
+    &mut self,
+    screen: &mut Screen<S>,
+    layout: &mut L,
+    focus: &mut SelectId,
+    context: &mut C,
+  ) {
     let e = match self.input.show_term {
       true => self.window.draw(screen, layout, focus),
       false => None,
@@ -99,11 +102,12 @@ impl<S: Style, C> Terminal<S, C> {
     self.window.readln()
   }
 
-  pub fn exec(&self, c: &str, context: &mut C) {
-    self.shell.exec(c, self.clone(), context);
-  }
-
-  fn handle_input(&mut self, e: Option<crate::components::textbox::Event>, screen: &Screen<S>, context: &mut C) {
+  fn handle_input<C: Context>(
+    &mut self,
+    e: Option<crate::components::textbox::Event>,
+    screen: &Screen<S>,
+    context: &mut C,
+  ) {
     // handles the textbox event from the input box
     let e = match e {
       Some(Event::Enter(input)) => {
@@ -117,7 +121,7 @@ impl<S: Style, C> Terminal<S, C> {
         self.input.prefix_len = input.len();
         self.input.complete_index = CompleteIndex::Input;
 
-        if let Some(completions) = self.get_completions(&input) {
+        if let Some(completions) = self.get_completions(&input, context) {
           let mut s = completions
             .iter()
             .fold(String::new(), |acc, c| format!("{}{}\n", acc, c.get_preview()));
@@ -171,7 +175,7 @@ impl<S: Style, C> Terminal<S, C> {
             }
           }
           vk::winit::VirtualKeyCode::LShift | vk::winit::VirtualKeyCode::RShift => self.input.shift = true,
-          vk::winit::VirtualKeyCode::Tab => self.next_completion(self.input.shift),
+          vk::winit::VirtualKeyCode::Tab => self.next_completion(self.input.shift, context),
           vk::winit::VirtualKeyCode::Up => self.next_history(true),
           vk::winit::VirtualKeyCode::Down => self.next_history(false),
           _ => (),
@@ -199,23 +203,23 @@ impl<S: Style, C> Terminal<S, C> {
 
     // execute the command
     if let Some(s) = e {
-      self.exec(&s, context);
+      context.get_shell().exec(&s, context);
       self.input.history.push(s);
     }
   }
 
-  fn get_completions(&self, input: &str) -> Option<Vec<arg::Completion>> {
-    let cmds = self.shell.get_commands();
+  fn get_completions<C: Context>(&self, input: &str, context: &C) -> Option<Vec<arg::Completion>> {
+    let cmds = context.get_shell().get_commands();
     if cmds.iter().filter(|c| c.get_name().starts_with(&input)).count() > 1 {
       Some(cmds.iter().filter_map(|c| c.complete(&input)).flatten().collect::<Vec<_>>())
     } else {
       cmds.iter().find_map(|c| c.complete(&input))
     }
   }
-  fn next_completion(&mut self, reverse: bool) {
+  fn next_completion<C: Context>(&mut self, reverse: bool, context: &C) {
     let input = self.window.get_input();
     let mut prefix = input[..self.input.prefix_len].to_string();
-    let completions = self.get_completions(&prefix);
+    let completions = self.get_completions(&prefix, context);
     match completions.as_ref() {
       Some(ref completions) if !completions.is_empty() => {
         match self.input.complete_index {
@@ -279,11 +283,7 @@ impl<S: Style, C> Terminal<S, C> {
         }
       }
       HistoryIndex::Index(i) => {
-        let i = if reverse {
-          i as isize - 1
-        } else {
-          i as isize + 1
-        };
+        let i = if reverse { i as isize - 1 } else { i as isize + 1 };
         if 0 > i || i as usize >= self.input.history.len() {
           self.input.history_index = HistoryIndex::Input;
         } else {
@@ -294,8 +294,7 @@ impl<S: Style, C> Terminal<S, C> {
 
     if let HistoryIndex::Index(i) = self.input.history_index {
       self.window.input_text(&self.input.history[i]);
-    }
-    else {
+    } else {
       self.window.input_text("");
     }
   }

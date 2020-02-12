@@ -1,11 +1,17 @@
-use super::*;
+use crate::shell::arg;
+use crate::shell::context::Context;
+use crate::shell::Command;
+use crate::style::Style;
 
 #[derive(Clone)]
-pub struct Cmd {
+pub struct Cmd<C: Context> {
   cmd: arg::Ident,
+  phantom: std::marker::PhantomData<C>,
 }
 
-impl<S: Style, C> Command<S, C> for Cmd {
+impl<C: Context> Command for Cmd<C> {
+  type Context = C;
+
   fn get_name(&self) -> &'static str {
     "help"
   }
@@ -23,36 +29,41 @@ impl<S: Style, C> Command<S, C> for Cmd {
     )
   }
 
-  fn run(&self, args: Vec<String>, term: Terminal<S, C>, _context: &mut C) {
+  fn run(&self, args: Vec<String>, context: &mut C) {
     if args.len() == 1 {
-      let w = term.shell.get_commands().iter().fold(0, |w, c| usize::max(w, c.get_name().len()));
+      let w = context
+        .get_shell()
+        .get_commands()
+        .iter()
+        .fold(0, |w, c| usize::max(w, c.get_name().len()));
 
-      term.println("list of commands:");
-      for c in term.shell.get_commands().iter() {
+      context.println("list of comands:");
+      for c in context.get_shell().get_commands().iter() {
         let mut n = c.get_name().to_string();
         while n.len() < w {
           n.push(' ');
         }
-        term.println(&format!("  {} -   {}", n, c.get_info().0));
+        context.println(&format!("  {} -   {}", n, c.get_info().0));
       }
-    } else if let Some(cmd) = term.shell.get_commands().iter().find(|c| c.get_name() == args[1]) {
+    } else if let Some(cmd) = context.get_shell().get_commands().iter().find(|c| c.get_name() == args[1]) {
       let (short, desc) = cmd.get_info();
-      term.println(&format!("{} - {}\n----------------------\n{}", cmd.get_name(), short, desc));
+      context.println(&format!("{} - {}\n----------------------\n{}", cmd.get_name(), short, desc));
     }
   }
 }
 
-impl Cmd {
-  pub fn new<S: Style, C>(cmds: &Vec<std::sync::Arc<dyn Command<S, C>>>) -> Self {
+impl<C: Context> Cmd<C> {
+  pub fn new(cmds: &Vec<std::sync::Arc<dyn Command<Context = <Self as Command>::Context>>>) -> Self {
     let vars = cmds.iter().map(|c| c.get_name().to_string()).collect::<Vec<_>>();
     let cmds = vars.iter().map(|v| v.as_str()).collect::<Vec<_>>();
 
     Self {
       cmd: arg::Ident::no_alternatives(&cmds),
+      phantom: std::marker::PhantomData,
     }
   }
 
-  pub fn update<S: Style, C>(&mut self, cmds: &Vec<std::sync::Arc<dyn Command<S, C>>>) {
+  pub fn update(&mut self, cmds: &Vec<std::sync::Arc<dyn Command<Context = <Self as Command>::Context>>>) {
     let vars = cmds.iter().map(|c| c.get_name().to_string()).collect::<Vec<_>>();
     let cmds = vars.iter().map(|v| v.as_str()).collect::<Vec<_>>();
     self.cmd = arg::Ident::no_alternatives(&cmds);

@@ -1,10 +1,15 @@
-use super::*;
+use crate::shell::arg;
+use crate::shell::context::Context;
+use crate::shell::Command;
+use crate::style::Style;
 
-pub struct Cmd<S: Style, C> {
-  cmds: Vec<std::sync::Arc<dyn Command<S, C>>>,
+pub struct Cmd<C: Context> {
+  cmds: Vec<std::sync::Arc<dyn Command<Context = C>>>,
 }
 
-impl<S: 'static + Style, C: 'static + Clone + Send> Command<S, C> for Cmd<S, C> {
+impl<C: 'static + Clone + Send + Context<ShellContext = C>> Command for Cmd<C> {
+  type Context = C;
+
   fn get_name(&self) -> &'static str {
     "spawn"
   }
@@ -26,14 +31,14 @@ impl<S: 'static + Style, C: 'static + Clone + Send> Command<S, C> for Cmd<S, C> 
     )
   }
 
-  fn run(&self, args: Vec<String>, term: Terminal<S, C>, context: &mut C) {
+  fn run(&self, args: Vec<String>, context: &mut C) {
     let mut c = context.clone();
     std::thread::spawn(move || {
       for a in args.iter().skip(1) {
-        term.println(&a);
-        term.exec(&a, &mut c);
+        c.println(&a);
+        c.get_shell().exec(&a, &mut c);
       }
-      term.println("exiting")
+      c.println("exiting");
     });
   }
 
@@ -81,8 +86,8 @@ impl<S: 'static + Style, C: 'static + Clone + Send> Command<S, C> for Cmd<S, C> 
   }
 }
 
-impl<S: Style, C> Cmd<S, C> {
-  pub fn new(cmds: Vec<std::sync::Arc<dyn Command<S, C>>>) -> Self {
+impl<C: Context> Cmd<C> {
+  pub fn new(cmds: Vec<std::sync::Arc<dyn Command<Context = C>>>) -> Self {
     Self { cmds }
   }
 }

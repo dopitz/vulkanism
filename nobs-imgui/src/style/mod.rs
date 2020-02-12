@@ -22,9 +22,8 @@ macro_rules! make_style {
 
     pub mod shell {
       pub use crate::shell::*;
-      pub type Shell<C> = crate::shell::Shell<super::ThisStyle, C>;
       pub type TerminalWnd = crate::shell::TerminalWnd<super::ThisStyle>;
-      pub type Terminal<C> = crate::shell::Terminal<super::ThisStyle, C>;
+      pub type Terminal = crate::shell::Terminal<super::ThisStyle>;
     }
   };
 }
