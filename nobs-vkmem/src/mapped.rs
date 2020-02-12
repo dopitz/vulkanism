@@ -41,9 +41,9 @@ impl Mapped {
   /// Copies memory from the mapped region on the device to `dst`
   pub fn device_to_host<T>(&self) -> T {
     unsafe {
-      let mut dst = std::mem::uninitialized::<T>();
-      std::ptr::copy_nonoverlapping(self.ptr, std::mem::transmute(&mut dst), std::mem::size_of::<T>());
-      dst
+      let mut dst = std::mem::MaybeUninit::<T>::uninit();
+      std::ptr::copy_nonoverlapping(self.ptr, std::mem::transmute(dst.as_mut_ptr()), std::mem::size_of::<T>());
+      dst.assume_init()
     }
   }
   pub fn device_to_host_slice<T>(&self, dst: &mut [T]) {

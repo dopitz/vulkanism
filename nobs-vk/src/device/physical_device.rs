@@ -76,10 +76,10 @@ impl PhysicalDevice {
       }
     }
 
-    let mut features = unsafe { std::mem::uninitialized() };
+    let mut features = unsafe { std::mem::MaybeUninit::zeroed().assume_init() };
     vk::GetPhysicalDeviceFeatures(handle, &mut features);
 
-    let mut properties = unsafe { std::mem::uninitialized() };
+    let mut properties = unsafe { std::mem::MaybeUninit::zeroed().assume_init() };
     vk::GetPhysicalDeviceProperties(handle, &mut properties);
 
     PhysicalDevice {

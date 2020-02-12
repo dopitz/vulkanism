@@ -414,7 +414,7 @@ impl<'a> Image<'a> {
       handle,
       image: ImageCreate {
         family_indices: Default::default(),
-        info: unsafe { std::mem::uninitialized() },
+        info: unsafe { std::mem::MaybeUninit::zeroed().assume_init() },
         properties: 0,
       },
     }

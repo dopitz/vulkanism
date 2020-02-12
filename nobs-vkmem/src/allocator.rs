@@ -79,12 +79,11 @@ impl AllocatorSizes {
       let mut handle = vk::NULL_HANDLE;
       vk_uncheck!(vk::CreateImage(device, &info, std::ptr::null(), &mut handle));
 
-      let mut requirements = unsafe { std::mem::uninitialized() };
-      vk::GetImageMemoryRequirements(device, handle, &mut requirements);
-
+      let mut requirements = std::mem::MaybeUninit::zeroed();
+      vk::GetImageMemoryRequirements(device, handle, requirements.as_mut_ptr());
       vk::DestroyImage(device, handle, std::ptr::null());
 
-      requirements
+      unsafe { requirements.assume_init() }
     };
     let buffer_requirements = {
       let info = vk::BufferCreateInfo {
@@ -108,12 +107,11 @@ impl AllocatorSizes {
       let mut handle = vk::NULL_HANDLE;
       vk_uncheck!(vk::CreateBuffer(device, &info, std::ptr::null(), &mut handle));
 
-      let mut requirements = unsafe { std::mem::uninitialized() };
-      vk::GetBufferMemoryRequirements(device, handle, &mut requirements);
-
+      let mut requirements = std::mem::MaybeUninit::zeroed();
+      vk::GetBufferMemoryRequirements(device, handle, requirements.as_mut_ptr());
       vk::DestroyBuffer(device, handle, std::ptr::null());
 
-      requirements
+      unsafe { requirements.assume_init() }
     };
 
     let minsize = Allocator::get_min_pagesize(pdevice);
@@ -361,9 +359,9 @@ impl Allocator {
   /// # Returns
   /// The minimum pagesize in bytes.
   pub fn get_min_pagesize(pdevice: vk::PhysicalDevice) -> vk::DeviceSize {
-    let mut properties: vk::PhysicalDeviceProperties = unsafe { std::mem::uninitialized() };
-    vk::GetPhysicalDeviceProperties(pdevice, &mut properties);
-    properties.limits.bufferImageGranularity
+    let mut properties = std::mem::MaybeUninit::uninit();
+    vk::GetPhysicalDeviceProperties(pdevice, properties.as_mut_ptr());
+    unsafe { properties.assume_init().limits.bufferImageGranularity }
   }
 
   /// Get the memtype for a combination of memory requirements and properties
@@ -381,8 +379,9 @@ impl Allocator {
     requirements: &vk::MemoryRequirements,
     properties: vk::MemoryPropertyFlags,
   ) -> Option<u32> {
-    let mut device_properties = unsafe { std::mem::uninitialized() };
-    vk::GetPhysicalDeviceMemoryProperties(pdevice, &mut device_properties);
+    let mut device_properties = std::mem::MaybeUninit::uninit();
+    vk::GetPhysicalDeviceMemoryProperties(pdevice, device_properties.as_mut_ptr());
+    let device_properties = unsafe { device_properties.assume_init() };
 
     (0..device_properties.memoryTypeCount)
       .into_iter()

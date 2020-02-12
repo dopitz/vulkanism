@@ -40,12 +40,13 @@ pub struct BindInfoInner {
 
 impl BindInfoInner {
   pub fn new(info: &BindInfo, device: vk::Device) -> BindInfoInner {
-    let mut requirements = unsafe { std::mem::uninitialized() };
+    let mut requirements = std::mem::MaybeUninit::uninit();
     match info.handle {
-      Handle::Image(i) => vk::GetImageMemoryRequirements(device, i, &mut requirements),
-      Handle::Buffer(b) => vk::GetBufferMemoryRequirements(device, b, &mut requirements),
+      Handle::Image(i) => vk::GetImageMemoryRequirements(device, i, requirements.as_mut_ptr()),
+      Handle::Buffer(b) => vk::GetBufferMemoryRequirements(device, b, requirements.as_mut_ptr()),
     }
     let handle = info.handle;
+    let requirements = unsafe { requirements.assume_init() };
 
     Self {
       handle,

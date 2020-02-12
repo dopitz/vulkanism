@@ -1,9 +1,5 @@
 use super::*;
-use crate::components::textbox::Event;
-use crate::select::SelectId;
 use crate::style::Style;
-use crate::window::*;
-use crate::ImGui;
 use std::sync::Arc;
 use std::sync::Mutex;
 
@@ -21,7 +17,7 @@ unsafe impl<S: Style, C> Send for Shell<S, C> {}
 
 impl<S: Style, C> Shell<S, C> {
   pub fn new() -> Self {
-    let mut sh = Self {
+    let sh = Self {
       cmds: Arc::new(Mutex::new(Vec::new())),
     };
     sh.add_command(Box::new(command::source::Cmd::new()));

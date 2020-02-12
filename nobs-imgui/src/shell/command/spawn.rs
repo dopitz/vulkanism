@@ -27,7 +27,6 @@ impl<S: 'static + Style, C: 'static + Clone + Send> Command<S, C> for Cmd<S, C> 
   }
 
   fn run(&self, args: Vec<String>, term: Terminal<S, C>, context: &mut C) {
-    let name = self.get_name();
     let mut c = context.clone();
     std::thread::spawn(move || {
       for a in args.iter().skip(1) {

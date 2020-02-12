@@ -289,7 +289,7 @@ impl<S: Style> TerminalWnd<S> {
       .unwrap()
       .input
       .text(&format!("~$ {}", s))
-      .cursor(Some(vec2!(s.len() as u32 + 3, 0)));;
+      .cursor(Some(vec2!(s.len() as u32 + 3, 0)));
   }
   /// Get the text of the input edit
   pub fn get_input(&self) -> String {

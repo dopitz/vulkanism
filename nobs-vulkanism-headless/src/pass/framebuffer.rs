@@ -40,10 +40,12 @@ impl Framebuffer {
 
   /// Set the clear values for all attachments
   pub fn set_clear(&mut self, clear: &[vk::ClearValue]) {
+    println!("{:?}", unsafe {self.clear[0].color.uint32});
     assert!(self.clear.len() == clear.len());
     for (c, s) in self.clear.iter_mut().zip(clear.iter()) {
       *c = *s;
     }
+    println!("{:?}", unsafe {self.clear[0].color.uint32});
   }
 
   /// Returns a render pass begin command
@@ -79,8 +81,9 @@ impl Framebuffer {
     formats
       .iter()
       .find(|f| {
-        let mut props = unsafe { std::mem::uninitialized() };
-        vk::GetPhysicalDeviceFormatProperties(pdevice, **f, &mut props);
+        let mut props = std::mem::MaybeUninit::uninit();
+        vk::GetPhysicalDeviceFormatProperties(pdevice, **f, props.as_mut_ptr());
+        let props = unsafe { props.assume_init() };
 
         (props.optimalTilingFeatures & vk::FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT) != 0
       })

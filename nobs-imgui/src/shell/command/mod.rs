@@ -8,10 +8,10 @@ use crate::style::Style;
 
 pub trait Command<S: Style, C> {
   fn get_name(&self) -> &'static str;
-  fn get_args<'a>(&'a self) -> Vec<&'a arg::Parsable> {
+  fn get_args<'a>(&'a self) -> Vec<&'a dyn arg::Parsable> {
     vec![]
   }
-  fn get_opt_args<'a>(&'a self) -> Vec<&'a arg::Parsable> {
+  fn get_opt_args<'a>(&'a self) -> Vec<&'a dyn arg::Parsable> {
     vec![]
   }
 

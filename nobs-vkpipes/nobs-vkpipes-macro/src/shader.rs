@@ -248,7 +248,7 @@ impl Builder {
       }
     }
     .canonicalize()
-    .unwrap();;
+    .unwrap();
 
 
     let resolved_name = resolved.to_str().unwrap().to_string();

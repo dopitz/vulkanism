@@ -160,8 +160,9 @@ impl Builder {
 
   fn new(pdevice: vk::PhysicalDevice, device: vk::Device, surface: vk::SurfaceKHR) -> Self {
     // surface capabilities
-    let mut capabilities = unsafe { std::mem::uninitialized() };
-    vk::GetPhysicalDeviceSurfaceCapabilitiesKHR(pdevice, surface, &mut capabilities);
+    let mut capabilities = std::mem::MaybeUninit::uninit();
+    vk::GetPhysicalDeviceSurfaceCapabilitiesKHR(pdevice, surface, capabilities.as_mut_ptr());
+    let capabilities = unsafe { capabilities.assume_init() };
 
     let (format, colorspace) = Self::get_default_format(pdevice, surface);
     let presentmode = Self::get_default_presentmode(pdevice, surface);

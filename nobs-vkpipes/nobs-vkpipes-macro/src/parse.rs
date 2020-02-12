@@ -1,7 +1,7 @@
 use proc_macro::TokenStream;
 use proc_macro::TokenTree;
 
-type Tokens = Iterator<Item = TokenTree>;
+type Tokens = dyn Iterator<Item = TokenTree>;
 
 pub fn trim_quote(s: &str) -> String {
   s.chars().skip(1).take(s.len() - 2).collect()

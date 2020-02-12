@@ -122,7 +122,7 @@ impl<T: Neg<Output = T>> Neg for Vec3<T> {
   }
 }
 impl<T: PartialOrd + Identity<Output = T> + Neg<Output = T>> Vec3<T> {
-  fn abs(self) -> Self {
+  pub fn abs(self) -> Self {
     Self {
       x: if self.x < T::zero() {-self.x} else {self.x},
       y: if self.y < T::zero() {-self.y} else {self.y},
@@ -224,7 +224,7 @@ impl<T: VecTraits<T>> DivAssign<Vec3<T>> for Vec3<T> {
 }
 
 impl<T: VecTraits<T> + PowAble<T, Output = T>> Vec3<T> {
-  fn pow(self, other: Self) -> Self {
+  pub fn pow(self, other: Self) -> Self {
     Self {
       x: self.x.pow(other.x),
       y: self.y.pow(other.y),

@@ -9,10 +9,10 @@ impl<S: Style, C> Command<S, C> for Cmd {
   fn get_name(&self) -> &'static str {
     "help"
   }
-  fn get_args<'a>(&'a self) -> Vec<&'a arg::Parsable> {
+  fn get_args<'a>(&'a self) -> Vec<&'a dyn arg::Parsable> {
     vec![]
   }
-  fn get_opt_args<'a>(&'a self) -> Vec<&'a arg::Parsable> {
+  fn get_opt_args<'a>(&'a self) -> Vec<&'a dyn arg::Parsable> {
     vec![&self.cmd]
   }
 
