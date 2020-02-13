@@ -1,7 +1,6 @@
 use crate::shell::arg;
 use crate::shell::context::Context;
 use crate::shell::Command;
-use crate::style::Style;
 
 pub struct Cmd {
   file: arg::File,
@@ -68,9 +67,7 @@ impl<C: Context> Command<C> for Cmd {
 
       for c in cmds.iter() {
         context.println(&c);
-        if let Some(exe) = context.get_shell().parse(&c) {
-          exe.run(context);
-        }
+        context.get_shell().exec(&c, context);
       }
     } else {
       context.println(&format!("Could not open file: {:?}", args[1]));

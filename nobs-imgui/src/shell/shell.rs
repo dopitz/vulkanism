@@ -1,15 +1,26 @@
-use super::*;
-use crate::style::Style;
+use crate::shell::command::help;
+use crate::shell::command::source;
+use crate::shell::Command;
+use crate::shell::Context;
 use std::sync::Arc;
 use std::sync::Mutex;
 
+struct ShellExec<C: Context> {
+  pub cmd: Arc<dyn Command<C>>,
+  pub args: Vec<String>,
+}
+
 pub struct Shell<C: Context> {
   cmds: Arc<Mutex<Vec<Arc<dyn Command<C>>>>>,
+  exec: Arc<Mutex<Option<std::thread::JoinHandle<()>>>>,
 }
 
 impl<C: Context> Clone for Shell<C> {
   fn clone(&self) -> Self {
-    Self { cmds: self.cmds.clone() }
+    Self {
+      cmds: self.cmds.clone(),
+      exec: self.exec.clone(),
+    }
   }
 }
 
@@ -19,8 +30,9 @@ impl<C: Context> Shell<C> {
   pub fn new() -> Self {
     let sh = Self {
       cmds: Arc::new(Mutex::new(Vec::new())),
+      exec: Arc::new(Mutex::new(None)),
     };
-    //TODO sh.add_command(Box::new(command::source::Cmd::new()));
+    sh.add_command(Box::new(source::Cmd::new()));
     sh
   }
 
@@ -44,8 +56,8 @@ impl<C: Context> Shell<C> {
     }
   }
   fn update_help(&self) {
-    self.delete_command_inner(command::help::Cmd::get_name());
-    self.add_command_inner(Box::new(command::help::Cmd::new(&self.get_commands())));
+    self.delete_command_inner(help::Cmd::get_name());
+    self.add_command_inner(Box::new(help::Cmd::new(&self.get_commands())));
   }
 
   pub fn add_command(&self, cmd: Box<dyn Command<C>>) {
@@ -57,27 +69,42 @@ impl<C: Context> Shell<C> {
     self.update_help();
   }
 
-  pub fn parse(&self, c: &str) -> Option<ShellExec<C>> {
-    self
+  pub fn get_commands(&self) -> Vec<Arc<dyn Command<C>>> {
+    self.cmds.lock().unwrap().clone()
+  }
+
+  pub fn exec(&self, s: &str, context: &mut C) {
+    let exe = self
       .cmds
       .lock()
       .unwrap()
       .iter()
-      .find_map(|cmd| cmd.parse(c).map(|args| ShellExec { cmd: cmd.clone(), args }))
-  }
+      .find_map(|cmd| cmd.parse(s).map(|args| (cmd.clone(), args)));
 
-  pub fn get_commands(&self) -> Vec<Arc<dyn Command<C>>> {
-    self.cmds.lock().unwrap().clone()
+    if let Some((cmd, args)) = exe {
+      cmd.run(args, context);
+    }
+  }
+  pub fn has_exec(&self) -> bool {
+    self.exec.lock().unwrap().is_some()
   }
 }
 
-pub struct ShellExec<C: Context> {
-  cmd: Arc<dyn Command<C>>,
-  args: Vec<String>,
-}
+impl<C: 'static + Clone + Send + Context> Shell<C> {
+  pub fn exec_async(&self, s: &str, context: &mut C) {
+    let exe = self
+      .cmds
+      .lock()
+      .unwrap()
+      .iter()
+      .find_map(|cmd| cmd.parse(s).map(|args| (cmd.clone(), args)));
 
-impl<C: Context> ShellExec<C> {
-  pub fn run(self, context: &mut C) {
-    self.cmd.run(self.args, context);
+    if let Some((cmd, args)) = exe {
+      let mut context = context.clone();
+      *self.exec.lock().unwrap() = Some(std::thread::spawn(move || {
+        cmd.run(args, &mut context);
+        *context.get_shell().exec.lock().unwrap() = None;
+      }))
+    }
   }
 }

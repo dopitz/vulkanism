@@ -2,12 +2,10 @@ pub mod help;
 pub mod source;
 pub mod spawn;
 
-use super::arg;
-use super::Context;
-use super::Terminal;
-use crate::style::Style;
+use crate::shell::arg;
+use crate::shell::Context;
 
-pub trait Command<C: Context> {
+pub trait Command<C: Context> : Send + Sync {
   fn get_name(&self) -> &'static str;
   fn get_args<'a>(&'a self) -> Vec<&'a dyn arg::Parsable> {
     vec![]

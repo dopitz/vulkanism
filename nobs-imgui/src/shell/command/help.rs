@@ -1,7 +1,6 @@
 use crate::shell::arg;
 use crate::shell::context::Context;
 use crate::shell::Command;
-use crate::style::Style;
 
 #[derive(Clone)]
 pub struct Cmd {
@@ -28,11 +27,15 @@ impl<C: Context> Command<C> for Cmd {
 
   fn run(&self, args: Vec<String>, context: &mut C) {
     if args.len() == 1 {
-      let w = context
-        .get_shell()
-        .get_commands()
+      println!("AOEUAOEUAOEU");
+      let s = context.get_shell();
+      println!("AOEUAOEUAOEU");
+      let cmds = s.get_commands();
+      println!("AOEUAOEUAOEU");
+      let w = cmds
         .iter()
         .fold(0, |w, c| usize::max(w, c.get_name().len()));
+      println!("AOEUAOEUAOEU");
 
       context.println("list of comands:");
       for c in context.get_shell().get_commands().iter() {
