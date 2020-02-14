@@ -5,7 +5,7 @@ pub mod spawn;
 use crate::shell::arg;
 use crate::shell::Context;
 
-pub trait Command<C: Context> : Send + Sync {
+pub trait Command<C: Context>: Send + Sync {
   fn get_name(&self) -> &'static str;
   fn get_args<'a>(&'a self) -> Vec<&'a dyn arg::Parsable> {
     vec![]
@@ -134,4 +134,38 @@ fn split_args<'a>(name: &str, s: &'a str) -> Vec<(&'a str, String)> {
   // remove escape backslashes
   matches.iter_mut().for_each(|s| s.1 = s.1.replace("\\ ", " ").replace("\\\\", "\\"));
   matches
+}
+
+pub trait CCC<C: Context>: Send + Sync {
+  fn get_args<'a>(&'a self) -> Vec<&'a dyn arg::Argument>;
+
+  fn parse<'a>(&self, s: &'a str) -> Option<Vec<arg::Parsed<'a>>> {
+    let mut args = self.get_args().into_iter().map(|a| (a, false)).collect::<Vec<_>>();
+
+    // TODO: make sure there is always exatly ONE arg::CommandName...
+    // parse the command name and get argument string
+    let sargs = args.iter_mut().find(|(a, _)| a.get_desc().index == 0).and_then(|(a, f)| {
+      a.parse(s).map(|(_, sargs)| {
+        *f = true;
+        sargs
+      })
+    });
+
+    if let Some(sargs) = sargs {
+      let parsed = args
+        .iter_mut()
+        .filter_map(|(a, f)| if *f { Some((a.parse(sargs), f)) } else { None })
+        .collect::<Vec<_>>();
+
+      match parsed.len() {
+        0 => (),
+        1 => (),
+        _ => (),
+      }
+
+      None
+    } else {
+      None
+    }
+  }
 }

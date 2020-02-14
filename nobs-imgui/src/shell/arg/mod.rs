@@ -115,7 +115,7 @@ pub trait Convert<T> {
   }
 }
 
-pub trait ConvertDefault<T> : Convert<T> {
+pub trait ConvertDefault<T>: Convert<T> {
   fn default(&self) -> Option<T>;
 
   fn convert_or_default(&self, s: &str) -> Option<T> {
@@ -130,3 +130,159 @@ pub use self::bool::Bool;
 pub use file::File;
 pub use ident::Ident;
 pub use num::*;
+
+#[derive(Default)]
+pub struct ArgumentDesc {
+  pub index: usize,
+  pub name: String,
+  pub short: String,
+  pub default: Option<String>,
+  pub optional: bool,
+  pub help: String,
+}
+
+impl ArgumentDesc {
+  pub fn new() -> Self {
+    Default::default()
+  }
+
+  pub fn index(mut self, i: usize) -> Self {
+    self.index = i;
+    self
+  }
+
+  pub fn name(mut self, name: &str) -> Self {
+    self.name = name.to_string();
+    self
+  }
+
+  pub fn short(mut self, short: &str) -> Self {
+    self.short = short.to_string();
+    self
+  }
+
+  pub fn default(mut self, default: &str) -> Self {
+    self.default = Some(default.to_string());
+    self
+  }
+
+  pub fn help(mut self, help: &str) -> Self {
+    self.help = help.to_string();
+    self
+  }
+}
+
+pub trait Argument {
+  fn get_desc(&self) -> &ArgumentDesc;
+
+  /// Tries to parse this argument from
+  fn parse<'a>(&self, s: &'a str) -> Option<(Parsed<'a>, &'a str)> {
+    fn parse_name<'a>(desc: &ArgumentDesc, s: &'a str) -> Option<&'a str> {
+      if s.starts_with("-") && s[1..].starts_with(&desc.short) {
+        Some(&s[..1 + desc.short.len()])
+      } else if s.starts_with("--") && s[2..].starts_with(&desc.name) {
+        Some(&s[..2 + desc.name.len()])
+      } else if !s.starts_with("-") && !s.starts_with("--") && desc.index > 0 {
+        Some("")
+      } else {
+        None
+      }
+    }
+
+    fn parse_value(s: &str) -> &str {
+      let s = s.trim();
+
+      if s.is_empty() {
+        s
+      }
+      // check single space directly, so that we don't need special treatment later
+      else if let Some(' ') = s.chars().next() {
+        ""
+      }
+      // "..." enclosed value
+      else if let Some('\"') = s.chars().next() {
+        match s.chars().skip(1).position(|c| c == '\"') {
+          Some(p) => &s[1..p],
+          None => &s[1..],
+        }
+      }
+      // value with '\ ' spaces
+      else {
+        let mut p = 0;
+        loop {
+          match s
+            .chars()
+            .skip(p + 1)
+            .position(|c| c == ' ')
+            .filter(|p| s.chars().nth(p - 1).filter(|c| *c == '\\').is_some())
+          {
+            Some(np) => p = np,
+            None => break,
+          }
+        }
+        &s[..p]
+      }
+    }
+
+    fn parse_next(offset: usize, s: &str) -> usize {
+      s.chars().skip(offset).take_while(|c| *c != ' ').take_while(|c| *c != ' ').count()
+    }
+
+    let input = s;
+    let p = parse_next(0, s);
+
+    // Special case, this is the command name
+    let desc = self.get_desc();
+    if desc.index == 0 {
+      if s[p..].starts_with(&desc.name) {
+        let name = &s[p..desc.name.len()];
+        let p = parse_next(p + name.len(), s);
+        let next = &s[p..];
+        Some((Parsed { input, name, value: "" }, next))
+      } else {
+        None
+      }
+    }
+    //
+    // everything else are command arguments
+    else if let Some(name) = parse_name(self.get_desc(), &s[p..]) {
+      let p = parse_next(p + name.len(), s);
+      let value = parse_value(&s[p..]);
+      let p = parse_next(p + value.len(), s);
+      let next = &s[p..];
+
+      Some((Parsed { input, name, value }, next))
+    } else {
+      None
+    }
+  }
+}
+
+pub struct Parsed<'a> {
+  pub input: &'a str,
+  pub name: &'a str,
+  pub value: &'a str,
+}
+
+pub struct Completer {
+  pub quickfix: String,
+  pub completed: String,
+}
+
+pub struct CommandName {
+  desc: ArgumentDesc,
+}
+
+impl CommandName {
+  pub fn new(name: &str) -> Self {
+    Self {
+      desc: ArgumentDesc::new().index(0).name(name),
+    }
+  }
+}
+
+impl Argument for CommandName {
+  fn get_desc<'a>(&'a self) -> &'a ArgumentDesc {
+    &self.desc
+  }
+}
