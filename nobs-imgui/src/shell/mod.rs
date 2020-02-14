@@ -1,7 +1,6 @@
 mod context;
 mod shell;
 mod terminal;
-mod terminalwnd;
 
 pub mod arg;
 pub mod command;
@@ -13,4 +12,3 @@ pub use command::Command;
 pub use context::Context;
 pub use shell::Shell;
 pub use terminal::Terminal;
-pub use terminalwnd::TerminalWnd;
