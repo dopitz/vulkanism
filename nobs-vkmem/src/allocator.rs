@@ -212,7 +212,6 @@ impl AllocatorSizes {
 
 struct AllocatorImpl {
   device: vk::Device,
-  //pagetbls: HashMap<Memtype, page::PageTable>,
   pagetbls: HashMap<Memtype, Table>,
   handles: HashMap<Handle<u64>, Memtype>,
 }

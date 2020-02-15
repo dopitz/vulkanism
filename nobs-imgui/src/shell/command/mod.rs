@@ -1,3 +1,4 @@
+pub mod args;
 pub mod help;
 pub mod source;
 pub mod spawn;
@@ -136,36 +137,69 @@ fn split_args<'a>(name: &str, s: &'a str) -> Vec<(&'a str, String)> {
   matches
 }
 
-pub trait CCC<C: Context>: Send + Sync {
-  fn get_args<'a>(&'a self) -> Vec<&'a dyn arg::Argument>;
+use args::Arg;
+use args::Parsed;
 
-  fn parse<'a>(&self, s: &'a str) -> Option<Vec<arg::Parsed<'a>>> {
-    let mut args = self.get_args().into_iter().map(|a| (a, false)).collect::<Vec<_>>();
+pub trait CCC<C: Context>: Send + Sync {
+  fn get_args<'a>(&'a self) -> Vec<&'a dyn Arg>;
+
+  fn parse<'a>(&'a self, s: &'a str) -> Option<Vec<Parsed<'a>>> {
+    let args = self.get_args();
+    let mut parsed: Vec<Option<Parsed>> = vec![None; args.len()];
+    let mut argorder = Vec::with_capacity(args.len());
 
     // TODO: make sure there is always exatly ONE arg::CommandName...
     // parse the command name and get argument string
-    let sargs = args.iter_mut().find(|(a, _)| a.get_desc().index == 0).and_then(|(a, f)| {
-      a.parse(s).map(|(_, sargs)| {
-        *f = true;
+    let mut next = args
+      .iter()
+      .enumerate()
+      .find(|(i, a)| a.get_desc().index.filter(|i| *i == 0).is_some())
+      .and_then(|(i, a)| a.parse(s).map(|p| (i, p)))
+      .map(|(i, (p, sargs))| {
+        argorder.push(i);
+        parsed[i] = Some(p);
         sargs
-      })
-    });
+      });
 
-    if let Some(sargs) = sargs {
-      let parsed = args
-        .iter_mut()
-        .filter_map(|(a, f)| if *f { Some((a.parse(sargs), f)) } else { None })
-        .collect::<Vec<_>>();
+    // parse rest of the arguments
+    while let Some(sargs) = next {
+      // TODO: name clashes of arguments are handled during command/argument construction
+      // it is possible that more than one argument parse successfully (unnamed arguments)
+      // such arguments are ordered by the index of the argument descriptor
+      // choosing the min element of the remaining unparsed arguments yields a unique result
+      next = args
+        .iter()
+        .enumerate()
+        .filter(|(i, a)| parsed[*i].is_none())
+        .filter_map(|(i, a)| a.parse(sargs).map(|p| (a.get_desc().index, (i, p))))
+        .min_by(|(a, _), (b, _)| a.cmp(b))
+        .map(|(_, (i, (p, sargs)))| {
+          parsed[i] = Some(p);
+          sargs
+        });
+    }
 
-      match parsed.len() {
-        0 => (),
-        1 => (),
-        _ => (),
-      }
+    // assign default values to arguments, that are not flagged as optional
+    args
+      .iter()
+      .zip(parsed.iter_mut())
+      .enumerate()
+      .filter(|(i, (a, p))| !a.get_desc().optional && a.get_desc().default.is_some() && p.is_none())
+      .for_each(|(i, (a, p))| {
+        argorder.push(i);
+        *p = Some(Parsed {
+          input: "",
+          name: "",
+          value: a.get_desc().default.as_ref().unwrap().as_str(),
+        });
+      });
 
+    // make sure all non-optional parameter have a parse result
+    if args.iter().zip(parsed.iter()).any(|(a, p)| !a.get_desc().optional && p.is_some()) {
       None
     } else {
-      None
+      // return array of parsed arguments with same ordering as specified in the input
+      Some(argorder.into_iter().map(|i| parsed[i].take().unwrap()).collect())
     }
   }
 }
