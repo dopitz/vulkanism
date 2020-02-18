@@ -38,20 +38,20 @@ impl<C: Context> Shell<C> {
 
   fn add_command_inner(&self, cmd: Box<dyn Command<C>>) {
     let mut cmds = self.cmds.lock().unwrap();
-    let name = cmd.get_name();
+    let name = &cmd.get_commandname();
     if let Some(c) = cmds
       .iter()
-      .find(|c| c.get_name().starts_with(name) || name.starts_with(c.get_name()))
+      .find(|c| c.get_commandname().starts_with(name) || name.starts_with(&c.get_commandname()))
     {
-      println!("Command can not be added. Name conflict:\n{}\n{}", name, c.get_name());
+      println!("Command can not be added. Name conflict:\n{}\n{}", name, c.get_commandname());
     } else {
       cmds.push(cmd.into());
     }
-    cmds.sort_by(|a, b| a.get_name().cmp(b.get_name()));
+    cmds.sort_by(|a, b| a.get_commandname().cmp(&b.get_commandname()));
   }
   fn delete_command_inner(&self, name: &str) {
     let mut cmds = self.cmds.lock().unwrap();
-    if let Some(p) = cmds.iter().position(|c| c.get_name() == name) {
+    if let Some(p) = cmds.iter().position(|c| c.get_commandname() == name) {
       cmds.remove(p);
     }
   }
@@ -74,37 +74,38 @@ impl<C: Context> Shell<C> {
   }
 
   pub fn exec(&self, s: &str, context: &mut C) {
-    let exe = self
+    let cmd = self
       .cmds
       .lock()
       .unwrap()
       .iter()
-      .find_map(|cmd| cmd.parse(s).map(|args| (cmd.clone(), args)));
+      .find_map(|cmd| cmd.parse(s).map(|_| cmd.clone()));
 
-    if let Some((cmd, args)) = exe {
-      cmd.run(args, context);
-    }
-  }
-  pub fn has_exec(&self) -> bool {
-    self.exec.lock().unwrap().is_some()
-  }
-}
-
-impl<C: 'static + Clone + Send + Context> Shell<C> {
-  pub fn exec_async(&self, s: &str, context: &mut C) {
-    let exe = self
-      .cmds
-      .lock()
-      .unwrap()
-      .iter()
-      .find_map(|cmd| cmd.parse(s).map(|args| (cmd.clone(), args)));
-
-    if let Some((cmd, args)) = exe {
-      let mut context = context.clone();
-      *self.exec.lock().unwrap() = Some(std::thread::spawn(move || {
-        cmd.run(args, &mut context);
-        *context.get_shell().exec.lock().unwrap() = None;
-      }))
+    if let Some(cmd) = cmd {
+      let args = cmd.parse(s).unwrap();
+      cmd.run(&args, context);
     }
   }
 }
+
+//impl<C: 'static + Clone + Send + Context> Shell<C> {
+//  pub fn has_exec(&self) -> bool {
+//    self.exec.lock().unwrap().is_some()
+//  }
+//  pub fn exec_async(&self, s: &str, context: &mut C) {
+//    let exe = self
+//      .cmds
+//      .lock()
+//      .unwrap()
+//      .iter()
+//      .find_map(|cmd| cmd.parse(s).map(|args| (cmd.clone(), args.clone())));
+//
+//    if let Some((cmd, args)) = exe {
+//      let mut context = context.clone();
+//      *self.exec.lock().unwrap() = Some(std::thread::spawn(move || {
+//        cmd.run(&args, &mut context);
+//        *context.get_shell().exec.lock().unwrap() = None;
+//      }))
+//    }
+//  }
+//}

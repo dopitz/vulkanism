@@ -82,24 +82,31 @@ impl<S: Style> Complete<S> {
 
     // List of completions from command names, or parsed command arguments
     let cmds = context.get_shell().get_commands();
-    let completions = if cmds.iter().filter(|c| c.get_name().starts_with(&input)).count() > 1 {
-      Some(cmds.iter().filter_map(|c| c.complete(&input)).flatten().collect::<Vec<_>>())
-    } else {
-      cmds.iter().find_map(|c| c.complete(&input))
-    };
 
-    // Update the quickfix window
-    if let Some(completions) = completions.as_ref() {
-      let mut s = completions
-        .iter()
-        .fold(String::new(), |acc, c| format!("{}{}\n", acc, c.get_preview()));
-      s = format!("{}{}", s, "-------------");
-      self.window.quickfix_text(&s);
-    } else {
-      self.window.quickfix_text("");
-    }
+    //cmds.iter().filter(|c| c.parse(&input));
 
-    self.state.lock().unwrap().completions = completions;
+
+
+
+
+    //let completions = if cmds.iter().filter(|c| c.get_commandname().starts_with(&input)).count() > 1 {
+    //  Some(cmds.iter().filter_map(|c| c.complete(&input)).flatten().collect::<Vec<_>>())
+    //} else {
+    //  cmds.iter().find_map(|c| c.complete(&input))
+    //};
+
+    //// Update the quickfix window
+    //if let Some(completions) = completions.as_ref() {
+    //  let mut s = completions
+    //    .iter()
+    //    .fold(String::new(), |acc, c| format!("{}{}\n", acc, c.get_preview()));
+    //  s = format!("{}{}", s, "-------------");
+    //  self.window.quickfix_text(&s);
+    //} else {
+    //  self.window.quickfix_text("");
+    //}
+
+    //self.state.lock().unwrap().completions = completions;
   }
 
   fn next(&self, reverse: bool) {

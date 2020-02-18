@@ -3,19 +3,25 @@ use crate::shell::command::args::ArgDesc;
 
 /// Special Argument specifying the command name at `index == 0`
 #[derive(Clone, Debug)]
-pub struct CommandName {
+pub struct File {
   desc: ArgDesc,
+  ext: Option<String>,
 }
 
-impl CommandName {
-  pub fn new(name: &str) -> Self {
+impl File {
+  pub fn new(desc: ArgDesc) -> Self {
+    Self { desc, ext: None }
+  }
+
+  pub fn with_extension(desc: ArgDesc, ext: &str) -> Self {
     Self {
-      desc: ArgDesc::new(name).index(0),
+      desc,
+      ext: Some(ext.to_string()),
     }
   }
 }
 
-impl Arg for CommandName {
+impl Arg for File {
   fn get_desc<'a>(&'a self) -> &'a ArgDesc {
     &self.desc
   }

@@ -9,6 +9,7 @@
 /// If `short` is specified, it must not clash with the `short` identifier of other arguments in the same [Command](../trait.Command.html).
 ///
 /// Impletents a builder pattern for it's members
+#[derive(Clone, Debug)]
 pub struct ArgDesc {
   /// Index of the argument
   ///
@@ -221,5 +222,9 @@ pub struct Parsed<'a> {
 }
 
 mod commandname;
+mod file;
+mod ident;
 
 pub use commandname::CommandName;
+pub use file::File;
+pub use ident::Ident;
