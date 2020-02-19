@@ -83,11 +83,15 @@ impl<S: Style> Complete<S> {
     // List of completions from command names, or parsed command arguments
     let cmds = context.get_shell().get_commands();
 
-    //cmds.iter().filter(|c| c.parse(&input));
+    println!("===========");
+    for c in cmds.iter() {
+      println!("{}", c.get_commandname());
+      println!("{:?}", c.parse(&input));
+    }
 
-
-
-
+    //if let Some(args) = cmds.iter().filter_map(|c| c.parse(&input)).next() {
+    //  println!("{:?}", args);
+    //}
 
     //let completions = if cmds.iter().filter(|c| c.get_commandname().starts_with(&input)).count() > 1 {
     //  Some(cmds.iter().filter_map(|c| c.complete(&input)).flatten().collect::<Vec<_>>())

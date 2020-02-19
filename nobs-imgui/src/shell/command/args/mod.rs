@@ -139,6 +139,8 @@ pub trait Arg {
     fn parse_value(s: &str) -> &str {
       let s = s.trim();
 
+      println!("parse value '{}'", s);
+
       if s.is_empty() {
         s
       }
@@ -149,22 +151,20 @@ pub trait Arg {
       // "..." enclosed value
       else if let Some('\"') = s.chars().next() {
         match s.chars().skip(1).position(|c| c == '\"') {
-          Some(p) => &s[1..p],
+          Some(p) => &s[1..p + 1],
           None => &s[1..],
         }
       }
       // value with '\ ' spaces
       else {
         let mut p = 0;
-        loop {
-          match s
-            .chars()
-            .skip(p + 1)
-            .position(|c| c == ' ')
-            .filter(|p| s.chars().nth(p - 1).filter(|c| *c == '\\').is_some())
-          {
-            Some(np) => p = np,
-            None => break,
+        while p < s.len() {
+          match s.chars().skip(p + 1).position(|c| c == ' ') {
+            Some(np) => p = np + p + 1, // + p + 1 because of the skip..
+            None => p = s.len(),
+          };
+          if !s.chars().nth(p - 1).filter(|c| *c == '\\').is_some() {
+            break;
           }
         }
         &s[..p]
@@ -172,7 +172,7 @@ pub trait Arg {
     }
 
     fn parse_next(offset: usize, s: &str) -> usize {
-      s.chars().skip(offset).take_while(|c| *c != ' ').take_while(|c| *c != ' ').count()
+      s.chars().skip(offset).take_while(|c| *c == ' ').count()
     }
 
     let input = s;
@@ -183,7 +183,8 @@ pub trait Arg {
     if let Some(0) = desc.index.as_ref() {
       if s[p..].starts_with(&desc.name) {
         let name = &s[p..desc.name.len()];
-        let p = parse_next(p + name.len(), s);
+        let p = p + name.len();
+        let p = p + parse_next(p, s);
         let next = &s[p..];
         Some((Parsed { input, name, value: "" }, next))
       } else {
@@ -193,11 +194,10 @@ pub trait Arg {
     //
     // everything else are command arguments
     else if let Some(name) = parse_name(self.get_desc(), &s[p..]) {
-      let p = parse_next(p + name.len(), s);
+      let p = p + name.len() + parse_next(p + name.len(), s);
       let value = parse_value(&s[p..]);
-      let p = parse_next(p + value.len(), s);
+      let p = p + value.len() + parse_next(p + value.len(), s);
       let next = &s[p..];
-
       Some((Parsed { input, name, value }, next))
     } else {
       None
@@ -219,6 +219,11 @@ pub struct Parsed<'a> {
   pub name: &'a str,
   /// The argument value as specified in the input string, with trimmed whitespaces.
   pub value: &'a str,
+}
+
+pub struct Completion<'a> {
+  pub args: Vec<Parsed<'a>>,
+  pub variants: Vec<(usize, String)>,
 }
 
 mod commandname;

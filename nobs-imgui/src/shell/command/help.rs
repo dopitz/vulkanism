@@ -74,14 +74,14 @@ impl Cmd {
 
     Self {
       thisname: args::CommandName::new("help"),
-      cmd: args::Ident::new(args::ArgDesc::new("command").index(0), &[cmds.as_slice()], None, true),
+      cmd: args::Ident::new(args::ArgDesc::new("command").index(1), &[cmds.as_slice()], None, true),
     }
   }
 
   pub fn update<C: Context>(&mut self, cmds: &Vec<std::sync::Arc<dyn Command<C>>>) {
     let vars = cmds.iter().map(|c| c.get_commandname().to_string()).collect::<Vec<_>>();
     let cmds = vars.iter().map(|v| v.as_str()).collect::<Vec<_>>();
-    self.cmd = args::Ident::new(args::ArgDesc::new("command").index(0), &[cmds.as_slice()], None, true);
+    self.cmd = args::Ident::new(args::ArgDesc::new("command").index(1), &[cmds.as_slice()], None, true);
   }
 
   pub fn get_name() -> &'static str {

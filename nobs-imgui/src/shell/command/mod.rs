@@ -5,6 +5,7 @@ pub mod spawn;
 
 use crate::shell::Context;
 use args::Arg;
+use args::Completion;
 use args::Parsed;
 
 pub trait Command<C: Context>: Send + Sync {
@@ -72,6 +73,10 @@ pub trait Command<C: Context>: Send + Sync {
         sargs
       });
 
+    if !argorder.is_empty() {
+      println!("{}    {:?}   {:?}", s, parsed[argorder[0]], next);
+    }
+
     // parse rest of the arguments
     while let Some(sargs) = next {
       // TODO: name clashes of arguments are handled during command/argument construction
@@ -85,9 +90,12 @@ pub trait Command<C: Context>: Send + Sync {
         .filter_map(|(i, a)| a.parse(sargs).map(|p| (a.get_desc().index, (i, p))))
         .min_by(|(a, _), (b, _)| a.cmp(b))
         .map(|(_, (i, (p, sargs)))| {
+          argorder.push(i);
           parsed[i] = Some(p);
           sargs
         });
+
+      println!("{}    {:?}   {:?}", s, argorder.iter().map(|i| parsed[*i].as_ref()).collect::<Vec<_>>(), next);
     }
 
     // assign default values to arguments, that are not flagged as optional
@@ -111,6 +119,13 @@ pub trait Command<C: Context>: Send + Sync {
     } else {
       // return array of parsed arguments with same ordering as specified in the input
       Some(argorder.into_iter().map(|i| parsed[i].take().unwrap()).collect())
+    }
+  }
+
+  fn complete<'a>(&'a self, s: &'a str) -> Completion<'a> {
+    Completion {
+      args: vec![],
+      variants: vec![],
     }
   }
 }
