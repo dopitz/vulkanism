@@ -79,10 +79,72 @@ impl ArgDesc {
     self
   }
 
+  pub fn optional(mut self, optional: bool) -> Self {
+    self.optional = optional;
+    self
+  }
+
   pub fn help(mut self, help: &str) -> Self {
     self.help = help.to_string();
     self
   }
+}
+
+fn parse_name<'a>(desc: &ArgDesc, s: &'a str) -> Option<&'a str> {
+  // argument name starts with "--"
+  // name clashes are resolved during construction
+  if s.starts_with("--") && s[2..].starts_with(&desc.name) {
+    Some(&s[..2 + desc.name.len()])
+  }
+  //
+  // argument short starts with "-"
+  // name clashes are resolved during construction
+  else if s.starts_with("-") && desc.short.as_ref().filter(|short| s[1..].starts_with(short.as_str())).is_some() {
+    Some(&s[..1 + desc.short.as_ref().unwrap().len()])
+  }
+  //
+  // unnamed argument specifications must not start with "--" or "-"
+  else if !s.starts_with("-") && !s.starts_with("--") && desc.index.filter(|i| *i > 0).is_some() {
+    Some("")
+  } else {
+    None
+  }
+}
+
+fn parse_value(s: &str) -> &str {
+  let s = s.trim();
+  if s.is_empty() {
+    s
+  }
+  // check single space directly, so that we don't need special treatment later
+  else if let Some(' ') = s.chars().next() {
+    ""
+  }
+  // "..." enclosed value
+  else if let Some('\"') = s.chars().next() {
+    match s.chars().skip(1).position(|c| c == '\"') {
+      Some(p) => &s[1..p + 1],
+      None => &s[1..],
+    }
+  }
+  // value with '\ ' spaces
+  else {
+    let mut p = 0;
+    while p < s.len() {
+      match s.chars().skip(p + 1).position(|c| c == ' ') {
+        Some(np) => p = np + p + 1, // + p + 1 because of the skip..
+        None => p = s.len(),
+      };
+      if !s.chars().nth(p - 1).filter(|c| *c == '\\').is_some() {
+        break;
+      }
+    }
+    &s[..p]
+  }
+}
+
+fn parse_next(offset: usize, s: &str) -> usize {
+  offset + s.chars().skip(offset).take_while(|c| *c == ' ').count()
 }
 
 /// Base argument trait
@@ -115,66 +177,6 @@ pub trait Arg {
   ///   This may be due to missmatching `name` or `short`
   /// - A [Parsed](struct.Parsed.html) containing the parsed value
   fn parse<'a>(&self, s: &'a str) -> Option<(Parsed<'a>, &'a str)> {
-    fn parse_name<'a>(desc: &ArgDesc, s: &'a str) -> Option<&'a str> {
-      // argument name starts with "--"
-      // name clashes are resolved during construction
-      if s.starts_with("--") && s[2..].starts_with(&desc.name) {
-        Some(&s[..2 + desc.name.len()])
-      }
-      //
-      // argument short starts with "-"
-      // name clashes are resolved during construction
-      else if s.starts_with("-") && desc.short.as_ref().filter(|short| s[1..].starts_with(short.as_str())).is_some() {
-        Some(&s[..1 + desc.short.as_ref().unwrap().len()])
-      }
-      //
-      // unnamed argument specifications must not start with "--" or "-"
-      else if !s.starts_with("-") && !s.starts_with("--") && desc.index.filter(|i| *i > 0).is_some() {
-        Some("")
-      } else {
-        None
-      }
-    }
-
-    fn parse_value(s: &str) -> &str {
-      let s = s.trim();
-
-      println!("parse value '{}'", s);
-
-      if s.is_empty() {
-        s
-      }
-      // check single space directly, so that we don't need special treatment later
-      else if let Some(' ') = s.chars().next() {
-        ""
-      }
-      // "..." enclosed value
-      else if let Some('\"') = s.chars().next() {
-        match s.chars().skip(1).position(|c| c == '\"') {
-          Some(p) => &s[1..p + 1],
-          None => &s[1..],
-        }
-      }
-      // value with '\ ' spaces
-      else {
-        let mut p = 0;
-        while p < s.len() {
-          match s.chars().skip(p + 1).position(|c| c == ' ') {
-            Some(np) => p = np + p + 1, // + p + 1 because of the skip..
-            None => p = s.len(),
-          };
-          if !s.chars().nth(p - 1).filter(|c| *c == '\\').is_some() {
-            break;
-          }
-        }
-        &s[..p]
-      }
-    }
-
-    fn parse_next(offset: usize, s: &str) -> usize {
-      s.chars().skip(offset).take_while(|c| *c == ' ').count()
-    }
-
     let input = s;
     let p = parse_next(0, s);
 
@@ -183,20 +185,19 @@ pub trait Arg {
     if let Some(0) = desc.index.as_ref() {
       if s[p..].starts_with(&desc.name) {
         let name = &s[p..desc.name.len()];
-        let p = p + name.len();
-        let p = p + parse_next(p, s);
+        let p = parse_next(p + name.len(), s);
         let next = &s[p..];
-        Some((Parsed { input, name, value: "" }, next))
+        Some((Parsed { input, name, value: name }, next))
       } else {
         None
       }
     }
     //
     // everything else are command arguments
-    else if let Some(name) = parse_name(self.get_desc(), &s[p..]) {
-      let p = p + name.len() + parse_next(p + name.len(), s);
+    else if let Some(name) = parse_name(desc, &s[p..]) {
+      let p = parse_next(p + name.len(), s);
       let value = parse_value(&s[p..]);
-      let p = p + value.len() + parse_next(p + value.len(), s);
+      let p = parse_next(p + value.len(), s);
       let next = &s[p..];
       Some((Parsed { input, name, value }, next))
     } else {
@@ -205,8 +206,44 @@ pub trait Arg {
   }
 
   /// Get completions for the parsed argument value
-  fn complete<'a>(&self, parsed: &'a Parsed) {
-    // TODO
+  fn complete<'a>(&self, s: &'a str) -> Vec<Completion<'a>> {
+    let input = s;
+    let p = parse_next(0, s);
+
+    let desc = self.get_desc();
+    let name = parse_name(desc, s);
+
+    match name {
+      Some(name) => {
+        let p = parse_next(p + name.len(), s);
+        let value = parse_value(s);
+
+        self
+          .complete_variants_from_prefix(value)
+          .into_iter()
+          .map(|completed| Completion {
+            input,
+            replace: p..input.len(),
+            completed,
+          })
+          .collect()
+      }
+      None => {
+        if format!("--{}", desc.name).starts_with(s) || desc.short.as_ref().filter(|short| format!("-{}", short).starts_with(s)).is_some() {
+          vec![Completion {
+            input,
+            replace: p..input.len(),
+            completed: format!("--{}", desc.name),
+          }]
+        } else {
+          vec![]
+        }
+      }
+    }
+  }
+
+  fn complete_variants_from_prefix(&self, prefix: &str) -> Vec<String> {
+    vec![]
   }
 }
 
@@ -221,9 +258,11 @@ pub struct Parsed<'a> {
   pub value: &'a str,
 }
 
+#[derive(Clone, Debug)]
 pub struct Completion<'a> {
-  pub args: Vec<Parsed<'a>>,
-  pub variants: Vec<(usize, String)>,
+  pub input: &'a str,
+  pub replace: std::ops::Range<usize>,
+  pub completed: String,
 }
 
 mod commandname;

@@ -6,16 +6,14 @@ use crate::shell::command::args::ArgDesc;
 pub struct Ident {
   desc: ArgDesc,
   variants: Vec<Vec<String>>,
-  default: Option<String>,
   case: bool,
 }
 
 impl Ident {
-  pub fn new(desc: ArgDesc, variants: &[&[&str]], default: Option<&str>, case: bool) -> Self {
+  pub fn new(desc: ArgDesc, variants: &[&[&str]], case: bool) -> Self {
     Self {
       desc,
       variants: variants.iter().map(|v| v.iter().map(|s| s.to_string()).collect()).collect(),
-      default: default.map(|s| s.to_string()),
       case,
     }
   }
@@ -24,6 +22,19 @@ impl Ident {
 impl Arg for Ident {
   fn get_desc<'a>(&'a self) -> &'a ArgDesc {
     &self.desc
+  }
+
+  fn complete_variants_from_prefix(&self, prefix: &str) -> Vec<String> {
+    self
+      .variants
+      .iter()
+      .flatten()
+      .filter(|v| match self.case {
+        true => v.starts_with(prefix),
+        false => v.starts_with(prefix),
+      })
+      .cloned()
+      .collect()
   }
 }
 

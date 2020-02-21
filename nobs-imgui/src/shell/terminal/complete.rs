@@ -85,8 +85,8 @@ impl<S: Style> Complete<S> {
 
     println!("===========");
     for c in cmds.iter() {
-      println!("{}", c.get_commandname());
-      println!("{:?}", c.parse(&input));
+      println!("{:?}", c.complete(&input));
+      //println!("{:?}", c.parse(&input));
     }
 
     //if let Some(args) = cmds.iter().filter_map(|c| c.parse(&input)).next() {
