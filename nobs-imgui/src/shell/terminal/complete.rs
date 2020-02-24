@@ -1,5 +1,5 @@
 use crate::components::textbox::Event as TextboxEvent;
-use crate::shell::arg::Completion;
+use crate::shell::command::args;
 use crate::shell::terminal::window::TerminalWnd;
 use crate::shell::Context;
 use crate::style::Style;
@@ -16,7 +16,8 @@ enum Index {
 }
 struct State {
   index: Index,
-  completions: Option<Vec<Completion>>,
+  input: String,
+  completions: Vec<args::Completion>,
 }
 
 #[derive(Clone)]
@@ -31,7 +32,8 @@ impl<S: Style> Complete<S> {
       window,
       state: Arc::new(Mutex::new(State {
         index: Index::Input,
-        completions: None,
+        input: String::new(),
+        completions: Vec::new(),
       })),
     }
   }
@@ -78,16 +80,19 @@ impl<S: Style> Complete<S> {
   }
 
   fn update_completions<C: Context>(&self, context: &C) {
+    let mut state = self.state.lock().unwrap();
     let input = self.window.get_input();
 
     // List of completions from command names, or parsed command arguments
     let cmds = context.get_shell().get_commands();
 
-    println!("===========");
+    state.input = input.clone();
+    state.completions.clear();
     for c in cmds.iter() {
-      println!("{:?}", c.complete(&input));
-      //println!("{:?}", c.parse(&input));
+      c.parse(&input, Some(&mut state.completions));
     }
+
+    println!("{:?}", state.completions);
 
     //if let Some(args) = cmds.iter().filter_map(|c| c.parse(&input)).next() {
     //  println!("{:?}", args);
@@ -114,53 +119,50 @@ impl<S: Style> Complete<S> {
   }
 
   fn next(&self, reverse: bool) {
-    let input = self.window.get_input();
+  //  let input = self.window.get_input();
 
-    let mut state = self.state.lock().unwrap();
-    let mut index = state.index;
+  //  let mut state = self.state.lock().unwrap();
+  //  let mut index = state.index;
 
-    match state.completions.as_ref() {
-      Some(ref completions) if !completions.is_empty() => {
-        match index {
-          Index::Input => {
-            let s = completions[0].get_completed();
-            let lcp = completions.iter().skip(1).fold(s.len(), |_, c| {
-              s.chars().zip(c.get_completed().chars()).take_while(|(a, b)| a == b).count()
-            });
-            index = match reverse {
-              false => Index::Complete(0),
-              true => Index::Complete(completions.len() - 1),
-            };
-          }
-          Index::Prefix(i) => {
-            match reverse {
-              false => index = Index::Input,
-              true => index = Index::Complete(0),
-            };
-          }
-          Index::Complete(i) => {
-            let d = match reverse {
-              false => 1,
-              true => -1,
-            };
-            let ci = i as i32 + d;
-            index = if ci < 0 || ci >= completions.len() as i32 {
-              Index::Prefix(input.len())
-            } else {
-              Index::Complete(ci as usize)
-            };
-          }
-        }
+  //  if !state.completions.is_empty() {
+  //    match index {
+  //      Index::Input => {
+  //        let s = state.completions[0].get_completed();
+  //        let lcp = state.completions.iter().skip(1).fold(s.len(), |_, c| {
+  //          s.chars().zip(c.get_completed().chars()).take_while(|(a, b)| a == b).count()
+  //        });
+  //        index = match reverse {
+  //          false => Index::Complete(0),
+  //          true => Index::Complete(state.completions.len() - 1),
+  //        };
+  //      }
+  //      Index::Prefix(i) => {
+  //        match reverse {
+  //          false => index = Index::Input,
+  //          true => index = Index::Complete(0),
+  //        };
+  //      }
+  //      Index::Complete(i) => {
+  //        let d = match reverse {
+  //          false => 1,
+  //          true => -1,
+  //        };
+  //        let ci = i as i32 + d;
+  //        index = if ci < 0 || ci >= state.completions.len() as i32 {
+  //          Index::Prefix(input.len())
+  //        } else {
+  //          Index::Complete(ci as usize)
+  //        };
+  //      }
+  //    }
 
-        match index {
-          Index::Complete(i) => self.window.input_text(&completions[i].get_completed()),
-          Index::Prefix(i) => self.window.input_text(&input[..i]),
-          _ => (),
-        }
-      }
-      _ => (),
-    }
+  //    match index {
+  //      Index::Complete(i) => self.window.input_text(&state.completions[i].get_completed()),
+  //      Index::Prefix(i) => self.window.input_text(&input[..i]),
+  //      _ => (),
+  //    }
+  //  }
 
-    state.index = index;
+  //  state.index = index;
   }
 }

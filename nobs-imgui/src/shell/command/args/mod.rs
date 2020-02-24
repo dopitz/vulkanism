@@ -176,9 +176,9 @@ pub trait Arg {
   /// - None, if the string could not be parsed.
   ///   This may be due to missmatching `name` or `short`
   /// - A [Parsed](struct.Parsed.html) containing the parsed value
-  fn parse<'a>(&self, s: &'a str) -> Option<(Parsed<'a>, &'a str)> {
+  fn parse<'a>(&self, s: &'a str, offset: usize, mut completions: Option<&mut &mut Vec<Completion>>) -> Option<Parsed<'a>> {
     let input = s;
-    let p = parse_next(0, s);
+    let p = parse_next(offset, s);
 
     // Special case, this is the command name
     let desc = self.get_desc();
@@ -187,8 +187,23 @@ pub trait Arg {
         let name = &s[p..desc.name.len()];
         let p = parse_next(p + name.len(), s);
         let next = &s[p..];
-        Some((Parsed { input, name, value: name }, next))
+
+        Some(Parsed {
+          input,
+          replace_input: offset..p,
+          name,
+          value: name,
+        })
       } else {
+        // push a completion, if the prefix matches
+        if let Some(completions) = completions.as_mut() {
+          if desc.name.starts_with(&s[..s.len()]) {
+            completions.push(Completion {
+              replace_input: 0..s.len(),
+              completed: desc.name.to_string(),
+            });
+          }
+        }
         None
       }
     }
@@ -199,40 +214,56 @@ pub trait Arg {
       let value = parse_value(&s[p..]);
       let p = parse_next(p + value.len(), s);
       let next = &s[p..];
-      Some((Parsed { input, name, value }, next))
+      Some(Parsed {
+        input,
+        replace_input: offset..p,
+        name,
+        value,
+      })
     } else {
       None
     }
   }
 
   /// Get completions for the parsed argument value
-  fn complete<'a>(&self, s: &'a str) -> Vec<Completion<'a>> {
+  fn complete(&self, s: &str, offset: usize) -> Vec<Completion> {
+    println!("{:?}, {}", s, offset);
+
     let input = s;
-    let p = parse_next(0, s);
+    let p = parse_next(offset, s);
+
+    println!("{:?}, {}", &s[p..], p);
 
     let desc = self.get_desc();
-    let name = parse_name(desc, s);
+    let name = parse_name(desc, &s[p..]);
+
+    println!("{:?}", name);
 
     match name {
       Some(name) => {
         let p = parse_next(p + name.len(), s);
-        let value = parse_value(s);
+        let value = parse_value(&s[p..]);
 
         self
           .complete_variants_from_prefix(value)
           .into_iter()
           .map(|completed| Completion {
-            input,
-            replace: p..input.len(),
+            replace_input: p..input.len(),
             completed,
           })
           .collect()
       }
       None => {
-        if format!("--{}", desc.name).starts_with(s) || desc.short.as_ref().filter(|short| format!("-{}", short).starts_with(s)).is_some() {
+        println!("XXXXXXXXXXXXXXxx");
+        if format!("--{}", desc.name).starts_with(&s[p..])
+          || desc
+            .short
+            .as_ref()
+            .filter(|short| format!("-{}", short).starts_with(&s[p..]))
+            .is_some()
+        {
           vec![Completion {
-            input,
-            replace: p..input.len(),
+            replace_input: p..input.len(),
             completed: format!("--{}", desc.name),
           }]
         } else {
@@ -252,6 +283,7 @@ pub trait Arg {
 pub struct Parsed<'a> {
   /// The original input string, contianing the argument `name`, `value` and all intermediate and trailing whitespaces up to the next argument.
   pub input: &'a str,
+  pub replace_input: std::ops::Range<usize>,
   /// The argument name as specified in the input string, with trimmed whitespaces.
   pub name: &'a str,
   /// The argument value as specified in the input string, with trimmed whitespaces.
@@ -259,9 +291,8 @@ pub struct Parsed<'a> {
 }
 
 #[derive(Clone, Debug)]
-pub struct Completion<'a> {
-  pub input: &'a str,
-  pub replace: std::ops::Range<usize>,
+pub struct Completion {
+  pub replace_input: std::ops::Range<usize>,
   pub completed: String,
 }
 

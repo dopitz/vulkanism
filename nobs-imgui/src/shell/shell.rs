@@ -79,10 +79,10 @@ impl<C: Context> Shell<C> {
       .lock()
       .unwrap()
       .iter()
-      .find_map(|cmd| cmd.parse(s).map(|_| cmd.clone()));
+      .find_map(|cmd| cmd.parse(s, None).map(|_| cmd.clone()));
 
     if let Some(cmd) = cmd {
-      let args = cmd.parse(s).unwrap();
+      let args = cmd.parse(s, None).unwrap();
       cmd.run(&args, context);
     }
   }
