@@ -88,6 +88,33 @@ impl ArgDesc {
     self.help = help.to_string();
     self
   }
+
+  pub fn format_help(descs: &[ArgDesc]) -> String {
+    let (len_short, len_name) = descs.iter().fold((0, 0), |(s, n), d| {
+      if let Some(1) = d.index.as_ref() {
+        (s, n)
+      } else {
+        (
+          usize::max(d.short.as_ref().map(|s| s.len()).unwrap_or(0), s),
+          usize::max(d.name.len(), n),
+        )
+      }
+    });
+
+    let len_short = len_short + 2;
+    let len_name = len_name + 3;
+
+    let h = format!(
+      "{name:>0$} {short:>1$} {help}",
+      len_name,
+      len_short,
+      name = "Name",
+      short = "Short",
+      help = "Help"
+    );
+
+    h
+  }
 }
 
 fn parse_name<'a>(desc: &ArgDesc, s: &'a str, p: usize, completions: &mut Option<&mut &mut Vec<Completion>>) -> Option<&'a str> {
@@ -105,6 +132,7 @@ fn parse_name<'a>(desc: &ArgDesc, s: &'a str, p: usize, completions: &mut Option
           completions.push(Completion {
             replace_input: p..s.len(),
             completed: format!("--{}", desc.name),
+            hint: String::new(),
           });
         }
       }
