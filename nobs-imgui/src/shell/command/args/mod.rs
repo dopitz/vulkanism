@@ -90,21 +90,58 @@ impl ArgDesc {
   }
 }
 
-fn parse_name<'a>(desc: &ArgDesc, s: &'a str) -> Option<&'a str> {
+fn parse_name<'a>(desc: &ArgDesc, s: &'a str, p: usize, completions: &mut Option<&mut &mut Vec<Completion>>) -> Option<&'a str> {
+  let end_on_space =
+    |offset| s[offset..].len() == desc.name.len() || s.chars().nth(offset + desc.name.len()).filter(|c| *c == ' ').is_some();
+
   // argument name starts with "--"
   // name clashes are resolved during construction
-  if s.starts_with("--") && s[2..].starts_with(&desc.name) {
-    Some(&s[..2 + desc.name.len()])
+  if s.starts_with("--") {
+    if s[2..].starts_with(&desc.name) && end_on_space(2) {
+      Some(&s[..2 + desc.name.len()])
+    } else {
+      if let Some(completions) = completions.as_mut() {
+        if desc.name.starts_with(&s[2..]) {
+          completions.push(Completion {
+            replace_input: p..s.len(),
+            completed: format!("--{}", desc.name),
+          });
+        }
+      }
+      None
+    }
   }
   //
   // argument short starts with "-"
   // name clashes are resolved during construction
-  else if s.starts_with("-") && desc.short.as_ref().filter(|short| s[1..].starts_with(short.as_str())).is_some() {
-    Some(&s[..1 + desc.short.as_ref().unwrap().len()])
+  else if s.starts_with("-") {
+    if desc.short.as_ref().filter(|short| s[1..].starts_with(short.as_str())).is_some() && end_on_space(1) {
+      Some(&s[..1 + desc.short.as_ref().unwrap().len()])
+    } else {
+      if let Some(completions) = completions.as_mut() {
+        if desc.short.as_ref().filter(|short| short.starts_with(&s[1..])).is_some() {
+          completions.push(Completion {
+            replace_input: p..s.len(),
+            completed: format!("-{}", desc.short.as_ref().unwrap()),
+          });
+        }
+        completions.push(Completion {
+          replace_input: p..s.len(),
+          completed: format!("--{}", desc.name),
+        });
+      }
+      None
+    }
   }
   //
   // unnamed argument specifications must not start with "--" or "-"
   else if !s.starts_with("-") && !s.starts_with("--") && desc.index.filter(|i| *i > 0).is_some() {
+    if let Some(completions) = completions.as_mut() {
+      completions.push(Completion {
+        replace_input: p..s.len(),
+        completed: format!("--{}", desc.name),
+      });
+    }
     Some("")
   } else {
     None
@@ -209,11 +246,27 @@ pub trait Arg {
     }
     //
     // everything else are command arguments
-    else if let Some(name) = parse_name(desc, &s[p..]) {
-      let p = parse_next(p + name.len(), s);
-      let value = parse_value(&s[p..]);
-      let p = parse_next(p + value.len(), s);
-      let next = &s[p..];
+    else if let Some(name) = parse_name(desc, &s[p..], p, &mut completions) {
+      let vp = parse_next(p + name.len(), s);
+      let value = parse_value(&s[vp..]);
+      let np = parse_next(vp + value.len(), s);
+      let next = &s[np..];
+
+      // push completions of values, if name could be parsed correctly and is seperated with a space from the token before
+      let index_arg = name.is_empty() && offset > 0 && s.chars().nth(offset - 1).filter(|c| *c == ' ').is_some();
+      let space_after_arg_name = p + name.len() < vp;
+      let no_space_after_value = vp + value.len() == np;
+      if (index_arg || space_after_arg_name) && no_space_after_value {
+        if let Some(completions) = completions.as_mut() {
+          for c in self.complete_variants_from_prefix(value).into_iter() {
+            completions.push(Completion {
+              replace_input: vp..np,
+              completed: c,
+            })
+          }
+        }
+      }
+
       Some(Parsed {
         input,
         replace_input: offset..p,
@@ -222,54 +275,6 @@ pub trait Arg {
       })
     } else {
       None
-    }
-  }
-
-  /// Get completions for the parsed argument value
-  fn complete(&self, s: &str, offset: usize) -> Vec<Completion> {
-    println!("{:?}, {}", s, offset);
-
-    let input = s;
-    let p = parse_next(offset, s);
-
-    println!("{:?}, {}", &s[p..], p);
-
-    let desc = self.get_desc();
-    let name = parse_name(desc, &s[p..]);
-
-    println!("{:?}", name);
-
-    match name {
-      Some(name) => {
-        let p = parse_next(p + name.len(), s);
-        let value = parse_value(&s[p..]);
-
-        self
-          .complete_variants_from_prefix(value)
-          .into_iter()
-          .map(|completed| Completion {
-            replace_input: p..input.len(),
-            completed,
-          })
-          .collect()
-      }
-      None => {
-        println!("XXXXXXXXXXXXXXxx");
-        if format!("--{}", desc.name).starts_with(&s[p..])
-          || desc
-            .short
-            .as_ref()
-            .filter(|short| format!("-{}", short).starts_with(&s[p..]))
-            .is_some()
-        {
-          vec![Completion {
-            replace_input: p..input.len(),
-            completed: format!("--{}", desc.name),
-          }]
-        } else {
-          vec![]
-        }
-      }
     }
   }
 
@@ -294,6 +299,7 @@ pub struct Parsed<'a> {
 pub struct Completion {
   pub replace_input: std::ops::Range<usize>,
   pub completed: String,
+  pub hint: String,
 }
 
 mod commandname;

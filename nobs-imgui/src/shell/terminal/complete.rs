@@ -94,75 +94,63 @@ impl<S: Style> Complete<S> {
 
     println!("{:?}", state.completions);
 
-    //if let Some(args) = cmds.iter().filter_map(|c| c.parse(&input)).next() {
-    //  println!("{:?}", args);
-    //}
-
-    //let completions = if cmds.iter().filter(|c| c.get_commandname().starts_with(&input)).count() > 1 {
-    //  Some(cmds.iter().filter_map(|c| c.complete(&input)).flatten().collect::<Vec<_>>())
-    //} else {
-    //  cmds.iter().find_map(|c| c.complete(&input))
-    //};
-
-    //// Update the quickfix window
-    //if let Some(completions) = completions.as_ref() {
-    //  let mut s = completions
-    //    .iter()
-    //    .fold(String::new(), |acc, c| format!("{}{}\n", acc, c.get_preview()));
-    //  s = format!("{}{}", s, "-------------");
-    //  self.window.quickfix_text(&s);
-    //} else {
-    //  self.window.quickfix_text("");
-    //}
-
-    //self.state.lock().unwrap().completions = completions;
+    if !state.completions.is_empty() {
+      let mut s = state.completions.first().unwrap().completed.to_string();
+      for c in state.completions.iter().skip(1) {
+        s = format!("{}\n{}", s, c.completed);
+      }
+      println!("{}", s);
+      self.window.quickfix_text(&format!("===============\n{}", s));
+    } else {
+      self.window.quickfix_text("");
+    }
   }
 
   fn next(&self, reverse: bool) {
-  //  let input = self.window.get_input();
+    //  let input = self.window.get_input();
 
-  //  let mut state = self.state.lock().unwrap();
-  //  let mut index = state.index;
+    //  let mut state = self.state.lock().unwrap();
+    //  let mut index = state.index;
 
-  //  if !state.completions.is_empty() {
-  //    match index {
-  //      Index::Input => {
-  //        let s = state.completions[0].get_completed();
-  //        let lcp = state.completions.iter().skip(1).fold(s.len(), |_, c| {
-  //          s.chars().zip(c.get_completed().chars()).take_while(|(a, b)| a == b).count()
-  //        });
-  //        index = match reverse {
-  //          false => Index::Complete(0),
-  //          true => Index::Complete(state.completions.len() - 1),
-  //        };
-  //      }
-  //      Index::Prefix(i) => {
-  //        match reverse {
-  //          false => index = Index::Input,
-  //          true => index = Index::Complete(0),
-  //        };
-  //      }
-  //      Index::Complete(i) => {
-  //        let d = match reverse {
-  //          false => 1,
-  //          true => -1,
-  //        };
-  //        let ci = i as i32 + d;
-  //        index = if ci < 0 || ci >= state.completions.len() as i32 {
-  //          Index::Prefix(input.len())
-  //        } else {
-  //          Index::Complete(ci as usize)
-  //        };
-  //      }
-  //    }
+    //  if !state.completions.is_empty() {
+    //    match index {
+    //      Index::Input => {
+    //        let s = state.completions[0].get_completed();
+    //        let lcp = state.completions.iter().skip(1).fold(s.len(), |_, c| {
+    //          s.chars().zip(c.get_completed().chars()).take_while(|(a, b)| a == b).count()
+    //        });
+    //        index = match reverse {
+    //          false => Index::Complete(0),
+    //          true => Index::Complete(state.completions.len() - 1),
+    //        };
+    //      }
+    //      Index::Prefix(i) => {
+    //        match reverse {
+    //          false => index = Index::Input,
+    //          true => index = Index::Complete(0),
+    //        };
+    //      }
+    //      Index::Complete(i) => {
+    //        let d = match reverse {
+    //          false => 1,
+    //          true => -1,
+    //        };
+    //        let ci = i as i32 + d;
+    //        index = if ci < 0 || ci >= state.completions.len() as i32 {
+    //          Index::Prefix(input.len())
+    //        } else {
+    //          Index::Complete(ci as usize)
+    //        };
+    //      }
+    //    }
 
-  //    match index {
-  //      Index::Complete(i) => self.window.input_text(&state.completions[i].get_completed()),
-  //      Index::Prefix(i) => self.window.input_text(&input[..i]),
-  //      _ => (),
-  //    }
-  //  }
+    //    match index {
+    //      Index::Complete(i) => self.window.input_text(&state.completions[i].get_completed()),
+    //      Index::Prefix(i) => self.window.input_text(&input[..i]),
+    //      _ => (),
+    //    }
+    //  }
 
-  //  state.index = index;
+    //  state.index = index;
   }
 }
