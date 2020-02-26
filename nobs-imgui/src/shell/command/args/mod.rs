@@ -109,7 +109,7 @@ impl ArgDesc {
 
     let format_single_line = |d: &ArgDesc| {
       format!(
-        "{name:>0$}{short:>1$}{help}\n",
+        "{name:<0$}{short:<1$}{help}\n",
         len_name,
         len_short,
         name = match d.index.filter(|i| *i == 0).is_some() {
@@ -128,7 +128,7 @@ impl ArgDesc {
       if d.help.lines().count() > 1 {
         s.push_str(&format_single_line(d));
         for l in d.help.lines().skip(1) {
-          s.push_str(&format!("{pad:>0$}{help}\n", len_sum, pad = "", help = l));
+          s.push_str(&format!("{pad:<0$}{help}\n", len_sum, pad = "", help = l));
         }
       } else {
         s.push_str(&format_single_line(d));

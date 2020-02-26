@@ -117,8 +117,20 @@ impl<C: Context> Command<C> for Cmd {
 impl Cmd {
   pub fn new() -> Self {
     Self {
-      thisname: args::CommandName::new("source", "Sources a .aoeu file with commands.\nAll commands in the sourced file need to be supported by the runtime shell.\nIf a command is unknown or could not be parsed it will be skipped."),
-      file: args::File::new(args::ArgDesc::new("file").index(0).short("f").help("Path to the file that is to be sourced.")),
+      thisname: args::CommandName::new(
+        "source",
+        concat!(
+          "Sources a .aoeu file with commands.\n",
+          "All commands in the sourced file need to be supported by the runtime shell.\n",
+          "If a command is unknown or could not be parsed it will be skipped."
+        ),
+      ),
+      file: args::File::new(
+        args::ArgDesc::new("file")
+          .index(1)
+          .short("f")
+          .help("Path to the file that is to be sourced."),
+      ),
     }
   }
 }

@@ -23,6 +23,8 @@ pub trait Command<C: Context>: Send + Sync {
   }
 
   fn get_help(&self) -> String {
+    let args = self.get_args();
+
     // headding (name of the command)
     let cmdname_arg = self
       .get_args()
@@ -36,21 +38,21 @@ pub trait Command<C: Context>: Send + Sync {
     s.push('\n');
 
     // example call (cmd <arg1> <arg2> [flags])
-    let mut index_args = self
-      .get_args()
+    let mut index_args = args
       .iter()
       .filter(|a| a.get_desc().index.filter(|i| *i != 0).is_some())
-      .map(|a| (a.get_desc().index.unwrap(), a.get_desc().name.as_str()))
+      .map(|a| (a.get_desc().index.unwrap(), a))
       .collect::<Vec<_>>();
     index_args.sort_by(|(a, _), (b, _)| a.cmp(b));
+    let mut index_args = index_args.iter().map(|(_, a)| a.get_desc()).collect::<Vec<_>>();
     s.push('\n');
     s.push_str("Usage:\n");
     s.push_str("\n  ");
     s.push_str(&cmdname_arg.name);
     s.push(' ');
-    for (_, name) in index_args.iter() {
+    for d in index_args.iter() {
       s.push('<');
-      s.push_str(&name);
+      s.push_str(&d.name);
       s.push('>');
       s.push(' ');
     }
@@ -58,15 +60,25 @@ pub trait Command<C: Context>: Send + Sync {
 
     let heading = args::ArgDesc::new("Name").short("Short").help("Description");
 
-    let mut args = self.get_args();
-    args.remove(args.iter().position(|a| a.get_desc().index.filter(|i| *i == 0).is_some()).unwrap());
-    let mut args = args.iter().map(|a| a.get_desc()).collect::<Vec<_>>();
-    args.insert(0, &heading);
+    let mut option_args = args
+      .iter()
+      .filter(|a| a.get_desc().index.is_none())
+      .map(|a| a.get_desc())
+      .collect::<Vec<_>>();
+    option_args.sort_by(|a, b| a.name.cmp(&b.name));
+
+    let mut sorted_args = Vec::with_capacity(1 + index_args.len() + option_args.len());
+    sorted_args.push(&heading);
+    sorted_args.append(&mut index_args);
+    sorted_args.append(&mut option_args);
+    //[vec![&heading], index_args, option_args].iter().flatten().collect::<Vec<_>>();
+
     s.push('\n');
     s.push_str("Arguments:\n");
     s.push_str("\n  ");
-    s.push_str(&args::ArgDesc::format_help(&args).replace("\n", "\n  "));
-
+    s.push_str(&args::ArgDesc::format_help(sorted_args.as_slice()).replace("\n", "\n  "));
+    //s.push_str(&args::ArgDesc::format_help(&index_args).replace("\n", "\n  "));
+    //s.push_str(&args::ArgDesc::format_help(&option_args).replace("\n", "\n  "));
     s
   }
 
