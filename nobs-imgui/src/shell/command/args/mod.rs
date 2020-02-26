@@ -89,7 +89,7 @@ impl ArgDesc {
     self
   }
 
-  pub fn format_help(descs: &[ArgDesc]) -> String {
+  pub fn format_help(descs: &[&ArgDesc]) -> String {
     let (len_short, len_name) = descs.iter().fold((0, 0), |(s, n), d| {
       if let Some(1) = d.index.as_ref() {
         (s, n)
@@ -101,19 +101,41 @@ impl ArgDesc {
       }
     });
 
-    let len_short = len_short + 2;
-    let len_name = len_name + 3;
+    let len_short = len_short + 3;
+    let len_name = len_name + 4;
+    let len_sum = len_short + len_name;
 
-    let h = format!(
-      "{name:>0$} {short:>1$} {help}",
-      len_name,
-      len_short,
-      name = "Name",
-      short = "Short",
-      help = "Help"
-    );
+    let mut s = String::new();
 
-    h
+    let format_single_line = |d: &ArgDesc| {
+      format!(
+        "{name:>0$}{short:>1$}{help}\n",
+        len_name,
+        len_short,
+        name = match d.index.filter(|i| *i == 0).is_some() {
+          true => d.name.to_string(),
+          false => format!("--{}", d.name),
+        },
+        short = match d.short.as_ref() {
+          Some(short) => format!("-{}", short),
+          None => Default::default(),
+        },
+        help = d.help.lines().next().unwrap()
+      )
+    };
+
+    for d in descs.iter() {
+      if d.help.lines().count() > 1 {
+        s.push_str(&format_single_line(d));
+        for l in d.help.lines().skip(1) {
+          s.push_str(&format!("{pad:>0$}{help}\n", len_sum, pad = "", help = l));
+        }
+      } else {
+        s.push_str(&format_single_line(d));
+      }
+    }
+
+    s
   }
 }
 
@@ -130,9 +152,9 @@ fn parse_name<'a>(desc: &ArgDesc, s: &'a str, p: usize, completions: &mut Option
       if let Some(completions) = completions.as_mut() {
         if desc.name.starts_with(&s[2..]) {
           completions.push(Completion {
-            replace_input: p..s.len(),
+            replace_input: p..p + s.len(),
             completed: format!("--{}", desc.name),
-            hint: String::new(),
+            hint: ArgDesc::format_help(&[desc]),
           });
         }
       }
@@ -149,13 +171,15 @@ fn parse_name<'a>(desc: &ArgDesc, s: &'a str, p: usize, completions: &mut Option
       if let Some(completions) = completions.as_mut() {
         if desc.short.as_ref().filter(|short| short.starts_with(&s[1..])).is_some() {
           completions.push(Completion {
-            replace_input: p..s.len(),
+            replace_input: p..p + s.len(),
             completed: format!("-{}", desc.short.as_ref().unwrap()),
+            hint: ArgDesc::format_help(&[desc]),
           });
         }
         completions.push(Completion {
-          replace_input: p..s.len(),
+          replace_input: p..p + s.len(),
           completed: format!("--{}", desc.name),
+          hint: ArgDesc::format_help(&[desc]),
         });
       }
       None
@@ -166,8 +190,9 @@ fn parse_name<'a>(desc: &ArgDesc, s: &'a str, p: usize, completions: &mut Option
   else if !s.starts_with("-") && !s.starts_with("--") && desc.index.filter(|i| *i > 0).is_some() {
     if let Some(completions) = completions.as_mut() {
       completions.push(Completion {
-        replace_input: p..s.len(),
+        replace_input: p..p + s.len(),
         completed: format!("--{}", desc.name),
+        hint: ArgDesc::format_help(&[desc]),
       });
     }
     Some("")
@@ -241,7 +266,7 @@ pub trait Arg {
   /// - None, if the string could not be parsed.
   ///   This may be due to missmatching `name` or `short`
   /// - A [Parsed](struct.Parsed.html) containing the parsed value
-  fn parse<'a>(&self, s: &'a str, offset: usize, mut completions: Option<&mut &mut Vec<Completion>>) -> Option<Parsed<'a>> {
+  fn parse<'a>(&'a self, s: &'a str, offset: usize, mut completions: Option<&mut &mut Vec<Completion>>) -> Option<Parsed<'a>> {
     let input = s;
     let p = parse_next(offset, s);
 
@@ -266,6 +291,7 @@ pub trait Arg {
             completions.push(Completion {
               replace_input: 0..s.len(),
               completed: desc.name.to_string(),
+              hint: ArgDesc::format_help(&[desc]),
             });
           }
         }
@@ -290,6 +316,7 @@ pub trait Arg {
             completions.push(Completion {
               replace_input: vp..np,
               completed: c,
+              hint: ArgDesc::format_help(&[desc]),
             })
           }
         }
@@ -298,7 +325,7 @@ pub trait Arg {
       Some(Parsed {
         input,
         replace_input: offset..p,
-        name,
+        name: &desc.name,
         value,
       })
     } else {
@@ -321,6 +348,22 @@ pub struct Parsed<'a> {
   pub name: &'a str,
   /// The argument value as specified in the input string, with trimmed whitespaces.
   pub value: &'a str,
+}
+
+pub struct Matches<'a> {
+  args: Vec<Parsed<'a>>,
+}
+
+impl<'a> Matches<'a> {
+  pub fn new(args: &[Parsed<'a>]) -> Self {
+    Self {
+      args: args.iter().cloned().collect(),
+    }
+  }
+
+  pub fn value_of(&self, name: &str) -> Option<&str> {
+    self.args.iter().find(|p| name == p.name).map(|p| p.value)
+  }
 }
 
 #[derive(Clone, Debug)]

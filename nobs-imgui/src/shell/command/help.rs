@@ -1,4 +1,5 @@
 use crate::shell::command::args;
+use crate::shell::command::args::Matches;
 use crate::shell::command::args::Parsed;
 use crate::shell::context::Context;
 use crate::shell::Command;
@@ -15,56 +16,28 @@ impl<C: Context> Command<C> for Cmd {
   }
 
   fn run(&self, args: &[Parsed], context: &mut C) {
-    println!("AOEUAOEUAOEU");
-    context.println("list of comands:");
-    //if args.len() == 1 {
-    //  println!("AOEUAOEUAOEU");
-    //  let s = context.get_shell();
-    //  println!("AOEUAOEUAOEU");
-    //  let cmds = s.get_commands();
-    //  println!("AOEUAOEUAOEU");
-    //  let w = cmds.iter().fold(0, |w, c| usize::max(w, c.get_commandname().len()));
-    //  println!("AOEUAOEUAOEU");
+    let m = Matches::new(args);
 
-    //  context.println("list of comands:");
-    //  for c in context.get_shell().get_commands().iter() {
-    //    let mut n = c.get_commandname().to_string();
-    //    while n.len() < w {
-    //      n.push(' ');
-    //    }
-    //    //context.println(&format!("  {} -   {}", n, c.get_help().0));
-    //  }
-    //} else if let Some(cmd) = context.get_shell().get_commands().iter().find(|c| c.get_commandname() == args[1]) {
-    //  let (short, desc) = cmd.get_help();
-    //  context.println(&format!("{} - {}\n----------------------\n{}", cmd.get_commandname(), short, desc));
-    //}
+    match m.value_of("command") {
+      Some(cmd) => match context.get_shell().get_commands().iter().find(|c| c.get_commandname() == cmd) {
+        Some(cmd) => context.println(&cmd.get_help()),
+        None => context.println(&format!("unknown command: {}", cmd)),
+      },
+      None => {
+        context.println("list of commands:");
+
+        let cmds = context.get_shell().get_commands();
+        let args = cmds.iter().map(|c| c.get_args()).collect::<Vec<_>>();
+        let descs = args
+          .iter()
+          .map(|a| a.iter().find(|a| a.get_desc().index.filter(|i| *i == 0).is_some()).unwrap())
+          .map(|a| a.get_desc())
+          .collect::<Vec<_>>();
+
+        context.println(&args::ArgDesc::format_help(&descs));
+      }
+    }
   }
-
-  //fn run(&self, args: Vec<String>, context: &mut C) {
-  //  if args.len() == 1 {
-  //    println!("AOEUAOEUAOEU");
-  //    let s = context.get_shell();
-  //    println!("AOEUAOEUAOEU");
-  //    let cmds = s.get_commands();
-  //    println!("AOEUAOEUAOEU");
-  //    let w = cmds
-  //      .iter()
-  //      .fold(0, |w, c| usize::max(w, c.get_name().len()));
-  //    println!("AOEUAOEUAOEU");
-
-  //    context.println("list of comands:");
-  //    for c in context.get_shell().get_commands().iter() {
-  //      let mut n = c.get_name().to_string();
-  //      while n.len() < w {
-  //        n.push(' ');
-  //      }
-  //      context.println(&format!("  {} -   {}", n, c.get_info().0));
-  //    }
-  //  } else if let Some(cmd) = context.get_shell().get_commands().iter().find(|c| c.get_name() == args[1]) {
-  //    let (short, desc) = cmd.get_info();
-  //    context.println(&format!("{} - {}\n----------------------\n{}", cmd.get_name(), short, desc));
-  //  }
-  //}
 }
 
 impl Cmd {
@@ -73,15 +46,29 @@ impl Cmd {
     let cmds = vars.iter().map(|v| v.as_str()).collect::<Vec<_>>();
 
     Self {
-      thisname: args::CommandName::new("help"),
-      cmd: args::Ident::new(args::ArgDesc::new("command").index(1).optional(true), &[cmds.as_slice()], true),
+      thisname: args::CommandName::new("help", "Lists available commands and prints usage information."),
+      cmd: args::Ident::new(
+        args::ArgDesc::new("command")
+          .index(1)
+          .optional(true)
+          .help("Command name for which usage information should be shown."),
+        &[cmds.as_slice()],
+        true,
+      ),
     }
   }
 
   pub fn update<C: Context>(&mut self, cmds: &Vec<std::sync::Arc<dyn Command<C>>>) {
     let vars = cmds.iter().map(|c| c.get_commandname().to_string()).collect::<Vec<_>>();
     let cmds = vars.iter().map(|v| v.as_str()).collect::<Vec<_>>();
-    self.cmd = args::Ident::new(args::ArgDesc::new("command").index(1), &[cmds.as_slice()], true);
+    self.cmd = args::Ident::new(
+      args::ArgDesc::new("command")
+        .index(1)
+        .optional(true)
+        .help("Command name for which usage information should be shown."),
+      &[cmds.as_slice()],
+      true,
+    );
   }
 
   pub fn get_name() -> &'static str {

@@ -8,9 +8,9 @@ pub struct CommandName {
 }
 
 impl CommandName {
-  pub fn new(name: &str) -> Self {
+  pub fn new(name: &str, help: &str) -> Self {
     Self {
-      desc: ArgDesc::new(name).index(0),
+      desc: ArgDesc::new(name).index(0).help(help),
     }
   }
 }

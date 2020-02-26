@@ -2,6 +2,7 @@ mod complete;
 mod show;
 mod window;
 
+use crate::components::textbox::Event as TextboxEvent;
 use crate::select::SelectId;
 use crate::shell::Context;
 use crate::style::Style;
@@ -35,7 +36,15 @@ impl<S: Style> Terminal<S> {
     };
     self.show.handle_events(screen);
 
-    self.complete.handle_events(screen, e, context);
+    self.complete.handle_events(screen, &e, context);
+
+    match e {
+      Some(TextboxEvent::Enter(input)) => {
+        context.get_shell().exec(&input, context);
+        //self.input.history.push(s);
+      }
+      _ => (),
+    };
   }
 
   /// Print text to the terminal

@@ -23,36 +23,51 @@ pub trait Command<C: Context>: Send + Sync {
   }
 
   fn get_help(&self) -> String {
-    let (len_short, len_name) = self.get_args().iter().fold((0, 0), |(s, n), a| {
-      let d = a.get_desc();
-      (
-        usize::max(d.short.as_ref().map(|s| s.len()).unwrap_or(0), s),
-        usize::max(d.name.len(), n),
-      )
-    });
+    // headding (name of the command)
+    let cmdname_arg = self
+      .get_args()
+      .iter()
+      .find(|a| a.get_desc().index.filter(|i| *i == 0).is_some())
+      .unwrap()
+      .get_desc();
+    let mut s = cmdname_arg.name.clone();
+    s.push_str("\n  ");
+    s.push_str(&cmdname_arg.help.replace("\n", "\n  "));
+    s.push('\n');
 
-    let len_short = len_short + 2;
-    let len_name = len_name + 3;
+    // example call (cmd <arg1> <arg2> [flags])
+    let mut index_args = self
+      .get_args()
+      .iter()
+      .filter(|a| a.get_desc().index.filter(|i| *i != 0).is_some())
+      .map(|a| (a.get_desc().index.unwrap(), a.get_desc().name.as_str()))
+      .collect::<Vec<_>>();
+    index_args.sort_by(|(a, _), (b, _)| a.cmp(b));
+    s.push('\n');
+    s.push_str("Usage:\n");
+    s.push_str("\n  ");
+    s.push_str(&cmdname_arg.name);
+    s.push(' ');
+    for (_, name) in index_args.iter() {
+      s.push('<');
+      s.push_str(&name);
+      s.push('>');
+      s.push(' ');
+    }
+    s.push_str(" [options...]\n");
 
-    let h = format!(
-      "{name:>0$} {short:>1$} {help}",
-      len_name,
-      len_short,
-      name = "Name",
-      short = "Short",
-      help = "Help"
-    );
-    let h = format!(
-      "{s}\n--{name:>0$} -{short:>1$} {help}",
-      len_name,
-      len_short,
-      s = h,
-      name = "Name",
-      short = "Short",
-      help = "Help"
-    );
+    let heading = args::ArgDesc::new("Name").short("Short").help("Description");
 
-    h
+    let mut args = self.get_args();
+    args.remove(args.iter().position(|a| a.get_desc().index.filter(|i| *i == 0).is_some()).unwrap());
+    let mut args = args.iter().map(|a| a.get_desc()).collect::<Vec<_>>();
+    args.insert(0, &heading);
+    s.push('\n');
+    s.push_str("Arguments:\n");
+    s.push_str("\n  ");
+    s.push_str(&args::ArgDesc::format_help(&args).replace("\n", "\n  "));
+
+    s
   }
 
   fn parse<'a>(&'a self, s: &'a str, mut completions: Option<&mut Vec<Completion>>) -> Option<Vec<Parsed<'a>>> {
@@ -80,7 +95,10 @@ pub trait Command<C: Context>: Send + Sync {
         .iter()
         .enumerate()
         .filter(|(i, a)| parsed[*i].is_none())
-        .filter_map(|(i, a)| a.parse(s, p.replace_input.end, completions.as_mut()).map(|p| (a.get_desc().index, (i, p))))
+        .filter_map(|(i, a)| {
+          a.parse(s, p.replace_input.end, completions.as_mut())
+            .map(|p| (a.get_desc().index, (i, p)))
+        })
         .min_by(|(a, _), (b, _)| a.cmp(b))
         .map(|(_, x)| x);
     }
