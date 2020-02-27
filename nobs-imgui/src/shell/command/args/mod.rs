@@ -188,13 +188,6 @@ fn parse_name<'a>(desc: &ArgDesc, s: &'a str, p: usize, completions: &mut Option
   //
   // unnamed argument specifications must not start with "--" or "-"
   else if !s.starts_with("-") && !s.starts_with("--") && desc.index.filter(|i| *i > 0).is_some() {
-    if let Some(completions) = completions.as_mut() {
-      completions.push(Completion {
-        replace_input: p..p + s.len(),
-        completed: format!("--{}", desc.name),
-        hint: ArgDesc::format_help(&[desc]),
-      });
-    }
     Some("")
   } else {
     None
@@ -333,10 +326,25 @@ pub trait Arg {
     }
   }
 
+  // TODO: make use of that in parse
+  fn validate_parsed_value(&self, value: &str) -> bool {
+    true
+  }
+
   fn complete_variants_from_prefix(&self, prefix: &str) -> Vec<String> {
     vec![]
   }
 }
+
+pub trait Convert<T>: Arg {
+  fn from_match(&self, matches: &Matches) -> Option<T>;
+}
+
+//impl<'a> Convert<'a, &'a str> for Arg {
+//  fn from_match(&self, matches: &'a Matches) -> Option<&'a str> {
+//    matches.value_of(&self.get_desc().name)
+//  }
+//}
 
 /// Parsed argument
 #[derive(Clone, Debug)]
@@ -350,6 +358,7 @@ pub struct Parsed<'a> {
   pub value: &'a str,
 }
 
+#[derive(Clone, Debug)]
 pub struct Matches<'a> {
   args: Vec<Parsed<'a>>,
 }
@@ -366,6 +375,26 @@ impl<'a> Matches<'a> {
   }
 }
 
+impl<'a> std::ops::Index<usize> for Matches<'a> {
+  type Output = Parsed<'a>;
+
+  fn index(&self, i: usize) -> &Parsed<'a> {
+    self.args.index(i)
+  }
+}
+
+impl<'a> From<&[Parsed<'a>]> for Matches<'a> {
+  fn from(args: &[Parsed<'a>]) -> Self {
+    Self::new(args)
+  }
+}
+
+impl<'a> From<Vec<Parsed<'a>>> for Matches<'a> {
+  fn from(args: Vec<Parsed<'a>>) -> Self {
+    Self::new(args.as_slice())
+  }
+}
+
 #[derive(Clone, Debug)]
 pub struct Completion {
   pub replace_input: std::ops::Range<usize>,
@@ -373,10 +402,14 @@ pub struct Completion {
   pub hint: String,
 }
 
+mod bool;
 mod commandname;
 mod file;
 mod ident;
+mod num;
 
+pub use self::bool::Bool;
 pub use commandname::CommandName;
 pub use file::File;
 pub use ident::Ident;
+pub use num::*;

@@ -15,10 +15,8 @@ impl<C: Context> Command<C> for Cmd {
     vec![&self.thisname, &self.cmd]
   }
 
-  fn run(&self, args: &[Parsed], context: &mut C) {
-    let m = Matches::new(args);
-
-    match m.value_of("command") {
+  fn run(&self, matches: &Matches, context: &mut C) {
+    match matches.value_of("command") {
       Some(cmd) => match context.get_shell().get_commands().iter().find(|c| c.get_commandname() == cmd) {
         Some(cmd) => context.println(&cmd.get_help()),
         None => context.println(&format!("unknown command: {}", cmd)),
@@ -53,7 +51,6 @@ impl Cmd {
           .optional(true)
           .help("Command name for which usage information should be shown."),
         &[cmds.as_slice()],
-        true,
       ),
     }
   }
@@ -67,7 +64,6 @@ impl Cmd {
         .optional(true)
         .help("Command name for which usage information should be shown."),
       &[cmds.as_slice()],
-      true,
     );
   }
 

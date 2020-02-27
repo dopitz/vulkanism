@@ -6,12 +6,13 @@ pub mod spawn;
 use crate::shell::Context;
 use args::Arg;
 use args::Completion;
+use args::Matches;
 use args::Parsed;
 
 pub trait Command<C: Context>: Send + Sync {
   fn get_args<'a>(&'a self) -> Vec<&'a dyn Arg>;
 
-  fn run(&self, args: &[Parsed], context: &mut C);
+  fn run(&self, matches: &Matches, context: &mut C);
 
   fn get_commandname<'a>(&'a self) -> String {
     self
@@ -139,4 +140,40 @@ pub trait Command<C: Context>: Send + Sync {
       None
     }
   }
+}
+
+pub fn validate_command_def<C: Context>(c: &Box<dyn Command<C>>) -> Result<(), &'static str> {
+  let args = c.get_args();
+
+  // the 0th argument is the name of the command
+  args
+    .iter()
+    .find(|a| a.get_desc().index.filter(|i| *i == 0).is_some())
+    .ok_or("Invalid Command: No Parameter with index == 0 defined.")?;
+
+  // indices of arguments need to be in sequence and no duplicates
+  let max_i = args.iter().filter_map(|a| a.get_desc().index).max().unwrap();
+  if !(0..max_i)
+    .into_iter()
+    .all(|i| args.iter().filter_map(|a| a.get_desc().index).find(|j| i == *j).is_some())
+  {
+    Err("Invalid Command: Inconsistent argument indices. Indices must be consecutive starting from index 1.")?;
+  }
+
+  // make sure there are no name clashes with argument names and short names
+  if !args.iter().all(|a| {
+    let a = a.get_desc();
+    let unique_name = args.iter().filter(|b| b.get_desc().name == a.name).count() <= 1;
+    let unique_short = args
+      .iter()
+      .filter_map(|b| b.get_desc().short.as_ref())
+      .filter(|short| a.name == **short || a.short.is_none() || a.short.as_ref().filter(|s| s == short).is_some())
+      .count()
+      <= 1;
+    unique_name && unique_short
+  }) {
+    Err("Invalid Command: Argument names and short names need to be unique.")?;
+  }
+
+  Ok(())
 }

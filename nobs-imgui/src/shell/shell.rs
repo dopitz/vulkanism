@@ -1,3 +1,4 @@
+use crate::shell::command;
 use crate::shell::command::help;
 use crate::shell::command::source;
 use crate::shell::Command;
@@ -61,8 +62,13 @@ impl<C: Context> Shell<C> {
   }
 
   pub fn add_command(&self, cmd: Box<dyn Command<C>>) {
-    self.add_command_inner(cmd);
-    self.update_help();
+    match command::validate_command_def(&cmd) {
+      Err(e) => println!("Command \"{}\" could not be added to the shell.\n{}", cmd.get_commandname(), e),
+      Ok(_) => {
+        self.add_command_inner(cmd);
+        self.update_help();
+      }
+    }
   }
   pub fn delete_command(&self, name: &str) {
     self.delete_command_inner(name);
@@ -82,30 +88,30 @@ impl<C: Context> Shell<C> {
       .find_map(|cmd| cmd.parse(s, None).map(|_| cmd.clone()));
 
     if let Some(cmd) = cmd {
-      let args = cmd.parse(s, None).unwrap();
-      cmd.run(&args, context);
+      cmd.run(&cmd.parse(s, None).unwrap().into(), context);
     }
   }
 }
 
-//impl<C: 'static + Clone + Send + Context> Shell<C> {
-//  pub fn has_exec(&self) -> bool {
-//    self.exec.lock().unwrap().is_some()
-//  }
-//  pub fn exec_async(&self, s: &str, context: &mut C) {
-//    let exe = self
-//      .cmds
-//      .lock()
-//      .unwrap()
-//      .iter()
-//      .find_map(|cmd| cmd.parse(s).map(|args| (cmd.clone(), args.clone())));
-//
-//    if let Some((cmd, args)) = exe {
-//      let mut context = context.clone();
-//      *self.exec.lock().unwrap() = Some(std::thread::spawn(move || {
-//        cmd.run(&args, &mut context);
-//        *context.get_shell().exec.lock().unwrap() = None;
-//      }))
-//    }
-//  }
-//}
+impl<C: 'static + Clone + Send + Context> Shell<C> {
+  pub fn has_exec(&self) -> bool {
+    self.exec.lock().unwrap().is_some()
+  }
+  pub fn exec_async(&self, s: &str, context: &mut C) {
+    let exe = self
+      .cmds
+      .lock()
+      .unwrap()
+      .iter()
+      .find_map(|cmd| cmd.parse(s, None).map(|_| cmd.clone()));
+
+    if let Some(cmd) = exe {
+      let s = s.to_string();
+      let mut context = context.clone();
+      *self.exec.lock().unwrap() = Some(std::thread::spawn(move || {
+        cmd.run(&cmd.parse(&s, None).unwrap().into(), &mut context);
+        *context.get_shell().exec.lock().unwrap() = None;
+      }))
+    }
+  }
+}

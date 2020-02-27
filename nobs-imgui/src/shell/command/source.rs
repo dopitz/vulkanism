@@ -13,7 +13,7 @@ impl<C: Context> Command<C> for Cmd {
     vec![&self.thisname, &self.file]
   }
 
-  fn run(&self, args: &[Parsed], context: &mut C) {
+  fn run(&self, matches: &args::Matches, context: &mut C) {
     use std::fs::File;
     use std::io::prelude::*;
     use std::io::BufReader;

@@ -85,6 +85,16 @@ impl<S: Style> Complete<S> {
       c.parse(&input, Some(&mut state.completions));
     }
 
+    // make sure the complete index stays in bound, if we restricted completion variants.
+    match state.index {
+      Index::Complete(i) => {
+        if i >= state.completions.len() {
+          state.index = Index::Input;
+        }
+      }
+      _ => (),
+    }
+
     self.update_quickfix(state.index, &state.completions);
   }
 

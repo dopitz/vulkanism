@@ -1,27 +1,29 @@
-use super::*;
+use crate::shell::command::args::Arg;
+use crate::shell::command::args::ArgDesc;
+use crate::shell::command::args::Convert;
+use crate::shell::command::args::Ident;
+use crate::shell::command::args::Matches;
 
 macro_rules! make_num {
   ($name:ident, $t:ty) => {
     #[derive(Clone)]
     pub struct $name {
+      desc: ArgDesc,
       mi: Option<$t>,
       ma: Option<$t>,
       def: Option<$t>,
     }
 
-    impl Parsable for $name {
-      fn can_parse(&self, s: &str) -> bool {
-        self.convert(s).is_some()
-      }
-
-      fn complete(&self, s: &str) -> Option<Vec<Completion>> {
-        s.parse::<$t>().ok().map(|_| vec![Completion::new(0, s.to_string())])
+    impl Arg for $name {
+      fn get_desc<'a>(&'a self) -> &'a ArgDesc {
+        &self.desc
       }
     }
 
     impl $name {
-      pub fn new() -> Self {
+      pub fn new(desc: ArgDesc) -> Self {
         Self {
+          desc,
           mi: None,
           ma: None,
           def: None,
@@ -43,23 +45,19 @@ macro_rules! make_num {
     }
 
     impl Convert<$t> for $name {
-      fn convert<'a>(&'a self, s: &str) -> Option<$t> {
-        s.parse::<$t>()
-          .ok()
-          .filter(|v| match self.mi {
-            Some(mi) => mi <= *v,
-            None => true,
-          })
-          .filter(|v| match self.ma {
-            Some(ma) => ma > *v,
-            None => true,
-          })
-      }
-    }
-
-    impl ConvertDefault<$t> for $name {
-      fn default(&self) -> Option<$t> {
-        self.def
+      fn from_match(&self, matches: &Matches) -> Option<$t> {
+        matches.value_of(&self.get_desc().name).and_then(|s| {
+          s.parse::<$t>()
+            .ok()
+            .filter(|v| match self.mi {
+              Some(mi) => mi <= *v,
+              None => true,
+            })
+            .filter(|v| match self.ma {
+              Some(ma) => ma > *v,
+              None => true,
+            })
+        })
       }
     }
   };

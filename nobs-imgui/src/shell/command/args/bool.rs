@@ -1,18 +1,18 @@
 use crate::shell::command::args::Arg;
 use crate::shell::command::args::ArgDesc;
 use crate::shell::command::args::Convert;
+use crate::shell::command::args::Ident;
 use crate::shell::command::args::Matches;
 
 /// Argument to handle a fixed set of identifiers
 ///
 /// Identifiers can have multiple variants, e.g. 'one' and '1', 'two' and '2', ...
 #[derive(Clone, Debug)]
-pub struct Ident {
-  desc: ArgDesc,
-  variants: Vec<Vec<String>>,
+pub struct Bool {
+  ident: Ident,
 }
 
-impl Ident {
+impl Bool {
   /// Creates a new Argument with specified variants
   ///
   /// #Arguments
@@ -22,28 +22,25 @@ impl Ident {
   ///
   /// #Returns
   /// The Ident argument
-  pub fn new(desc: ArgDesc, variants: &[&[&str]]) -> Self {
+  pub fn new(desc: ArgDesc) -> Self {
     Self {
-      desc,
-      variants: variants.iter().map(|v| v.iter().map(|s| s.to_string()).collect()).collect(),
+      ident: Ident::new(desc, &[&["on", "true", "1"], &["off", "false", "0"]]),
     }
   }
 }
 
-impl Arg for Ident {
+impl Arg for Bool {
   fn get_desc<'a>(&'a self) -> &'a ArgDesc {
-    &self.desc
+    self.ident.get_desc()
   }
 
   fn complete_variants_from_prefix(&self, prefix: &str) -> Vec<String> {
-    self.variants.iter().flatten().filter(|v| v.starts_with(prefix)).cloned().collect()
+    self.ident.complete_variants_from_prefix(prefix)
   }
 }
 
-impl Convert<String> for Ident {
-  fn from_match(&self, matches: &Matches) -> Option<String> {
-    matches
-      .value_of(&self.get_desc().name)
-      .and_then(|name| self.variants.iter().find(|v| v.iter().any(|i| name == *i)).map(|v| v[0].clone()))
+impl Convert<bool> for Bool {
+  fn from_match(&self, matches: &Matches) -> Option<bool> {
+    self.ident.from_match(matches).map(|v| v == "on")
   }
 }
