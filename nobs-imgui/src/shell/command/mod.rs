@@ -166,10 +166,10 @@ pub fn validate_command_def<C: Context>(c: &Box<dyn Command<C>>) -> Result<(), &
     let unique_name = args.iter().filter(|b| b.get_desc().name == a.name).count() <= 1;
     let unique_short = args
       .iter()
+      .filter(|b| b.get_desc().name != a.name)
       .filter_map(|b| b.get_desc().short.as_ref())
-      .filter(|short| a.name == **short || a.short.is_none() || a.short.as_ref().filter(|s| s == short).is_some())
-      .count()
-      <= 1;
+      .all(|short| a.name != **short || a.short.is_none() || a.short.as_ref().filter(|s| *s != short).is_some());
+
     unique_name && unique_short
   }) {
     Err("Invalid Command: Argument names and short names need to be unique.")?;

@@ -334,17 +334,15 @@ pub trait Arg {
   fn complete_variants_from_prefix(&self, prefix: &str) -> Vec<String> {
     vec![]
   }
+
+  fn get_match<'a>(&self, matches: &'a Matches) -> Option<&'a str> {
+    matches.value_of(&self.get_desc().name)
+  }
 }
 
 pub trait Convert<T>: Arg {
   fn from_match(&self, matches: &Matches) -> Option<T>;
 }
-
-//impl<'a> Convert<'a, &'a str> for Arg {
-//  fn from_match(&self, matches: &'a Matches) -> Option<&'a str> {
-//    matches.value_of(&self.get_desc().name)
-//  }
-//}
 
 /// Parsed argument
 #[derive(Clone, Debug)]
