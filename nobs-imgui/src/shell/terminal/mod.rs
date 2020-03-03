@@ -1,4 +1,5 @@
 mod complete;
+mod history;
 mod show;
 mod window;
 
@@ -16,6 +17,7 @@ pub struct Terminal<S: Style> {
   pub window: window::TerminalWnd<S>,
   pub show: show::Show<S>,
   pub complete: complete::Complete<S>,
+  pub history: history::History,
 }
 
 unsafe impl<S: Style> Send for Terminal<S> {}
@@ -25,8 +27,14 @@ impl<S: Style> Terminal<S> {
     let window = window::TerminalWnd::new(gui);
     let show = show::Show::new(window.clone());
     let complete = complete::Complete::new(window.clone());
+    let history = history::History::new();
 
-    Self { window, show, complete }
+    Self {
+      window,
+      show,
+      complete,
+      history,
+    }
   }
 
   pub fn draw<L: Layout, C: Context>(&mut self, screen: &mut Screen<S>, layout: &mut L, focus: &mut SelectId, context: &mut C) {

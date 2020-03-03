@@ -187,7 +187,7 @@ fn parse_name<'a>(desc: &ArgDesc, s: &'a str, p: usize, completions: &mut Option
   }
   //
   // unnamed argument specifications must not start with "--" or "-"
-  else if !s.starts_with("-") && !s.starts_with("--") && desc.index.filter(|i| *i > 0).is_some() {
+  else if !s.starts_with("-") && !s.starts_with("--") && !s.is_empty() && desc.index.filter(|i| *i > 0).is_some() {
     Some("")
   } else {
     None
