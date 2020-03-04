@@ -1,7 +1,7 @@
 use crate::shell::command::args;
 use crate::shell::command::args::Matches;
-use crate::shell::context::Context;
-use crate::shell::Command;
+use crate::shell::command::Command;
+use crate::shell::context::ContextShell;
 
 #[derive(Clone)]
 pub struct Cmd {
@@ -9,7 +9,7 @@ pub struct Cmd {
   cmd: args::Ident,
 }
 
-impl<C: Context> Command<C> for Cmd {
+impl<C: ContextShell> Command<C> for Cmd {
   fn get_args<'a>(&'a self) -> Vec<&'a dyn args::Arg> {
     vec![&self.thisname, &self.cmd]
   }
@@ -38,7 +38,7 @@ impl<C: Context> Command<C> for Cmd {
 }
 
 impl Cmd {
-  pub fn new<C: Context>(cmds: &Vec<std::sync::Arc<dyn Command<C>>>) -> Self {
+  pub fn new<C: ContextShell>(cmds: &Vec<std::sync::Arc<dyn Command<C>>>) -> Self {
     let vars = cmds.iter().map(|c| c.get_commandname().to_string()).collect::<Vec<_>>();
     let cmds = vars.iter().map(|v| v.as_str()).collect::<Vec<_>>();
 
@@ -54,7 +54,7 @@ impl Cmd {
     }
   }
 
-  pub fn update<C: Context>(&mut self, cmds: &Vec<std::sync::Arc<dyn Command<C>>>) {
+  pub fn update<C: ContextShell>(&mut self, cmds: &Vec<std::sync::Arc<dyn Command<C>>>) {
     let vars = cmds.iter().map(|c| c.get_commandname().to_string()).collect::<Vec<_>>();
     let cmds = vars.iter().map(|v| v.as_str()).collect::<Vec<_>>();
     self.cmd = args::Ident::new(

@@ -3,13 +3,13 @@ pub mod help;
 pub mod source;
 pub mod spawn;
 
-use crate::shell::Context;
+use crate::shell::context::ContextBase;
 use args::Arg;
 use args::Completion;
 use args::Matches;
 use args::Parsed;
 
-pub trait Command<C: Context>: Send + Sync {
+pub trait Command<C: ContextBase>: Send + Sync {
   fn get_args<'a>(&'a self) -> Vec<&'a dyn Arg>;
 
   fn run(&self, matches: &Matches, context: &mut C);
@@ -142,7 +142,7 @@ pub trait Command<C: Context>: Send + Sync {
   }
 }
 
-pub fn validate_command_def<C: Context>(c: &Box<dyn Command<C>>) -> Result<(), &'static str> {
+pub fn validate_command_def<C: ContextBase>(c: &Box<dyn Command<C>>) -> Result<(), &'static str> {
   let args = c.get_args();
 
   // the 0th argument is the name of the command

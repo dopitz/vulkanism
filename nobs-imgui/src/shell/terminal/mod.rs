@@ -5,7 +5,7 @@ mod window;
 
 use crate::components::textbox::Event as TextboxEvent;
 use crate::select::SelectId;
-use crate::shell::Context;
+use crate::shell::context::ContextShell;
 use crate::style::Style;
 use crate::window::Component;
 use crate::window::Layout;
@@ -37,7 +37,7 @@ impl<S: Style> Terminal<S> {
     }
   }
 
-  pub fn draw<L: Layout, C: Context>(&mut self, screen: &mut Screen<S>, layout: &mut L, focus: &mut SelectId, context: &mut C) {
+  pub fn draw<L: Layout, C: ContextShell>(&mut self, screen: &mut Screen<S>, layout: &mut L, focus: &mut SelectId, context: &mut C) {
     let e = match self.show.get() {
       true => self.window.draw(screen, layout, focus),
       false => None,

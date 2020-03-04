@@ -1,17 +1,17 @@
 use crate::shell::command;
 use crate::shell::command::help;
 use crate::shell::command::source;
-use crate::shell::Command;
-use crate::shell::Context;
+use crate::shell::command::Command;
+use crate::shell::context::ContextShell;
 use std::sync::Arc;
 use std::sync::Mutex;
 
-pub struct Shell<C: Context> {
+pub struct Shell<C: ContextShell> {
   cmds: Arc<Mutex<Vec<Arc<dyn Command<C>>>>>,
   exec: Arc<Mutex<Option<std::thread::JoinHandle<()>>>>,
 }
 
-impl<C: Context> Clone for Shell<C> {
+impl<C: ContextShell> Clone for Shell<C> {
   fn clone(&self) -> Self {
     Self {
       cmds: self.cmds.clone(),
@@ -20,9 +20,9 @@ impl<C: Context> Clone for Shell<C> {
   }
 }
 
-unsafe impl<C: Context> Send for Shell<C> {}
+unsafe impl<C: ContextShell> Send for Shell<C> {}
 
-impl<C: Context> Shell<C> {
+impl<C: ContextShell> Shell<C> {
   pub fn new() -> Self {
     let sh = Self {
       cmds: Arc::new(Mutex::new(Vec::new())),
@@ -88,7 +88,7 @@ impl<C: Context> Shell<C> {
   }
 }
 
-impl<C: 'static + Clone + Send + Context> Shell<C> {
+impl<C: 'static + Clone + Send + ContextShell> Shell<C> {
   pub fn has_exec(&self) -> bool {
     self.exec.lock().unwrap().is_some()
   }

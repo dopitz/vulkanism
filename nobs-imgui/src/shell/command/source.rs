@@ -1,14 +1,14 @@
 use crate::shell::command::args;
 use crate::shell::command::args::Arg;
-use crate::shell::context::Context;
-use crate::shell::Command;
+use crate::shell::command::Command;
+use crate::shell::context::ContextShell;
 
 pub struct Cmd {
   thisname: args::CommandName,
   file: args::File,
 }
 
-impl<C: Context> Command<C> for Cmd {
+impl<C: ContextShell> Command<C> for Cmd {
   fn get_args<'a>(&'a self) -> Vec<&'a dyn args::Arg> {
     vec![&self.thisname, &self.file]
   }

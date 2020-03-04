@@ -1,7 +1,7 @@
 use crate::components::textbox::Event as TextboxEvent;
 use crate::shell::command::args;
+use crate::shell::context::ContextShell;
 use crate::shell::terminal::window::TerminalWnd;
-use crate::shell::Context;
 use crate::style::Style;
 use crate::window::Screen;
 use std::sync::Arc;
@@ -42,7 +42,7 @@ impl<S: Style> Complete<S> {
     self.window.quickfix_text("");
   }
 
-  pub fn handle_events<C: Context>(&self, screen: &mut Screen<S>, e: &Option<TextboxEvent>, context: &C) {
+  pub fn handle_events<C: ContextShell>(&self, screen: &mut Screen<S>, e: &Option<TextboxEvent>, context: &C) {
     // handles the textbox event from the input box
     match e {
       Some(TextboxEvent::Enter(_)) => self.reset(),
@@ -65,13 +65,17 @@ impl<S: Style> Complete<S> {
               ..
             },
           ..
-        } => self.next(*reverse),
+        } => {
+          if self.next(*reverse) {
+            self.update_completions(context);
+          }
+        }
         _ => (),
       }
     }
   }
 
-  fn update_completions<C: Context>(&self, context: &C) {
+  fn update_completions<C: ContextShell>(&self, context: &C) {
     let mut state = self.state.lock().unwrap();
     let input = self.window.get_input();
 
@@ -97,10 +101,11 @@ impl<S: Style> Complete<S> {
     self.update_quickfix(state.index, &state.completions);
   }
 
-  fn next(&self, reverse: bool) {
+  fn next(&self, reverse: bool) -> bool {
     let mut state = self.state.lock().unwrap();
     let mut index = state.index;
 
+    let mut update_completions = false;
     if !state.completions.is_empty() {
       match index {
         Index::Input => {
@@ -117,14 +122,15 @@ impl<S: Style> Complete<S> {
             }
           }
 
-          if longest_prefix.len() > 0 {
-            state.input = longest_prefix;
-          } else {
+          if longest_prefix.len() == self.window.get_input().len() {
             // check if we can complete to common prefix
             index = match reverse {
               false => Index::Complete(0),
               true => Index::Complete(state.completions.len() - 1),
             };
+          } else {
+            state.input = longest_prefix;
+            update_completions = true;
           }
         }
         Index::Complete(i) => {
@@ -149,6 +155,7 @@ impl<S: Style> Complete<S> {
     }
 
     state.index = index;
+    update_completions
   }
 
   fn update_quickfix(&self, index: Index, completions: &[args::Completion]) {
