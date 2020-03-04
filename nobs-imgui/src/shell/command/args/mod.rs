@@ -35,6 +35,12 @@ pub struct ArgDesc {
   /// - May be specidied for any argument
   /// - In case no value was parsed for this argument it is automatically assigned to the specifid `default`
   pub default: Option<String>,
+  /// Help text for the default value of this argument
+  ///
+  /// - May be specidied for any argument
+  /// - Sometimes the default value depends on another argument (e.g. same as value of argument X with different file extension).
+  ///   In this case [format_help](struct.ArgDesc.html#method.format_help)
+  pub default_help: Option<String>,
   /// Declares the argument as optional
   ///
   /// - May be specified for any argument
@@ -59,6 +65,7 @@ impl ArgDesc {
       name: name.to_string(),
       short: Default::default(),
       default: None,
+      default_help: None,
       optional: false,
       help: Default::default(),
     }
@@ -79,6 +86,11 @@ impl ArgDesc {
     self
   }
 
+  pub fn default_help(mut self, default_help: &str) -> Self {
+    self.default_help = Some(default_help.to_string());
+    self
+  }
+
   pub fn optional(mut self, optional: bool) -> Self {
     self.optional = optional;
     self
@@ -89,29 +101,41 @@ impl ArgDesc {
     self
   }
 
-  pub fn format_help(descs: &[&ArgDesc]) -> String {
-    let (len_short, len_name) = descs.iter().fold((0, 0), |(s, n), d| {
+  pub fn format_help(descs: &[&ArgDesc], include_captions: bool) -> String {
+    let (len_name, len_short, len_default) = descs.iter().fold((0, 0, 0), |(len_name, len_short, len_default), d| {
       if let Some(1) = d.index.as_ref() {
-        (s, n)
+        (len_name, len_short, len_default)
       } else {
         (
-          usize::max(d.short.as_ref().map(|s| s.len()).unwrap_or(0), s),
-          usize::max(d.name.len(), n),
+          usize::max(d.name.len(), len_name),
+          usize::max(d.short.as_ref().map(|s| s.len()).unwrap_or(0), len_short),
+          usize::max(
+            d.default_help.as_ref().or(d.default.as_ref()).map(|s| s.len()).unwrap_or(0),
+            len_default,
+          ),
         )
       }
     });
 
-    let len_short = len_short + 3;
-    let len_name = len_name + 4;
-    let len_sum = len_short + len_name;
-
-    let mut s = String::new();
+    let len_name = usize::max("Name".len() + 2, len_name + 4);
+    let len_short = usize::max("Short".len() + 2, len_short + 3);
+    let len_optional = match descs.iter().fold(false, |o, d| o | d.optional) {
+      true => "[opt]".len() + 2,
+      false => 0,
+    };
+    let len_default = match len_default {
+      0 => 0,
+      l => l + 2,
+    };
+    let len_sum = len_name + len_short + len_optional + len_default;
 
     let format_single_line = |d: &ArgDesc| {
       format!(
-        "{name:<0$}{short:<1$}{help}\n",
+        "{name:<0$}{short:<1$}{opt:<2$}{def:<3$}{help}\n",
         len_name,
         len_short,
+        len_optional,
+        len_default,
         name = match d.index.filter(|i| *i == 0).is_some() {
           true => d.name.to_string(),
           false => format!("--{}", d.name),
@@ -120,22 +144,67 @@ impl ArgDesc {
           Some(short) => format!("-{}", short),
           None => Default::default(),
         },
+        opt = match d.optional {
+          true => "[opt]",
+          false => "",
+        },
+        def = d.default_help.as_ref().or(d.default.as_ref()).map(|s| s.as_str()).unwrap_or(""),
         help = d.help.lines().next().unwrap()
       )
     };
 
+    let mut help = format!(
+      "{name:<0$}{short:<1$}{opt:<2$}{def:<3$}\n",
+      len_name,
+      len_short,
+      len_optional,
+      len_default,
+      name = "name",
+      short = "short",
+      opt = match len_optional {
+        0 => "",
+        _ => "optional",
+      },
+      def = match len_default {
+        0 => "",
+        _ => "default",
+      }
+    );
+
+    for _ in 0..len_name - 1 {
+      help.push('-');
+    }
+    help.push(' ');
+    for _ in 0..len_short - 1 {
+      help.push('-');
+    }
+    help.push(' ');
+    if len_optional > 0 {
+      for _ in 0..len_optional - 1 {
+        help.push('-');
+      }
+      help.push(' ');
+    }
+    if len_default > 0 {
+      for _ in 0..len_default - 1 {
+        help.push('-')
+      }
+      help.push(' ');
+    }
+    help.push('\n');
+
     for d in descs.iter() {
       if d.help.lines().count() > 1 {
-        s.push_str(&format_single_line(d));
+        help.push_str(&format_single_line(d));
         for l in d.help.lines().skip(1) {
-          s.push_str(&format!("{pad:<0$}{help}\n", len_sum, pad = "", help = l));
+          help.push_str(&format!("{pad:<0$}{help}\n", len_sum, pad = "", help = l));
         }
       } else {
-        s.push_str(&format_single_line(d));
+        help.push_str(&format_single_line(d));
       }
     }
 
-    s
+    help
   }
 }
 
@@ -154,7 +223,7 @@ fn parse_name<'a>(desc: &ArgDesc, s: &'a str, p: usize, completions: &mut Option
           completions.push(Completion {
             replace_input: p..p + s.len(),
             completed: format!("--{}", desc.name),
-            hint: ArgDesc::format_help(&[desc]),
+            hint: ArgDesc::format_help(&[desc], false),
           });
         }
       }
@@ -173,13 +242,13 @@ fn parse_name<'a>(desc: &ArgDesc, s: &'a str, p: usize, completions: &mut Option
           completions.push(Completion {
             replace_input: p..p + s.len(),
             completed: format!("-{}", desc.short.as_ref().unwrap()),
-            hint: ArgDesc::format_help(&[desc]),
+            hint: ArgDesc::format_help(&[desc], false),
           });
         }
         completions.push(Completion {
           replace_input: p..p + s.len(),
           completed: format!("--{}", desc.name),
-          hint: ArgDesc::format_help(&[desc]),
+          hint: ArgDesc::format_help(&[desc], false),
         });
       }
       None
@@ -283,7 +352,7 @@ pub trait Arg {
             completions.push(Completion {
               replace_input: 0..s.len(),
               completed: desc.name.to_string(),
-              hint: ArgDesc::format_help(&[desc]),
+              hint: ArgDesc::format_help(&[desc], false),
             });
           }
         }
@@ -307,7 +376,7 @@ pub trait Arg {
             completions.push(Completion {
               replace_input: vp..np,
               completed: c,
-              hint: ArgDesc::format_help(&[desc]),
+              hint: ArgDesc::format_help(&[desc], false),
             })
           }
         }

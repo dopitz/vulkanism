@@ -22,7 +22,23 @@ impl Ident {
   ///
   /// #Returns
   /// The Ident argument
-  pub fn new(desc: ArgDesc, variants: &[&[&str]]) -> Self {
+  pub fn new(mut desc: ArgDesc, variants: &[&[&str]]) -> Self {
+    let make_variant = |v: &[&str]| match v.len() {
+      0 => String::new(),
+      1 => v[0].to_string(),
+      _ => v.iter().skip(1).fold(v[0].to_string(), |acc, s| format!("{} | {}", acc, s)),
+    };
+
+    let variants_string = match variants.len() {
+      0 => String::new(),
+      1 => format!("  [{}]", make_variant(variants[0])),
+      _ => variants
+        .iter()
+        .skip(1)
+        .fold(make_variant(variants[0]), |acc, s| format!("{},\n    {}", acc, make_variant(s))),
+    };
+
+    desc.help = format!("{}\nPossible values are:\n  [ {} ]", desc.help, variants_string);
     Self {
       desc,
       variants: variants.iter().map(|v| v.iter().map(|s| s.to_string()).collect()).collect(),

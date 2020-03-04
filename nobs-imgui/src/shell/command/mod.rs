@@ -59,7 +59,6 @@ pub trait Command<C: ContextBase>: Send + Sync {
     }
     s.push_str(" [options...]\n");
 
-    let heading = args::ArgDesc::new("Name").short("Short").help("Description");
 
     let mut option_args = args
       .iter()
@@ -69,17 +68,13 @@ pub trait Command<C: ContextBase>: Send + Sync {
     option_args.sort_by(|a, b| a.name.cmp(&b.name));
 
     let mut sorted_args = Vec::with_capacity(1 + index_args.len() + option_args.len());
-    sorted_args.push(&heading);
     sorted_args.append(&mut index_args);
     sorted_args.append(&mut option_args);
-    //[vec![&heading], index_args, option_args].iter().flatten().collect::<Vec<_>>();
 
     s.push('\n');
     s.push_str("Arguments:\n");
     s.push_str("\n  ");
-    s.push_str(&args::ArgDesc::format_help(sorted_args.as_slice()).replace("\n", "\n  "));
-    //s.push_str(&args::ArgDesc::format_help(&index_args).replace("\n", "\n  "));
-    //s.push_str(&args::ArgDesc::format_help(&option_args).replace("\n", "\n  "));
+    s.push_str(&args::ArgDesc::format_help(sorted_args.as_slice(), true).replace("\n", "\n  "));
     s
   }
 

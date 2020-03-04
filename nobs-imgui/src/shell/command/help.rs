@@ -31,7 +31,7 @@ impl<C: ContextShell> Command<C> for Cmd {
           .map(|a| a.get_desc())
           .collect::<Vec<_>>();
 
-        context.println(&args::ArgDesc::format_help(&descs));
+        context.println(&args::ArgDesc::format_help(&descs, false));
       }
     }
   }
