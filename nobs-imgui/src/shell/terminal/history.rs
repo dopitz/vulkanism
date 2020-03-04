@@ -14,21 +14,35 @@ struct State {
 }
 
 #[derive(Clone)]
-pub struct History {
+pub struct History<S: Style> {
   state: Arc<Mutex<State>>,
+  window: TerminalWnd<S>,
 }
 
-impl History {
-  pub fn new() -> Self {
+impl<S: Style> History<S> {
+  pub fn new(window: TerminalWnd<S>) -> Self {
     Self {
       state: Arc::new(Mutex::new(State {
         index: 0,
-        inputs: Vec::new(),
+        inputs: vec![String::new()],
       })),
+      window,
     }
   }
 
-  pub fn handle_events<C: Context, S: Style>(&self, screen: &mut Screen<S>, e: &Option<TextboxEvent>, context: &C) {
+  pub fn handle_events<C: Context>(&self, screen: &mut Screen<S>, e: &Option<TextboxEvent>, context: &C) {
+    // history.last() always contains the current input
+    // On text input, resets the index to the end of history
+    match e {
+      Some(TextboxEvent::Enter(input)) => self.state.lock().unwrap().inputs.push(String::new()),
+      Some(TextboxEvent::Changed) => {
+        let mut state = self.state.lock().unwrap();
+        *state.inputs.last_mut().unwrap() = self.window.get_input();
+        state.index = 0;
+      }
+      _ => (),
+    };
+
     // handles the textbox event from the input box
     for e in screen.get_events() {
       match e {
@@ -64,50 +78,25 @@ impl History {
   }
 
   fn next(&self, reverse: bool) {
-    //let input = self.window.get_input();
+    let mut state = self.state.lock().unwrap();
 
-    //let mut state = self.state.lock().unwrap();
-    //let mut index = state.index;
+    println!("============\n{}", state.index);
+    match reverse {
+      true => {
+        state.index += 1;
+        if state.index == state.inputs.len() {
+          state.index = 0;
+        }
+      }
 
-    //if !state.completions.is_empty() {
-    //  match index {
-    //    Index::Input => {
-    //      index = match reverse {
-    //        false => Index::Complete(0),
-    //        true => Index::Complete(state.completions.len() - 1),
-    //      };
-    //    }
-    //    Index::Complete(i) => {
-    //      let d = match reverse {
-    //        false => 1,
-    //        true => -1,
-    //      };
-    //      let ci = i as i32 + d;
-    //      index = if ci < 0 || ci >= state.completions.len() as i32 {
-    //        Index::Input
-    //      } else {
-    //        self.update_quickfix(state.index, &state.completions);
-    //        Index::Complete(ci as usize)
-    //      };
-    //    }
-    //  }
+      false => match state.index {
+        0 if state.inputs.is_empty() => state.index = 0,
+        0 => state.index = state.inputs.len() - 1,
+        _ => state.index -= 1,
+      },
+    }
+    println!("{}", state.index);
 
-    //  match index {
-    //    Index::Input => self.window.input_text(&state.input),
-    //    Index::Complete(i) => {
-    //      let mut input = state.input.clone();
-
-    //      let c = &state.completions[i];
-    //      if c.replace_input.start == c.replace_input.end {
-    //        input.push_str(&state.completions[i].completed);
-    //      } else {
-    //        input.replace_range(state.completions[i].replace_input.clone(), &state.completions[i].completed);
-    //      }
-    //      self.window.input_text(&input);
-    //    }
-    //  }
-    //}
-
-    //state.index = index;
+    self.window.input_text(&state.inputs[state.index]);
   }
 }

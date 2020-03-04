@@ -17,7 +17,7 @@ pub struct Terminal<S: Style> {
   pub window: window::TerminalWnd<S>,
   pub show: show::Show<S>,
   pub complete: complete::Complete<S>,
-  pub history: history::History,
+  pub history: history::History<S>,
 }
 
 unsafe impl<S: Style> Send for Terminal<S> {}
@@ -27,7 +27,7 @@ impl<S: Style> Terminal<S> {
     let window = window::TerminalWnd::new(gui);
     let show = show::Show::new(window.clone());
     let complete = complete::Complete::new(window.clone());
-    let history = history::History::new();
+    let history = history::History::new(window.clone());
 
     Self {
       window,
@@ -45,11 +45,11 @@ impl<S: Style> Terminal<S> {
     self.show.handle_events(screen);
 
     self.complete.handle_events(screen, &e, context);
+    self.history.handle_events(screen, &e, context);
 
     match e {
       Some(TextboxEvent::Enter(input)) => {
         context.get_shell().exec(&input, context);
-        //self.input.history.push(s);
       }
       _ => (),
     };
