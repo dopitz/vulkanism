@@ -12,7 +12,7 @@ use args::Parsed;
 pub trait Command<C: ContextBase>: Send + Sync {
   fn get_args<'a>(&'a self) -> Vec<&'a dyn Arg>;
 
-  fn run(&self, matches: &Matches, context: &mut C);
+  fn run(&self, matches: &Matches, context: &mut C) -> Result<(), String>;
 
   fn get_commandname<'a>(&'a self) -> String {
     self
@@ -58,7 +58,6 @@ pub trait Command<C: ContextBase>: Send + Sync {
       s.push(' ');
     }
     s.push_str(" [options...]\n");
-
 
     let mut option_args = args
       .iter()

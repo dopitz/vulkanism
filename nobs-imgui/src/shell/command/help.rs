@@ -14,7 +14,7 @@ impl<C: ContextShell> Command<C> for Cmd {
     vec![&self.thisname, &self.cmd]
   }
 
-  fn run(&self, matches: &Matches, context: &mut C) {
+  fn run(&self, matches: &Matches, context: &mut C) -> Result<(), String> {
     match matches.value_of("command") {
       Some(cmd) => match context.get_shell().get_commands().iter().find(|c| c.get_commandname() == cmd) {
         Some(cmd) => context.println(&cmd.get_help()),
@@ -34,6 +34,7 @@ impl<C: ContextShell> Command<C> for Cmd {
         context.println(&args::ArgDesc::format_help(&descs, false));
       }
     }
+    Ok(())
   }
 }
 

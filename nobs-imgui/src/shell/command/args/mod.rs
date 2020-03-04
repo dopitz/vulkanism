@@ -153,43 +153,48 @@ impl ArgDesc {
       )
     };
 
-    let mut help = format!(
-      "{name:<0$}{short:<1$}{opt:<2$}{def:<3$}\n",
-      len_name,
-      len_short,
-      len_optional,
-      len_default,
-      name = "name",
-      short = "short",
-      opt = match len_optional {
-        0 => "",
-        _ => "optional",
-      },
-      def = match len_default {
-        0 => "",
-        _ => "default",
-      }
-    );
+    let mut help = match include_captions {
+      true => format!(
+        "{name:<0$}{short:<1$}{opt:<2$}{def:<3$}\n",
+        len_name,
+        len_short,
+        len_optional,
+        len_default,
+        name = "name",
+        short = "short",
+        opt = match len_optional {
+          0 => "",
+          _ => "optional",
+        },
+        def = match len_default {
+          0 => "",
+          _ => "default",
+        }
+      ),
+      false => String::new(),
+    };
 
-    for _ in 0..len_name - 1 {
-      help.push('-');
-    }
-    help.push(' ');
-    for _ in 0..len_short - 1 {
-      help.push('-');
-    }
-    help.push(' ');
-    if len_optional > 0 {
-      for _ in 0..len_optional - 1 {
+    if include_captions {
+      for _ in 0..len_name - 1 {
         help.push('-');
       }
       help.push(' ');
-    }
-    if len_default > 0 {
-      for _ in 0..len_default - 1 {
-        help.push('-')
+      for _ in 0..len_short - 1 {
+        help.push('-');
       }
       help.push(' ');
+      if len_optional > 0 {
+        for _ in 0..len_optional - 1 {
+          help.push('-');
+        }
+        help.push(' ');
+      }
+      if len_default > 0 {
+        for _ in 0..len_default - 1 {
+          help.push('-')
+        }
+        help.push(' ');
+      }
     }
     help.push('\n');
 

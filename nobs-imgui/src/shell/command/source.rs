@@ -13,7 +13,7 @@ impl<C: ContextShell> Command<C> for Cmd {
     vec![&self.thisname, &self.file]
   }
 
-  fn run(&self, matches: &args::Matches, context: &mut C) {
+  fn run(&self, matches: &args::Matches, context: &mut C) -> Result<(), String>{
     use std::fs::File;
     use std::io::prelude::*;
     use std::io::BufReader;
@@ -56,6 +56,8 @@ impl<C: ContextShell> Command<C> for Cmd {
         _ => context.println(&format!("Could not open file: {:?}", file)),
       }
     }
+
+    Ok(())
   }
 }
 
