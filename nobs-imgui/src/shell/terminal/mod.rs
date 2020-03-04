@@ -45,7 +45,7 @@ impl<S: Style> Terminal<S> {
     self.show.handle_events(screen);
 
     self.complete.handle_events(screen, &e, context);
-    self.history.handle_events(screen, &e, context);
+    self.history.handle_events(screen, &e);
 
     match e {
       Some(TextboxEvent::Enter(input)) => {

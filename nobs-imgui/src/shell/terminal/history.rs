@@ -1,12 +1,9 @@
 use crate::components::textbox::Event as TextboxEvent;
-use crate::shell::command::args;
 use crate::shell::terminal::window::TerminalWnd;
-use crate::shell::Context;
 use crate::style::Style;
 use crate::window::Screen;
 use std::sync::Arc;
 use std::sync::Mutex;
-use vk::winit::Event;
 
 struct State {
   index: usize,
@@ -30,11 +27,11 @@ impl<S: Style> History<S> {
     }
   }
 
-  pub fn handle_events<C: Context>(&self, screen: &mut Screen<S>, e: &Option<TextboxEvent>, context: &C) {
+  pub fn handle_events(&self, screen: &mut Screen<S>, e: &Option<TextboxEvent>) {
     // history.last() always contains the current input
     // On text input, resets the index to the end of history
     match e {
-      Some(TextboxEvent::Enter(input)) => self.state.lock().unwrap().inputs.push(String::new()),
+      Some(TextboxEvent::Enter(_)) => self.state.lock().unwrap().inputs.push(String::new()),
       Some(TextboxEvent::Changed) => {
         let mut state = self.state.lock().unwrap();
         *state.inputs.last_mut().unwrap() = self.window.get_input();

@@ -151,9 +151,11 @@ impl<S: Style> TerminalImpl<S> {
     readl
   }
 
+  #[allow(dead_code)]
   pub fn input_text(&mut self, s: &str) {
     self.input.text(&format!("~$ {}", s)).cursor(Some(vec2!(s.len() as u32 + 3, 0)));
   }
+  #[allow(dead_code)]
   pub fn quickfix_text(&mut self, s: &str) {
     self.quickfix.text(s);
   }

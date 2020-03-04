@@ -93,7 +93,7 @@ pub trait Command<C: Context>: Send + Sync {
     let mut pp = args
       .iter()
       .enumerate()
-      .find(|(i, a)| a.get_desc().index.filter(|i| *i == 0).is_some())
+      .find(|(_, a)| a.get_desc().index.filter(|i| *i == 0).is_some())
       .and_then(|(i, a)| a.parse(s, 0, completions.as_mut()).map(|p| (i, p)));
 
     while let Some((i, p)) = pp {
@@ -107,7 +107,7 @@ pub trait Command<C: Context>: Send + Sync {
       pp = args
         .iter()
         .enumerate()
-        .filter(|(i, a)| parsed[*i].is_none())
+        .filter(|(i, _)| parsed[*i].is_none())
         .filter_map(|(i, a)| {
           a.parse(s, p.replace_input.end, completions.as_mut())
             .map(|p| (a.get_desc().index, (i, p)))
@@ -121,7 +121,7 @@ pub trait Command<C: Context>: Send + Sync {
       .iter()
       .zip(parsed.iter_mut())
       .enumerate()
-      .filter(|(i, (a, p))| !a.get_desc().optional && a.get_desc().default.is_some() && p.is_none())
+      .filter(|(_, (a, p))| !a.get_desc().optional && a.get_desc().default.is_some() && p.is_none())
       .for_each(|(i, (a, p))| {
         argorder.push(i);
         *p = Some(Parsed {

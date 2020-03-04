@@ -6,11 +6,6 @@ use crate::shell::Context;
 use std::sync::Arc;
 use std::sync::Mutex;
 
-struct ShellExec<C: Context> {
-  pub cmd: Arc<dyn Command<C>>,
-  pub args: Vec<String>,
-}
-
 pub struct Shell<C: Context> {
   cmds: Arc<Mutex<Vec<Arc<dyn Command<C>>>>>,
   exec: Arc<Mutex<Option<std::thread::JoinHandle<()>>>>,

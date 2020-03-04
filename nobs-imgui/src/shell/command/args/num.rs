@@ -1,7 +1,6 @@
 use crate::shell::command::args::Arg;
 use crate::shell::command::args::ArgDesc;
 use crate::shell::command::args::Convert;
-use crate::shell::command::args::Ident;
 use crate::shell::command::args::Matches;
 
 macro_rules! make_num {

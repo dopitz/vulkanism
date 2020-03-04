@@ -6,7 +6,6 @@ use crate::style::Style;
 use crate::window::Screen;
 use std::sync::Arc;
 use std::sync::Mutex;
-use vk::winit::Event;
 
 #[derive(Clone, Copy, Debug)]
 enum Index {
@@ -46,7 +45,7 @@ impl<S: Style> Complete<S> {
   pub fn handle_events<C: Context>(&self, screen: &mut Screen<S>, e: &Option<TextboxEvent>, context: &C) {
     // handles the textbox event from the input box
     match e {
-      Some(TextboxEvent::Enter(input)) => self.reset(),
+      Some(TextboxEvent::Enter(_)) => self.reset(),
       Some(TextboxEvent::Changed) => self.update_completions(context),
       _ => (),
     };
@@ -99,8 +98,6 @@ impl<S: Style> Complete<S> {
   }
 
   fn next(&self, reverse: bool) {
-    let input = self.window.get_input();
-
     let mut state = self.state.lock().unwrap();
     let mut index = state.index;
 

@@ -269,7 +269,6 @@ pub trait Arg {
       if s[p..].starts_with(&desc.name) {
         let name = &s[p..desc.name.len()];
         let p = parse_next(p + name.len(), s);
-        let next = &s[p..];
 
         Some(Parsed {
           input,
@@ -297,7 +296,6 @@ pub trait Arg {
       let vp = parse_next(p + name.len(), s);
       let value = parse_value(&s[vp..]);
       let np = parse_next(vp + value.len(), s);
-      let next = &s[np..];
 
       // push completions of values, if name could be parsed correctly and is seperated with a space from the token before
       let index_arg = name.is_empty() && offset > 0 && s.chars().nth(offset - 1).filter(|c| *c == ' ').is_some();
@@ -327,11 +325,11 @@ pub trait Arg {
   }
 
   // TODO: make use of that in parse
-  fn validate_parsed_value(&self, value: &str) -> bool {
+  fn validate_parsed_value(&self, _value: &str) -> bool {
     true
   }
 
-  fn complete_variants_from_prefix(&self, prefix: &str) -> Vec<String> {
+  fn complete_variants_from_prefix(&self, _prefix: &str) -> Vec<String> {
     vec![]
   }
 

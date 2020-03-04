@@ -1,6 +1,5 @@
 use crate::shell::command::args;
 use crate::shell::command::args::Matches;
-use crate::shell::command::args::Parsed;
 use crate::shell::context::Context;
 use crate::shell::Command;
 
