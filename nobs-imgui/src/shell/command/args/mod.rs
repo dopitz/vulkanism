@@ -400,6 +400,17 @@ pub struct Completion {
   pub hint: String,
 }
 
+impl Completion {
+  pub fn complete(&self, mut input: String) -> String {
+    if self.replace_input.start == self.replace_input.end {
+      input.push_str(&self.completed);
+    } else {
+      input.replace_range(self.replace_input.clone(), &self.completed);
+    }
+    input
+  }
+}
+
 mod bool;
 mod commandname;
 mod file;

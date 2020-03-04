@@ -107,10 +107,28 @@ impl<S: Style> Complete<S> {
     if !state.completions.is_empty() {
       match index {
         Index::Input => {
-          index = match reverse {
-            false => Index::Complete(0),
-            true => Index::Complete(state.completions.len() - 1),
-          };
+          let mut longest_prefix = state.completions[0].complete(state.input.clone());
+          for c in state.completions.iter().skip(1) {
+            let completed = c.complete(state.input.clone());
+            let pos = longest_prefix
+              .chars()
+              .zip(completed.chars())
+              .position(|(p, c)| p != c)
+              .unwrap_or(usize::min(longest_prefix.len(), completed.len()));
+            if pos < longest_prefix.len() {
+              longest_prefix = longest_prefix[0..pos].to_string();
+            }
+          }
+
+          if longest_prefix.len() > 0 {
+            state.input = longest_prefix;
+          } else {
+            // check if we can complete to common prefix
+            index = match reverse {
+              false => Index::Complete(0),
+              true => Index::Complete(state.completions.len() - 1),
+            };
+          }
         }
         Index::Complete(i) => {
           let d = match reverse {
@@ -129,17 +147,7 @@ impl<S: Style> Complete<S> {
 
       match index {
         Index::Input => self.window.input_text(&state.input),
-        Index::Complete(i) => {
-          let mut input = state.input.clone();
-
-          let c = &state.completions[i];
-          if c.replace_input.start == c.replace_input.end {
-            input.push_str(&state.completions[i].completed);
-          } else {
-            input.replace_range(state.completions[i].replace_input.clone(), &state.completions[i].completed);
-          }
-          self.window.input_text(&input);
-        }
+        Index::Complete(i) => self.window.input_text(&state.completions[i].complete(state.input.clone())),
       }
     }
 
