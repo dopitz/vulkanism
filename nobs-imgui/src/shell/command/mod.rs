@@ -94,6 +94,8 @@ pub trait Command<C: ContextBase>: Send + Sync {
       argorder.push(i);
       parsed[i] = Some(p.clone());
 
+      println!("{:?}", parsed);
+
       // TODO: name clashes of arguments are handled during command/argument construction
       // it is possible that more than one argument parse successfully (unnamed arguments)
       // such arguments are ordered by the index of the argument descriptor
