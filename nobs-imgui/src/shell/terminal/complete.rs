@@ -15,7 +15,7 @@ enum Index {
 struct State {
   index: Index,
   input: String,
-  completions: Vec<args::Completion>,
+  completions: Option<Vec<args::Completion>>,
 }
 
 #[derive(Clone)]
@@ -31,7 +31,7 @@ impl<S: Style> Complete<S> {
       state: Arc::new(Mutex::new(State {
         index: Index::Input,
         input: String::new(),
-        completions: Vec::new(),
+        completions: Some(Vec::new()),
       })),
     }
   }
@@ -83,35 +83,46 @@ impl<S: Style> Complete<S> {
     let cmds = context.get_shell().get_commands();
 
     state.input = input.clone();
-    state.completions.clear();
+    let mut completions = state.completions.take().unwrap();
+    completions.clear();
+
+    let mut completions = Some(completions);
     for c in cmds.iter() {
-      c.parse(&input, Some(&mut state.completions));
+      println!("{}", c.get_commandname());
+
+      let matches = args::Matches::new(&input, c.get_args(), &mut completions);
+
+      println!("{:?}", matches);
+      //TODO c.parse(&input, Some(&mut state.completions));
     }
+    let completions = completions.take().unwrap();
 
     // make sure the complete index stays in bound, if we restricted completion variants.
     match state.index {
       Index::Complete(i) => {
-        if i >= state.completions.len() {
+        if i >= completions.len() {
           state.index = Index::Input;
         }
       }
       _ => (),
     }
 
-    self.update_quickfix(state.index, &state.completions);
+    self.update_quickfix(state.index, &completions);
+    state.completions = Some(completions);
   }
 
   fn next(&self, reverse: bool) -> bool {
     let mut state = self.state.lock().unwrap();
     let mut index = state.index;
+    let mut completions = state.completions.take().unwrap();
 
     let mut update_completions = false;
-    if !state.completions.is_empty() {
+    if !completions.is_empty() {
       match index {
         Index::Input => {
-          let mut longest_prefix = state.completions[0].complete(state.input.clone());
-          for c in state.completions.iter().skip(1) {
-            let completed = c.complete(state.input.clone());
+          let mut longest_prefix = completions[0].complete(&state.input.clone());
+          for c in completions.iter().skip(1) {
+            let completed = c.complete(&state.input.clone());
             let pos = longest_prefix
               .chars()
               .zip(completed.chars())
@@ -126,7 +137,7 @@ impl<S: Style> Complete<S> {
             // check if we can complete to common prefix
             index = match reverse {
               false => Index::Complete(0),
-              true => Index::Complete(state.completions.len() - 1),
+              true => Index::Complete(completions.len() - 1),
             };
           } else {
             state.input = longest_prefix;
@@ -139,10 +150,10 @@ impl<S: Style> Complete<S> {
             true => -1,
           };
           let ci = i as i32 + d;
-          index = if ci < 0 || ci >= state.completions.len() as i32 {
+          index = if ci < 0 || ci >= completions.len() as i32 {
             Index::Input
           } else {
-            self.update_quickfix(state.index, &state.completions);
+            self.update_quickfix(state.index, &completions);
             Index::Complete(ci as usize)
           };
         }
@@ -150,11 +161,12 @@ impl<S: Style> Complete<S> {
 
       match index {
         Index::Input => self.window.input_text(&state.input),
-        Index::Complete(i) => self.window.input_text(&state.completions[i].complete(state.input.clone())),
+        Index::Complete(i) => self.window.input_text(&completions[i].complete(&state.input.clone())),
       }
     }
 
     state.index = index;
+    state.completions = Some(completions);
     update_completions
   }
 
