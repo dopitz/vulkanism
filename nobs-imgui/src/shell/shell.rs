@@ -75,13 +75,6 @@ impl<C: ContextShell> Shell<C> {
   }
 
   pub fn exec(&self, s: &str, context: &mut C) {
-    //let cmd = self
-    //  .cmds
-    //  .lock()
-    //  .unwrap()
-    //  .iter()
-    //  .find_map(|cmd| cmd.parse(command::args::Maches::new(s), None).map(|_| cmd.clone()));
-
     let cmd = self
       .cmds
       .lock()
@@ -100,20 +93,19 @@ impl<C: 'static + Clone + Send + ContextShell> Shell<C> {
     self.exec.lock().unwrap().is_some()
   }
   pub fn exec_async(&self, s: &str, context: &mut C) {
-    //let exe = self
-    //  .cmds
-    //  .lock()
-    //  .unwrap()
-    //  .iter()
-    //  .find_map(|cmd| cmd.parse(s, None).map(|_| cmd.clone()));
+    let exe = self
+      .cmds
+      .lock()
+      .unwrap()
+      .iter()
+      .find_map(|cmd| command::args::Matches::new(s, cmd.get_args(), &mut None).map(|m| (m, cmd.clone())));
 
-    //if let Some(cmd) = exe {
-    //  let s = s.to_string();
-    //  let mut context = context.clone();
-    //  *self.exec.lock().unwrap() = Some(std::thread::spawn(move || {
-    //    cmd.run(&cmd.parse(&s, None).unwrap().into(), &mut context);
-    //    *context.get_shell().exec.lock().unwrap() = None;
-    //  }))
-    //}
+    if let Some((m, cmd)) = exe {
+      let mut context = context.clone();
+      *self.exec.lock().unwrap() = Some(std::thread::spawn(move || {
+        cmd.run(&m, &mut context);
+        *context.get_shell().exec.lock().unwrap() = None;
+      }))
+    }
   }
 }
