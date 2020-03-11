@@ -80,11 +80,18 @@ impl<C: ContextShell> Shell<C> {
     //  .lock()
     //  .unwrap()
     //  .iter()
-    //  .find_map(|cmd| cmd.parse(s, None).map(|_| cmd.clone()));
+    //  .find_map(|cmd| cmd.parse(command::args::Maches::new(s), None).map(|_| cmd.clone()));
 
-    //if let Some(cmd) = cmd {
-    //  cmd.run(&cmd.parse(s, None).unwrap().into(), context);
-    //}
+    let cmd = self
+      .cmds
+      .lock()
+      .unwrap()
+      .iter()
+      .find_map(|cmd| command::args::Matches::new(s, cmd.get_args(), &mut None).map(|m| (m, cmd.clone())));
+
+    if let Some((m, cmd)) = cmd {
+      cmd.run(&m, context);
+    }
   }
 }
 
