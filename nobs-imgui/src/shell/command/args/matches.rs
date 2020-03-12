@@ -110,14 +110,23 @@ impl Matches {
     let mut argi = 1;
 
     loop {
+      //let mut cnone = None;
+      //let completions = match argi < argsv.len() - 2 {
+      //  true => &mut cnone,
+      //  false => completions,
+      //};
+
       if let Some((i, (next_argi, p))) = args
         .iter()
         .enumerate()
         .filter(|(i, _)| parsed[*i].is_none())
+        //.find_map(|(i, a)| a.parse(&argsv, argi, completions).map(|p| (i, p)))
         .find_map(|(i, a)| a.parse(&argsv, argi, completions).map(|p| (i, p)))
       {
         parsed[i] = Some(p);
         argi = next_argi;
+
+        println!("{:?}", parsed);
       } else {
         break;
       }

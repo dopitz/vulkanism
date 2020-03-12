@@ -238,6 +238,12 @@ pub trait Arg {
     argi: usize,
     completions: &mut Option<Vec<matches::Completion>>,
   ) -> Option<(usize, matches::Parsed)> {
+    // no more argument strings to consume
+    if argi >= argsv.len() {
+      return None;
+    }
+
+    // offset to the current value, so we can index the argument name with [0] and its value with [1]
     let argsv = &argsv[argi..];
 
     let desc = self.get_desc();
@@ -316,19 +322,21 @@ pub trait Arg {
       false => String::new(),
     };
 
-    if let Some(completions) = completions.as_mut() {
-      for completed in self.complete_variants_from_prefix(&value).into_iter() {
-        let hint = hint.clone();
-        completions.push(Completion {
-          index: argi + i_value,
-          completed,
-          hint,
-        });
+    if i_value + 2 > argsv.len() {
+      if let Some(completions) = completions.as_mut() {
+        for completed in self.complete_variants_from_prefix(&value).into_iter() {
+          let hint = hint.clone();
+          completions.push(Completion {
+            index: argi + i_value,
+            completed,
+            hint,
+          });
+        }
       }
     }
 
     match self.validate_parsed_value(&value) {
-      true => Some((argi + i_value, matches::Parsed { name, value })),
+      true => Some((argi + i_value + 1, matches::Parsed { name, value })),
       false => None,
     }
   }
