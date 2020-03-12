@@ -111,12 +111,8 @@ impl<S: Style> Complete<S> {
     let mut index = state.index;
     let mut completions = state.completions.take().unwrap();
 
-    println!("{:?}", completions);
-
     let mut update_completions = false;
     if !completions.is_empty() {
-      println!("{:?}", index);
-
       match index {
         Index::Input => {
           let mut longest_prefix = completions[0].complete(&state.input.clone());

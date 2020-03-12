@@ -51,6 +51,10 @@ impl Arg for Ident {
     &self.desc
   }
 
+  fn validate_parsed_value(&self, value: &str) -> bool {
+    self.variants.iter().flatten().find(|v| *v == value).is_some()
+  }
+
   fn complete_variants_from_prefix(&self, prefix: &str) -> Vec<String> {
     self.variants.iter().flatten().filter(|v| v.starts_with(prefix)).cloned().collect()
   }

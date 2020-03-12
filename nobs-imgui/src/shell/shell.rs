@@ -83,7 +83,9 @@ impl<C: ContextShell> Shell<C> {
       .find_map(|cmd| command::args::Matches::new(s, cmd.get_args(), &mut None).map(|m| (m, cmd.clone())));
 
     if let Some((m, cmd)) = cmd {
-      cmd.run(&m, context);
+      if let Err(e) = cmd.run(&m, context) {
+        context.println(&e);
+      }
     }
   }
 }

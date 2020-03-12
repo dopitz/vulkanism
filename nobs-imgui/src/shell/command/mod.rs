@@ -110,5 +110,9 @@ pub fn validate_command_def<C: ContextBase>(c: &Box<dyn Command<C>>) -> Result<(
     Err("Invalid Command: Argument names and short names need to be unique.")?;
   }
 
+  if args.iter().any(|a| a.get_desc().optional && a.get_desc().default.is_some()) {
+    Err("Invalid Command: Optional arguments and default vaulues are mutual exclusive.")?;
+  }
+
   Ok(())
 }

@@ -110,23 +110,14 @@ impl Matches {
     let mut argi = 1;
 
     loop {
-      //let mut cnone = None;
-      //let completions = match argi < argsv.len() - 2 {
-      //  true => &mut cnone,
-      //  false => completions,
-      //};
-
       if let Some((i, (next_argi, p))) = args
         .iter()
         .enumerate()
         .filter(|(i, _)| parsed[*i].is_none())
-        //.find_map(|(i, a)| a.parse(&argsv, argi, completions).map(|p| (i, p)))
         .find_map(|(i, a)| a.parse(&argsv, argi, completions).map(|p| (i, p)))
       {
         parsed[i] = Some(p);
         argi = next_argi;
-
-        println!("{:?}", parsed);
       } else {
         break;
       }
@@ -140,7 +131,7 @@ impl Matches {
       .filter(|(_, (a, p))| !a.get_desc().optional && a.get_desc().default.is_some() && p.is_none())
       .for_each(|(i, (a, p))| {
         *p = Some(Parsed {
-          name: String::new(),
+          name: a.get_desc().name.clone(),
           value: a.get_desc().default.as_ref().unwrap().clone(),
         });
       });

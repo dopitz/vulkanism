@@ -318,7 +318,16 @@ pub trait Arg {
 
     let i_value = if is_indexed { 0 } else { 1 };
     let value = match i_value < argsv.len() {
-      true => argsv[i_value].trim().to_string(),
+      true => {
+        let mut v = argsv[i_value].trim();
+        if v.starts_with("\"") {
+          v = &v[1..];
+        }
+        if v.ends_with("\"") {
+          v = &v[..v.len() - 1];
+        }
+        v.to_string()
+      }
       false => String::new(),
     };
 
@@ -336,7 +345,13 @@ pub trait Arg {
     }
 
     match self.validate_parsed_value(&value) {
-      true => Some((argi + i_value + 1, matches::Parsed { name, value })),
+      true => Some((
+        argi + i_value + 1,
+        matches::Parsed {
+          name: desc.name.clone(),
+          value,
+        },
+      )),
       false => None,
     }
   }
