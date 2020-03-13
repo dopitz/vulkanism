@@ -15,7 +15,12 @@ pub trait ContextShell: std::marker::Sized + ContextBase {
   fn get_term(&self) -> Terminal<Self::TerminalStyle>;
 }
 
-pub struct Standalone {
+pub struct Standalone {}
+
+impl Standalone {
+  pub fn new() -> Self {
+    Standalone {}
+  }
 }
 
 impl ContextBase for Standalone {
@@ -28,6 +33,6 @@ impl ContextBase for Standalone {
   }
 
   fn readln(&self) -> String {
-    return String::new()
+    return String::new();
   }
 }

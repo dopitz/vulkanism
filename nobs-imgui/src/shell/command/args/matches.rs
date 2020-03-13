@@ -87,6 +87,8 @@ impl Matches {
     let i_cmdname = args.iter().position(|a| a.get_desc().index.filter(|i| *i == 0).is_some()).unwrap();
     let cmdname = args[i_cmdname].get_desc().name.as_str();
 
+    println!("{:?}", cmdname);
+
     // parse commandname
     if argsv[0] != cmdname {
       if argsv.is_empty() || (argsv.len() == 1 && cmdname.starts_with(argsv[0])) {
@@ -148,6 +150,13 @@ impl Matches {
   pub fn new(input: &str, args: Vec<&dyn Arg>, completions: &mut Option<Vec<Completion>>) -> Option<Self> {
     let argsv = Self::split_args(input);
 
+    let mut args = args;
+    args.sort_by(|a, b| a.get_desc().index.cmp(&b.get_desc().index));
+
+    Self::parse_args(&argsv, &args, completions).map(|parsed| Self { parsed })
+  }
+
+  pub fn from_args(argsv: &[&str], args: Vec<&dyn Arg>, completions: &mut Option<Vec<Completion>>) -> Option<Self> {
     let mut args = args;
     args.sort_by(|a, b| a.get_desc().index.cmp(&b.get_desc().index));
 
