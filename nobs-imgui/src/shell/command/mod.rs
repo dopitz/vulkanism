@@ -5,7 +5,6 @@ pub mod spawn;
 
 use crate::shell::context::ContextBase;
 use args::Arg;
-use args::Completion;
 use args::Matches;
 
 pub trait Command<C: ContextBase>: Send + Sync {

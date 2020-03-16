@@ -1,8 +1,6 @@
 use crate::shell::command::args::Arg;
 use crate::shell::command::args::ArgDesc;
 
-use std::collections::HashMap;
-
 #[derive(Clone, Debug)]
 pub struct Parsed {
   pub name: String,
@@ -22,7 +20,7 @@ impl Completion {
 
     match self.index < args.len() {
       true => {
-        let mut arg = args[self.index];
+        let arg = args[self.index];
         let arg = match arg.chars().position(|c| c != ' ') {
           Some(leading_whitespaces) => format!("{}{}", &arg[..leading_whitespaces], self.completed),
           None => format!(" {}", self.completed.clone()),
@@ -87,8 +85,6 @@ impl Matches {
     let i_cmdname = args.iter().position(|a| a.get_desc().index.filter(|i| *i == 0).is_some()).unwrap();
     let cmdname = args[i_cmdname].get_desc().name.as_str();
 
-    println!("{:?}", cmdname);
-
     // parse commandname
     if argsv[0] != cmdname {
       if argsv.is_empty() || (argsv.len() == 1 && cmdname.starts_with(argsv[0])) {
@@ -131,7 +127,7 @@ impl Matches {
       .zip(parsed.iter_mut())
       .enumerate()
       .filter(|(_, (a, p))| !a.get_desc().optional && a.get_desc().default.is_some() && p.is_none())
-      .for_each(|(i, (a, p))| {
+      .for_each(|(_, (a, p))| {
         *p = Some(Parsed {
           name: a.get_desc().name.clone(),
           value: a.get_desc().default.as_ref().unwrap().clone(),

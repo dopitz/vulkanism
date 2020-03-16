@@ -109,7 +109,7 @@ impl<S: Style> Complete<S> {
   fn next(&self, reverse: bool) -> bool {
     let mut state = self.state.lock().unwrap();
     let mut index = state.index;
-    let mut completions = state.completions.take().unwrap();
+    let completions = state.completions.take().unwrap();
 
     let mut update_completions = false;
     if !completions.is_empty() {

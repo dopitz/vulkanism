@@ -105,7 +105,9 @@ impl<C: 'static + Clone + Send + ContextShell> Shell<C> {
     if let Some((m, cmd)) = exe {
       let mut context = context.clone();
       *self.exec.lock().unwrap() = Some(std::thread::spawn(move || {
-        cmd.run(&m, &mut context);
+        if let Err(e) = cmd.run(&m, &mut context) {
+          context.println(&e);
+        }
         *context.get_shell().exec.lock().unwrap() = None;
       }))
     }
