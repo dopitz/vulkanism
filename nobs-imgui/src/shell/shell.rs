@@ -85,6 +85,7 @@ impl<C: ContextShell> Shell<C> {
     if let Some((m, cmd)) = cmd {
       if let Err(e) = cmd.run(&m, context) {
         context.println(&e);
+        context.println(&cmd.get_help());
       }
     }
   }
