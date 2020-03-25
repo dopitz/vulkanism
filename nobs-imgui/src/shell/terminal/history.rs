@@ -28,14 +28,18 @@ impl<S: Style> History<S> {
   }
 
   pub fn handle_events(&self, screen: &mut Screen<S>, e: &Option<TextboxEvent>) {
-    // history.last() always contains the current input
+    // On enter, registers the current input text to history
     // On text input, resets the index to the end of history
     match e {
-      Some(TextboxEvent::Enter(_)) => self.state.lock().unwrap().inputs.push(String::new()),
+      Some(TextboxEvent::Enter(t)) => {
+        let mut state = self.state.lock().unwrap();
+        *state.inputs.last_mut().unwrap() = t.to_string();
+        state.index = state.inputs.len();
+        state.inputs.push(String::new());
+      }
       Some(TextboxEvent::Changed) => {
         let mut state = self.state.lock().unwrap();
-        *state.inputs.last_mut().unwrap() = self.window.get_input();
-        state.index = 0;
+        state.index = state.inputs.len();
       }
       _ => (),
     };
@@ -77,7 +81,8 @@ impl<S: Style> History<S> {
   fn next(&self, reverse: bool) {
     let mut state = self.state.lock().unwrap();
 
-    println!("============\n{}", state.index);
+    println!("next  {:?}   {}", state.index, reverse);
+
     match reverse {
       true => {
         state.index += 1;
@@ -87,12 +92,10 @@ impl<S: Style> History<S> {
       }
 
       false => match state.index {
-        0 if state.inputs.is_empty() => state.index = 0,
         0 => state.index = state.inputs.len() - 1,
         _ => state.index -= 1,
       },
     }
-    println!("{}", state.index);
 
     self.window.input_text(&state.inputs[state.index]);
   }

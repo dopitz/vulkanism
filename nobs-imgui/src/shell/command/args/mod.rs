@@ -384,9 +384,11 @@ mod commandname;
 mod file;
 mod ident;
 mod num;
+mod text;
 
 pub use self::bool::Bool;
 pub use commandname::CommandName;
 pub use file::File;
 pub use ident::Ident;
 pub use num::*;
+pub use text::Text;
