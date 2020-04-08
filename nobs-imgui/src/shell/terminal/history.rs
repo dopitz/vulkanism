@@ -21,7 +21,7 @@ impl<S: Style> History<S> {
     Self {
       state: Arc::new(Mutex::new(State {
         index: 0,
-        inputs: vec![String::new()],
+        inputs: vec![],
       })),
       window,
     }
@@ -33,9 +33,12 @@ impl<S: Style> History<S> {
     match e {
       Some(TextboxEvent::Enter(t)) => {
         let mut state = self.state.lock().unwrap();
-        *state.inputs.last_mut().unwrap() = t.to_string();
+
+        if state.inputs.is_empty() || state.inputs.last().unwrap() != t {
+          state.inputs.push(t.to_string());
+        }
+
         state.index = state.inputs.len();
-        state.inputs.push(String::new());
       }
       Some(TextboxEvent::Changed) => {
         let mut state = self.state.lock().unwrap();
@@ -80,8 +83,6 @@ impl<S: Style> History<S> {
 
   fn next(&self, reverse: bool) {
     let mut state = self.state.lock().unwrap();
-
-    println!("next  {:?}   {}", state.index, reverse);
 
     match reverse {
       true => {
