@@ -170,18 +170,20 @@ impl SelectPass {
   /// Handle window events
   ///
   /// The selection pass handles Window events for mouse movement to update the internal mouse pointer position.
-  pub fn handle_events(&mut self, e: &vk::winit::Event) {
+  pub fn handle_events(&mut self, e: &vk::winit::event::Event<i32>) {
     let mut pass = self.pass.lock().unwrap();
 
     match e {
-      vk::winit::Event::WindowEvent {
-        event: vk::winit::WindowEvent::CursorMoved { position, .. },
+      vk::winit::event::Event::WindowEvent {
+        event: vk::winit::event::WindowEvent::CursorMoved { position, .. },
         ..
       } => pass.current_pos = (vec2!(position.x, position.y) * pass.dpi).into(),
-      vk::winit::Event::WindowEvent {
-        event: vk::winit::WindowEvent::HiDpiFactorChanged(dpi),
+      vk::winit::event::Event::WindowEvent {
+        event: vk::winit::event::WindowEvent::ScaleFactorChanged{
+          scale_factor, new_inner_size
+        },
         ..
-      } => pass.dpi = *dpi,
+      } => pass.dpi = *scale_factor,
       _ => (),
     }
 
@@ -349,7 +351,7 @@ impl SelectPass {
   ///
   /// Winit uses a dpi factor, but we usually want pixel coordinates.
   /// Use this function to convert a logical position from winit into pixel coordinate values.
-  pub fn logic_to_real_position(&self, pos: vk::winit::dpi::LogicalPosition) -> vkm::Vec2i {
+  pub fn logic_to_real_position(&self, pos: vk::winit::dpi::LogicalPosition<f64>) -> vkm::Vec2i {
     (vec2!(pos.x, pos.y) * self.pass.lock().unwrap().dpi).into()
   }
 
@@ -357,7 +359,7 @@ impl SelectPass {
   ///
   /// Winit uses a dpi factor, but we usually want pixel coordinates.
   /// Use this function to convert pixel coordinate values with the current dpi settings
-  pub fn real_to_logic_position(&self, pos: vkm::Vec2u) -> vk::winit::dpi::LogicalPosition {
+  pub fn real_to_logic_position(&self, pos: vkm::Vec2u) -> vk::winit::dpi::LogicalPosition<f64> {
     let pos = pos.into() / self.pass.lock().unwrap().dpi;
     vk::winit::dpi::LogicalPosition { x: pos.x, y: pos.y }
   }

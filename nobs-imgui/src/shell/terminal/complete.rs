@@ -1,4 +1,4 @@
-use crate::components::textbox::Event as TextboxEvent;
+use crate::component::textbox::Event as TextboxEvent;
 use crate::shell::command::args;
 use crate::shell::context::ContextShell;
 use crate::shell::terminal::window::TerminalWnd;
@@ -52,21 +52,22 @@ impl<S: Style> Complete<S> {
 
     for e in screen.get_events() {
       match e {
-        vk::winit::Event::WindowEvent {
+        vk::winit::event::Event::WindowEvent {
           event:
-            vk::winit::WindowEvent::KeyboardInput {
+            vk::winit::event::WindowEvent::KeyboardInput {
               input:
-                vk::winit::KeyboardInput {
-                  state: vk::winit::ElementState::Pressed,
-                  virtual_keycode: Some(vk::winit::VirtualKeyCode::Tab),
-                  modifiers: vk::winit::ModifiersState { shift: reverse, .. },
+                vk::winit::event::KeyboardInput {
+                  state: vk::winit::event::ElementState::Pressed,
+                  virtual_keycode: Some(vk::winit::event::VirtualKeyCode::Tab),
+                  //modifiers: vk::winit::event::ModifiersState { shift: reverse, .. },
                   ..
                 },
               ..
             },
           ..
         } => {
-          if self.next(*reverse) {
+          //if self.next(*reverse) {
+          if self.next(false) {
             self.update_completions(context);
           }
         }

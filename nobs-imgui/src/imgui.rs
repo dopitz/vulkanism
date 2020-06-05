@@ -60,10 +60,10 @@ impl<S: Style> ImGui<S> {
   /// * `mem` - vulkanism memory manager on which additional buffers and textures are allocated
   pub fn new(device: &vk::device::Device, wnd: &vk::wnd::Window, target: vk::Image, mut mem: vk::mem::Mem) -> Self {
     // we need dpi and size of window to get the render target extent
-    let dpi = wnd.window.get_hidpi_factor();
-    let extent = wnd.window.get_inner_size().unwrap();
+    let dpi = wnd.window.scale_factor();
+    let extent = wnd.window.inner_size();
     let extent: vk::Extent2D = vk::Extent2D::build()
-      .set((extent.width * dpi) as u32, (extent.height * dpi) as u32)
+      .set((extent.width as f64 * dpi) as u32, (extent.height as f64 * dpi) as u32)
       .into();
 
     // we have a single uniform buffer with the viewport dimensions
@@ -198,11 +198,11 @@ impl<S: Style> ImGui<S> {
   ///
   /// # Arguments
   /// * `e` - Event to be handled
-  pub fn handle_events(&mut self, e: &vk::winit::Event) {
+  pub fn handle_events(&mut self, e: &vk::winit::event::Event<i32>) {
     self.select.handle_events(e);
-    if let Some(scr) = self.gui.scr.lock().unwrap().as_mut() {
-      scr.push_event(e);
-    }
+    //if let Some(scr) = self.gui.scr.lock().unwrap().as_mut() {
+    //  scr.push_event(e);
+    //}
   }
 
   /// Begins gui rendering

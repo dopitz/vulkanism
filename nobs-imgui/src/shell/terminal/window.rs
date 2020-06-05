@@ -1,5 +1,5 @@
-use crate::components::textbox::Event;
-use crate::components::*;
+use crate::component::textbox::Event;
+use crate::component::*;
 use crate::rect::Rect;
 use crate::select::SelectId;
 use crate::style::Style;

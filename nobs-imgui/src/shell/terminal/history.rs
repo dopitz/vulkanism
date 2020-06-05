@@ -1,4 +1,4 @@
-use crate::components::textbox::Event as TextboxEvent;
+use crate::component::textbox::Event as TextboxEvent;
 use crate::shell::terminal::window::TerminalWnd;
 use crate::style::Style;
 use crate::window::Screen;
@@ -50,26 +50,26 @@ impl<S: Style> History<S> {
     // handles the textbox event from the input box
     for e in screen.get_events() {
       match e {
-        vk::winit::Event::WindowEvent {
+        vk::winit::event::Event::WindowEvent {
           event:
-            vk::winit::WindowEvent::KeyboardInput {
+            vk::winit::event::WindowEvent::KeyboardInput {
               input:
-                vk::winit::KeyboardInput {
-                  state: vk::winit::ElementState::Pressed,
-                  virtual_keycode: Some(vk::winit::VirtualKeyCode::Up),
+                vk::winit::event::KeyboardInput {
+                  state: vk::winit::event::ElementState::Pressed,
+                  virtual_keycode: Some(vk::winit::event::VirtualKeyCode::Up),
                   ..
                 },
               ..
             },
           ..
         } => self.next(false),
-        vk::winit::Event::WindowEvent {
+        vk::winit::event::Event::WindowEvent {
           event:
-            vk::winit::WindowEvent::KeyboardInput {
+            vk::winit::event::WindowEvent::KeyboardInput {
               input:
-                vk::winit::KeyboardInput {
-                  state: vk::winit::ElementState::Pressed,
-                  virtual_keycode: Some(vk::winit::VirtualKeyCode::Down),
+                vk::winit::event::KeyboardInput {
+                  state: vk::winit::event::ElementState::Pressed,
+                  virtual_keycode: Some(vk::winit::event::VirtualKeyCode::Down),
                   ..
                 },
               ..

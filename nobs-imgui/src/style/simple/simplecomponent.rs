@@ -197,10 +197,10 @@ impl Component<Simple> for SimpleComponent {
     // mouse button down/up and mouse move
     for e in screen.get_events() {
       match e {
-        vk::winit::Event::DeviceEvent {
-          event: vk::winit::DeviceEvent::Button {
+        vk::winit::event::Event::DeviceEvent {
+          event: vk::winit::event::DeviceEvent::Button {
             button,
-            state: vk::winit::ElementState::Released,
+            state: vk::winit::event::ElementState::Released,
           },
           ..
         } => {
@@ -218,10 +218,10 @@ impl Component<Simple> for SimpleComponent {
             self.has_focus = false;
           }
         }
-        vk::winit::Event::DeviceEvent {
-          event: vk::winit::DeviceEvent::Button {
+        vk::winit::event::Event::DeviceEvent {
+          event: vk::winit::event::DeviceEvent::Button {
             button,
-            state: vk::winit::ElementState::Pressed,
+            state: vk::winit::event::ElementState::Pressed,
           },
           ..
         } if mouse_over.is_some() => {
@@ -236,11 +236,11 @@ impl Component<Simple> for SimpleComponent {
           self.event_button = Some(bt);
           event = Some(Event::Pressed(bt));
         }
-        vk::winit::Event::WindowEvent {
-          event: vk::winit::WindowEvent::CursorMoved { position, .. },
+        vk::winit::event::Event::WindowEvent {
+          event: vk::winit::event::WindowEvent::CursorMoved { position, .. },
           ..
         } if self.event_button.is_some() => {
-          let pos = self.gui.select.logic_to_real_position(*position).into();
+          let pos = vec2!(position.x, position.y).into();
 
           let drag = self.event_drag.take().map_or_else(
             || EventDrag {

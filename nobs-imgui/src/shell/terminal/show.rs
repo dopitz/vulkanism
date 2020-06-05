@@ -38,17 +38,17 @@ impl<S: Style> Show<S> {
     for e in screen.get_events() {
       match e {
         // shows the input/terminal vim-style, when colon is received
-        vk::winit::Event::WindowEvent {
-          event: vk::winit::WindowEvent::ReceivedCharacter(':'),
+        vk::winit::event::Event::WindowEvent {
+          event: vk::winit::event::WindowEvent::ReceivedCharacter(':'),
           ..
         } if !show => self.set(true),
-        vk::winit::Event::WindowEvent {
+        vk::winit::event::Event::WindowEvent {
           event:
-            vk::winit::WindowEvent::KeyboardInput {
+            vk::winit::event::WindowEvent::KeyboardInput {
               input:
-                vk::winit::KeyboardInput {
-                  state: vk::winit::ElementState::Pressed,
-                  virtual_keycode: Some(vk::winit::VirtualKeyCode::Escape),
+                vk::winit::event::KeyboardInput {
+                  state: vk::winit::event::ElementState::Pressed,
+                  virtual_keycode: Some(vk::winit::event::VirtualKeyCode::Escape),
                   ..
                 },
               ..

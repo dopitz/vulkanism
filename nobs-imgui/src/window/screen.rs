@@ -33,7 +33,6 @@ pub struct Screen<S: Style> {
   image: vk::Image,
   draw_begin: RenderpassBegin,
   draw_end: RenderpassEnd,
-  events: Option<Vec<vk::winit::Event>>,
   components: Option<Vec<WindowComponent>>,
   query: Option<[Query; 2]>,
 }
@@ -140,14 +139,6 @@ impl<S: Style> Screen<S> {
   /// The top left of the screen (`rect.position`) is set to (0,0).
   pub fn get_rect(&self) -> Rect {
     Rect::new(vec2!(0), vec2!(self.size.width, self.size.height))
-  }
-
-  pub fn push_event(&mut self, e: &vk::winit::Event) {
-    self.events.as_mut().unwrap().push(e.clone());
-  }
-  /// Gets the list of events since last time [ImGui::handle_events](../struct.Imgui.html#method.handle_events) was called.
-  pub fn get_events<'a>(&'a self) -> &'a [vk::winit::Event] {
-    self.events.as_ref().unwrap()
   }
 }
 

@@ -160,8 +160,8 @@ impl<L: Layout, S: Style> Component<S> for Window<L, S> {
     if self.style.has_focus() {
       for e in screen.get_events() {
         match e {
-          vk::winit::Event::DeviceEvent {
-            event: vk::winit::DeviceEvent::Motion { axis: 3, value },
+          vk::winit::event::Event::DeviceEvent {
+            event: vk::winit::event::DeviceEvent::Motion { axis: 3, value },
             ..
           } => {
             let value = if *value > 0.0 {

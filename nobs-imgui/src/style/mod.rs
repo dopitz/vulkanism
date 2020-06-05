@@ -102,7 +102,7 @@ pub mod event {
   #[derive(Debug, Clone, Copy)]
   pub struct EventButton {
     pub location: ClickLocation,
-    pub button: vk::winit::ButtonId,
+    pub button: vk::winit::event::ButtonId,
     pub position: vkm::Vec2u,
     pub relative_pos: vkm::Vec2u,
   }

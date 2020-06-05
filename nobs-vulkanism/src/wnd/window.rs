@@ -10,23 +10,22 @@ pub enum Error {
 /// Wrapper around a window plus a vulkan surface for drawing
 pub struct Window {
   inst: vk::Instance,
-  pub window: winit::Window,
+  pub window: winit::window::Window,
   pub surface: vk::SurfaceKHR,
 }
 
 impl Window {
   /// Creates the window from a [winit window](../../winit/index.html) and a swapchain
-  pub fn new(inst: vk::Instance, window: winit::Window) -> Result<Self, Error> {
+  pub fn new(inst: vk::Instance, window: winit::window::Window) -> Result<Self, Error> {
     let surface = Self::create_surface(inst, &window)?;
     Ok(Self { inst, window, surface })
   }
 
   #[cfg(all(unix, not(target_os = "android"), not(target_os = "macos")))]
-  fn create_surface(inst: vk::Instance, window: &winit::Window) -> Result<vk::SurfaceKHR, Error> {
-    use winit::os::unix::WindowExt;
-
-    if let Some(dpy) = window.get_xlib_display() {
-      let window = window.get_xlib_window().unwrap();
+  fn create_surface(inst: vk::Instance, window: &winit::window::Window) -> Result<vk::SurfaceKHR, Error> {
+    use winit::platform::unix::WindowExtUnix;
+    if let Some(dpy) = window.xlib_display() {
+      let window = window.xlib_window().unwrap();
 
       let info = vk::XlibSurfaceCreateInfoKHR {
         sType: vk::STRUCTURE_TYPE_XLIB_SURFACE_CREATE_INFO_KHR,
@@ -41,8 +40,8 @@ impl Window {
       return Ok(handle);
     }
 
-    if let Some(display) = window.get_wayland_display() {
-      let surface = window.get_wayland_surface().unwrap();
+    if let Some(display) = window.wayland_display() {
+      let surface = window.wayland_surface().unwrap();
 
       let info = vk::WaylandSurfaceCreateInfoKHR {
         sType: vk::STRUCTURE_TYPE_WAYLAND_SURFACE_CREATE_INFO_KHR,
@@ -62,9 +61,7 @@ impl Window {
   }
 
   #[cfg(target_os = "windows")]
-  fn create_surface(inst: vk::Instance, window: &winit::Window) -> Result<vk::SurfaceKHR, vk::Error> {
-    use winit::os::windows::WindowExt;
-
+  fn create_surface(inst: vk::Instance, window: &winit::window::Window) -> Result<vk::SurfaceKHR, vk::Error> {
     let ext = vk::InstanceExtensions::new(inst);
     let hwnd = window.get_hwnd();
 

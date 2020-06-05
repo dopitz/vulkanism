@@ -24,10 +24,10 @@ pub trait TextBoxEventHandler: Default {
     None
   }
 
-  fn receive_character<S: Style>(tb: &mut TextBox<S, Self>, e: &vk::winit::Event, multiline: bool, blacklist: &[char]) -> Option<Event> {
+  fn receive_character<S: Style>(tb: &mut TextBox<S, Self>, e: &vk::winit::event::Event<i32>, multiline: bool, blacklist: &[char]) -> Option<Event> {
     match e {
-      vk::winit::Event::WindowEvent {
-        event: vk::winit::WindowEvent::ReceivedCharacter(c),
+      vk::winit::event::Event::WindowEvent {
+        event: vk::winit::event::WindowEvent::ReceivedCharacter(c),
         ..
       } => {
         if blacklist.iter().find(|b| c == *b).is_none() {
@@ -112,18 +112,18 @@ pub trait TextBoxEventHandler: Default {
     }
   }
 
-  fn move_cursor<S: Style>(tb: &mut TextBox<S, Self>, e: &vk::winit::Event) {
+  fn move_cursor<S: Style>(tb: &mut TextBox<S, Self>, e: &vk::winit::event::Event<i32>) {
     match e {
-      vk::winit::Event::DeviceEvent {
+      vk::winit::event::Event::DeviceEvent {
         event:
-          vk::winit::DeviceEvent::Key(vk::winit::KeyboardInput {
-            state: vk::winit::ElementState::Pressed,
+          vk::winit::event::DeviceEvent::Key(vk::winit::event::KeyboardInput {
+            state: vk::winit::event::ElementState::Pressed,
             virtual_keycode: Some(k),
             ..
           }),
         ..
       } => {
-        use vk::winit::VirtualKeyCode;
+        use vk::winit::event::VirtualKeyCode;
         if let Some(mut c) = tb.get_cursor() {
           match k {
             VirtualKeyCode::Up => c.y = c.y.saturating_sub(1),
