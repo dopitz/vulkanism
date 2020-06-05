@@ -17,15 +17,15 @@ extern crate nobs_imgui_font as font;
 extern crate regex;
 extern crate clap;
 
-//pub mod component;
-//pub mod pipelines;
+pub mod component;
+pub mod pipelines;
 pub mod rect;
-//pub mod select;
-//pub mod sprites;
-//pub mod style;
-//pub mod shell;
-//pub mod window;
+pub mod select;
+pub mod sprites;
+pub mod style;
+pub mod shell;
+pub mod window;
 //
-//mod imgui;
-//pub use imgui::ImGui;
-//pub use select::SelectPass;
+mod imgui;
+pub use imgui::ImGui;
+pub use select::SelectPass;

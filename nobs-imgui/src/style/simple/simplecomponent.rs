@@ -10,6 +10,7 @@ use crate::ImGui;
 use vk::cmd::commands::DrawManaged;
 use vk::cmd::commands::DrawVertices;
 use vk::pass::MeshId;
+use vk::winit;
 
 pub struct SimpleComponent {
   mem: vk::mem::Mem,
@@ -168,157 +169,166 @@ impl Size for SimpleComponent {
 
 impl Component<Simple> for SimpleComponent {
   type Event = Event;
-  fn draw<L: Layout>(&mut self, screen: &mut Screen<Simple>, layout: &mut L, _focus: &mut SelectId) -> Option<Event> {
-    // update the uniform buffer if size changed
-    if self.dirty {
-      let mut map = self.mem.alloc.get_mapped(vk::mem::Handle::Buffer(self.ub)).unwrap();
-      let data = map.as_slice_mut::<Ub>();
-      data[0] = self.ub_data;
-      self.dirty = false;
-    }
+  fn draw<L: Layout>(
+    &mut self,
+    screen: &mut Screen<Simple>,
+    layout: &mut L,
+    _focus: &mut SelectId,
+    e: Option<&winit::event::Event<i32>>,
+  ) -> Option<Event> {
+    match e {
+      Some(e) => {
+        let mouse_over = screen
+          .get_select_result()
+          .and_then(|id| ClickLocation::from_id(self.ub_data.id_body, id.into()));
 
-    // apply_layout should be called by the wrapping gui element
-    let scissor = layout.get_scissor(self.get_rect());
-    screen.push_draw(self.draw_mesh, scissor);
-    screen.push_select(self.select_mesh, scissor);
-
-    // event handling
-    let mouse_over = screen
-      .get_select_result()
-      .and_then(|id| ClickLocation::from_id(self.ub_data.id_body, id.into()));
-
-    // ongoing drag event gets updated end position
-    let mut event = self.event_drag.map(|mut d| {
-      d.delta = self.gui.select.get_current_position().into() - d.end.into();
-      d.end = self.gui.select.get_current_position();
-      Event::Drag(d)
-    });
-
-    // mouse button down/up and mouse move
-    for e in screen.get_events() {
-      match e {
-        vk::winit::event::Event::DeviceEvent {
-          event: vk::winit::event::DeviceEvent::Button {
-            button,
-            state: vk::winit::event::ElementState::Released,
-          },
-          ..
-        } => {
-          self.event_button = None;
-          self.event_drag = None;
-          if mouse_over.is_some() {
+        // ongoing drag event gets updated end position
+        let mut event = self.event_drag.map(|mut d| {
+          d.delta = self.gui.select.get_current_position().into() - d.end.into();
+          d.end = self.gui.select.get_current_position();
+          Event::Drag(d)
+        });
+        match e {
+          vk::winit::event::Event::DeviceEvent {
+            event:
+              vk::winit::event::DeviceEvent::Button {
+                button,
+                state: vk::winit::event::ElementState::Released,
+              },
+            ..
+          } => {
+            self.event_button = None;
+            self.event_drag = None;
+            if mouse_over.is_some() {
+              let pos = self.gui.select.get_current_position();
+              event = Some(Event::Released(EventButton {
+                location: *mouse_over.as_ref().unwrap(),
+                button: *button,
+                position: pos,
+                relative_pos: (pos.into() - self.get_rect().position).into(),
+              }));
+            } else {
+              self.has_focus = false;
+            }
+          }
+          vk::winit::event::Event::DeviceEvent {
+            event:
+              vk::winit::event::DeviceEvent::Button {
+                button,
+                state: vk::winit::event::ElementState::Pressed,
+              },
+            ..
+          } if mouse_over.is_some() => {
             let pos = self.gui.select.get_current_position();
-            event = Some(Event::Released(EventButton {
+            let bt = EventButton {
               location: *mouse_over.as_ref().unwrap(),
               button: *button,
               position: pos,
               relative_pos: (pos.into() - self.get_rect().position).into(),
-            }));
-          } else {
-            self.has_focus = false;
+            };
+            self.has_focus = true;
+            self.event_button = Some(bt);
+            event = Some(Event::Pressed(bt));
           }
+          vk::winit::event::Event::WindowEvent {
+            event: vk::winit::event::WindowEvent::CursorMoved { position, .. },
+            ..
+          } if self.event_button.is_some() => {
+            let pos = vec2!(position.x, position.y).into();
+
+            let drag = self.event_drag.take().map_or_else(
+              || EventDrag {
+                start: *self.event_button.as_ref().unwrap(),
+                end: self.event_button.as_ref().unwrap().position,
+                delta: vec2!(0),
+              },
+              |mut d| {
+                d.delta = pos.into() - d.end.into();
+                d.end = pos;
+                d
+              },
+            );
+
+            self.event_drag = Some(drag);
+            event = Some(Event::Drag(drag));
+          }
+          _ => (),
         }
-        vk::winit::event::Event::DeviceEvent {
-          event: vk::winit::event::DeviceEvent::Button {
-            button,
-            state: vk::winit::event::ElementState::Pressed,
-          },
-          ..
-        } if mouse_over.is_some() => {
-          let pos = self.gui.select.get_current_position();
-          let bt = EventButton {
-            location: *mouse_over.as_ref().unwrap(),
-            button: *button,
-            position: pos,
-            relative_pos: (pos.into() - self.get_rect().position).into(),
-          };
-          self.has_focus = true;
-          self.event_button = Some(bt);
-          event = Some(Event::Pressed(bt));
-        }
-        vk::winit::event::Event::WindowEvent {
-          event: vk::winit::event::WindowEvent::CursorMoved { position, .. },
-          ..
-        } if self.event_button.is_some() => {
-          let pos = vec2!(position.x, position.y).into();
 
-          let drag = self.event_drag.take().map_or_else(
-            || EventDrag {
-              start: *self.event_button.as_ref().unwrap(),
-              end: self.event_button.as_ref().unwrap().position,
-              delta: vec2!(0),
-            },
-            |mut d| {
-              d.delta = pos.into() - d.end.into();
-              d.end = pos;
-              d
-            },
-          );
+        // moving and resizing
+        match event.as_ref() {
+          Some(Event::Drag(drag)) => {
+            if drag.delta != vec2!(0) {
+              let mut pos = self.get_rect().position;
+              let mut size = self.get_rect().size.into();
 
-          self.event_drag = Some(drag);
-          event = Some(Event::Drag(drag));
-        }
-        _ => (),
-      }
-    }
+              let mp = self.gui.select.get_current_position().into();
+              if self.resizable {
+                match drag.start.location {
+                  ClickLocation::TopLeft => {
+                    size = pos + size - mp;
+                    pos = mp;
+                  }
+                  ClickLocation::TopRight => {
+                    size = vec2!(mp.x - pos.x, pos.y + size.y - mp.y);
+                    pos = vec2!(pos.x, mp.y);
+                  }
+                  ClickLocation::BottomLeft => {
+                    size = vec2!(pos.x + size.x - mp.x, mp.y - pos.y);
+                    pos = vec2!(mp.x, pos.y);
+                  }
+                  ClickLocation::BottomRight => {
+                    size = mp - pos;
+                  }
 
-    // moving and resizing
-    match event.as_ref() {
-      Some(Event::Drag(drag)) => {
-        if drag.delta != vec2!(0) {
-          let mut pos = self.get_rect().position;
-          let mut size = self.get_rect().size.into();
-
-          let mp = self.gui.select.get_current_position().into();
-          if self.resizable {
-            match drag.start.location {
-              ClickLocation::TopLeft => {
-                size = pos + size - mp;
-                pos = mp;
-              }
-              ClickLocation::TopRight => {
-                size = vec2!(mp.x - pos.x, pos.y + size.y - mp.y);
-                pos = vec2!(pos.x, mp.y);
-              }
-              ClickLocation::BottomLeft => {
-                size = vec2!(pos.x + size.x - mp.x, mp.y - pos.y);
-                pos = vec2!(mp.x, pos.y);
-              }
-              ClickLocation::BottomRight => {
-                size = mp - pos;
+                  ClickLocation::Top => {
+                    size.y = pos.y + size.y - mp.y;
+                    pos.y = mp.y;
+                  }
+                  ClickLocation::Bottom => {
+                    size.y = mp.y - pos.y;
+                  }
+                  ClickLocation::Left => {
+                    size.x = pos.x + size.x - mp.x;
+                    pos.x = mp.x;
+                  }
+                  ClickLocation::Right => {
+                    size.x = mp.x - pos.x;
+                  }
+                  _ => {}
+                }
               }
 
-              ClickLocation::Top => {
-                size.y = pos.y + size.y - mp.y;
-                pos.y = mp.y;
+              match drag.start.location {
+                ClickLocation::Body if self.movable => pos = mp - drag.start.relative_pos.into(),
+                _ => {}
               }
-              ClickLocation::Bottom => {
-                size.y = mp.y - pos.y;
+
+              if self.movable || self.resizable {
+                event = Some(Event::Resize(Rect::new(pos, size.into())));
               }
-              ClickLocation::Left => {
-                size.x = pos.x + size.x - mp.x;
-                pos.x = mp.x;
-              }
-              ClickLocation::Right => {
-                size.x = mp.x - pos.x;
-              }
-              _ => {}
             }
           }
+          _ => {}
+        };
 
-          match drag.start.location {
-            ClickLocation::Body if self.movable => pos = mp - drag.start.relative_pos.into(),
-            _ => {}
-          }
-
-          if self.movable || self.resizable {
-            event = Some(Event::Resize(Rect::new(pos, size.into())));
-          }
-        }
+        event
       }
-      _ => {}
-    };
+      None => {
+        // update the uniform buffer if size changed
+        if self.dirty {
+          let mut map = self.mem.alloc.get_mapped(vk::mem::Handle::Buffer(self.ub)).unwrap();
+          let data = map.as_slice_mut::<Ub>();
+          data[0] = self.ub_data;
+          self.dirty = false;
+        }
 
-    event
+        // apply_layout should be called by the wrapping gui element
+        let scissor = layout.get_scissor(self.get_rect());
+        screen.push_draw(self.draw_mesh, scissor);
+        screen.push_select(self.select_mesh, scissor);
+        None
+      }
+    }
   }
 }

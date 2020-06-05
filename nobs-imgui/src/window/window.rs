@@ -3,7 +3,7 @@ use super::FloatLayout;
 use super::Layout;
 use super::Screen;
 use super::Size;
-use crate::components::TextBox;
+use crate::component::TextBox;
 use crate::rect::Rect;
 use crate::select::SelectId;
 use crate::style::event;
@@ -11,6 +11,7 @@ use crate::style::Style;
 use crate::style::StyleComponent;
 use crate::ImGui;
 use vk::cmd::commands::Scissor;
+use vk::winit;
 
 #[derive(Debug, Clone, Copy)]
 pub enum Event {
@@ -81,10 +82,7 @@ impl<L: Layout, S: Style> Size for Window<L, S> {
     }
 
     // the client size is used to clamp the srolling
-    let max = vec2!(
-      size.x.saturating_sub(client_rect.size.x),
-      size.y.saturating_sub(client_rect.size.y)
-    );
+    let max = vec2!(size.x.saturating_sub(client_rect.size.x), size.y.saturating_sub(client_rect.size.y));
     self.layout_scroll = vkm::Vec2::clamp(self.layout_scroll, vec2!(0), max);
 
     self.layout.rect(Rect::new(p, size));
@@ -117,84 +115,97 @@ impl<L: Layout, S: Style> Layout for Window<L, S> {
 
 impl<L: Layout, S: Style> Component<S> for Window<L, S> {
   type Event = Event;
-  fn draw<LSuper: Layout>(&mut self, screen: &mut Screen<S>, layout: &mut LSuper, focus: &mut SelectId) -> Option<Self::Event> {
-    // resizes all layouts, caption and style components
-    let scissor = layout.apply(self);
+  fn draw<LSuper: Layout>(
+    &mut self,
+    screen: &mut Screen<S>,
+    layout: &mut LSuper,
+    focus: &mut SelectId,
+    e: Option<&winit::event::Event<i32>>,
+  ) -> Option<Self::Event> {
+    match e {
+      Some(e) => {
+        let mut ret = None;
 
-    // we have to manually apply the scissor to the layouts so that their child components will be cropped an this windows borders
-    let apply_scissor = |l: &mut FloatLayout| {
-      let cr = l.get_rect();
-      l.rect(scissor.rect.into());
-      let scissor = l.get_scissor(cr);
-      l.rect(scissor.rect.into());
-    };
-    apply_scissor(&mut self.layout_window);
-    apply_scissor(&mut self.layout_caption);
-    apply_scissor(&mut self.layout_client);
-
-    let mut ret = None;
-
-    // draw the window style
-    // resize and move when style body/border is clicked
-    if let Some(e) = self.style.draw(screen, &mut self.layout_window, focus) {
-      match e {
-        event::Event::Resize(rect) => {
+        // draw the window style
+        // resize and move when style body/border is clicked
+        if let Some(event::Event::Resize(rect)) = self.style.draw(screen, &mut self.layout_window, focus, Some(e)) {
           self.rect(rect);
           ret = Some(Event::Resized(rect));
         }
-        _ => (),
-      }
-    }
 
-    // draw caption and move window on drag
-    if self.draw_caption {
-      if let Some(event::Event::Drag(drag)) = self.caption.draw(screen, &mut self.layout_caption, focus) {
-        let mut r = self.layout_window.get_rect();
-        r.position = drag.end.into() - drag.start.relative_pos.into();
-        self.rect(r);
-        ret = Some(Event::Resized(r))
-      }
-    }
-
-    // Scrolling with mouse wheel
-    if self.style.has_focus() {
-      for e in screen.get_events() {
-        match e {
-          vk::winit::event::Event::DeviceEvent {
-            event: vk::winit::event::DeviceEvent::Motion { axis: 3, value },
-            ..
-          } => {
-            let value = if *value > 0.0 {
-              -15
-            } else if *value < 0.0 {
-              15
-            } else {
-              0
-            };
-            self.layout_scroll = self
-              .layout_scroll
-              .into::<i32>()
-              .map_y(|v| {
-                let y = v.y + value;
-                if y > 0 {
-                  y
-                } else {
-                  0
-                }
-              })
-              .into();
-            ret = Some(Event::Scroll);
+        // draw caption and move window on drag
+        if self.draw_caption {
+          if let Some(event::Event::Drag(drag)) = self.caption.draw(screen, &mut self.layout_caption, focus, Some(e)) {
+            let mut r = self.layout_window.get_rect();
+            r.position = drag.end.into() - drag.start.relative_pos.into();
+            self.rect(r);
+            ret = Some(Event::Resized(r))
           }
-          _ => (),
         }
+
+        // Scrolling with mouse wheel
+        if self.style.has_focus() {
+          match e {
+            vk::winit::event::Event::DeviceEvent {
+              event: vk::winit::event::DeviceEvent::Motion { axis: 3, value },
+              ..
+            } => {
+              let value = if *value > 0.0 {
+                -15
+              } else if *value < 0.0 {
+                15
+              } else {
+                0
+              };
+              self.layout_scroll = self
+                .layout_scroll
+                .into::<i32>()
+                .map_y(|v| {
+                  let y = v.y + value;
+                  if y > 0 {
+                    y
+                  } else {
+                    0
+                  }
+                })
+                .into();
+              ret = Some(Event::Scroll);
+            }
+            _ => (),
+          }
+        }
+        ret
+      }
+      None => {
+        // resizes all layouts, caption and style components
+        let scissor = layout.apply(self);
+
+        // we have to manually apply the scissor to the layouts so that their child components will be cropped an this windows borders
+        let apply_scissor = |l: &mut FloatLayout| {
+          let cr = l.get_rect();
+          l.rect(scissor.rect.into());
+          let scissor = l.get_scissor(cr);
+          l.rect(scissor.rect.into());
+        };
+        apply_scissor(&mut self.layout_window);
+        apply_scissor(&mut self.layout_caption);
+        apply_scissor(&mut self.layout_client);
+
+        // draw the window style
+        // resize and move when style body/border is clicked
+        self.style.draw(screen, &mut self.layout_window, focus, None);
+
+        // draw caption and move window on drag
+        if self.draw_caption {
+          self.caption.draw(screen, &mut self.layout_caption, focus, None);
+        }
+
+        // restart the layout for components that are using this window as layouting scheme
+        self.restart();
+
+        None
       }
     }
-
-    // restart the layout for components that are using this window as layouting scheme
-    self.restart();
-
-    // TODO: return an event when clicked
-    ret
   }
 }
 

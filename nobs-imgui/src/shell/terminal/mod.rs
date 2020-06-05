@@ -3,7 +3,7 @@ mod history;
 mod show;
 mod window;
 
-use crate::components::textbox::Event as TextboxEvent;
+use crate::component::textbox::Event as TextboxEvent;
 use crate::select::SelectId;
 use crate::shell::context::ContextShell;
 use crate::style::Style;
@@ -11,6 +11,7 @@ use crate::window::Component;
 use crate::window::Layout;
 use crate::window::Screen;
 use crate::ImGui;
+use vk::winit;
 
 #[derive(Clone)]
 pub struct Terminal<S: Style> {
@@ -37,17 +38,17 @@ impl<S: Style> Terminal<S> {
     }
   }
 
-  pub fn draw<L: Layout, C: ContextShell>(&mut self, screen: &mut Screen<S>, layout: &mut L, focus: &mut SelectId, context: &mut C) {
-    let e = match self.show.get() {
-      true => self.window.draw(screen, layout, focus),
+  pub fn draw<L: Layout, C: ContextShell>(&mut self, screen: &mut Screen<S>, layout: &mut L, focus: &mut SelectId, e: Option<&winit::event::Event<i32>>, context: &mut C) {
+    let e_wnd = match self.show.get() {
+      true => self.window.draw(screen, layout, focus, e),
       false => None,
     };
-    self.show.handle_events(screen);
+    self.show.handle_event(e);
 
-    self.complete.handle_events(screen, &e, context);
-    self.history.handle_events(screen, &e);
+    self.complete.handle_event(screen, &e_wnd, e, context);
+    self.history.handle_event(screen, &e_wnd, e);
 
-    match e {
+    match e_wnd {
       Some(TextboxEvent::Enter(input)) => {
         context.get_shell().exec(&input, context);
       }

@@ -40,10 +40,13 @@ impl<S: Style> Component<S> for Spacer {
     _screen: &mut Screen<S>,
     layout: &mut L,
     _focus: &mut SelectId,
-    _e: Option<&winit::event::Event>,
+    e: Option<&winit::event::Event<i32>>,
   ) -> Option<()> {
     // just apply the layout, so that it can advance the spacing for following components
-    layout.apply::<S, Self>(self);
+    // only apply the layout, when we do not process event but render compontent
+    if e.is_none() {
+      layout.apply::<S, Self>(self);
+    }
     None
   }
 }

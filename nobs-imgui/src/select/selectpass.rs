@@ -457,8 +457,8 @@ impl<'a> StreamPushMut for PushQuery<'a> {
       .push(&vk::cmd::commands::Viewport::with_extent(fb.extent))
       .push(&vk::cmd::commands::Scissor::with_extent(fb.extent));
 
-    for q in self.query.meshes.iter() {
-      cs = cs.push_if(&q.1).push(&pass.pass.get(q.0));
+    for (mesh, scissor) in self.query.meshes.iter() {
+      cs = cs.push_if(&scissor).push(&pass.pass.get(*mesh));
     }
 
     cs.push(&fb.end()).push(

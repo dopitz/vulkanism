@@ -1,8 +1,8 @@
 use crate::shell::terminal::window::TerminalWnd;
 use crate::style::Style;
-use crate::window::Screen;
 use std::sync::Arc;
 use std::sync::Mutex;
+use vk::winit;
 
 #[derive(Clone)]
 pub struct Show<S: Style> {
@@ -33,30 +33,28 @@ impl<S: Style> Show<S> {
     self.window.focus(*show);
   }
 
-  pub fn handle_events(&self, screen: &mut Screen<S>) {
+  pub fn handle_event(&self, e: Option<&winit::event::Event<i32>>) {
     let show = self.get();
-    for e in screen.get_events() {
-      match e {
-        // shows the input/terminal vim-style, when colon is received
-        vk::winit::event::Event::WindowEvent {
-          event: vk::winit::event::WindowEvent::ReceivedCharacter(':'),
-          ..
-        } if !show => self.set(true),
-        vk::winit::event::Event::WindowEvent {
-          event:
-            vk::winit::event::WindowEvent::KeyboardInput {
-              input:
-                vk::winit::event::KeyboardInput {
-                  state: vk::winit::event::ElementState::Pressed,
-                  virtual_keycode: Some(vk::winit::event::VirtualKeyCode::Escape),
-                  ..
-                },
-              ..
-            },
-          ..
-        } if show => self.set(false),
-        _ => (),
-      }
+    match e {
+      // shows the input/terminal vim-style, when colon is received
+      Some(vk::winit::event::Event::WindowEvent {
+        event: vk::winit::event::WindowEvent::ReceivedCharacter(':'),
+        ..
+      }) if !show => self.set(true),
+      Some(vk::winit::event::Event::WindowEvent {
+        event:
+          vk::winit::event::WindowEvent::KeyboardInput {
+            input:
+              vk::winit::event::KeyboardInput {
+                state: vk::winit::event::ElementState::Pressed,
+                virtual_keycode: Some(vk::winit::event::VirtualKeyCode::Escape),
+                ..
+              },
+            ..
+          },
+        ..
+      }) if show => self.set(false),
+      _ => (),
     }
   }
 }

@@ -58,7 +58,6 @@ impl<S: Style> Screen<S> {
       image,
       draw_begin,
       draw_end,
-      events: Some(Default::default()),
       components: Some(Default::default()),
       query,
     }
@@ -90,7 +89,6 @@ impl<S: Style> Screen<S> {
       image,
       draw_begin,
       draw_end,
-      events: scr.events,
       components: scr.components,
       query: scr.query,
     }
@@ -174,8 +172,6 @@ impl<S: Style> StreamPushMut for Screen<S> {
         query.swap(0, 1);
       }
 
-      let mut events = self.events.take().unwrap();
-      events.clear();
       components.clear();
       gui.clone().end(Self {
         gui: None,
@@ -183,7 +179,6 @@ impl<S: Style> StreamPushMut for Screen<S> {
         image: self.image,
         draw_begin: self.draw_begin,
         draw_end: self.draw_end,
-        events: Some(events),
         components: Some(components),
         query: self.query.take(),
       });

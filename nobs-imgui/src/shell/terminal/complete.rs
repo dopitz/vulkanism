@@ -6,6 +6,7 @@ use crate::style::Style;
 use crate::window::Screen;
 use std::sync::Arc;
 use std::sync::Mutex;
+use vk::winit;
 
 #[derive(Clone, Copy, Debug)]
 enum Index {
@@ -42,37 +43,41 @@ impl<S: Style> Complete<S> {
     self.window.quickfix_text("");
   }
 
-  pub fn handle_events<C: ContextShell>(&self, screen: &mut Screen<S>, e: &Option<TextboxEvent>, context: &C) {
+  pub fn handle_event<C: ContextShell>(
+    &self,
+    screen: &mut Screen<S>,
+    tbe: &Option<TextboxEvent>,
+    e: Option<&winit::event::Event<i32>>,
+    context: &C,
+  ) {
     // handles the textbox event from the input box
-    match e {
+    match tbe {
       Some(TextboxEvent::Enter(_)) => self.reset(),
       Some(TextboxEvent::Changed) => self.update_completions(context),
       _ => (),
     };
 
-    for e in screen.get_events() {
-      match e {
-        vk::winit::event::Event::WindowEvent {
-          event:
-            vk::winit::event::WindowEvent::KeyboardInput {
-              input:
-                vk::winit::event::KeyboardInput {
-                  state: vk::winit::event::ElementState::Pressed,
-                  virtual_keycode: Some(vk::winit::event::VirtualKeyCode::Tab),
-                  //modifiers: vk::winit::event::ModifiersState { shift: reverse, .. },
-                  ..
-                },
-              ..
-            },
-          ..
-        } => {
-          //if self.next(*reverse) {
-          if self.next(false) {
-            self.update_completions(context);
-          }
+    match e {
+      Some(vk::winit::event::Event::WindowEvent {
+        event:
+          vk::winit::event::WindowEvent::KeyboardInput {
+            input:
+              vk::winit::event::KeyboardInput {
+                state: vk::winit::event::ElementState::Pressed,
+                virtual_keycode: Some(vk::winit::event::VirtualKeyCode::Tab),
+                //modifiers: vk::winit::event::ModifiersState { shift: reverse, .. },
+                ..
+              },
+            ..
+          },
+        ..
+      }) => {
+        //if self.next(*reverse) {
+        if self.next(false) {
+          self.update_completions(context);
         }
-        _ => (),
       }
+      _ => (),
     }
   }
 

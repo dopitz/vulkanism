@@ -13,11 +13,11 @@ macro_rules! make_style {
       pub type Window<L> = crate::window::Window<L, super::ThisStyle>;
     }
 
-    pub mod components {
-      pub use crate::components::*;
-      pub type TextBox<H = crate::components::textbox::HandlerReadonly> = crate::components::TextBox<super::ThisStyle, H>;
-      pub type TextEdit = crate::components::TextEdit<super::ThisStyle>;
-      pub type TextEditMultiline = crate::components::TextEditMultiline<super::ThisStyle>;
+    pub mod component {
+      pub use crate::component::*;
+      pub type TextBox<H = crate::component::textbox::HandlerReadonly> = crate::component::TextBox<super::ThisStyle, H>;
+      pub type TextEdit = crate::component::TextEdit<super::ThisStyle>;
+      pub type TextEditMultiline = crate::component::TextEditMultiline<super::ThisStyle>;
     }
 
     pub mod shell {
@@ -120,6 +120,7 @@ pub mod event {
     Released(EventButton),
     Drag(EventDrag),
     Resize(Rect),
+    NoE,
   }
 }
 

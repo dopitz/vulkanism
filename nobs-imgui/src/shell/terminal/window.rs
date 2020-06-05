@@ -9,6 +9,7 @@ use crate::ImGui;
 use std::sync::Arc;
 use std::sync::Condvar;
 use std::sync::Mutex;
+use vk::winit;
 
 struct TerminalImpl<S: Style> {
   wnd: Window<ColumnLayout, S>,
@@ -44,19 +45,25 @@ impl<S: Style> Size for TerminalImpl<S> {
 
 impl<S: Style> Component<S> for TerminalImpl<S> {
   type Event = Event;
-  fn draw<L: Layout>(&mut self, screen: &mut Screen<S>, layout: &mut L, focus: &mut SelectId) -> Option<Self::Event> {
+  fn draw<L: Layout>(
+    &mut self,
+    screen: &mut Screen<S>,
+    layout: &mut L,
+    focus: &mut SelectId,
+    e: Option<&winit::event::Event<i32>>,
+  ) -> Option<Self::Event> {
     layout.apply(self);
 
-    self.wnd.draw(screen, layout, focus);
+    self.wnd.draw(screen, layout, focus, e);
 
-    if let Some(crate::window::Event::Scroll) = self.output_wnd.draw(screen, &mut self.wnd, focus) {
+    if let Some(crate::window::Event::Scroll) = self.output_wnd.draw(screen, &mut self.wnd, focus, e) {
       self.pin_scroll = false;
     }
-    self.output.draw(screen, &mut self.output_wnd, focus);
+    self.output.draw(screen, &mut self.output_wnd, focus, e);
 
-    Spacer::new(vec2!(10)).draw(screen, &mut self.wnd, focus);
+    Spacer::new(vec2!(10)).draw(screen, &mut self.wnd, focus, e);
 
-    let e = match self.input.draw(screen, &mut self.wnd, focus) {
+    let ret = match self.input.draw(screen, &mut self.wnd, focus, e) {
       Some(Event::Enter(input)) => {
         let input = input[3..].to_string();
 
@@ -100,7 +107,7 @@ impl<S: Style> Component<S> for TerminalImpl<S> {
         None => vec2!(0),
       };
 
-      // restart the layout before assigning the new size, because we want the textbox to fill the exact size window 
+      // restart the layout before assigning the new size, because we want the textbox to fill the exact size window
       // we use the cursor position and text dimension for the window size
       self.quickfix_wnd.restart();
       self.quickfix_wnd.rect(Rect::new(
@@ -112,8 +119,8 @@ impl<S: Style> Component<S> for TerminalImpl<S> {
       ));
 
       // draw quickfix window and textbox
-      self.quickfix_wnd.draw(screen, layout, focus);
-      if let Some(_) = self.quickfix.draw(screen, &mut self.quickfix_wnd, focus) {
+      self.quickfix_wnd.draw(screen, layout, focus, e);
+      if let Some(_) = self.quickfix.draw(screen, &mut self.quickfix_wnd, focus, e) {
         self.println("quickfix click not implemented");
       }
     }
@@ -122,7 +129,7 @@ impl<S: Style> Component<S> for TerminalImpl<S> {
       self.focus(true);
     }
 
-    e
+    ret
   }
 }
 
@@ -185,8 +192,14 @@ impl<S: Style> Size for TerminalWnd<S> {
 
 impl<S: Style> Component<S> for TerminalWnd<S> {
   type Event = Event;
-  fn draw<L: Layout>(&mut self, screen: &mut Screen<S>, layout: &mut L, focus: &mut SelectId) -> Option<Self::Event> {
-    self.term.lock().unwrap().draw(screen, layout, focus)
+  fn draw<L: Layout>(
+    &mut self,
+    screen: &mut Screen<S>,
+    layout: &mut L,
+    focus: &mut SelectId,
+    e: Option<&winit::event::Event<i32>>,
+  ) -> Option<Self::Event> {
+    self.term.lock().unwrap().draw(screen, layout, focus, e)
   }
 }
 

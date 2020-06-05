@@ -4,6 +4,7 @@ use crate::style::Style;
 use crate::window::Screen;
 use std::sync::Arc;
 use std::sync::Mutex;
+use vk::winit;
 
 struct State {
   index: usize,
@@ -19,18 +20,15 @@ pub struct History<S: Style> {
 impl<S: Style> History<S> {
   pub fn new(window: TerminalWnd<S>) -> Self {
     Self {
-      state: Arc::new(Mutex::new(State {
-        index: 0,
-        inputs: vec![],
-      })),
+      state: Arc::new(Mutex::new(State { index: 0, inputs: vec![] })),
       window,
     }
   }
 
-  pub fn handle_events(&self, screen: &mut Screen<S>, e: &Option<TextboxEvent>) {
+  pub fn handle_event(&self, screen: &mut Screen<S>, tbe: &Option<TextboxEvent>, e: Option<&winit::event::Event<i32>>) {
     // On enter, registers the current input text to history
     // On text input, resets the index to the end of history
-    match e {
+    match tbe {
       Some(TextboxEvent::Enter(t)) => {
         let mut state = self.state.lock().unwrap();
 
@@ -48,36 +46,34 @@ impl<S: Style> History<S> {
     };
 
     // handles the textbox event from the input box
-    for e in screen.get_events() {
-      match e {
-        vk::winit::event::Event::WindowEvent {
-          event:
-            vk::winit::event::WindowEvent::KeyboardInput {
-              input:
-                vk::winit::event::KeyboardInput {
-                  state: vk::winit::event::ElementState::Pressed,
-                  virtual_keycode: Some(vk::winit::event::VirtualKeyCode::Up),
-                  ..
-                },
-              ..
-            },
-          ..
-        } => self.next(false),
-        vk::winit::event::Event::WindowEvent {
-          event:
-            vk::winit::event::WindowEvent::KeyboardInput {
-              input:
-                vk::winit::event::KeyboardInput {
-                  state: vk::winit::event::ElementState::Pressed,
-                  virtual_keycode: Some(vk::winit::event::VirtualKeyCode::Down),
-                  ..
-                },
-              ..
-            },
-          ..
-        } => self.next(true),
-        _ => (),
-      }
+    match e {
+      Some(vk::winit::event::Event::WindowEvent {
+        event:
+          vk::winit::event::WindowEvent::KeyboardInput {
+            input:
+              vk::winit::event::KeyboardInput {
+                state: vk::winit::event::ElementState::Pressed,
+                virtual_keycode: Some(vk::winit::event::VirtualKeyCode::Up),
+                ..
+              },
+            ..
+          },
+        ..
+      }) => self.next(false),
+      Some(vk::winit::event::Event::WindowEvent {
+        event:
+          vk::winit::event::WindowEvent::KeyboardInput {
+            input:
+              vk::winit::event::KeyboardInput {
+                state: vk::winit::event::ElementState::Pressed,
+                virtual_keycode: Some(vk::winit::event::VirtualKeyCode::Down),
+                ..
+              },
+            ..
+          },
+        ..
+      }) => self.next(true),
+      _ => (),
     }
   }
 
