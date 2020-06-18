@@ -192,19 +192,6 @@ impl<S: Style> ImGui<S> {
     data[1] = size.height as u32;
   }
 
-  /// Handle window events
-  ///
-  /// Also calls [Select::handle_events](select/struct.Select.html#method.handle_events) for the gui`s object selection manager.
-  ///
-  /// # Arguments
-  /// * `e` - Event to be handled
-  pub fn handle_events(&mut self, e: &vk::winit::event::Event<i32>) {
-    self.select.handle_events(e);
-    //if let Some(scr) = self.gui.scr.lock().unwrap().as_mut() {
-    //  scr.push_event(e);
-    //}
-  }
-
   /// Begins gui rendering
   ///
   /// # Returns

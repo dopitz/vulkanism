@@ -2,7 +2,7 @@ use crate::select::Query;
 use crate::select::SelectId;
 use crate::style::Style;
 use crate::ImGui;
-use crate::rect::Rect;
+use crate::Rect;
 use vk::cmd::commands::RenderpassBegin;
 use vk::cmd::commands::RenderpassEnd;
 use vk::cmd::commands::Scissor;

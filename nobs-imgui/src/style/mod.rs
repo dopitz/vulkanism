@@ -10,7 +10,7 @@ macro_rules! make_style {
     pub mod window {
       pub use crate::window::*;
       //TODO: pub type Window<L: Layout> = crate::window::Window<L, super::ThisStyle>;
-      pub type Window<L> = crate::window::Window<L, super::ThisStyle>;
+      pub type Window = crate::window::Window<super::ThisStyle>;
     }
 
     pub mod component {
@@ -33,7 +33,6 @@ pub mod simple;
 
 use crate::font::TypeSet;
 use crate::rect::Rect;
-use crate::window::Component;
 use crate::ImGui;
 use std::collections::HashMap;
 
@@ -114,7 +113,7 @@ pub mod event {
     pub delta: vkm::Vec2i,
   }
 
-  #[derive(Debug)]
+  #[derive(Debug, Clone, Copy)]
   pub enum Event {
     Pressed(EventButton),
     Released(EventButton),
@@ -124,7 +123,7 @@ pub mod event {
   }
 }
 
-pub trait StyleComponent<S: Style>: Component<S, Event = event::Event> {
+pub trait StyleComponent<S: Style>: crate::component::Component<S, Event = event::Event> {
   fn new(gui: &ImGui<S>, style: String, movable: bool, resizable: bool) -> Self;
   fn change_style(&mut self, style: &str, movable: bool, resizable: bool);
 

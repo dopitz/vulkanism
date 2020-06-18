@@ -1,18 +1,17 @@
+use crate::component::Component;
+use crate::component::Size;
+use crate::component::Stream;
 use crate::font::*;
 use crate::rect::Rect;
-use crate::select::SelectId;
 use crate::sprites::Text;
 use crate::style::event;
 use crate::style::Style;
 use crate::style::StyleComponent;
-use crate::window::Component;
 use crate::window::Layout;
-use crate::window::Screen;
-use crate::window::Size;
 use crate::ImGui;
 use vk::winit;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Event {
   Unhandled(event::Event),
   Changed,
@@ -23,7 +22,7 @@ pub trait TextBoxEventHandler: Default {
   type Output: std::fmt::Debug;
   fn handle<S: Style>(
     _tb: &mut TextBox<S, Self>,
-    component_event: Option<event::Event>,
+    component_event: Option<&event::Event>,
     e: &winit::event::Event<i32>,
   ) -> Option<Self::Output> {
     None
@@ -151,14 +150,14 @@ pub trait TextBoxEventHandler: Default {
     }
   }
 
-  fn set_cursor<S: Style>(tb: &mut TextBox<S, Self>, e: Option<event::Event>) -> Option<Event> {
+  fn set_cursor<S: Style>(tb: &mut TextBox<S, Self>, e: Option<&event::Event>) -> Option<Event> {
     if let Some(event::Event::Pressed(event::EventButton { position, .. })) = e {
       let click = vec2!(position.x, position.y).into() - tb.text.get_position();
       let ts = tb.get_typeset();
       let cp = ts.find_pos(click.into(), tb.get_text());
       tb.cursor(Some(cp));
     }
-    e.map(|e| Event::Unhandled(e))
+    e.map(|e| Event::Unhandled(*e))
   }
 }
 
@@ -169,11 +168,10 @@ pub struct TextBox<S: Style, H: TextBoxEventHandler = HandlerReadonly> {
 }
 
 impl<S: Style, H: TextBoxEventHandler> Size for TextBox<S, H> {
-  fn rect(&mut self, rect: Rect) -> &mut Self {
+  fn set_rect(&mut self, rect: Rect) {
     // set the rect of the style first, we get the client area for the textbox from the style
-    self.style.rect(rect);
+    self.style.set_rect(rect);
     self.text.position(self.style.get_client_rect().position);
-    self
   }
   fn get_rect(&self) -> Rect {
     self.style.get_rect()
@@ -194,30 +192,53 @@ impl<S: Style, H: TextBoxEventHandler> Size for TextBox<S, H> {
 
 impl<S: Style, H: TextBoxEventHandler> Component<S> for TextBox<S, H> {
   type Event = H::Output;
-  fn draw<L: Layout>(
-    &mut self,
-    screen: &mut Screen<S>,
-    layout: &mut L,
-    focus: &mut SelectId,
-    e: Option<&winit::event::Event<i32>>,
-  ) -> Option<H::Output> {
-    match e {
+  //fn draw<L: Layout>(
+  //  &mut self,
+  //  screen: &mut Screen<S>,
+  //  layout: &mut L,
+  //  focus: &mut SelectId,
+  //  e: Option<&winit::event::Event<i32>>,
+  //) -> Option<H::Output> {
+  //  match e {
+  //    Some(e) => {
+  //      let ret = self.style.draw(screen, layout, focus, Some(e));
+  //      let ret = H::handle(self, ret, e);
+  //      if !self.style.has_focus() {
+  //        self.text.cursor(None);
+  //      }
+  //      ret
+  //    }
+  //    None => {
+  //      // style is resized along with the textbox
+  //      let scissor = layout.apply(self);
+
+  //      // draw and select
+  //      self.style.draw(screen, layout, focus, None);
+  //      screen.push_draw(self.text.get_mesh(), scissor);
+  //      None
+  //    }
+  //  }
+  //}
+
+  fn enqueue<'a, R: std::fmt::Debug>(&mut self, mut s: Stream<'a, S, R>) -> Stream<'a, S, Self::Event> {
+    match s.get_event() {
       Some(e) => {
-        let ret = self.style.draw(screen, layout, focus, Some(e));
-        let ret = H::handle(self, ret, e);
+        let s = s.push(&mut self.style);
+        let r = H::handle(self, s.get_result(), e);
         if !self.style.has_focus() {
           self.text.cursor(None);
         }
-        ret
+        s.with_result(r)
       }
       None => {
         // style is resized along with the textbox
-        let scissor = layout.apply(self);
+        let scissor = s.layout(self);
 
         // draw and select
-        self.style.draw(screen, layout, focus, None);
-        screen.push_draw(self.text.get_mesh(), scissor);
-        None
+
+        let mut s = s.push(&mut self.style);
+        s.draw(self.text.get_mesh(), scissor);
+        s.with_result(None)
       }
     }
   }
@@ -282,7 +303,7 @@ impl TextBoxEventHandler for HandlerReadonly {
   type Output = event::Event;
   fn handle<S: Style>(
     _tb: &mut TextBox<S, Self>,
-    _component_event: Option<event::Event>,
+    _component_event: Option<&event::Event>,
     _e: &winit::event::Event<i32>,
   ) -> Option<event::Event> {
     None
@@ -293,7 +314,7 @@ impl TextBoxEventHandler for HandlerReadonly {
 pub struct HandlerEdit {}
 impl TextBoxEventHandler for HandlerEdit {
   type Output = Event;
-  fn handle<S: Style>(tb: &mut TextBox<S, Self>, component_event: Option<event::Event>, e: &winit::event::Event<i32>) -> Option<Event> {
+  fn handle<S: Style>(tb: &mut TextBox<S, Self>, component_event: Option<&event::Event>, e: &winit::event::Event<i32>) -> Option<Event> {
     if tb.style.has_focus() {
       if let Some(e) = Self::receive_character(tb, e, false, &['\t', '\u{1b}']) {
         return Some(e);
@@ -308,7 +329,7 @@ impl TextBoxEventHandler for HandlerEdit {
 pub struct HandlerMultilineEdit {}
 impl TextBoxEventHandler for HandlerMultilineEdit {
   type Output = Event;
-  fn handle<S: Style>(tb: &mut TextBox<S, Self>, component_event: Option<event::Event>, e: &winit::event::Event<i32>) -> Option<Event> {
+  fn handle<S: Style>(tb: &mut TextBox<S, Self>, component_event: Option<&event::Event>, e: &winit::event::Event<i32>) -> Option<Event> {
     if tb.style.has_focus() {
       if let Some(e) = Self::receive_character(tb, e, true, &['\t', '\u{1b}']) {
         return Some(e);

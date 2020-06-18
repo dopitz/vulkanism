@@ -1,16 +1,15 @@
 use super::pipeline::Ub;
 use super::*;
+use crate::component::Component;
+use crate::component::Size;
+use crate::component::Stream;
 use crate::rect::Rect;
-use crate::select::SelectId;
 use crate::style::event::*;
 use crate::window::Layout;
-use crate::window::Screen;
-use crate::window::Size;
 use crate::ImGui;
 use vk::cmd::commands::DrawManaged;
 use vk::cmd::commands::DrawVertices;
 use vk::pass::MeshId;
-use vk::winit;
 
 pub struct SimpleComponent {
   mem: vk::mem::Mem,
@@ -150,13 +149,12 @@ impl StyleComponent<Simple> for SimpleComponent {
 }
 
 impl Size for SimpleComponent {
-  fn rect(&mut self, rect: Rect) -> &mut Self {
+  fn set_rect(&mut self, rect: Rect) {
     if self.get_rect() != rect {
       self.ub_data.position = rect.position;
       self.ub_data.size = rect.size.into();
       self.dirty = true;
     }
-    self
   }
   fn get_rect(&self) -> Rect {
     Rect::new(self.ub_data.position, self.ub_data.size.into())
@@ -169,17 +167,12 @@ impl Size for SimpleComponent {
 
 impl Component<Simple> for SimpleComponent {
   type Event = Event;
-  fn draw<L: Layout>(
-    &mut self,
-    screen: &mut Screen<Simple>,
-    layout: &mut L,
-    _focus: &mut SelectId,
-    e: Option<&winit::event::Event<i32>>,
-  ) -> Option<Event> {
-    match e {
+
+  fn enqueue<'a, R: std::fmt::Debug>(&mut self, mut s: Stream<'a, Simple, R>) -> Stream<'a, Simple, Self::Event> {
+    match s.get_event() {
       Some(e) => {
-        let mouse_over = screen
-          .get_select_result()
+        let mouse_over = s
+          .get_selection()
           .and_then(|id| ClickLocation::from_id(self.ub_data.id_body, id.into()));
 
         // ongoing drag event gets updated end position
@@ -312,7 +305,7 @@ impl Component<Simple> for SimpleComponent {
           _ => {}
         };
 
-        event
+        s.with_result(event)
       }
       None => {
         // update the uniform buffer if size changed
@@ -324,10 +317,10 @@ impl Component<Simple> for SimpleComponent {
         }
 
         // apply_layout should be called by the wrapping gui element
-        let scissor = layout.get_scissor(self.get_rect());
-        screen.push_draw(self.draw_mesh, scissor);
-        screen.push_select(self.select_mesh, scissor);
-        None
+        let scissor = s.get_scissor(self.get_rect());
+        s.draw(self.draw_mesh, scissor);
+        s.select(self.select_mesh, scissor);
+        s.with_result(None)
       }
     }
   }

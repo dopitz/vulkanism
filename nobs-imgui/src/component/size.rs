@@ -1,8 +1,8 @@
-use crate::rect::Rect;
+use crate::Rect;
 
 pub trait Size {
   /// Sets the size and position of a gui component
-  fn rect(&mut self, rect: Rect) -> &mut Self;
+  fn set_rect(&mut self, rect: Rect);
   /// Gets the current size and position of the component
   fn get_rect(&self) -> Rect;
 

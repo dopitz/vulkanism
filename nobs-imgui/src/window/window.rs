@@ -1,17 +1,15 @@
-use super::Component;
 use super::FloatLayout;
 use super::Layout;
-use super::Screen;
-use super::Size;
+use crate::component::Component;
+use crate::component::Size;
+use crate::component::Stream;
 use crate::component::TextBox;
 use crate::rect::Rect;
-use crate::select::SelectId;
 use crate::style::event;
 use crate::style::Style;
 use crate::style::StyleComponent;
 use crate::ImGui;
 use vk::cmd::commands::Scissor;
-use vk::winit;
 
 #[derive(Debug, Clone, Copy)]
 pub enum Event {
@@ -24,12 +22,12 @@ pub enum Event {
 ///
 /// The Window defines a region on the screen on which components are draw
 /// It is basically a builder pattern around a [Layout](struct.Layout.html) and [Screen](struct.Streen.html)
-pub struct Window<L: Layout, S: Style> {
+pub struct Window<S: Style> {
   padding: vkm::Vec2u,
   layout_window: FloatLayout,
   layout_caption: FloatLayout,
   layout_client: FloatLayout,
-  layout: L,
+  layout: Box<dyn Layout>,
   layout_scroll: vkm::Vec2u,
 
   style: S::Component,
@@ -37,8 +35,148 @@ pub struct Window<L: Layout, S: Style> {
   draw_caption: bool,
 }
 
-impl<L: Layout, S: Style> Size for Window<L, S> {
-  fn rect(&mut self, mut rect: Rect) -> &mut Self {
+pub struct WindowBegin<'a, S: Style> {
+  wnd: &'a mut Window<S>,
+}
+
+impl<'a, S: Style> Size for WindowBegin<'a, S> {
+  fn set_rect(&mut self, rect: Rect) {
+    self.wnd.set_rect(rect);
+  }
+  fn get_rect(&self) -> Rect {
+    self.wnd.get_rect()
+  }
+
+  fn get_size_hint(&self) -> vkm::Vec2u {
+    self.wnd.get_size_hint()
+  }
+}
+
+impl<'a, S: Style> Component<S> for WindowBegin<'a, S> {
+  type Event = Event;
+
+  fn enqueue<'b, R: std::fmt::Debug>(&mut self, mut s: Stream<'b, S, R>) -> Stream<'b, S, Self::Event> {
+    println!("window draw");
+    match s.get_event() {
+      Some(e) => {
+        let mut ret = None;
+
+        let s = s.push(&mut self.wnd.style);
+        if let Some(event::Event::Resize(rect)) = s.get_result() {
+          self.set_rect(*rect);
+        }
+
+        // draw caption and move window on drag
+        let s = if self.wnd.draw_caption {
+          let s = s.push(&mut self.wnd.caption);
+          if let Some(event::Event::Drag(drag)) = s.get_result() {
+            let mut r = self.wnd.layout_window.get_rect();
+            r.position = drag.end.into() - drag.start.relative_pos.into();
+            self.set_rect(r);
+            s.with_result(Some(Event::Resized(r)))
+          } else {
+            s.with_result(None)
+          }
+        } else {
+          s.with_result(None)
+        };
+
+        // Scrolling with mouse wheel
+        if self.wnd.style.has_focus() {
+          match e {
+            vk::winit::event::Event::DeviceEvent {
+              event: vk::winit::event::DeviceEvent::Motion { axis: 3, value },
+              ..
+            } => {
+              let value = if *value > 0.0 {
+                -15
+              } else if *value < 0.0 {
+                15
+              } else {
+                0
+              };
+              self.wnd.layout_scroll = self
+                .wnd
+                .layout_scroll
+                .into::<i32>()
+                .map_y(|v| {
+                  let y = v.y + value;
+                  if y > 0 {
+                    y
+                  } else {
+                    0
+                  }
+                })
+                .into();
+              ret = Some(Event::Scroll);
+            }
+            _ => (),
+          }
+        }
+        s
+      }
+      None => {
+        // resizes all layouts, caption and style components
+        let scissor = s.layout(self);
+
+        // we have to manually apply the scissor to the layouts so that their child components will be cropped at this windows borders
+        let apply_scissor = |l: &mut FloatLayout| {
+          let cr = l.get_rect();
+          l.set_rect(scissor.rect.into());
+          let scissor = l.get_scissor(cr);
+          l.set_rect(scissor.rect.into());
+        };
+        apply_scissor(&mut self.wnd.layout_window);
+        apply_scissor(&mut self.wnd.layout_caption);
+        apply_scissor(&mut self.wnd.layout_client);
+
+        // draw the window style
+        // resize and move when style body/border is clicked
+        let s = s.push(&mut self.wnd.style);
+
+        // draw caption and move window on drag
+        let s = if self.wnd.draw_caption {
+          s.push(&mut self.wnd.caption)
+        } else {
+          s.with_result(None)
+        };
+
+        // restart the layout for components that are using this window as layouting scheme
+        self.wnd.layout.restart();
+
+        s.with_result(None)
+      }
+    }
+  }
+}
+
+pub struct WindowEnd<'a, S: Style> {
+  wnd: &'a mut Window<S>,
+}
+
+impl<'a, S: Style> Size for WindowEnd<'a, S> {
+  fn set_rect(&mut self, rect: Rect) {
+    self.wnd.set_rect(rect);
+  }
+  fn get_rect(&self) -> Rect {
+    self.wnd.get_rect()
+  }
+
+  fn get_size_hint(&self) -> vkm::Vec2u {
+    self.wnd.get_size_hint()
+  }
+}
+
+impl<'a, S: Style> Component<S> for WindowEnd<'a, S> {
+  type Event = Event;
+
+  fn enqueue<'b, R: std::fmt::Debug>(&mut self, s: Stream<'b, S, R>) -> Stream<'b, S, Self::Event> {
+    s.with_result(None)
+  }
+}
+
+impl<S: Style> Size for Window<S> {
+  fn set_rect(&mut self, mut rect: Rect) {
     // reserve space for the caption (if enabled)
     let h = match self.draw_caption {
       true => self.caption.get_size_hint().y,
@@ -50,14 +188,14 @@ impl<L: Layout, S: Style> Size for Window<L, S> {
 
     // the whole window and style have the same dimensions
     // client and caption use the client area of the style
-    self.layout_window.rect(rect);
-    self.style.rect(rect);
+    self.layout_window.set_rect(rect);
+    self.style.set_rect(rect);
     let cr = self.style.get_client_rect();
 
     // make room for the window caption
     // use the remainder for the client layout
-    self.layout_caption.rect(Rect::new(cr.position, cr.size.map_y(|_| h)));
-    self.caption.rect(self.layout_caption.get_rect());
+    self.layout_caption.set_rect(Rect::new(cr.position, cr.size.map_y(|_| h)));
+    self.caption.set_rect(self.layout_caption.get_rect());
 
     let client_rect = Rect::new(
       cr.position.map_y(|p| p.y + h as i32) + self.padding.into(),
@@ -66,7 +204,7 @@ impl<L: Layout, S: Style> Size for Window<L, S> {
         cr.size.y.saturating_sub(self.padding.y * 2 + h)
       ),
     );
-    self.layout_client.rect(client_rect);
+    self.layout_client.set_rect(client_rect);
 
     // Set client layout with scrolling
     let mut size = self.layout.get_size_hint();
@@ -85,8 +223,7 @@ impl<L: Layout, S: Style> Size for Window<L, S> {
     let max = vec2!(size.x.saturating_sub(client_rect.size.x), size.y.saturating_sub(client_rect.size.y));
     self.layout_scroll = vkm::Vec2::clamp(self.layout_scroll, vec2!(0), max);
 
-    self.layout.rect(Rect::new(p, size));
-    self
+    self.layout.set_rect(Rect::new(p, size));
   }
   fn get_rect(&self) -> Rect {
     self.layout_window.get_rect()
@@ -98,119 +235,23 @@ impl<L: Layout, S: Style> Size for Window<L, S> {
   }
 }
 
-impl<L: Layout, S: Style> Layout for Window<L, S> {
-  fn restart(&mut self) {
-    self.layout.restart();
-  }
+//impl<S: Style> Layout for Window<S> {
+//  fn restart(&mut self) {
+//    self.layout.restart();
+//  }
+//
+//  fn layout(&mut self, c: &mut dyn Size) -> Scissor {
+//    self.layout.layout(c);
+//    self.layout_client.get_scissor(c.get_rect())
+//  }
+//
+//  fn get_scissor(&self, rect: Rect) -> Scissor {
+//    self.layout_client.get_scissor(rect)
+//  }
+//}
 
-  fn apply<S2: Style, C: Component<S2>>(&mut self, c: &mut C) -> Scissor {
-    self.layout.apply(c);
-    self.layout_client.get_scissor(c.get_rect())
-  }
-
-  fn get_scissor(&self, rect: Rect) -> Scissor {
-    self.layout_client.get_scissor(rect)
-  }
-}
-
-impl<L: Layout, S: Style> Component<S> for Window<L, S> {
-  type Event = Event;
-  fn draw<LSuper: Layout>(
-    &mut self,
-    screen: &mut Screen<S>,
-    layout: &mut LSuper,
-    focus: &mut SelectId,
-    e: Option<&winit::event::Event<i32>>,
-  ) -> Option<Self::Event> {
-    match e {
-      Some(e) => {
-        let mut ret = None;
-
-        // draw the window style
-        // resize and move when style body/border is clicked
-        if let Some(event::Event::Resize(rect)) = self.style.draw(screen, &mut self.layout_window, focus, Some(e)) {
-          self.rect(rect);
-          ret = Some(Event::Resized(rect));
-        }
-
-        // draw caption and move window on drag
-        if self.draw_caption {
-          if let Some(event::Event::Drag(drag)) = self.caption.draw(screen, &mut self.layout_caption, focus, Some(e)) {
-            let mut r = self.layout_window.get_rect();
-            r.position = drag.end.into() - drag.start.relative_pos.into();
-            self.rect(r);
-            ret = Some(Event::Resized(r))
-          }
-        }
-
-        // Scrolling with mouse wheel
-        if self.style.has_focus() {
-          match e {
-            vk::winit::event::Event::DeviceEvent {
-              event: vk::winit::event::DeviceEvent::Motion { axis: 3, value },
-              ..
-            } => {
-              let value = if *value > 0.0 {
-                -15
-              } else if *value < 0.0 {
-                15
-              } else {
-                0
-              };
-              self.layout_scroll = self
-                .layout_scroll
-                .into::<i32>()
-                .map_y(|v| {
-                  let y = v.y + value;
-                  if y > 0 {
-                    y
-                  } else {
-                    0
-                  }
-                })
-                .into();
-              ret = Some(Event::Scroll);
-            }
-            _ => (),
-          }
-        }
-        ret
-      }
-      None => {
-        // resizes all layouts, caption and style components
-        let scissor = layout.apply(self);
-
-        // we have to manually apply the scissor to the layouts so that their child components will be cropped an this windows borders
-        let apply_scissor = |l: &mut FloatLayout| {
-          let cr = l.get_rect();
-          l.rect(scissor.rect.into());
-          let scissor = l.get_scissor(cr);
-          l.rect(scissor.rect.into());
-        };
-        apply_scissor(&mut self.layout_window);
-        apply_scissor(&mut self.layout_caption);
-        apply_scissor(&mut self.layout_client);
-
-        // draw the window style
-        // resize and move when style body/border is clicked
-        self.style.draw(screen, &mut self.layout_window, focus, None);
-
-        // draw caption and move window on drag
-        if self.draw_caption {
-          self.caption.draw(screen, &mut self.layout_caption, focus, None);
-        }
-
-        // restart the layout for components that are using this window as layouting scheme
-        self.restart();
-
-        None
-      }
-    }
-  }
-}
-
-impl<L: Layout, S: Style> Window<L, S> {
-  pub fn new(gui: &ImGui<S>, layout: L) -> Self {
+impl<S: Style> Window<S> {
+  pub fn new(gui: &ImGui<S>, layout: Box<dyn Layout>) -> Self {
     let style = S::Component::new(gui, "Window".to_owned(), true, true);
     let mut caption = TextBox::new(gui);
     caption.text("A fancy window");
@@ -259,13 +300,13 @@ impl<L: Layout, S: Style> Window<L, S> {
   /// Sets size and position of the Window in pixel coordinates
   pub fn size(&mut self, w: u32, h: u32) -> &mut Self {
     let pos = self.layout_window.get_rect().position;
-    self.rect(Rect::new(pos, vkm::Vec2::new(w, h)));
+    self.set_rect(Rect::new(pos, vkm::Vec2::new(w, h)));
     self
   }
   /// Sets the position of the Window in pixel coordinates
   pub fn position(&mut self, x: i32, y: i32) -> &mut Self {
     let size = self.layout_window.get_rect().size;
-    self.rect(Rect::new(vkm::Vec2::new(x, y), size));
+    self.set_rect(Rect::new(vkm::Vec2::new(x, y), size));
     self
   }
   /// Sets padding of components from the (inner) window border
@@ -280,5 +321,55 @@ impl<L: Layout, S: Style> Window<L, S> {
   }
   pub fn get_scroll(&self) -> vkm::Vec2u {
     self.layout_scroll
+  }
+
+  pub fn begin<'a>(&'a mut self) -> WindowBegin<'a, S> {
+    WindowBegin::<'a, S> { wnd: self }
+  }
+  pub fn end<'a>(&'a mut self) -> WindowEnd<'a, S> {
+    WindowEnd::<'a, S> { wnd: self }
+  }
+}
+
+#[derive(Debug, Copy, Clone)]
+pub struct WindowLayout<L: Layout> {
+  caption: u32,
+  padding: vkm::Vec2f,
+  outer: Rect,
+  client: Rect,
+  layout: L,
+}
+
+impl<L: Layout> Size for WindowLayout<L> {
+  fn set_rect(&mut self, rect: Rect) {
+    self.outer = rect;
+    self.client = rect;
+    self.client.position.y = self.client.position.y + self.caption as i32;
+    self.client.size.x = self.client.size.x.saturating_sub(self.padding.x as u32);
+    self.client.size.y = self.client.size.y.saturating_sub(self.padding.y as u32 + self.caption);
+  }
+
+  fn get_rect(&self) -> Rect {
+    self.outer
+  }
+
+  fn get_size_hint(&self) -> vkm::Vec2u {
+    self.layout.get_size_hint()
+  }
+}
+
+impl<L: Layout> Layout for WindowLayout<L> {
+  fn restart(&mut self) {
+    self.layout.restart();
+  }
+
+  fn layout(&mut self, c: &mut dyn Size) -> Scissor {
+    let mut s : Rect = self.layout.layout(c).rect.into();
+
+    let lo = vkm::Vec2::clamp(self.client.position, vec2!(0), vec2!(i32::max_value()));
+    let hi = lo + self.client.size.into();
+    s.position = vkm::Vec2::clamp(s.position, lo, hi);
+    s.size = (vkm::Vec2::clamp(s.position + s.size.into(), lo, hi) - s.position).into();
+    Scissor::with_rect(s.into())
   }
 }

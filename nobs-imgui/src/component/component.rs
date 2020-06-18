@@ -1,10 +1,9 @@
-use super::Layout;
-use super::Screen;
-use super::Size;
+use crate::component::Size;
+use crate::component::Stream;
 use crate::select::SelectId;
 use crate::style::Style;
-use vk::cmd::commands::Scissor;
-use vk::pass::MeshId;
+use crate::window::Layout;
+use crate::window::Screen;
 use vk::winit;
 
 ///// Basic trait for renderable and selectable gui components
@@ -42,18 +41,29 @@ pub trait Component<S: Style>: Size {
   //  None
   //}
 
-  fn draw<L: Layout>(&mut self, screen: &mut Screen<S>, layout: &mut L, focus: &mut SelectId, e: Option<&winit::event::Event<i32>>) -> Option<Self::Event>;
-    //{
-    //match e {
-    //  Some(e) => self.handle_event(e),
-    //  None => {
-    //    if let Some((mesh, scissor)) = self.get_drawinfo() {
-    //      screen.push_draw(mesh, scissor);
-    //    }
-    //    if let Some((mesh, scissor)) = self.get_selectinfo() {
-    //      screen.push_select(mesh, scissor);
-    //    }
-    //  }
-    //}
-    //}
+  //fn draw<L: Layout>(
+  //  &mut self,
+  //  screen: &mut Screen<S>,
+  //  layout: &mut L,
+  //  focus: &mut SelectId,
+  //  e: Option<&winit::event::Event<i32>>,
+  //) -> Option<Self::Event>;
+  //{
+  //match e {
+  //  Some(e) => self.handle_event(e),
+  //  None => {
+  //    if let Some((mesh, scissor)) = self.get_drawinfo() {
+  //      screen.push_draw(mesh, scissor);
+  //    }
+  //    if let Some((mesh, scissor)) = self.get_selectinfo() {
+  //      screen.push_select(mesh, scissor);
+  //    }
+  //  }
+  //}
+  //}
+
+  // TODO: stream::into with different result/event type
+  fn enqueue<'a, R: std::fmt::Debug>(&mut self, s: Stream<'a, S, R>) -> Stream<'a, S, Self::Event> {
+    s.with_result(None)
+  }
 }

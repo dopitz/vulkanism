@@ -1,7 +1,6 @@
 use crate::component::textbox::Event;
 use crate::component::*;
 use crate::rect::Rect;
-use crate::select::SelectId;
 use crate::style::Style;
 use crate::window::*;
 use crate::ImGui;
@@ -9,29 +8,27 @@ use crate::ImGui;
 use std::sync::Arc;
 use std::sync::Condvar;
 use std::sync::Mutex;
-use vk::winit;
 
 struct TerminalImpl<S: Style> {
-  wnd: Window<ColumnLayout, S>,
+  wnd: Window<S>,
 
-  output_wnd: Window<ColumnLayout, S>,
+  output_wnd: Window<S>,
   output: TextBox<S>,
   pin_scroll: bool,
 
   input: TextEdit<S>,
   readl: Option<Arc<(Mutex<Option<String>>, Condvar)>>,
 
-  quickfix_wnd: Window<ColumnLayout, S>,
+  quickfix_wnd: Window<S>,
   quickfix: TextEdit<S>,
 }
 
 impl<S: Style> Size for TerminalImpl<S> {
-  fn rect(&mut self, rect: Rect) -> &mut Self {
-    self.wnd.rect(rect);
+  fn set_rect(&mut self, rect: Rect) {
+    self.wnd.set_rect(rect);
     let mut r = self.wnd.get_client_rect();
     r.size.y = r.size.y.saturating_sub(self.input.get_size_hint().y + 10);
-    self.output_wnd.rect(r);
-    self
+    self.output_wnd.set_rect(r);
   }
 
   fn get_rect(&self) -> Rect {
@@ -45,25 +42,20 @@ impl<S: Style> Size for TerminalImpl<S> {
 
 impl<S: Style> Component<S> for TerminalImpl<S> {
   type Event = Event;
-  fn draw<L: Layout>(
-    &mut self,
-    screen: &mut Screen<S>,
-    layout: &mut L,
-    focus: &mut SelectId,
-    e: Option<&winit::event::Event<i32>>,
-  ) -> Option<Self::Event> {
-    layout.apply(self);
 
-    self.wnd.draw(screen, layout, focus, e);
+  fn enqueue<'a, R: std::fmt::Debug>(&mut self, mut s: Stream<'a, S, R>) -> Stream<'a, S, Self::Event> {
+    println!("term window draw");
+    s.layout(self);
 
-    if let Some(crate::window::Event::Scroll) = self.output_wnd.draw(screen, &mut self.wnd, focus, e) {
+    let s = s.push(&mut self.wnd.begin()).push(&mut self.output_wnd.begin());
+
+    if let Some(crate::window::Event::Scroll) = s.get_result() {
       self.pin_scroll = false;
     }
-    self.output.draw(screen, &mut self.output_wnd, focus, e);
+    let s = s.push(&mut self.output).push(&mut Spacer::new(vec2!(10))).push(&mut self.input);
 
-    Spacer::new(vec2!(10)).draw(screen, &mut self.wnd, focus, e);
-
-    let ret = match self.input.draw(screen, &mut self.wnd, focus, e) {
+    let tbevent = s.get_result().cloned();
+    match tbevent.as_ref() {
       Some(Event::Enter(input)) => {
         let input = input[3..].to_string();
 
@@ -73,21 +65,19 @@ impl<S: Style> Component<S> for TerminalImpl<S> {
           *inp = Some(input);
           cvar.notify_one();
           self.input.text("~$ ");
-          None
         } else {
           self.println(&input);
           self.input.text("~$ ");
-          Some(Event::Enter(input))
         }
       }
       Some(Event::Changed) => {
         if self.input.get_text().len() < 3 {
           self.input.text("~$ ");
         }
-        Some(Event::Changed)
       }
-      _ => None,
-    };
+      _ => (),
+    }
+
     match self.input.get_cursor() {
       Some(cp) if cp.x < 3 => {
         self.input.cursor(Some(vec2!(3, 0)));
@@ -99,7 +89,7 @@ impl<S: Style> Component<S> for TerminalImpl<S> {
       self.output_wnd.scroll(vec2!(0, u32::max_value()));
     }
 
-    if !self.quickfix.get_text().is_empty() {
+    let s = if !self.quickfix.get_text().is_empty() {
       let r = self.wnd.get_rect();
 
       let p = match self.input.get_cursor() {
@@ -109,8 +99,8 @@ impl<S: Style> Component<S> for TerminalImpl<S> {
 
       // restart the layout before assigning the new size, because we want the textbox to fill the exact size window
       // we use the cursor position and text dimension for the window size
-      self.quickfix_wnd.restart();
-      self.quickfix_wnd.rect(Rect::new(
+      // TODO: is this actually neccessary: self.quickfix_wnd.restart();
+      self.quickfix_wnd.set_rect(Rect::new(
         vec2!(
           self.input.get_rect().position.x + self.input.get_typeset().char_offset(self.input.get_text(), p).x as i32,
           r.position.y + r.size.y as i32
@@ -119,17 +109,20 @@ impl<S: Style> Component<S> for TerminalImpl<S> {
       ));
 
       // draw quickfix window and textbox
-      self.quickfix_wnd.draw(screen, layout, focus, e);
-      if let Some(_) = self.quickfix.draw(screen, &mut self.quickfix_wnd, focus, e) {
+      let s = s.push(&mut self.quickfix_wnd.begin()).push(&mut self.quickfix);
+      if let Some(_) = s.get_result() {
         self.println("quickfix click not implemented");
       }
-    }
+      s.push(&mut self.quickfix_wnd.end()).with_result(tbevent.clone())
+    } else {
+      s
+    };
 
     if !self.input.has_focus() && (self.wnd.has_focus() || self.output_wnd.has_focus() || self.output.has_focus()) {
       self.focus(true);
     }
 
-    ret
+    s.push(&mut self.output_wnd.end()).push(&mut self.wnd.end()).with_result(tbevent)
   }
 }
 
@@ -176,9 +169,8 @@ pub struct TerminalWnd<S: Style> {
 unsafe impl<S: Style> Send for TerminalWnd<S> {}
 
 impl<S: Style> Size for TerminalWnd<S> {
-  fn rect(&mut self, rect: Rect) -> &mut Self {
-    self.term.lock().unwrap().rect(rect);
-    self
+  fn set_rect(&mut self, rect: Rect) {
+    self.term.lock().unwrap().set_rect(rect);
   }
 
   fn get_rect(&self) -> Rect {
@@ -192,20 +184,24 @@ impl<S: Style> Size for TerminalWnd<S> {
 
 impl<S: Style> Component<S> for TerminalWnd<S> {
   type Event = Event;
-  fn draw<L: Layout>(
-    &mut self,
-    screen: &mut Screen<S>,
-    layout: &mut L,
-    focus: &mut SelectId,
-    e: Option<&winit::event::Event<i32>>,
-  ) -> Option<Self::Event> {
-    self.term.lock().unwrap().draw(screen, layout, focus, e)
+  //fn draw<L: Layout>(
+  //  &mut self,
+  //  screen: &mut Screen<S>,
+  //  layout: &mut L,
+  //  focus: &mut SelectId,
+  //  e: Option<&winit::event::Event<i32>>,
+  //) -> Option<Self::Event> {
+  //  self.term.lock().unwrap().draw(screen, layout, focus, e)
+  //}
+
+  fn enqueue<'a, R: std::fmt::Debug>(&mut self, s: Stream<'a, S, R>) -> Stream<'a, S, Self::Event> {
+    s.push(&mut *self.term.lock().unwrap())
   }
 }
 
 impl<S: Style> TerminalWnd<S> {
   pub fn new(gui: &ImGui<S>) -> Self {
-    let mut wnd = Window::new(gui, ColumnLayout::default());
+    let mut wnd = Window::new(gui, Box::new(ColumnLayout::default()));
     wnd
       .caption("terminal")
       .position(20, 20)
@@ -213,7 +209,7 @@ impl<S: Style> TerminalWnd<S> {
       .focus(true)
       .draw_caption(false);
 
-    let mut output_wnd = Window::new(gui, ColumnLayout::default());
+    let mut output_wnd = Window::new(gui, Box::new(ColumnLayout::default()));
     output_wnd.draw_caption(false);
     output_wnd.style("NoStyle", false, false);
     let mut output = TextBox::new(gui);
@@ -223,7 +219,7 @@ impl<S: Style> TerminalWnd<S> {
     let mut input = TextBox::new(gui);
     input.text("~$ ");
 
-    let mut quickfix_wnd = Window::new(gui, ColumnLayout::default());
+    let mut quickfix_wnd = Window::new(gui, Box::new(ColumnLayout::default()));
     quickfix_wnd.draw_caption(false);
     quickfix_wnd.style("NoStyle", false, false);
     let mut quickfix = TextBox::new(gui);

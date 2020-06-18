@@ -1,7 +1,7 @@
-use super::Component;
-use super::Size;
-use crate::rect::Rect;
+use crate::component::Component;
+use crate::component::Size;
 use crate::style::Style;
+use crate::Rect;
 use vk::cmd::commands::Scissor;
 
 #[derive(Debug, Copy, Clone)]
@@ -55,7 +55,7 @@ pub trait Layout: Size {
   ///
   /// # Returns
   /// The scissor rect for the component
-  fn apply<S: Style, C: Component<S>>(&mut self, c: &mut C) -> Scissor;
+  fn layout(&mut self, c: &mut dyn Size) -> Scissor;
 
   /// Get the overlapping scissor rect from the layouts draw area  and `rect`
   fn get_scissor(&self, mut rect: Rect) -> Scissor {
@@ -75,9 +75,8 @@ pub struct FloatLayout {
 }
 
 impl Size for FloatLayout {
-  fn rect(&mut self, rect: Rect) -> &mut Self {
+  fn set_rect(&mut self, rect: Rect) {
     self.rect = rect;
-    self
   }
 
   fn get_rect(&self) -> Rect {
@@ -94,9 +93,9 @@ impl Layout for FloatLayout {
     self.current = Default::default();
   }
 
-  fn apply<S: Style, C: Component<S>>(&mut self, c: &mut C) -> Scissor {
+  fn layout(&mut self, c: &mut dyn Size) -> Scissor {
     let r = c.get_rect();
-    c.rect(r);
+    c.set_rect(r);
     self.current.union(&r.into());
     self.get_scissor(r)
   }
@@ -121,9 +120,8 @@ pub struct ColumnLayout {
 }
 
 impl Size for ColumnLayout {
-  fn rect(&mut self, rect: Rect) -> &mut Self {
+  fn set_rect(&mut self, rect: Rect) {
     self.rect = rect;
-    self
   }
 
   fn get_rect(&self) -> Rect {
@@ -141,7 +139,7 @@ impl Layout for ColumnLayout {
     self.current = Default::default();
   }
 
-  fn apply<S: Style, C: Component<S>>(&mut self, c: &mut C) -> Scissor {
+  fn layout(&mut self, c: &mut dyn Size) -> Scissor {
     let mut rect = Rect::new(self.rect.position + vec2!(0, self.top as i32), c.get_size_hint());
     if rect.size.x == 0 {
       rect.size.x = self.rect.size.x;
@@ -152,7 +150,7 @@ impl Layout for ColumnLayout {
     if rect.size.x >= self.rect.size.x {
       rect.size.x = self.rect.size.x;
     }
-    c.rect(rect);
+    c.set_rect(rect);
     self.get_scissor(rect)
   }
 }

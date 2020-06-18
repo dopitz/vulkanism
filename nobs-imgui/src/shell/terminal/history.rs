@@ -25,7 +25,7 @@ impl<S: Style> History<S> {
     }
   }
 
-  pub fn handle_event(&self, screen: &mut Screen<S>, tbe: &Option<TextboxEvent>, e: Option<&winit::event::Event<i32>>) {
+  pub fn handle_event(&self, tbe: Option<&TextboxEvent>, e: Option<&winit::event::Event<i32>>) {
     // On enter, registers the current input text to history
     // On text input, resets the index to the end of history
     match tbe {

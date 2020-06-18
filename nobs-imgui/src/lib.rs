@@ -12,20 +12,22 @@
 extern crate nobs_vulkanism as vk;
 #[macro_use]
 extern crate nobs_vkmath as vkm;
+extern crate clap;
 extern crate freetype;
 extern crate nobs_imgui_font as font;
 extern crate regex;
-extern crate clap;
 
 pub mod component;
 pub mod pipelines;
 pub mod rect;
 pub mod select;
+pub mod shell;
 pub mod sprites;
 pub mod style;
-pub mod shell;
 pub mod window;
 //
 mod imgui;
 pub use imgui::ImGui;
 pub use select::SelectPass;
+
+pub use rect::Rect;

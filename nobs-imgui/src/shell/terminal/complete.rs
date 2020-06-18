@@ -45,8 +45,7 @@ impl<S: Style> Complete<S> {
 
   pub fn handle_event<C: ContextShell>(
     &self,
-    screen: &mut Screen<S>,
-    tbe: &Option<TextboxEvent>,
+    tbe: Option<&TextboxEvent>,
     e: Option<&winit::event::Event<i32>>,
     context: &C,
   ) {
