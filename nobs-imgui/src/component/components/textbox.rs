@@ -192,33 +192,6 @@ impl<S: Style, H: TextBoxEventHandler> Size for TextBox<S, H> {
 
 impl<S: Style, H: TextBoxEventHandler> Component<S> for TextBox<S, H> {
   type Event = H::Output;
-  //fn draw<L: Layout>(
-  //  &mut self,
-  //  screen: &mut Screen<S>,
-  //  layout: &mut L,
-  //  focus: &mut SelectId,
-  //  e: Option<&winit::event::Event<i32>>,
-  //) -> Option<H::Output> {
-  //  match e {
-  //    Some(e) => {
-  //      let ret = self.style.draw(screen, layout, focus, Some(e));
-  //      let ret = H::handle(self, ret, e);
-  //      if !self.style.has_focus() {
-  //        self.text.cursor(None);
-  //      }
-  //      ret
-  //    }
-  //    None => {
-  //      // style is resized along with the textbox
-  //      let scissor = layout.apply(self);
-
-  //      // draw and select
-  //      self.style.draw(screen, layout, focus, None);
-  //      screen.push_draw(self.text.get_mesh(), scissor);
-  //      None
-  //    }
-  //  }
-  //}
 
   fn enqueue<'a, R: std::fmt::Debug>(&mut self, mut s: Stream<'a, S, R>) -> Stream<'a, S, Self::Event> {
     match s.get_event() {

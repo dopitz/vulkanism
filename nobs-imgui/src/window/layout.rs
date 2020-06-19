@@ -68,7 +68,7 @@ pub trait Layout: Size {
 }
 
 /// Float layout that does not modify componets
-#[derive(Default)]
+#[derive(Debug, Default, Clone, Copy)]
 pub struct FloatLayout {
   rect: Rect,
   current: AaBb,
@@ -111,7 +111,7 @@ impl From<Rect> for FloatLayout {
 }
 
 /// Column layout that arranges components in a single column from top first to bottom last
-#[derive(Default)]
+#[derive(Debug, Default, Clone, Copy)]
 pub struct ColumnLayout {
   rect: Rect,
   top: u32,

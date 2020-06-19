@@ -1,3 +1,5 @@
+use crate::component::stream::StreamCache;
+use crate::component::Stream;
 use crate::pipelines::Pipelines;
 use crate::select::SelectPass;
 use crate::style::Style;
@@ -7,6 +9,7 @@ use std::sync::Mutex;
 use vk::builder::Buildable;
 use vk::mem::Handle;
 use vk::pass::DrawPass;
+use vk::winit;
 
 struct Pass {
   rp: vk::pass::Renderpass,
@@ -24,6 +27,8 @@ struct ImGuiImpl<S: Style> {
   pipes: Mutex<Pipelines>,
 
   scr: Mutex<Option<Screen<S>>>,
+
+  stream_cache: Mutex<StreamCache<S>>,
 }
 
 impl<S: Style> Drop for ImGuiImpl<S> {
@@ -144,6 +149,7 @@ impl<S: Style> ImGui<S> {
         pipes,
 
         scr: Mutex::new(None),
+        stream_cache: Mutex::new(StreamCache::new()),
       }),
     }
   }
@@ -213,5 +219,16 @@ impl<S: Style> ImGui<S> {
   /// * `scr` - The [Screen](window/struct.Screen.html) returned from [begin](struct.ImGui.html#method.begin).
   pub fn end(&mut self, scr: Screen<S>) {
     self.gui.scr.lock().unwrap().replace(scr);
+  }
+
+  pub fn begin_x<'a>(&'a mut self, event: Option<&'a winit::event::Event<i32>>) -> Stream<'a, S, ()> {
+    let scr = self.begin();
+    let layout = Box::new(crate::window::FloatLayout::from(scr.get_rect()));
+
+    self.gui.stream_cache.lock().unwrap().into_stream(event)
+  }
+
+  pub fn end_x<'a, R: std::fmt::Debug>(&'a mut self, s: Stream<'a, S, R>) {
+    self.gui.stream_cache.lock().unwrap().recover(s);
   }
 }

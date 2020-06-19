@@ -16,55 +16,75 @@ pub enum Type {
   Draw,
 }
 
+pub struct StreamCache<S: Style> {
+  screen: Option<Screen<S>>,
+  focus: Option<SelectId>,
+  layout: Option<Vec<Box<dyn Layout>>>,
+}
+
+impl<S: Style> StreamCache<S> {
+  pub fn new() -> Self {
+    Self {
+      screen: None,
+      layout: Some(Vec::with_capacity(10)),
+      focus: Some(SelectId::invalid()),
+    }
+  }
+
+  pub fn into_stream<'a>(&mut self, event: Option<&'a winit::event::Event<i32>>) -> Stream<'a, S, ()> {
+    Stream {
+      streamtype: Type::HandleEvent,
+      screen: self.screen.take().unwrap(),
+      layout: self.layout.take().unwrap(),
+      focus: self.focus.take().unwrap(),
+      event,
+      result: None,
+    }
+  }
+
+  pub fn recover<'a, R: std::fmt::Debug>(&mut self, s: Stream<'a, S, R>) {
+    self.screen = Some(s.screen);
+    self.layout = Some(s.layout);
+    self.focus = Some(s.focus);
+  }
+}
+
 pub struct Stream<'a, S: Style, R: std::fmt::Debug> {
   streamtype: Type,
 
-  screen: Option<Screen<S>>,
+  screen: Screen<S>,
   layout: Vec<Box<dyn Layout>>,
-  focus: Option<&'a mut SelectId>,
+  focus: SelectId,
   event: Option<&'a winit::event::Event<'a, i32>>,
 
   result: Option<R>,
 }
 
-impl<'a, S: Style> Stream<'a, S, ()> {
-  pub fn new(s: Screen<S>, l: Box<dyn Layout>, f: &'a mut SelectId) -> Self {
-    Self {
-      streamtype: Type::Draw,
-      screen: Some(s),
-      layout: vec![l],
-      focus: Some(f),
-      event: None,
-      result: None,
-    }
-  }
-}
-
 impl<'a, S: Style, R: std::fmt::Debug> Stream<'a, S, R> {
   pub fn draw(&mut self, mesh: MeshId, scissor: Scissor) {
-    match self.screen.as_mut() {
-      Some(s) => s.push_draw(mesh, scissor),
-      None => (),
+    match self.streamtype {
+      Type::Draw => self.screen.push_draw(mesh, scissor),
+      Type::HandleEvent => (),
     }
   }
   pub fn select(&mut self, mesh: MeshId, scissor: Scissor) {
-    match self.screen.as_mut() {
-      Some(s) => s.push_select(mesh, scissor),
-      None => (),
+    match self.streamtype {
+      Type::Draw => self.screen.push_select(mesh, scissor),
+      Type::HandleEvent => (),
     }
   }
 
   pub fn get_selection(&mut self) -> Option<SelectId> {
-    match self.screen.as_mut() {
-      Some(s) => s.get_select_result(),
-      None => None,
-    }
+    self.screen.get_select_result()
+  }
+  pub fn is_selected(&mut self, id: SelectId) -> bool {
+    self.get_selection().filter(|s| *s == id && id != SelectId::invalid()).is_some()
   }
 
   pub fn push_layout(&mut self, l: Box<dyn Layout>) {
     self.layout.push(l);
   }
-  pub fn pop_layout(&mut self) -> Box<dyn Layout>{
+  pub fn pop_layout(&mut self) -> Box<dyn Layout> {
     self.layout.pop().unwrap()
   }
 
@@ -82,10 +102,10 @@ impl<'a, S: Style, R: std::fmt::Debug> Stream<'a, S, R> {
   }
 
   pub fn get_focus(&self) -> Option<&SelectId> {
-    self.focus.as_ref().map(|f| &**f)
+    Some(&self.focus)
   }
   pub fn set_focus(&mut self, id: SelectId) {
-    self.focus.as_mut().map(|f| **f = id);
+    self.focus = id;
   }
 
   pub fn get_event(&self) -> Option<&'a winit::event::Event<'a, i32>> {
@@ -108,6 +128,14 @@ impl<'a, S: Style, R: std::fmt::Debug> Stream<'a, S, R> {
 
   pub fn push<Rx: std::fmt::Debug, C: Component<S, Event = Rx>>(self, c: &mut C) -> Stream<'a, S, Rx> {
     c.enqueue(self)
+  }
+
+  pub fn push_if<C: Component<S, Event = R>>(self, b: bool, c: &mut C) -> Stream<'a, S, R> {
+    if b {
+      self.push(c)
+    } else {
+      self
+    }
   }
 }
 
@@ -140,9 +168,9 @@ impl<'a, S: Style, R: std::fmt::Debug> Layout for Stream<'a, S, R> {
 
 impl<'a, S: Style, R: std::fmt::Debug> StreamPushMut for Stream<'a, S, R> {
   fn enqueue_mut(&mut self, cs: CmdBuffer) -> CmdBuffer {
-    match self.screen.take() {
-      Some(mut screen) => cs.push_mut(&mut screen),
-      None => cs,
+    match self.streamtype {
+      Type::Draw => cs.push_mut(&mut self.screen),
+      Type::HandleEvent => cs,
     }
   }
 }

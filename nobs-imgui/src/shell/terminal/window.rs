@@ -10,16 +10,16 @@ use std::sync::Condvar;
 use std::sync::Mutex;
 
 struct TerminalImpl<S: Style> {
-  wnd: Window<S>,
+  wnd: Window<ColumnLayout, S>,
 
-  output_wnd: Window<S>,
+  output_wnd: Window<ColumnLayout, S>,
   output: TextBox<S>,
   pin_scroll: bool,
 
   input: TextEdit<S>,
   readl: Option<Arc<(Mutex<Option<String>>, Condvar)>>,
 
-  quickfix_wnd: Window<S>,
+  quickfix_wnd: Window<ColumnLayout, S>,
   quickfix: TextEdit<S>,
 }
 
@@ -201,7 +201,7 @@ impl<S: Style> Component<S> for TerminalWnd<S> {
 
 impl<S: Style> TerminalWnd<S> {
   pub fn new(gui: &ImGui<S>) -> Self {
-    let mut wnd = Window::new(gui, Box::new(ColumnLayout::default()));
+    let mut wnd = Window::new(gui, ColumnLayout::default());
     wnd
       .caption("terminal")
       .position(20, 20)
@@ -209,7 +209,7 @@ impl<S: Style> TerminalWnd<S> {
       .focus(true)
       .draw_caption(false);
 
-    let mut output_wnd = Window::new(gui, Box::new(ColumnLayout::default()));
+    let mut output_wnd = Window::new(gui, ColumnLayout::default());
     output_wnd.draw_caption(false);
     output_wnd.style("NoStyle", false, false);
     let mut output = TextBox::new(gui);
@@ -219,7 +219,7 @@ impl<S: Style> TerminalWnd<S> {
     let mut input = TextBox::new(gui);
     input.text("~$ ");
 
-    let mut quickfix_wnd = Window::new(gui, Box::new(ColumnLayout::default()));
+    let mut quickfix_wnd = Window::new(gui, ColumnLayout::default());
     quickfix_wnd.draw_caption(false);
     quickfix_wnd.style("NoStyle", false, false);
     let mut quickfix = TextBox::new(gui);

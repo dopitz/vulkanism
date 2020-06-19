@@ -9,8 +9,7 @@ macro_rules! make_style {
 
     pub mod window {
       pub use crate::window::*;
-      //TODO: pub type Window<L: Layout> = crate::window::Window<L, super::ThisStyle>;
-      pub type Window = crate::window::Window<super::ThisStyle>;
+      pub type Window<L: Layout> = crate::window::Window<L, super::ThisStyle>;
     }
 
     pub mod component {
