@@ -3,7 +3,6 @@ use crate::component::Stream;
 use crate::select::SelectId;
 use crate::style::Style;
 use crate::window::Layout;
-use crate::window::Screen;
 use vk::winit;
 
 ///// Basic trait for renderable and selectable gui components

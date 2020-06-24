@@ -1,14 +1,24 @@
 use crate::component::Component;
 use crate::component::Size;
 use crate::rect::Rect;
+use crate::select::Query;
 use crate::select::SelectId;
 use crate::style::Style;
+use crate::window::FloatLayout;
 use crate::window::Layout;
-use crate::window::Screen;
+use crate::ImGui;
+use vk::cmd::commands::RenderpassBegin;
+use vk::cmd::commands::RenderpassEnd;
 use vk::cmd::commands::Scissor;
 use vk::cmd::stream::*;
 use vk::pass::MeshId;
 use vk::winit;
+
+#[derive(Debug)]
+struct DrawInfo {
+  mesh: MeshId,
+  rect: Scissor,
+}
 
 #[derive(Clone, Copy, Debug)]
 pub enum Type {
@@ -16,43 +26,80 @@ pub enum Type {
   Draw,
 }
 
-pub struct StreamCache<S: Style> {
-  screen: Option<Screen<S>>,
-  focus: Option<SelectId>,
+pub struct StreamCache {
+  components: Option<Vec<DrawInfo>>,
+  query: Option<[Query; 2]>,
   layout: Option<Vec<Box<dyn Layout>>>,
+  focus: Option<SelectId>,
 }
 
-impl<S: Style> StreamCache<S> {
-  pub fn new() -> Self {
+impl StreamCache {
+  pub fn new(mem: &vk::mem::Mem) -> Self {
     Self {
-      screen: None,
+      components: Some(Vec::with_capacity(100)),
+      query: Some([Query::new(mem.clone()), Query::new(mem.clone())]),
       layout: Some(Vec::with_capacity(10)),
       focus: Some(SelectId::invalid()),
     }
   }
 
-  pub fn into_stream<'a>(&mut self, event: Option<&'a winit::event::Event<i32>>) -> Stream<'a, S, ()> {
+  pub fn into_stream<'a, S: Style>(
+    &mut self,
+    gui: ImGui<S>,
+    size: vk::Extent2D,
+    image: vk::Image,
+    pass_begin: RenderpassBegin,
+    pass_end: RenderpassEnd,
+    event: Option<&'a winit::event::Event<i32>>,
+  ) -> Stream<'a, S, ()> {
+    let components = self.components.take().unwrap();
+    let query = self.query.take().unwrap();
+    let mut layout = self.layout.take().unwrap();
+    layout.push(Box::new(FloatLayout::from(Rect::new(vec2!(0), vec2!(size.width, size.height)))));
+    let focus = self.focus.take().unwrap();
+
     Stream {
-      streamtype: Type::HandleEvent,
-      screen: self.screen.take().unwrap(),
-      layout: self.layout.take().unwrap(),
-      focus: self.focus.take().unwrap(),
+      gui,
+
+      streamtype: match event {
+        Some(_) => Type::HandleEvent,
+        None => Type::Draw,
+      },
+
+      size,
+      image,
+      pass_begin,
+      pass_end,
+      components,
+      query,
+
+      layout,
+      focus,
       event,
       result: None,
     }
   }
 
-  pub fn recover<'a, R: std::fmt::Debug>(&mut self, s: Stream<'a, S, R>) {
-    self.screen = Some(s.screen);
+  pub fn recover<'a, S: Style, R: std::fmt::Debug>(&mut self, s: Stream<'a, S, R>) {
+    self.components = Some(s.components);
+    self.query = Some(s.query);
     self.layout = Some(s.layout);
     self.focus = Some(s.focus);
   }
 }
 
 pub struct Stream<'a, S: Style, R: std::fmt::Debug> {
+  gui: ImGui<S>,
+
   streamtype: Type,
 
-  screen: Screen<S>,
+  size: vk::Extent2D,
+  image: vk::Image,
+  pass_begin: RenderpassBegin,
+  pass_end: RenderpassEnd,
+  components: Vec<DrawInfo>,
+  query: [Query; 2],
+
   layout: Vec<Box<dyn Layout>>,
   focus: SelectId,
   event: Option<&'a winit::event::Event<'a, i32>>,
@@ -61,21 +108,21 @@ pub struct Stream<'a, S: Style, R: std::fmt::Debug> {
 }
 
 impl<'a, S: Style, R: std::fmt::Debug> Stream<'a, S, R> {
-  pub fn draw(&mut self, mesh: MeshId, scissor: Scissor) {
+  pub fn draw(&mut self, mesh: MeshId, rect: Scissor) {
     match self.streamtype {
-      Type::Draw => self.screen.push_draw(mesh, scissor),
+      Type::Draw => self.components.push(DrawInfo { mesh, rect }),
       Type::HandleEvent => (),
     }
   }
-  pub fn select(&mut self, mesh: MeshId, scissor: Scissor) {
+  pub fn select(&mut self, mesh: MeshId, rect: Scissor) {
     match self.streamtype {
-      Type::Draw => self.screen.push_select(mesh, scissor),
+      Type::Draw => self.query[0].push(mesh, Some(rect)),
       Type::HandleEvent => (),
     }
   }
 
   pub fn get_selection(&mut self) -> Option<SelectId> {
-    self.screen.get_select_result()
+    self.query[1].get()
   }
   pub fn is_selected(&mut self, id: SelectId) -> bool {
     self.get_selection().filter(|s| *s == id && id != SelectId::invalid()).is_some()
@@ -117,8 +164,17 @@ impl<'a, S: Style, R: std::fmt::Debug> Stream<'a, S, R> {
   }
   pub fn with_result<Rx: std::fmt::Debug>(self, r: Option<Rx>) -> Stream<'a, S, Rx> {
     Stream::<'a, S, Rx> {
+      gui: self.gui,
+
       streamtype: self.streamtype,
-      screen: self.screen,
+
+      size: self.size,
+      image: self.image,
+      pass_begin: self.pass_begin,
+      pass_end: self.pass_end,
+      components: self.components,
+      query: self.query,
+
       layout: self.layout,
       focus: self.focus,
       event: self.event,
@@ -168,8 +224,34 @@ impl<'a, S: Style, R: std::fmt::Debug> Layout for Stream<'a, S, R> {
 
 impl<'a, S: Style, R: std::fmt::Debug> StreamPushMut for Stream<'a, S, R> {
   fn enqueue_mut(&mut self, cs: CmdBuffer) -> CmdBuffer {
+    use vk::cmd::stream::Stream;
     match self.streamtype {
-      Type::Draw => cs.push_mut(&mut self.screen),
+      Type::Draw => {
+        // Draw actual ui elements
+        let mut cs = cs
+          .push(&vk::cmd::commands::ImageBarrier::to_color_attachment(self.image))
+          .push(&self.pass_begin)
+          .push(&vk::cmd::commands::Viewport::with_extent(self.size))
+          .push(&vk::cmd::commands::Scissor::with_extent(self.size));
+
+        let draw = self.gui.get_drawpass();
+        for c in self.components.iter() {
+          cs = cs.push(&c.rect).push(&draw.get(c.mesh));
+        }
+
+        cs = cs.push(&self.pass_end);
+        cs = cs.push_mut(&mut self.gui.select.push_query(&mut self.query[0]));
+        // only clears meshes in q[0], 
+        // reset result in q[1]
+        self.query[0].clear();
+        self.query[1].reset();
+        // swap queries
+        self.query.swap(0, 1);
+
+        self.components.clear();
+        self.layout.clear();
+        cs
+      }
       Type::HandleEvent => cs,
     }
   }

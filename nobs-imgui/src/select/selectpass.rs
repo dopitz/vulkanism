@@ -170,7 +170,7 @@ impl SelectPass {
   /// Handle window events
   ///
   /// The selection pass handles Window events for mouse movement to update the internal mouse pointer position.
-  pub fn handle_events(&mut self, e: &vk::winit::event::Event<i32>) {
+  pub fn handle_event(&mut self, e: &vk::winit::event::Event<i32>) {
     let mut pass = self.pass.lock().unwrap();
 
     match e {
@@ -179,8 +179,9 @@ impl SelectPass {
         ..
       } => pass.current_pos = (vec2!(position.x, position.y) * pass.dpi).into(),
       vk::winit::event::Event::WindowEvent {
-        event: vk::winit::event::WindowEvent::ScaleFactorChanged{
-          scale_factor, new_inner_size
+        event: vk::winit::event::WindowEvent::ScaleFactorChanged {
+          scale_factor,
+          new_inner_size,
         },
         ..
       } => pass.dpi = *scale_factor,

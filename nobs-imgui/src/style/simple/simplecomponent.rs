@@ -181,6 +181,9 @@ impl Component<Simple> for SimpleComponent {
           d.end = self.gui.select.get_current_position();
           Event::Drag(d)
         });
+
+        println!("{:?}", event);
+
         match e {
           vk::winit::event::Event::DeviceEvent {
             event:

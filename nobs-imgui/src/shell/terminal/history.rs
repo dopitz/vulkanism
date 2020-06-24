@@ -1,7 +1,6 @@
 use crate::component::textbox::Event as TextboxEvent;
 use crate::shell::terminal::window::TerminalWnd;
 use crate::style::Style;
-use crate::window::Screen;
 use std::sync::Arc;
 use std::sync::Mutex;
 use vk::winit;

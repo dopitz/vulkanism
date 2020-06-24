@@ -3,10 +3,10 @@ use crate::component::Stream;
 use crate::pipelines::Pipelines;
 use crate::select::SelectPass;
 use crate::style::Style;
-use crate::window::Screen;
 use std::sync::Arc;
 use std::sync::Mutex;
 use vk::builder::Buildable;
+use vk::cmd::stream::*;
 use vk::mem::Handle;
 use vk::pass::DrawPass;
 use vk::winit;
@@ -17,7 +17,7 @@ struct Pass {
   draw: Mutex<DrawPass>,
 }
 
-struct ImGuiImpl<S: Style> {
+struct ImGuiImpl {
   device: vk::Device,
   mem: vk::mem::Mem,
 
@@ -26,12 +26,10 @@ struct ImGuiImpl<S: Style> {
 
   pipes: Mutex<Pipelines>,
 
-  scr: Mutex<Option<Screen<S>>>,
-
-  stream_cache: Mutex<StreamCache<S>>,
+  stream_cache: Mutex<StreamCache>,
 }
 
-impl<S: Style> Drop for ImGuiImpl<S> {
+impl Drop for ImGuiImpl {
   fn drop(&mut self) {
     self.mem.trash.push_buffer(*self.ub_viewport.lock().unwrap());
   }
@@ -50,7 +48,7 @@ impl<S: Style> Drop for ImGuiImpl<S> {
 pub struct ImGui<S: Style> {
   pub style: S,
   pub select: SelectPass,
-  gui: Arc<ImGuiImpl<S>>,
+  gui: Arc<ImGuiImpl>,
 }
 
 impl<S: Style> ImGui<S> {
@@ -136,6 +134,8 @@ impl<S: Style> ImGui<S> {
       pipes.lock().unwrap().ds_viewport,
     );
 
+    let stream_cache = Mutex::new(StreamCache::new(&mem));
+
     Self {
       style,
       select,
@@ -148,8 +148,7 @@ impl<S: Style> ImGui<S> {
 
         pipes,
 
-        scr: Mutex::new(None),
-        stream_cache: Mutex::new(StreamCache::new()),
+        stream_cache,
       }),
     }
   }
@@ -198,37 +197,23 @@ impl<S: Style> ImGui<S> {
     data[1] = size.height as u32;
   }
 
-  /// Begins gui rendering
-  ///
-  /// # Returns
-  /// [Screen](window/struct.Screen.html) that submits components into command buffer and a [select query](select/struct.Query.html).
-  pub fn begin(&mut self) -> Screen<S> {
-    let fb = self.gui.draw.fb.lock().unwrap();
-    match self.gui.scr.lock().unwrap().take() {
-      Some(rw) => Screen::from_cached(self.clone(), fb.extent, fb.images[0], fb.begin(), fb.end(), rw),
-      None => Screen::new(self.clone(), fb.extent, fb.images[0], fb.begin(), fb.end()),
+  pub fn begin<'a>(&mut self, event: Option<&'a winit::event::Event<i32>>) -> Stream<'a, S, ()> {
+    if let Some(event) = event.as_ref() {
+      self.select.handle_event(event);
     }
-  }
-  /// Finishs gui rendering
-  ///
-  /// This is automaticolly called when [Screen](window/struct.Screen.html) is pushed into a command buffer.
-  ///
-  /// The gui retains buffers for storing gui components and the select query so that no (re)allocations during rendering happen in continuous frames.
-  ///
-  /// # Arguments
-  /// * `scr` - The [Screen](window/struct.Screen.html) returned from [begin](struct.ImGui.html#method.begin).
-  pub fn end(&mut self, scr: Screen<S>) {
-    self.gui.scr.lock().unwrap().replace(scr);
+
+    let fb = self.gui.draw.fb.lock().unwrap();
+    self
+      .gui
+      .stream_cache
+      .lock()
+      .unwrap()
+      .into_stream(self.clone(), fb.extent, fb.images[0], fb.begin(), fb.end(), event)
   }
 
-  pub fn begin_x<'a>(&'a mut self, event: Option<&'a winit::event::Event<i32>>) -> Stream<'a, S, ()> {
-    let scr = self.begin();
-    let layout = Box::new(crate::window::FloatLayout::from(scr.get_rect()));
-
-    self.gui.stream_cache.lock().unwrap().into_stream(event)
-  }
-
-  pub fn end_x<'a, R: std::fmt::Debug>(&'a mut self, s: Stream<'a, S, R>) {
+  pub fn end<'a, R: std::fmt::Debug>(&'a mut self, mut s: Stream<'a, S, R>, cs: Option<CmdBuffer>) -> Option<CmdBuffer> {
+    let cs = cs.map(|cs| cs.push_mut(&mut s));
     self.gui.stream_cache.lock().unwrap().recover(s);
+    cs
   }
 }

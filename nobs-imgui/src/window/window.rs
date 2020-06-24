@@ -56,8 +56,6 @@ impl<'a, L: Layout + Clone + 'static, S: Style> Component<S> for WindowBegin<'a,
   type Event = Event;
 
   fn enqueue<'b, R: std::fmt::Debug>(&mut self, mut s: Stream<'b, S, R>) -> Stream<'b, S, Self::Event> {
-    println!("window draw");
-
     //// Scrolling with mouse wheel
     //if self.wnd.style.has_focus() {
     //  match e {
@@ -96,6 +94,7 @@ impl<'a, L: Layout + Clone + 'static, S: Style> Component<S> for WindowBegin<'a,
 
     // draw window background + border and caption
     let s = s.push(&mut self.wnd.style).push_if(self.wnd.draw_caption, &mut self.wnd.caption);
+    println!("{:?}", s.get_result());
 
     let mut s = match s.get_result().cloned() {
       Some(event::Event::Resize(rect)) => {
