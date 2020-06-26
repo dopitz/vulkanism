@@ -5,28 +5,23 @@ use crate::font::*;
 use crate::rect::Rect;
 use crate::sprites::Text;
 use crate::style::event;
+use crate::style::event::Event as StyleEvent;
 use crate::style::Style;
 use crate::style::StyleComponent;
 use crate::window::Layout;
 use crate::ImGui;
 use vk::winit;
+use vk::winit::event::Event as WinitEvent;
 
 #[derive(Debug, Clone)]
 pub enum Event {
-  Unhandled(event::Event),
+  Base(StyleEvent),
   Changed,
   Enter(String),
 }
 
 pub trait TextBoxEventHandler: Default {
-  type Output: std::fmt::Debug;
-  fn handle<S: Style>(
-    _tb: &mut TextBox<S, Self>,
-    component_event: Option<&event::Event>,
-    e: &winit::event::Event<i32>,
-  ) -> Option<Self::Output> {
-    None
-  }
+  fn handle<S: Style>(_tb: &mut TextBox<S, Self>, base_event: Option<&StyleEvent>, e: &WinitEvent<i32>) -> Option<Event>;
 
   fn receive_character<S: Style>(
     tb: &mut TextBox<S, Self>,
@@ -121,7 +116,7 @@ pub trait TextBoxEventHandler: Default {
     }
   }
 
-  fn move_cursor<S: Style>(tb: &mut TextBox<S, Self>, e: &vk::winit::event::Event<i32>) {
+  fn move_cursor<S: Style>(tb: &mut TextBox<S, Self>, e: &WinitEvent<i32>) {
     match e {
       vk::winit::event::Event::DeviceEvent {
         event:
@@ -150,14 +145,14 @@ pub trait TextBoxEventHandler: Default {
     }
   }
 
-  fn set_cursor<S: Style>(tb: &mut TextBox<S, Self>, e: Option<&event::Event>) -> Option<Event> {
-    if let Some(event::Event::Pressed(event::EventButton { position, .. })) = e {
+  fn set_cursor<S: Style>(tb: &mut TextBox<S, Self>, e: Option<&StyleEvent>) -> Option<Event> {
+    if let Some(StyleEvent::Pressed(event::EventButton { position, .. })) = e {
       let click = vec2!(position.x, position.y).into() - tb.text.get_position();
       let ts = tb.get_typeset();
       let cp = ts.find_pos(click.into(), tb.get_text());
       tb.cursor(Some(cp));
     }
-    e.map(|e| Event::Unhandled(*e))
+    e.map(|e| Event::Base(*e))
   }
 }
 
@@ -191,17 +186,23 @@ impl<S: Style, H: TextBoxEventHandler> Size for TextBox<S, H> {
 }
 
 impl<S: Style, H: TextBoxEventHandler> Component<S> for TextBox<S, H> {
-  type Event = H::Output;
-
+  type Event = Event;
   fn enqueue<'a, R: std::fmt::Debug>(&mut self, mut s: Stream<'a, S, R>) -> Stream<'a, S, Self::Event> {
     match s.get_event() {
       Some(e) => {
         let s = s.push(&mut self.style);
-        let r = H::handle(self, s.get_result(), e);
+        let s = match s.get_result().cloned() {
+          Some(r) => s.with_result(Some(Event::Base(r))),
+          None => {
+            let r = H::handle(self, s.get_result(), e);
+            s.with_result(r)
+          }
+        };
         if !self.style.has_focus() {
           self.text.cursor(None);
         }
-        s.with_result(r)
+        s
+        //s.with_result(r)
       }
       None => {
         // style is resized along with the textbox
@@ -273,43 +274,36 @@ impl<S: Style, H: TextBoxEventHandler> TextBox<S, H> {
 #[derive(Default)]
 pub struct HandlerReadonly {}
 impl TextBoxEventHandler for HandlerReadonly {
-  type Output = event::Event;
-  fn handle<S: Style>(
-    _tb: &mut TextBox<S, Self>,
-    _component_event: Option<&event::Event>,
-    _e: &winit::event::Event<i32>,
-  ) -> Option<event::Event> {
-    None
+  fn handle<S: Style>(_tb: &mut TextBox<S, Self>, base_event: Option<&StyleEvent>, e: &WinitEvent<i32>) -> Option<Event> {
+    base_event.map(|e| Event::Base(*e))
   }
 }
 
 #[derive(Default)]
 pub struct HandlerEdit {}
 impl TextBoxEventHandler for HandlerEdit {
-  type Output = Event;
-  fn handle<S: Style>(tb: &mut TextBox<S, Self>, component_event: Option<&event::Event>, e: &winit::event::Event<i32>) -> Option<Event> {
+  fn handle<S: Style>(tb: &mut TextBox<S, Self>, base_event: Option<&StyleEvent>, e: &WinitEvent<i32>) -> Option<Event> {
     if tb.style.has_focus() {
       if let Some(e) = Self::receive_character(tb, e, false, &['\t', '\u{1b}']) {
         return Some(e);
       }
       Self::move_cursor(tb, e);
     }
-    Self::set_cursor(tb, component_event)
+    Self::set_cursor(tb, base_event)
   }
 }
 
 #[derive(Default)]
 pub struct HandlerMultilineEdit {}
 impl TextBoxEventHandler for HandlerMultilineEdit {
-  type Output = Event;
-  fn handle<S: Style>(tb: &mut TextBox<S, Self>, component_event: Option<&event::Event>, e: &winit::event::Event<i32>) -> Option<Event> {
+  fn handle<S: Style>(tb: &mut TextBox<S, Self>, base_event: Option<&StyleEvent>, e: &WinitEvent<i32>) -> Option<Event> {
     if tb.style.has_focus() {
       if let Some(e) = Self::receive_character(tb, e, true, &['\t', '\u{1b}']) {
         return Some(e);
       }
       Self::move_cursor(tb, e);
     }
-    Self::set_cursor(tb, component_event)
+    Self::set_cursor(tb, base_event)
   }
 }
 

@@ -1,10 +1,11 @@
 use super::Layout;
+use crate::component::textbox::Event as TBEvent;
 use crate::component::Component;
 use crate::component::Size;
 use crate::component::Stream;
 use crate::component::TextBox;
 use crate::rect::Rect;
-use crate::style::event;
+use crate::style::event::Event as StyleEvent;
 use crate::style::Style;
 use crate::style::StyleComponent;
 use crate::ImGui;
@@ -93,16 +94,28 @@ impl<'a, L: Layout + Clone + 'static, S: Style> Component<S> for WindowBegin<'a,
     s.layout(self);
 
     // draw window background + border and caption
-    let s = s.push(&mut self.wnd.style).push_if(self.wnd.draw_caption, &mut self.wnd.caption);
+    println!("style");
+    let s = s.push(&mut self.wnd.style);
+    println!("caption");
+    let s = if self.wnd.draw_caption {
+      let s = s.push(&mut self.wnd.caption);
+      let r = match s.get_result().cloned() {
+        Some(TBEvent::Base(e)) => Some(e),
+        _ => None,
+      };
+      s.with_result(r)
+    } else {
+      s
+    };
     println!("{:?}", s.get_result());
 
     let mut s = match s.get_result().cloned() {
-      Some(event::Event::Resize(rect)) => {
+      Some(StyleEvent::Resize(rect)) => {
         self.set_rect(rect);
         s.with_result(Some(Event::Resized(rect)))
       }
 
-      Some(event::Event::Drag(drag)) => {
+      Some(StyleEvent::Drag(drag)) => {
         let mut rect = self.wnd.layout.get_rect();
         rect.position = drag.end.into() - drag.start.relative_pos.into();
         self.set_rect(rect);
