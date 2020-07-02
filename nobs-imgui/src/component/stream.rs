@@ -163,6 +163,10 @@ impl<'a, S: Style, R: std::fmt::Debug> Stream<'a, S, R> {
     self.result.as_ref()
   }
   pub fn with_result<Rx: std::fmt::Debug>(self, r: Option<Rx>) -> Stream<'a, S, Rx> {
+    self.map_result(|_| r)
+  }
+  pub fn map_result<Rx: std::fmt::Debug, F: FnOnce(Option<R>) -> Option<Rx>>(self, r: F) -> Stream<'a, S, Rx> {
+    let result = r(self.result);
     Stream::<'a, S, Rx> {
       gui: self.gui,
 
@@ -178,7 +182,7 @@ impl<'a, S: Style, R: std::fmt::Debug> Stream<'a, S, R> {
       layout: self.layout,
       focus: self.focus,
       event: self.event,
-      result: r,
+      result,
     }
   }
 

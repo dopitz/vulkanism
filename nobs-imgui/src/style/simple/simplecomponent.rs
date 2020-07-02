@@ -182,7 +182,6 @@ impl Component<Simple> for SimpleComponent {
           Event::Drag(d)
         });
 
-
         match e {
           vk::winit::event::Event::DeviceEvent {
             event:
@@ -306,10 +305,6 @@ impl Component<Simple> for SimpleComponent {
           }
           _ => {}
         };
-
-        if event.is_some() {
-          println!("AOUEAOEUAOEUAEOU        {:?}", event);
-        }
 
         s.with_result(event)
       }

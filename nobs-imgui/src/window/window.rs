@@ -94,9 +94,7 @@ impl<'a, L: Layout + Clone + 'static, S: Style> Component<S> for WindowBegin<'a,
     s.layout(self);
 
     // draw window background + border and caption
-    println!("style");
     let s = s.push(&mut self.wnd.style);
-    println!("caption");
     let s = if self.wnd.draw_caption {
       let s = s.push(&mut self.wnd.caption);
       let r = match s.get_result().cloned() {
@@ -107,7 +105,6 @@ impl<'a, L: Layout + Clone + 'static, S: Style> Component<S> for WindowBegin<'a,
     } else {
       s
     };
-    println!("{:?}", s.get_result());
 
     let mut s = match s.get_result().cloned() {
       Some(StyleEvent::Resize(rect)) => {

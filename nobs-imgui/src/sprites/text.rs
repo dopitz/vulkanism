@@ -68,6 +68,7 @@ impl<S: Style> Text<S> {
   }
 
   pub fn cursor(&mut self, cp: Option<Vec2u>) -> &mut Self {
+    println!("SET CURSOR {:?}", cp);
     if self.cursor != cp {
       self.cursor = cp;
       self.update_sprites();
