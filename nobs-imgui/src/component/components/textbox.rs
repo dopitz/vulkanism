@@ -147,7 +147,6 @@ pub trait TextBoxEventHandler: Default {
 
   fn set_cursor<S: Style>(tb: &mut TextBox<S, Self>, e: Option<&StyleEvent>) -> Option<Event> {
     if let Some(StyleEvent::Pressed(event::EventButton { position, .. })) = e {
-      println!("AOEUAOEUAOEUAOEUAOEU");
       let click = vec2!(position.x, position.y).into() - tb.text.get_position();
       let ts = tb.get_typeset();
       let cp = ts.find_pos(click.into(), tb.get_text());
@@ -191,7 +190,6 @@ impl<S: Style, H: TextBoxEventHandler> Component<S> for TextBox<S, H> {
   fn enqueue<'a, R: std::fmt::Debug>(&mut self, mut s: Stream<'a, S, R>) -> Stream<'a, S, Self::Event> {
     match s.get_event() {
       Some(e) => {
-        //println!("{},            {:?}", self.text.get_text(), self.style.has_focus());
         let s = s.push(&mut self.style);
         let r = H::handle(self, s.get_result(), e);
         let s = s.with_result(r);
@@ -204,8 +202,7 @@ impl<S: Style, H: TextBoxEventHandler> Component<S> for TextBox<S, H> {
         // style is resized along with the textbox
         let scissor = s.layout(self);
 
-        // draw and select
-
+        // draw
         let mut s = s.push(&mut self.style);
         s.draw(self.text.get_mesh(), scissor);
         s.with_result(None)

@@ -80,7 +80,8 @@ impl StreamCache {
     }
   }
 
-  pub fn recover<'a, S: Style, R: std::fmt::Debug>(&mut self, s: Stream<'a, S, R>) {
+  pub fn recover<'a, S: Style, R: std::fmt::Debug>(&mut self, mut s: Stream<'a, S, R>) {
+    s.layout.clear();
     self.components = Some(s.components);
     self.query = Some(s.query);
     self.layout = Some(s.layout);
@@ -245,7 +246,7 @@ impl<'a, S: Style, R: std::fmt::Debug> StreamPushMut for Stream<'a, S, R> {
 
         cs = cs.push(&self.pass_end);
         cs = cs.push_mut(&mut self.gui.select.push_query(&mut self.query[0]));
-        // only clears meshes in q[0], 
+        // only clears meshes in q[0],
         // reset result in q[1]
         self.query[0].clear();
         self.query[1].reset();
@@ -253,7 +254,6 @@ impl<'a, S: Style, R: std::fmt::Debug> StreamPushMut for Stream<'a, S, R> {
         self.query.swap(0, 1);
 
         self.components.clear();
-        self.layout.clear();
         cs
       }
       Type::HandleEvent => cs,

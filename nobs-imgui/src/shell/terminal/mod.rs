@@ -39,7 +39,6 @@ impl<S: Style> Terminal<S> {
     s: Stream<'a, S, R>,
     context: &mut C,
   ) -> Stream<'a, S, ()> {
-    println!("term draw");
     let s = match self.show.get() {
       true => s.push(&mut self.window),
       false => s.with_result(None),

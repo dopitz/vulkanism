@@ -10,7 +10,7 @@ use std::sync::Condvar;
 use std::sync::Mutex;
 
 struct TerminalImpl<S: Style> {
-  wnd: Window<ColumnLayout, S>,
+  wnd: Window<FloatLayout, S>,
 
   output_wnd: Window<ColumnLayout, S>,
   output: TextBox<S>,
@@ -26,9 +26,17 @@ struct TerminalImpl<S: Style> {
 impl<S: Style> Size for TerminalImpl<S> {
   fn set_rect(&mut self, rect: Rect) {
     self.wnd.set_rect(rect);
-    let mut r = self.wnd.get_client_rect();
-    r.size.y = r.size.y.saturating_sub(self.input.get_size_hint().y + 10);
-    self.output_wnd.set_rect(r);
+
+    let mut outrect = self.wnd.get_client_rect();
+    outrect.size.y = outrect.size.y.saturating_sub(self.input.get_size_hint().y + 10);
+    self.output_wnd.set_rect(outrect);
+
+    self.output.set_rect(outrect);
+
+    let mut inrect = outrect;
+    inrect.position.y = outrect.position.y + outrect.size.y as i32 + 10;
+    inrect.size.y = self.input.get_size_hint().y;
+    self.input.set_rect(inrect);
   }
 
   fn get_rect(&self) -> Rect {
@@ -44,39 +52,42 @@ impl<S: Style> Component<S> for TerminalImpl<S> {
   type Event = Event;
 
   fn enqueue<'a, R: std::fmt::Debug>(&mut self, mut s: Stream<'a, S, R>) -> Stream<'a, S, Self::Event> {
-    println!("term window draw");
     s.layout(self);
 
-    let s = s.push(&mut self.wnd.begin()).push(&mut self.output_wnd.begin());
+    let s = s.push(&mut self.wnd.begin());
 
+    let s = s.push(&mut self.output_wnd.begin());
     if let Some(crate::window::Event::Scroll) = s.get_result() {
       self.pin_scroll = false;
     }
-    let s = s.push(&mut self.output).push(&mut Spacer::new(vec2!(10))).push(&mut self.input);
+    let s = s.push(&mut self.output);
+    let s = s.push(&mut self.output_wnd.end());
 
-    let tbevent = s.get_result().cloned();
-    match tbevent.as_ref() {
+    let s = s.push(&mut self.input);
+    let tbevent = match s.get_result() {
       Some(Event::Enter(input)) => {
         let input = input[3..].to_string();
 
         if let Some(readl) = self.readl.take() {
           let &(ref lock, ref cvar) = &*readl;
           let mut inp = lock.lock().unwrap();
-          *inp = Some(input);
+          *inp = Some(input.clone());
           cvar.notify_one();
           self.input.text("~$ ");
         } else {
           self.println(&input);
           self.input.text("~$ ");
         }
+        Some(Event::Enter(input))
       }
       Some(Event::Changed) => {
         if self.input.get_text().len() < 3 {
           self.input.text("~$ ");
         }
+        Some(Event::Changed)
       }
-      _ => (),
-    }
+      _ => None,
+    };
 
     match self.input.get_cursor() {
       Some(cp) if cp.x < 3 => {
@@ -85,9 +96,11 @@ impl<S: Style> Component<S> for TerminalImpl<S> {
       _ => (),
     }
 
-    if self.pin_scroll {
-      self.output_wnd.scroll(vec2!(0, u32::max_value()));
-    }
+    let s = s.push(&mut self.wnd.end());
+
+    //if self.pin_scroll {
+    //  self.output_wnd.scroll(vec2!(0, u32::max_value()));
+    //}
 
     let s = if !self.quickfix.get_text().is_empty() {
       let r = self.wnd.get_rect();
@@ -113,16 +126,16 @@ impl<S: Style> Component<S> for TerminalImpl<S> {
       if let Some(_) = s.get_result() {
         self.println("quickfix click not implemented");
       }
-      s.push(&mut self.quickfix_wnd.end()).with_result(tbevent.clone())
+      s.push(&mut self.quickfix_wnd.end()).with_result(tbevent)
     } else {
-      s
+      s.with_result(tbevent)
     };
 
     if !self.input.has_focus() && (self.wnd.has_focus() || self.output_wnd.has_focus() || self.output.has_focus()) {
       self.focus(true);
     }
 
-    s.push(&mut self.output_wnd.end()).push(&mut self.wnd.end()).with_result(tbevent)
+    s
   }
 }
 
@@ -201,7 +214,7 @@ impl<S: Style> Component<S> for TerminalWnd<S> {
 
 impl<S: Style> TerminalWnd<S> {
   pub fn new(gui: &ImGui<S>) -> Self {
-    let mut wnd = Window::new(gui, ColumnLayout::default());
+    let mut wnd = Window::new(gui, FloatLayout::default());
     wnd
       .caption("terminal")
       .position(20, 20)
@@ -214,7 +227,7 @@ impl<S: Style> TerminalWnd<S> {
     output_wnd.style("NoStyle", false, false);
     let mut output = TextBox::new(gui);
     output.style("NoStyle").text("\n");
-    output.text("Heyyy, what are you up to?");
+    output.text("hello world...\n");
 
     let mut input = TextBox::new(gui);
     input.text("~$ ");
