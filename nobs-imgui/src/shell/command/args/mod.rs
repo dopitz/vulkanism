@@ -232,17 +232,7 @@ pub trait Arg {
   /// Contains meta information used for parsing and user manual
   fn get_desc(&self) -> &ArgDesc;
 
-  fn parse<'a>(
-    &'a self,
-    argsv: &'a [&'a str],
-    argi: usize,
-    completions: &mut Option<Vec<matches::Completion>>,
-  ) -> Option<(usize, matches::Parsed)> {
-    // no more argument strings to consume
-    if argi >= argsv.len() {
-      return None;
-    }
-
+  fn parse_name<'a>(&'a self, argsv: &'a [&'a str], argi: usize, completions: &mut Option<Vec<matches::Completion>>) -> Option<usize> {
     // offset to the current value, so we can index the argument name with [0] and its value with [1]
     let argsv = &argsv[argi..];
 
@@ -316,10 +306,26 @@ pub trait Arg {
       }
     }
 
-    let i_value = if is_indexed { 0 } else { 1 };
-    let value = match i_value < argsv.len() {
+    let nextargi = match is_indexed {
+      true => argi,
+      false => argi + 1,
+    };
+
+    Some(nextargi)
+  }
+
+  fn parse_value<'a>(
+    &'a self,
+    argsv: &'a [&'a str],
+    argi: usize,
+    completions: &mut Option<Vec<matches::Completion>>,
+  ) -> Option<(usize, matches::Parsed)> {
+    let desc = self.get_desc();
+    let hint = ArgDesc::format_help(&[&desc], false);
+
+    let value = match argi < argsv.len() {
       true => {
-        let mut v = argsv[i_value].trim();
+        let mut v = argsv[argi].trim();
         if v.starts_with("\"") {
           v = &v[1..];
         }
@@ -331,12 +337,12 @@ pub trait Arg {
       false => String::new(),
     };
 
-    if i_value + 2 > argsv.len() {
+    if argi + 2 > argsv.len() {
       if let Some(completions) = completions.as_mut() {
         for completed in self.complete_variants_from_prefix(&value).into_iter() {
           let hint = hint.clone();
           completions.push(Completion {
-            index: argi + i_value,
+            index: argi,
             completed,
             hint,
           });
@@ -346,13 +352,31 @@ pub trait Arg {
 
     match self.validate_parsed_value(&value) {
       true => Some((
-        argi + i_value + 1,
+        argi + 1,
         matches::Parsed {
           name: desc.name.clone(),
           value,
         },
       )),
       false => None,
+    }
+  }
+
+  fn parse<'a>(
+    &'a self,
+    argsv: &'a [&'a str],
+    argi: usize,
+    completions: &mut Option<Vec<matches::Completion>>,
+  ) -> Option<(usize, matches::Parsed)> {
+    // no more argument strings to consume
+    if argi >= argsv.len() {
+      return None;
+    }
+
+    if let Some(argivalue) = self.parse_name(argsv, argi, completions) {
+      self.parse_value(argsv, argi, completions)
+    } else {
+      None
     }
   }
 
@@ -382,6 +406,7 @@ pub use matches::Matches;
 mod bool;
 mod commandname;
 mod file;
+mod flag;
 mod ident;
 mod num;
 mod text;
@@ -389,6 +414,7 @@ mod text;
 pub use self::bool::Bool;
 pub use commandname::CommandName;
 pub use file::File;
+pub use flag::Flag;
 pub use ident::Ident;
 pub use num::*;
 pub use text::Text;
